@@ -47,32 +47,24 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
   const authorization = permission_hash(permission_intent(ctx) + (ctx.delegated_task ?? ""));
   const server_cwd = path.resolve(ctx.settings.mcp_servers[server]?.cwd || process.cwd());
   ctx.execution_cwd = typeof args.cwd === "string" ? path.resolve(server_cwd, args.cwd) : server_cwd;
-  const evidence = (action: "run" | "deny", source: "approval" | "changed", reason: string) => ctx.permission?.({
-    action, source, reason, cwd: ctx.execution_cwd || ctx.project_root, authorization_hash: authorization,
-    source_hash: permission_hash(JSON.stringify(args)), command_hash: permission_hash(server + "/" + info.name),
-  });
   const verdict = await decide(call, ctx, mcp_overseer);
-  if (verdict.kind === "block") {
-    return { status: "failed", text: verdict.reason, view: mcp_view(server, info.name, verdict.reason, true) };
+  if (verdict.kind === "block" || verdict.kind === "denied") {
+    return { status: verdict.kind === "denied" ? "denied" : "failed", text: verdict.reason, view: mcp_view(server, info.name, verdict.reason, true) };
   }
   if (verdict.kind === "ask") {
     const decision = await ctx.approve({ kind: "mcp", server, tool: info.name, tier, args_preview: args_preview(args), scope: call.scope });
     if (!decision.approved) {
       const feedback = decision.feedback ? ` User feedback: ${decision.feedback}` : "";
       const text = `The user denied ${server}/${info.name} (${verdict.reason}).${feedback}`;
-      evidence("deny", "approval", text);
       return { status: "denied", text, view: mcp_view(server, info.name, text, true) };
     }
     if (permission_hash(permission_intent(ctx)) !== authorization || (ctx.execution_check && !(await ctx.execution_check()))) {
-      evidence("deny", "changed", "The reviewed MCP context changed while approval was pending.");
       return { status: "denied", text: "The human instructions or inspected script changed while this MCP approval was pending. The tool was not executed.", view: null };
     }
     record_grant(ctx.chat_id, call, decision.grant, ctx);
-    evidence("run", "approval", "The user approved this MCP call.");
   }
   ctx.signal.throwIfAborted();
   if (permission_hash(permission_intent(ctx)) !== authorization || (ctx.execution_check && !(await ctx.execution_check()))) {
-    evidence("deny", "changed", "The reviewed context changed before the MCP tool could run.");
     return { status: "denied", text: "The reviewed context changed before the MCP tool could run.", view: null };
   }
   return invoke(ctx, call);

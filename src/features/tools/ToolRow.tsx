@@ -7,7 +7,6 @@ import { use_t } from "../../i18n/index.ts";
 import { has_body, tool_icon, ToolBody } from "./registry.tsx";
 import { is_active_status, tool_label } from "./tool-meta.ts";
 import { format_duration, step_detail, step_duration } from "./tool-summary.ts";
-import { PermissionDetails } from "./PermissionDetails.tsx";
 import "./tools.css";
 
 const StatusMark = ({ status }: { status: ToolStep["status"] }) => {
@@ -48,7 +47,7 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
   const active = is_active_status(step.status);
   const detail = step_detail(t, step);
   const duration = step_duration(step);
-  const expandable = has_body(step) || Boolean(step.permissions?.length);
+  const expandable = has_body(step);
   const open = expandable && (chosen ?? running);
   if (open && !seen) {
     set_seen(true);
@@ -73,7 +72,7 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
       </button>
       {expandable && (
         <CollapsibleBody open={open}>
-          <div className="tool-row-body">{seen && <><ToolBody step={step} /><PermissionDetails checks={step.permissions ?? []} /></>}</div>
+          <div className="tool-row-body">{seen && <ToolBody step={step} />}</div>
         </CollapsibleBody>
       )}
     </div>

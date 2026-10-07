@@ -153,25 +153,6 @@
     overflow-wrap: anywhere;
   }
 
-  .tool-permission {
-    margin-top: var(--space-3);
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
-  }
-
-  .tool-permission summary {
-    cursor: pointer;
-  }
-
-  .tool-permission ol {
-    padding-left: var(--space-5);
-  }
-
-  .tool-permission li {
-    margin-top: var(--space-2);
-    overflow-wrap: anywhere;
-  }
-
   .tool-body-muted {
     color: var(--text-muted);
   }

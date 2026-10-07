@@ -1,4 +1,4 @@
-import type { ApprovalRequest, PermissionCheck } from "./approval.ts";
+import type { ApprovalRequest } from "./approval.ts";
 import type {
   AssistantMessage,
   Attachment,
@@ -25,7 +25,6 @@ export type StreamEventBody =
   | { type: "tool_start"; call_id: string }
   | { type: "tool_progress"; call_id: string; progress: ToolProgress }
   | { type: "tool_approval"; call_id: string; request: ApprovalRequest }
-  | { type: "tool_permission"; call_id: string; check: PermissionCheck }
   | {
       type: "tool_end";
       call_id: string;

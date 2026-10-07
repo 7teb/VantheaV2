@@ -4,16 +4,6 @@ export type McpTier = "readonly" | "state_change" | "dangerous" | "shell_system"
 
 export type OverseerVerdict = { safe: boolean; reason: string; authorized?: boolean; effect_safe?: boolean };
 
-export type PermissionCheck = {
-  action: "run" | "ask" | "block" | "deny";
-  source: "floor" | "full" | "grant" | "mode" | "protected" | "limit" | "incomplete" | "model" | "cache" | "allowlist" | "unavailable" | "approval" | "changed";
-  reason: string;
-  cwd: string;
-  authorization_hash: string;
-  source_hash: string;
-  command_hash: string;
-};
-
 export type ApprovalRequest =
   | {
       kind: "command";

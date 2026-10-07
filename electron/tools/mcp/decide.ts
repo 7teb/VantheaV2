@@ -1,15 +1,16 @@
 import type { GrantScope, McpTier, OverseerVerdict } from "../../../shared/approval.ts";
 import { shell_candidates } from "../../mcp/risk.ts";
 import { permission_hash, permission_intent } from "../../permissions/context.ts";
+import { rejected_text } from "../../permissions/sleep.ts";
 import type { ToolContext } from "../types.ts";
 
-export type CommandGate = (command: string, ctx: ToolContext) => Promise<"run" | "ask" | "block">;
+export type CommandGate = (command: string, ctx: ToolContext) => Promise<{ action: "run" | "ask" | "block" | "deny"; reason: string }>;
 
 export type Overseer = (call: McpCall, ctx: ToolContext) => Promise<OverseerVerdict>;
 
 export type McpCall = { server: string; tool: string; tier: McpTier; args: Record<string, unknown>; scope: string | null; trusted: boolean };
 
-export type Verdict = { kind: "run" } | { kind: "ask"; reason: string } | { kind: "block"; reason: string };
+export type Verdict = { kind: "run" } | { kind: "ask"; reason: string } | { kind: "block" | "denied"; reason: string };
 
 let command_gate: CommandGate | null = null;
 
@@ -81,29 +82,27 @@ export const record_grant = (chat_id: string, call: McpCall, grant: GrantScope, 
 const shell_verdict = async (call: McpCall, ctx: ToolContext): Promise<Verdict> => {
   const candidates = shell_candidates(call.args);
   if (!candidates.length) {
+    const reason = "The command inside this MCP tool could not be identified for review.";
+    if (ctx.mode === "auto") return { kind: "denied", reason };
     return ctx.mode === "full" ? run : ask("This MCP tool runs a shell or system command and needs your approval.");
   }
   if (!command_gate) {
     return { kind: "block", reason: "The command policy is not initialized, shell MCP tools cannot run." };
   }
   const gate = await command_gate(candidates.join("\n"), ctx);
-  if (gate === "block") {
-    return { kind: "block", reason: "Blocked by the command policy: this MCP tool would run a command that is never allowed." };
-  }
-  return gate === "run" ? run : ask("This MCP tool runs a shell or system command and needs your approval.");
+  if (gate.action === "block") return { kind: "block", reason: "Blocked by the command policy: " + gate.reason };
+  if (gate.action === "deny") return { kind: "denied", reason: rejected_text(gate.reason) };
+  if (gate.action === "run") return run;
+  if (ctx.mode === "auto") return { kind: "denied", reason: rejected_text(gate.reason) };
+  return ask(gate.reason);
 };
 
 export const decide = async (call: McpCall, ctx: ToolContext, overseer: Overseer): Promise<Verdict> => {
-  const finish = (value: Verdict, source: "full" | "grant" | "mode" | "model", reason: string): Verdict => {
-    ctx.permission?.({ action: value.kind === "run" ? "run" : value.kind, source, reason, cwd: ctx.execution_cwd || ctx.project_root,
-      authorization_hash: grant_context(ctx, call), source_hash: permission_hash(JSON.stringify(call.args)), command_hash: permission_hash(call.server + "/" + call.tool) });
-    return value;
-  };
   if (call.tier === "shell_system") return shell_verdict(call, ctx);
-  if ((call.trusted && ctx.mode === "full") || has_grant(ctx, call)) return finish(run, "grant", "A matching user approval covers this MCP call.");
-  if (call.tier === "dangerous" && !call.trusted) return finish(ask("Dangerous MCP tool (memory write, patch, inject or execute), needs your approval."), "mode", "Dangerous MCP effects need explicit user approval.");
-  if (ctx.mode === "full") return finish(run, "full", "The user selected full access.");
-  if (ctx.mode === "ask") return finish(ask("MCP tool, needs your approval in ask mode."), "mode", "Ask mode requires user approval.");
+  if ((call.trusted && ctx.mode === "full") || has_grant(ctx, call)) return run;
+  if (call.tier === "dangerous" && !call.trusted) return ask("Dangerous MCP tool (memory write, patch, inject or execute), needs your approval.");
+  if (ctx.mode === "full") return run;
+  if (ctx.mode === "ask") return ask("MCP tool, needs your approval in ask mode.");
   const verdict = await overseer(call, ctx);
-  return finish(verdict.safe ? run : ask("Auto-mode overseer flagged this MCP tool: " + verdict.reason), "model", verdict.reason);
+  return verdict.safe ? run : { kind: "denied", reason: rejected_text(verdict.reason) };
 };

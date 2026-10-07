@@ -1,4 +1,4 @@
-import type { ApprovalRequest, PermissionCheck } from "./approval.ts";
+import type { ApprovalRequest } from "./approval.ts";
 import type { ToolView } from "./tool-view.ts";
 
 export type PermissionMode = "ask" | "auto" | "full";
@@ -55,7 +55,6 @@ export type ToolStep = {
   status: ToolStatus;
   progress: ToolProgress | null;
   approval: ApprovalRequest | null;
-  permissions?: PermissionCheck[];
   view: ToolView | null;
   error: string | null;
   result_text: string;

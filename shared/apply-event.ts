@@ -140,11 +140,6 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
         ...state,
         steps: update_tool(state.steps, (step) => step.call_id === event.call_id, (step) => ({ ...step, progress: event.progress })),
       };
-    case "tool_permission":
-      return {
-        ...state,
-        steps: update_tool(state.steps, (step) => step.call_id === event.call_id, (step) => ({ ...step, permissions: [...(step.permissions ?? []), event.check] })),
-      };
     case "tool_approval":
       return {
         ...state,
@@ -213,6 +208,7 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
         steps: settle_steps(state.steps, event.at),
       };
   }
+  return state;
 };
 
 export const apply_event = <T extends TranscriptState>(state: T, event: Event): T => {

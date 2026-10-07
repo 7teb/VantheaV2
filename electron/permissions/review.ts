@@ -8,10 +8,6 @@ export const command_input = (ctx: ToolContext, command: string, cwd = ctx.execu
   cwd: path.resolve(ctx.project_root || ".", cwd), delegated_task: ctx.delegated_task,
 });
 
-export const report_permission = (ctx: ToolContext, decision: CommandDecision): void => {
-  ctx.permission?.({ action: decision.action, source: decision.source, reason: decision.reason, ...decision.context });
-};
-
 export const review_matches = async (ctx: ToolContext, command: string, cwd: string, decision: CommandDecision): Promise<boolean> => {
   ctx.signal.throwIfAborted();
   const input = command_input(ctx, command, cwd);

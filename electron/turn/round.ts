@@ -72,7 +72,6 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
   user_request: session.user_request,
   authorization: session.authorization,
   get delegated_task() { return session.delegated_task; },
-  permission: (check) => session.emit({ type: "tool_permission", call_id, check }),
   mode: session.mode,
   profile,
   settings: session.settings,

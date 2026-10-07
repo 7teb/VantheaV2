@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { OverseerVerdict, PermissionCheck } from "../../shared/approval.ts";
+import type { OverseerVerdict } from "../../shared/approval.ts";
 import type { PermissionMode } from "../../shared/chat.ts";
 import { error_text } from "../storage/coerce.ts";
 import type { SideModelCall } from "../tools/types.ts";
@@ -15,7 +15,7 @@ export type CommandInput = {
   cwd?: string; delegated_task?: string; sources?: CommandSources;
 };
 export type CommandDecision = {
-  action: "run" | "ask" | "block"; reason: string; source: PermissionCheck["source"];
+  action: "run" | "ask" | "block"; reason: string; source: "floor" | "full" | "grant" | "mode" | "protected" | "limit" | "incomplete" | "model" | "cache" | "allowlist" | "unavailable";
   context: GrantContext; verdict: OverseerVerdict | null; grant_prefix: string | null;
 };
 
@@ -28,7 +28,7 @@ export const command_context = (input: CommandInput, source_hash: string): Grant
   source_hash, command_hash: permission_hash(input.command.trim()),
 });
 
-const result = (input: CommandInput, context: GrantContext, action: CommandDecision["action"], source: PermissionCheck["source"],
+const result = (input: CommandInput, context: GrantContext, action: CommandDecision["action"], source: CommandDecision["source"],
   reason: string, verdict: OverseerVerdict | null = null): CommandDecision =>
   ({ action, source, reason, context, verdict, grant_prefix: action === "ask" ? suggest_prefix(input.command) : null });
 

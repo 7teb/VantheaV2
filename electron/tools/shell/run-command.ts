@@ -115,7 +115,7 @@ export const run_command_tool = define_tool<RunArgs>({
         return { ...failed(text), view: command_view(args.command, dir.relative, text) };
       }
       if (gate.kind === "denied") {
-        return { status: "denied", text: gate.text, view: null };
+        return { status: "denied", text: gate.text, view: command_view(args.command, dir.relative, gate.text) };
       }
       const reporter = progress_reporter(ctx);
       ctx.progress({ label: "", lines: 0, output_tail: null });
