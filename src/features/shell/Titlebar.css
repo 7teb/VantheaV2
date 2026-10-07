@@ -1,0 +1,82 @@
+.titlebar {
+  position: relative;
+  z-index: var(--z-sticky);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  height: var(--size-titlebar);
+  background: var(--surface-shell);
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+.titlebar button {
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-start {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-left: 10px;
+}
+
+.titlebar-title {
+  min-width: 0;
+  max-width: 560px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-medium);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titlebar-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  height: 100%;
+}
+
+.titlebar-docks {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.window-controls {
+  display: flex;
+  height: 100%;
+}
+
+.caption-button {
+  display: grid;
+  place-items: center;
+  width: var(--size-caption);
+  height: 100%;
+  color: var(--text-secondary);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.caption-button:hover {
+  background: var(--fill-hover);
+  color: var(--text-primary);
+}
+
+.caption-button:active {
+  background: var(--fill-active);
+}
+
+.caption-button.is-close:hover {
+  background: var(--surface-caption-close);
+  color: var(--text-on-caption-close);
+}
+
+.caption-button:focus-visible {
+  outline-offset: -2px;
+}

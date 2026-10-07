@@ -1,0 +1,18 @@
+export const browser = {
+  "browser.open": "Browser",
+  "browser.new_tab": "New tab",
+  "browser.tab_n": "Tab {n}",
+  "browser.add_tab": "New tab",
+  "browser.close_tab": "Close tab",
+  "browser.close": "Close browser",
+  "browser.fullscreen": "Fullscreen",
+  "browser.exit_fullscreen": "Exit fullscreen",
+  "browser.back": "Back",
+  "browser.forward": "Forward",
+  "browser.reload": "Reload",
+  "browser.url_placeholder": "Search or enter address",
+  "browser.load_failed": "Could not load this page",
+  "browser.crashed": "The page crashed",
+  "browser.tabs": "Browser tabs",
+  "browser.unavailable": "The browser could not start",
+};

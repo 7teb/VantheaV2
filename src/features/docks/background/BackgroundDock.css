@@ -1,0 +1,76 @@
+.bg-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bg-task {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px var(--space-2) 10px 10px;
+  border-radius: var(--radius-lg);
+  animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+}
+
+.bg-task + .bg-task {
+  box-shadow: inset 0 1px 0 var(--divider);
+}
+
+.bg-task-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 26px;
+}
+
+.bg-task-icon {
+  color: var(--text-tertiary);
+}
+
+.bg-task[data-status="running"] .bg-task-icon {
+  color: var(--text-primary);
+}
+
+.bg-task[data-status="failed"] .bg-task-icon {
+  color: var(--text-danger);
+}
+
+.bg-task-command {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bg-task-meta {
+  padding-left: 25px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.bg-task-details {
+  padding-left: 25px;
+}
+
+.bg-task-details .collapsible-header {
+  min-height: 24px;
+  font-size: var(--font-size-xs);
+}
+
+.bg-task-output {
+  max-height: 220px;
+  margin: 4px 0 2px;
+  padding: 10px 12px;
+  overflow: auto;
+  border-radius: var(--radius-lg);
+  color: var(--text-code);
+  font-size: var(--font-size-xs);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

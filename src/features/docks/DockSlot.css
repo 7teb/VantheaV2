@@ -1,0 +1,18 @@
+.dock-slot {
+  position: relative;
+  height: 100%;
+}
+
+.dock-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.dock-layer[data-shown="false"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.dock-host[data-resizing="true"] .dock-layer {
+  pointer-events: none;
+}

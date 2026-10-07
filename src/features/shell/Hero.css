@@ -1,0 +1,68 @@
+.hero-stage {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-7) 0 var(--space-10);
+}
+
+.hero-stage::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 50%;
+  width: min(620px, 100%);
+  aspect-ratio: 31 / 14;
+  transform: translate(-50%, -50%);
+  background: var(--gradient-hero-halo);
+  pointer-events: none;
+}
+
+.hero {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  max-width: 100%;
+  font-size: var(--font-size-hero);
+  font-weight: var(--weight-hero);
+  line-height: 0.95;
+  letter-spacing: var(--tracking-hero);
+  user-select: none;
+}
+
+.steel {
+  color: transparent;
+  background: var(--gradient-steel);
+  background-size: 360% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: contrast(1.15) drop-shadow(0 0 9px var(--steel-glow));
+  animation: steel-roll 10s var(--ease-linear) infinite;
+}
+
+.steel::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  background: var(--gradient-steel-sheen);
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  opacity: 0.32;
+  animation: steel-micro 8s var(--ease-linear) infinite;
+}
+
+@keyframes steel-roll {
+  to {
+    background-position: -360% 50%;
+  }
+}
+
+@keyframes steel-micro {
+  to {
+    background-position: -260% 50%;
+  }
+}

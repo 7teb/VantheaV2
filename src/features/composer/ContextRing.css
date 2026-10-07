@@ -1,0 +1,54 @@
+.context-popover {
+  display: grid;
+  gap: var(--space-3);
+  width: 260px;
+  padding: var(--space-4);
+}
+
+.context-popover-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.context-popover-usage {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.context-popover-bar {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--fill-track);
+  overflow: hidden;
+}
+
+.context-popover-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--fill-track-active);
+  transition: width var(--duration-slower) var(--ease-out);
+}
+
+.context-popover-bar span[data-level="high"] {
+  background: var(--text-danger);
+}
+
+.context-popover-note,
+.context-popover-result {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-ui);
+  color: var(--text-tertiary);
+}
+
+.context-popover-result {
+  color: var(--text-secondary);
+  animation: fade-up var(--duration-base) var(--ease-out) both;
+}
+
+.context-popover-result[data-status="failed"] {
+  color: var(--text-danger);
+}

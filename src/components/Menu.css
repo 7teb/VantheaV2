@@ -1,0 +1,100 @@
+@layer components {
+  .menu {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .menu-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .menu-section + .menu-section {
+    margin-top: 4px;
+    padding-top: 4px;
+    box-shadow: inset 0 1px 0 var(--divider);
+  }
+
+  .menu-section-label {
+    display: flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 10px;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: var(--size-menu-item);
+    padding: 0 8px 0 10px;
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    white-space: nowrap;
+    outline: none;
+    transition: background var(--duration-fast) var(--ease-out);
+  }
+
+  .menu-item:hover:not(:disabled),
+  .menu-item:focus-visible {
+    background: var(--fill-hover);
+    outline: none;
+  }
+
+  .menu-item:active:not(:disabled) {
+    background: var(--fill-active);
+  }
+
+  .menu-item:disabled {
+    color: var(--text-disabled);
+  }
+
+  .menu-item-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    color: var(--text-secondary);
+  }
+
+  .menu-item:hover .menu-item-icon,
+  .menu-item:focus-visible .menu-item-icon {
+    color: var(--text-primary);
+  }
+
+  .menu-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    text-align: left;
+  }
+
+  .menu-item-hint {
+    padding-left: var(--space-3);
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+  }
+
+  .menu-item-check {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    color: var(--text-primary);
+  }
+
+  .menu-item.is-danger,
+  .menu-item.is-danger .menu-item-icon {
+    color: var(--text-danger);
+  }
+
+  .menu-item.is-danger:hover,
+  .menu-item.is-danger:focus-visible {
+    background: var(--fill-danger);
+  }
+}

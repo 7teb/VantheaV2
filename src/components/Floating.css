@@ -1,0 +1,41 @@
+@layer components {
+  .floating {
+    position: fixed;
+    z-index: var(--z-floating);
+    max-width: calc(100vw - var(--space-4));
+    max-height: calc(100vh - var(--space-4));
+    overflow: auto;
+    padding: 6px;
+    border-radius: var(--radius-xl);
+    background: var(--surface-raise);
+    box-shadow: var(--shadow-float);
+    color: var(--text-primary);
+    outline: none;
+  }
+
+  .floating[data-placed="false"] {
+    visibility: hidden;
+  }
+
+  .floating[data-side="bottom"] {
+    --pop-shift: -6px;
+  }
+
+  .floating[data-side="top"] {
+    --pop-shift: 6px;
+  }
+
+  .floating[data-side="left"],
+  .floating[data-side="right"] {
+    --pop-shift: 0px;
+  }
+
+  .floating[data-state="open"] {
+    animation: pop-in var(--duration-base) var(--ease-out) backwards;
+  }
+
+  .floating[data-state="closed"] {
+    pointer-events: none;
+    animation: pop-out var(--duration-fast) var(--ease-in) forwards;
+  }
+}

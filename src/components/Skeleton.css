@@ -1,0 +1,42 @@
+@layer components {
+  .skeleton {
+    position: relative;
+    display: block;
+    flex: none;
+    overflow: hidden;
+    background: var(--surface-skeleton);
+  }
+
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-skeleton);
+    transform: translateX(-100%);
+    animation: skeleton-sweep 1.7s var(--ease-out) infinite;
+  }
+
+  .skeleton-lines {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .skeleton-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    width: 100%;
+  }
+
+  .skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px;
+  }
+
+  .skeleton-bubble {
+    margin-left: auto;
+  }
+}

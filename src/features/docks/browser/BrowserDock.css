@@ -1,0 +1,88 @@
+.browser-toolbar {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  padding: 0 var(--space-3) var(--space-2);
+}
+
+.browser-url.text-field {
+  flex: 1;
+  height: 30px;
+  margin-left: 6px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+}
+
+.browser-url .text-field-input {
+  font-size: var(--font-size-xs);
+}
+
+.browser-progress {
+  position: absolute;
+  right: var(--space-3);
+  bottom: 2px;
+  left: var(--space-3);
+  height: 2px;
+  border-radius: var(--radius-full);
+  background: var(--gradient-working);
+  background-size: 300% 100%;
+  opacity: 0.7;
+  animation: label-sweep 1.4s var(--ease-linear) infinite;
+  pointer-events: none;
+}
+
+.browser-views {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 0 var(--space-3) var(--space-3);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inset);
+}
+
+.browser-view {
+  position: absolute;
+  inset: 0;
+}
+
+.browser-view[data-active="false"] {
+  visibility: hidden;
+}
+
+.browser-guest {
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+}
+
+.browser-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.browser-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--space-6);
+  background: var(--surface-inset);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.browser-error small {
+  max-width: 440px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}

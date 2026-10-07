@@ -1,0 +1,166 @@
+.dock-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-top-left-radius: var(--radius-xl);
+  background: var(--surface-main);
+  box-shadow: var(--shadow-edge-left);
+}
+
+.dock-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  height: 44px;
+  padding: 0 6px 0 var(--space-4);
+}
+
+.dock-header-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+}
+
+.dock-header-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.dock-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.dock-title-meta {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+}
+
+.dock-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dock-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: var(--space-1) var(--space-3) var(--space-4);
+}
+
+.dock-empty {
+  padding: var(--space-8) var(--space-4);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.dock-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  margin-left: -8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dock-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.dock-tab {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  min-width: 72px;
+  max-width: 180px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.dock-tab:hover {
+  background: var(--fill-hover);
+  color: var(--text-primary);
+}
+
+.dock-tab[data-active="true"] {
+  background: var(--fill-active);
+  color: var(--text-primary);
+}
+
+.dock-tab-button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 4px 0 10px;
+  border-radius: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--weight-medium);
+}
+
+.dock-tab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dock-tab-busy {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--live);
+  animation: dock-pulse 1.4s var(--ease-in-out) infinite;
+}
+
+.dock-tab-close.icon-button-sm {
+  width: 20px;
+  height: 20px;
+  margin-right: 4px;
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.dock-tab:hover .dock-tab-close,
+.dock-tab[data-active="true"] .dock-tab-close,
+.dock-tab:focus-within .dock-tab-close {
+  opacity: 1;
+}
+
+@keyframes dock-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}

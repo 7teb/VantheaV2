@@ -1,0 +1,18 @@
+export const skills = {
+  "skills.title": "Skills",
+  "skills.folder": "Skills folder",
+  "skills.open": "Open folder",
+  "skills.reload": "Reload",
+  "skills.remove": "Remove",
+  "skills.remove_confirm": "Remove the skill \"{x}\"? The folder is deleted.",
+  "skills.source": "Source",
+  "skills.local": "local",
+  "skills.view": "Show SKILL.md",
+  "skills.hide": "Hide SKILL.md",
+  "skills.broken": "Not loadable: {x}",
+  "skills.files": "{n} extra files",
+  "skills.empty": "No skills installed",
+  "skills.enable": "Enable {x}",
+  "skills.folder_sub": "Every skill is a folder with a SKILL.md",
+  "skills.load_failed": "Skills could not be loaded",
+};

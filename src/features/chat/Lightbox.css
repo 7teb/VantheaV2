@@ -1,0 +1,20 @@
+@layer components {
+  .lightbox-backdrop {
+    padding: var(--space-10);
+  }
+
+  .lightbox-panel {
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    background: var(--surface-inset);
+  }
+
+  .lightbox-image {
+    max-width: calc(100vw - 2 * var(--space-10));
+    max-height: calc(100vh - 2 * var(--space-10));
+    object-fit: contain;
+    cursor: zoom-out;
+  }
+}

@@ -1,0 +1,118 @@
+@layer components {
+  .code-block {
+    margin: var(--space-1) 0 var(--space-4);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+
+  .code-block-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    height: 38px;
+    padding: 0 var(--space-2) 0 var(--space-4);
+  }
+
+  .code-block-language {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+  }
+
+  .code-block-pre {
+    margin: 0;
+    padding: 2px var(--space-4) var(--space-4);
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    line-height: 1.65;
+    color: var(--text-code);
+    tab-size: 4;
+  }
+
+  .code-block-pre code {
+    font-family: inherit;
+    white-space: pre;
+  }
+
+  .hljs-comment,
+  .hljs-quote {
+    color: var(--syntax-comment);
+    font-style: italic;
+  }
+
+  .hljs-keyword,
+  .hljs-selector-tag,
+  .hljs-name,
+  .hljs-section,
+  .hljs-doctag {
+    color: var(--syntax-keyword);
+  }
+
+  .hljs-string,
+  .hljs-regexp,
+  .hljs-char.escape_,
+  .hljs-selector-attr,
+  .hljs-selector-pseudo,
+  .hljs-link {
+    color: var(--syntax-string);
+  }
+
+  .hljs-number,
+  .hljs-literal,
+  .hljs-symbol,
+  .hljs-bullet {
+    color: var(--syntax-number);
+  }
+
+  .hljs-title,
+  .hljs-title.function_,
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-selector-id,
+  .hljs-selector-class {
+    color: var(--syntax-function);
+  }
+
+  .hljs-type,
+  .hljs-built_in,
+  .hljs-title.class_,
+  .hljs-title.class_.inherited__,
+  .hljs-variable.language_ {
+    color: var(--syntax-type);
+  }
+
+  .hljs-meta,
+  .hljs-meta .hljs-keyword,
+  .hljs-template-tag,
+  .hljs-template-variable {
+    color: var(--syntax-meta);
+  }
+
+  .hljs-meta .hljs-string {
+    color: var(--syntax-string);
+  }
+
+  .hljs-addition {
+    background: var(--diff-add-fill);
+    color: var(--diff-add-text);
+  }
+
+  .hljs-deletion {
+    background: var(--diff-remove-fill);
+    color: var(--diff-remove-text);
+  }
+
+  .hljs-emphasis {
+    font-style: italic;
+  }
+
+  .hljs-strong {
+    font-weight: var(--weight-semibold);
+  }
+}

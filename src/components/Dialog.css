@@ -1,0 +1,67 @@
+@layer components {
+  .dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-dialog);
+    display: grid;
+    place-items: center;
+    padding: var(--space-4);
+    background: var(--scrim);
+  }
+
+  .dialog-backdrop[data-state="open"] {
+    animation: fade-in var(--duration-base) var(--ease-out) backwards;
+  }
+
+  .dialog-backdrop[data-state="closed"] {
+    pointer-events: none;
+    animation: fade-out var(--duration-base) var(--ease-in) forwards;
+  }
+
+  .dialog-panel {
+    position: relative;
+    max-width: 100%;
+    max-height: 100%;
+    overflow: auto;
+    border-radius: var(--radius-2xl);
+    background: var(--surface-main);
+    box-shadow: var(--shadow-dialog);
+    outline: none;
+    --pop-shift: 8px;
+  }
+
+  .dialog-backdrop[data-state="open"] .dialog-panel {
+    animation: pop-in var(--duration-slow) var(--ease-out) backwards;
+  }
+
+  .dialog-backdrop[data-state="closed"] .dialog-panel {
+    animation: pop-out var(--duration-base) var(--ease-in) forwards;
+  }
+
+  .confirm-dialog {
+    width: min(400px, 100%);
+    padding: var(--space-6) var(--space-6) var(--space-5);
+  }
+
+  .confirm-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+  }
+
+  .confirm-detail {
+    margin-top: var(--space-2);
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin-top: var(--space-6);
+  }
+}

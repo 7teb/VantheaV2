@@ -1,0 +1,45 @@
+@layer components {
+  .segmented {
+    position: relative;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    padding: 3px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-inset);
+  }
+
+  .segmented::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / var(--count));
+    border-radius: 7px;
+    background: var(--fill-active);
+    box-shadow: var(--shadow-segment);
+    transform: translateX(calc(100% * var(--index)));
+    transition: transform var(--duration-slow) var(--ease-out);
+    pointer-events: none;
+  }
+
+  .segment {
+    position: relative;
+    min-width: 0;
+    height: 26px;
+    padding: 0 12px;
+    border-radius: 7px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    white-space: nowrap;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .segment:hover,
+  .segment[aria-checked="true"] {
+    color: var(--text-primary);
+  }
+}

@@ -1,0 +1,51 @@
+@layer components {
+  .todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .todo-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    min-height: 26px;
+    padding: 3px 0;
+    font-size: var(--font-size-sm);
+    line-height: 20px;
+    color: var(--text-secondary);
+  }
+
+  .todo-mark {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 16px;
+    height: 20px;
+    color: var(--text-tertiary);
+  }
+
+  .todo-item[data-status="in_progress"] {
+    color: var(--text-primary);
+  }
+
+  .todo-item[data-status="in_progress"] .todo-mark {
+    color: var(--text-primary);
+  }
+
+  .todo-item[data-status="done"] .todo-text {
+    color: var(--text-tertiary);
+    text-decoration: line-through;
+    text-decoration-color: var(--text-quaternary);
+  }
+
+  .todo-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .todo-empty {
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+  }
+}

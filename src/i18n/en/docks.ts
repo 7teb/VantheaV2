@@ -1,0 +1,18 @@
+export const docks = {
+  "docks.inspector_title": "Inspector",
+  "docks.inspector_no_file": "No file selected",
+  "docks.inspector_preview_hint": "Select a file to preview its first 500 lines.",
+  "docks.artifacts_title": "Artifacts",
+  "docks.artifacts_sub": "Generated media",
+  "docks.artifacts_empty": "No generated media in this project yet",
+  "docks.artifacts_pin": "Pin",
+  "docks.artifacts_unpin": "Unpin",
+  "docks.title": "Panels",
+  "docks.open_root": "Open the project folder",
+  "docks.artifacts_close": "Close artifacts",
+  "docks.artifacts_export": "Export",
+  "docks.artifacts_failed": "Artifacts could not be loaded",
+  "docks.artifacts_rename": "Rename",
+  "docks.artifacts_untitled": "Untitled image",
+  "docks.artifacts_view": "Open {x}",
+};

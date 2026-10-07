@@ -1,0 +1,22 @@
+@layer components {
+  .agent-note {
+    align-self: stretch;
+    margin: 2px 0 14px;
+  }
+
+  .agent-note-body {
+    margin: 6px 0 var(--space-1) 7px;
+    padding: 2px 0 2px var(--space-4);
+    box-shadow: inset 2px 0 0 var(--rail);
+  }
+
+  .markdown.agent-note-markdown {
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .markdown.agent-note-markdown :is(h1, h2, h3, h4, h5, h6) {
+    font-size: var(--font-size-md);
+  }
+}

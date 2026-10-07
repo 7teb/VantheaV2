@@ -1,0 +1,16 @@
+export const plan = {
+  "plan.title": "Plan",
+  "plan.key_changes": "Key changes",
+  "plan.files": "Files",
+  "plan.test_plan": "Test plan",
+  "plan.assumptions": "Assumptions",
+  "plan.implementing": "Implementing plan…",
+  "plan.accepted": "Accepted",
+  "plan.rejected": "Plan dismissed. Tell me what to change.",
+  "plan.question": "Implement this plan?",
+  "plan.no": "No",
+  "plan.yes": "Yes, implement",
+  "plan.blocked_title": "Blocked by plan mode ({tool})",
+  "plan.blocked_with_plan": "Plan mode is read-only, so nothing was changed. Accept the plan above to start the work, or switch plan mode off in the + menu.",
+  "plan.blocked_no_plan": "Plan mode is read-only, so nothing was changed. Let it present a plan you can accept, or switch plan mode off in the + menu.",
+};

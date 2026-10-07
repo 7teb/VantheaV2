@@ -1,0 +1,57 @@
+@layer components {
+  .select {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    height: var(--size-control);
+    padding: 0 8px 0 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    white-space: nowrap;
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .select-value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .select-control {
+    background: var(--surface-button);
+    box-shadow: var(--shadow-button);
+    color: var(--text-primary);
+  }
+
+  .select-control:hover:not(:disabled),
+  .select-control.is-open {
+    background: var(--surface-button-hover);
+  }
+
+  .select-ghost {
+    color: var(--text-secondary);
+  }
+
+  .select-ghost:hover:not(:disabled),
+  .select-ghost.is-open {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .select:disabled {
+    color: var(--text-disabled);
+  }
+
+  .select-chevron {
+    color: var(--text-tertiary);
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  .select.is-open .select-chevron {
+    transform: rotate(180deg);
+  }
+}

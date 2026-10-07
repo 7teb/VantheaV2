@@ -1,0 +1,38 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--surface-shell);
+}
+
+.shell-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar-scrim {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .sidebar-scrim {
+    position: fixed;
+    top: var(--size-titlebar);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: calc(var(--z-sidebar-overlay) - 1);
+    display: block;
+    background: var(--scrim);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-slower) var(--ease-out);
+  }
+
+  .sidebar-scrim[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

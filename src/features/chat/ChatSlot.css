@@ -1,0 +1,70 @@
+@layer components {
+  .chat-slot {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .chat-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable both-edges;
+  }
+
+  .chat-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    width: 100%;
+    max-width: var(--size-content);
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-6) var(--space-10);
+  }
+
+  .chat-skeleton-answer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .chat-slot-failed {
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+  }
+
+  .jump-latest {
+    position: absolute;
+    left: 50%;
+    bottom: var(--space-3);
+    z-index: var(--z-sticky);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--surface-raise);
+    box-shadow: var(--shadow-float);
+    font-size: var(--font-size-xs);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+    translate: -50% 0;
+    animation: fade-up var(--duration-base) var(--ease-out) backwards;
+    transition:
+      color var(--duration-fast) var(--ease-out),
+      background var(--duration-fast) var(--ease-out);
+  }
+
+  .jump-latest:hover {
+    background: var(--surface-raise-2);
+    color: var(--text-primary);
+  }
+}

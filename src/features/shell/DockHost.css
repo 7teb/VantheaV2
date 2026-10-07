@@ -1,0 +1,70 @@
+.dock-host {
+  --dock-width: var(--dock-target);
+  position: relative;
+  flex: none;
+  width: var(--dock-width);
+  max-width: 70vw;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface-shell);
+  transition:
+    width var(--duration-slower) var(--ease-out),
+    visibility 0s;
+}
+
+.dock-host[data-state="closed"] {
+  width: 0;
+  visibility: hidden;
+  transition:
+    width var(--duration-slower) var(--ease-out),
+    visibility 0s linear var(--duration-slower);
+}
+
+.dock-host[data-resizing="true"] {
+  transition: none;
+  user-select: none;
+}
+
+.dock-inner {
+  width: var(--dock-width);
+  max-width: 70vw;
+  height: 100%;
+  margin-left: auto;
+  padding-left: 6px;
+}
+
+.dock-resize {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.dock-resize::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 2px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.dock-resize:hover::after,
+.dock-host[data-resizing="true"] .dock-resize::after {
+  background: var(--rail);
+}
+
+.dock-resize:focus-visible {
+  outline: none;
+}
+
+.dock-resize:focus-visible::after {
+  background: var(--focus-ring);
+}

@@ -1,0 +1,17 @@
+export const status = {
+  "status.reverted": "Reverted changes",
+  "status.ready": "Ready",
+  "status.indexing": "Indexing project",
+  "status.approved": "Approved, working…",
+  "status.denied": "Denied",
+  "status.failed": "Request failed",
+  "status.retrying": "Answer interrupted, attempt {n}/{total}",
+  "status.interrupted": "Answer interrupted",
+  "status.saved": "Settings saved",
+  "status.no_vision": "Selected model does not support image parsing",
+  "status.select_attachment": "Pick an image or a text file",
+  "status.file_too_large": "{name} is larger than 2 MB",
+  "status.max_images": "You can attach up to {n} files",
+  "status.analyzing_image": "Analyzing image...",
+  "status.stopped": "Stopped",
+};

@@ -1,0 +1,16 @@
+export const projects = {
+  "projects.choose": "Choose a project",
+  "projects.search": "Search project",
+  "projects.none": "No projects",
+  "projects.options": "Project options",
+  "projects.delete": "Delete project",
+  "projects.delete_confirm": "Really delete?",
+  "projects.delete_confirm_chats": "Really delete, with {n} chats?",
+  "projects.add": "Add project",
+  "projects.create": "Create a project",
+  "projects.add_existing": "Add existing folder",
+  "projects.without": "Work without project",
+  "projects.rename_label": "Project name",
+  "projects.delete_title": "Delete this project?",
+  "projects.new_chat": "New chat in this project",
+};

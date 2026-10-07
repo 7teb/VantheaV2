@@ -1,0 +1,210 @@
+@layer tokens, base, motion, components;
+
+@layer tokens {
+  :root {
+    color-scheme: dark;
+
+    --surface-shell: #060606;
+    --surface-main: #0a0a0a;
+    --surface-inset: #030303;
+    --surface-raise: #101010;
+    --surface-raise-2: #141414;
+    --surface-button: #161616;
+    --surface-button-hover: #1d1d1d;
+    --surface-skeleton: #101010;
+    --surface-primary: #ececec;
+    --surface-primary-hover: #ffffff;
+    --surface-primary-disabled: #181818;
+    --surface-toggle-off: #1c1c1c;
+    --surface-toggle-on: #e6e6e6;
+    --surface-caption-close: #c42b1c;
+
+    --fill-hover: rgba(255, 255, 255, 0.045);
+    --fill-active: rgba(255, 255, 255, 0.075);
+    --fill-selected: rgba(255, 255, 255, 0.09);
+    --fill-danger: rgba(240, 101, 106, 0.1);
+    --fill-track: rgba(255, 255, 255, 0.08);
+    --fill-track-active: rgba(255, 255, 255, 0.62);
+
+    --text-primary: #ececec;
+    --text-secondary: #9a9a9a;
+    --text-muted: #7c7c7c;
+    --text-tertiary: #5c5c5c;
+    --text-quaternary: #3a3a3a;
+    --text-code: #d6d6d6;
+    --text-disabled: #3e3e3e;
+    --text-danger: #f0656a;
+    --text-on-primary: #0a0a0a;
+    --text-on-caption-close: #ffffff;
+
+    --thumb: #ffffff;
+    --thumb-off: #6a6a6a;
+    --hairline: rgba(255, 255, 255, 0.035);
+    --divider: rgba(255, 255, 255, 0.05);
+    --rail: rgba(255, 255, 255, 0.09);
+    --highlight: rgba(255, 255, 255, 0.06);
+    --glow: rgba(255, 255, 255, 0.045);
+    --selection: rgba(255, 255, 255, 0.18);
+    --focus-ring: rgba(255, 255, 255, 0.28);
+    --scrollbar: #1f1f1f;
+    --scrollbar-hover: #2b2b2b;
+    --scrim: rgba(0, 0, 0, 0.62);
+    --mask: #000000;
+    --live: #e6e6e6;
+
+    --terminal-black: #1c1c1c;
+    --terminal-red: #d0686f;
+    --terminal-green: #8fb573;
+    --terminal-yellow: #d2b36b;
+    --terminal-blue: #6f9fd8;
+    --terminal-magenta: #b98bd6;
+    --terminal-cyan: #6bb5b5;
+    --terminal-white: #cfcfcf;
+    --terminal-bright-black: #5c5c5c;
+    --terminal-bright-red: #e3858b;
+    --terminal-bright-green: #a6c98d;
+    --terminal-bright-yellow: #e2c785;
+    --terminal-bright-blue: #8cb5e6;
+    --terminal-bright-magenta: #cba3e2;
+    --terminal-bright-cyan: #88c9c9;
+    --terminal-bright-white: #f2f2f2;
+
+    --syntax-comment: #62666d;
+    --syntax-keyword: #b3a3c8;
+    --syntax-string: #a3b78f;
+    --syntax-number: #cdb08a;
+    --syntax-function: #93acc6;
+    --syntax-type: #8db7b1;
+    --syntax-meta: #8c8f96;
+    --diff-add-fill: rgba(143, 181, 115, 0.085);
+    --diff-add-text: #b2c9a0;
+    --diff-remove-fill: rgba(208, 104, 111, 0.09);
+    --diff-remove-text: #d9989c;
+
+    --shadow-inset:
+      inset 0 2px 5px rgba(0, 0, 0, 0.75),
+      inset 0 1px 0 rgba(0, 0, 0, 0.95),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+      0 1px 0 rgba(255, 255, 255, 0.035);
+    --shadow-inset-strong:
+      inset 0 3px 8px rgba(0, 0, 0, 0.85),
+      inset 0 1px 0 rgba(0, 0, 0, 1),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+      0 1px 0 rgba(255, 255, 255, 0.045);
+    --shadow-float:
+      0 24px 64px rgba(0, 0, 0, 0.8),
+      0 6px 18px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+    --shadow-dialog:
+      0 40px 100px rgba(0, 0, 0, 0.85),
+      0 10px 30px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+    --shadow-button:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 1px 2px rgba(0, 0, 0, 0.6);
+    --shadow-thumb: 0 1px 3px rgba(0, 0, 0, 0.6);
+    --shadow-segment:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 1px 2px rgba(0, 0, 0, 0.6);
+    --shadow-edge-left: inset 1px 0 0 rgba(255, 255, 255, 0.035);
+    --shadow-overlay: 24px 0 64px rgba(0, 0, 0, 0.6);
+
+    --gradient-steel: linear-gradient(
+      112deg,
+      #090909 0%,
+      #444444 17%,
+      #aaaaaa 28%,
+      #ffffff 38%,
+      #747474 47%,
+      #1a1a1a 60%,
+      #d9d9d9 72%,
+      #ffffff 80%,
+      #333333 91%,
+      #080808 100%
+    );
+    --gradient-steel-sheen: repeating-linear-gradient(112deg, transparent 0 12%, #ffffff 13% 14%, transparent 15% 30%);
+    --steel-glow: #333333;
+    --gradient-hero-halo: radial-gradient(closest-side, rgba(255, 255, 255, 0.045), transparent);
+    --gradient-working: linear-gradient(90deg, #4a4a4a 0%, #4a4a4a 32%, #f2f2f2 50%, #4a4a4a 68%, #4a4a4a 100%);
+    --gradient-skeleton: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.025) 35%,
+      rgba(255, 255, 255, 0.055) 50%,
+      rgba(255, 255, 255, 0.025) 65%,
+      transparent 100%
+    );
+    --gradient-dock-fade: linear-gradient(to bottom, rgba(10, 10, 10, 0), #0a0a0a 70%);
+
+    --font-ui: "Inter Variable", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+    --font-size-label: 11px;
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-md: 14px;
+    --font-size-lg: 15px;
+    --font-size-xl: 17px;
+    --font-size-2xl: 20px;
+    --font-size-hero: 72px;
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-hero: 800;
+    --leading-tight: 1.25;
+    --leading-ui: 1.45;
+    --leading-body: 1.6;
+    --tracking-label: 0.14em;
+    --tracking-hero: -0.05em;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 9px;
+    --radius-lg: 10px;
+    --radius-xl: 14px;
+    --radius-2xl: 20px;
+    --radius-full: 999px;
+
+    --size-control: 32px;
+    --size-row: 34px;
+    --size-menu-item: 36px;
+    --size-field: 36px;
+    --size-primary: 34px;
+    --size-titlebar: 40px;
+    --size-caption: 46px;
+    --size-sidebar: 272px;
+    --size-content: 768px;
+
+    --z-base: 0;
+    --z-sticky: 5;
+    --z-dock: 10;
+    --z-sidebar-overlay: 30;
+    --z-settings: 40;
+    --z-dialog: 60;
+    --z-floating: 70;
+    --z-tooltip: 80;
+
+    --duration-instant: 90ms;
+    --duration-fast: 120ms;
+    --duration-base: 180ms;
+    --duration-slow: 240ms;
+    --duration-slower: 320ms;
+    --duration-enter: 350ms;
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-linear: linear;
+  }
+}

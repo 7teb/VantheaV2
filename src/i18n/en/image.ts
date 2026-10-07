@@ -1,0 +1,17 @@
+export const image = {
+  "image.generating": "Generating image",
+  "image.editing": "Editing image",
+  "image.done": "Generated with {model}",
+  "image.failed": "Image generation failed",
+  "image.enable": "Enable image generation",
+  "image.enable_sub": "The model can generate and edit images with a dedicated image model when you ask for it",
+  "image.model": "Image model",
+  "image.model_sub": "Runs over your OpenRouter key",
+  "image.quality": "Quality",
+  "image.download": "Download image",
+  "image.q_auto": "Auto",
+  "image.q_low": "Low",
+  "image.q_medium": "Medium",
+  "image.q_high": "High",
+  "image.catalog_failed": "Image models could not be loaded",
+};

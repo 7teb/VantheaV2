@@ -1,0 +1,168 @@
+@layer components {
+  .composer-slot {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .composer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: var(--space-3) var(--space-3) 10px var(--space-4);
+    border-radius: 22px;
+  }
+
+  .composer.is-dragging {
+    box-shadow: var(--shadow-inset-strong);
+  }
+
+  .composer-input {
+    display: block;
+    width: 100%;
+    max-height: 240px;
+    padding: 6px 4px 4px 2px;
+    border: 0;
+    outline: 0;
+    resize: none;
+    background: transparent;
+    font-size: var(--font-size-lg);
+    line-height: 1.5;
+    color: var(--text-primary);
+  }
+
+  .composer[data-placement="hero"] .composer-input {
+    min-height: 52px;
+  }
+
+  .composer-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .composer-feedback {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    padding: 0 2px;
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+  }
+
+  .composer-error {
+    max-width: 100%;
+    color: var(--text-danger);
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  .composer-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    margin-left: -8px;
+  }
+
+  .composer-spacer {
+    flex: 1;
+    min-width: var(--space-2);
+  }
+
+  .composer-bar .button-primary {
+    margin-left: var(--space-2);
+  }
+
+  .composer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    height: var(--size-control);
+    padding: 0 var(--space-2) 0 10px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .composer-chip svg {
+    flex: none;
+    color: var(--text-tertiary);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .composer-chip:hover,
+  .composer-chip[data-open="true"] {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .composer-chip:hover svg,
+  .composer-chip[data-open="true"] svg {
+    color: var(--text-primary);
+  }
+
+  .composer-chip[data-active="true"] {
+    background: var(--fill-selected);
+    color: var(--text-primary);
+  }
+
+  .composer-chip[data-active="true"] svg {
+    color: var(--text-primary);
+  }
+
+  .composer-chip[data-mode="full"] svg {
+    color: var(--text-danger);
+  }
+
+  .composer-chip-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .composer-chip-hint {
+    color: var(--text-tertiary);
+  }
+
+  .composer-chip-chevron {
+    margin-left: -2px;
+  }
+
+  .composer-note {
+    padding: 0 var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+  }
+
+  .composer-menu {
+    max-height: min(520px, calc(100vh - var(--space-12)));
+  }
+
+  .composer-drop {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: inherit;
+    background: var(--scrim);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+    pointer-events: none;
+    animation: fade-in var(--duration-fast) var(--ease-out) backwards;
+  }
+
+  @media (max-width: 620px) {
+    .composer-chip-label,
+    .composer-chip-hint {
+      display: none;
+    }
+  }
+}

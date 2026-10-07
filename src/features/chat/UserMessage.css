@@ -1,0 +1,169 @@
+@layer components {
+  .user-message {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+    align-self: flex-end;
+    max-width: 78%;
+    min-width: 0;
+  }
+
+  .user-bubble {
+    max-width: 100%;
+    padding: 11px var(--space-4);
+    border-radius: var(--radius-2xl);
+    font-size: var(--font-size-lg);
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .user-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
+  .user-attachment-image {
+    width: 132px;
+    height: 132px;
+  }
+
+  .user-attachment-file {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    max-width: 260px;
+    height: 44px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+  }
+
+  .user-attachment-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+
+  .user-attachment-size {
+    flex: none;
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+  }
+
+  .user-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: min(560px, 100%);
+    padding: var(--space-3) var(--space-3) var(--space-2) var(--space-4);
+    border-radius: var(--radius-2xl);
+  }
+
+  .user-editor textarea {
+    display: block;
+    width: 100%;
+    max-height: 320px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    resize: none;
+    background: transparent;
+    font-size: var(--font-size-lg);
+    line-height: 1.55;
+    color: var(--text-primary);
+  }
+
+  .user-editor-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-1);
+  }
+
+  .message-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .user-message:hover .message-actions,
+  .assistant-message:hover .message-actions,
+  .assistant-message[data-last="true"] .message-actions,
+  .message-actions:focus-within {
+    opacity: 1;
+  }
+
+  .message-action {
+    width: 30px;
+    height: 30px;
+  }
+
+  .inline-error {
+    font-size: var(--font-size-sm);
+    color: var(--text-danger);
+  }
+
+  .origin-note {
+    display: flex;
+    flex-direction: column;
+    align-self: center;
+    align-items: center;
+    max-width: 100%;
+  }
+
+  .origin-note-head {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-tertiary);
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .origin-note-head:hover:not(:disabled) {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .origin-note-head:disabled {
+    cursor: default;
+  }
+
+  .origin-note-chevron {
+    transition: transform var(--duration-slow) var(--ease-out);
+  }
+
+  .origin-note[data-open="true"] .origin-note-chevron {
+    transform: rotate(90deg);
+  }
+
+  .origin-note-text {
+    max-width: var(--size-content);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  @media (hover: none) {
+    .message-actions {
+      opacity: 1;
+    }
+  }
+}

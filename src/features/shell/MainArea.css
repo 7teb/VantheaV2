@@ -1,0 +1,51 @@
+.main-area {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-top-left-radius: var(--radius-xl);
+  background: var(--surface-main);
+  box-shadow: var(--shadow-edge-left);
+}
+
+.content-column {
+  width: 100%;
+  max-width: var(--size-content);
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.empty-state {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+  padding-bottom: 12vh;
+  overflow-y: auto;
+  animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+}
+
+.composer-dock {
+  position: relative;
+  flex: none;
+  padding: 0 0 var(--space-5);
+  pointer-events: none;
+}
+
+.composer-dock::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: var(--space-8);
+  background: var(--gradient-dock-fade);
+  pointer-events: none;
+}
+
+.composer-dock .content-column {
+  pointer-events: auto;
+}
