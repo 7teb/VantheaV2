@@ -13,7 +13,7 @@ const variable_use = /\$([a-z_][\w:]*)/gi;
 
 const joined_literal = (text: string) => text.replace(/["']\s*\+\s*["']/g, "").replace(/["']/g, "");
 
-const deletes = (statement: string) => delete_verb.test(statement) || dotnet_delete.test(statement);
+export const deletes = (statement: string) => delete_verb.test(statement) || dotnet_delete.test(statement);
 
 const touches_system_path = (statement: string) => system_path.test(statement) || system_path.test(joined_literal(statement));
 

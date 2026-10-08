@@ -1,6 +1,6 @@
-import { createReadStream } from "node:fs";
 import readline from "node:readline";
 import type { OutlineSymbol } from "../../shared/tool-view.ts";
+import { text_stream } from "../storage/text-codec.ts";
 
 type Rule = { kind: string; pattern: RegExp };
 
@@ -63,7 +63,7 @@ export const outline_line = (line: string): { kind: string; name: string } | nul
 };
 
 export const file_outline = async (file: string): Promise<{ symbols: OutlineSymbol[]; capped: boolean }> => {
-  const stream = createReadStream(file, { encoding: "utf8" });
+  const { stream } = await text_stream(file);
   const lines = readline.createInterface({ input: stream, crlfDelay: Infinity });
   const symbols: OutlineSymbol[] = [];
   const open: number[] = [];

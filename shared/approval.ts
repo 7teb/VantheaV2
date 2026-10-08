@@ -12,14 +12,31 @@ export type ApprovalRequest =
       background: boolean;
       overseer: OverseerVerdict | null;
       grant_prefix: string | null;
+      source_hash?: string;
     }
   | { kind: "write"; path: string; created: boolean; added: number; removed: number; diff: DiffLine[] }
-  | { kind: "mcp"; server: string; tool: string; tier: McpTier; args_preview: string; scope: string | null }
+  | { kind: "mcp"; server: string; tool: string; tier: McpTier; args_preview: string; scope: string | null; reason?: string }
   | { kind: "mcp_server"; name: string; command: string; args: string[]; cwd: string; env: Record<string, string>; replaces: boolean }
   | { kind: "skill_install"; name: string; description: string; files: string[]; source: string; replaces: string | null; content: string }
   | { kind: "memory"; action: "remember" | "forget"; text: string }
   | { kind: "browser_vision"; url: string };
 
 export type GrantScope = "once" | "prefix" | "chat" | "session";
+
+export type HumanDecision = {
+  id: string;
+  at: number;
+  actor: string;
+  tool: string;
+  subject: string;
+  cwd: string;
+  approved: boolean;
+  grant: GrantScope;
+  feedback: string;
+  reason: string;
+  grant_prefix?: string;
+  source_hash?: string;
+  context_hash?: string;
+};
 
 export type ApprovalDecision = { approved: boolean; grant: GrantScope; feedback: string };

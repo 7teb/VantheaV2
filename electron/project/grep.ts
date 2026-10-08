@@ -1,9 +1,9 @@
-import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import readline from "node:readline";
 import type { GrepMatch } from "../../shared/tool-view.ts";
 import { error_text } from "../storage/coerce.ts";
+import { decode_text, looks_binary, text_stream } from "../storage/text-codec.ts";
 import { walk_project } from "./index.ts";
 import { RegexWorkerError, start_regex_search } from "./regex-search.ts";
 import { is_secret_path, resolve_inside } from "./scope.ts";
@@ -81,15 +81,15 @@ const collect = async (matcher: Matcher, lines: string[], first_line: number, fi
 };
 
 const scan_small = async (absolute: string, file: string, matcher: Matcher, matches: GrepMatch[], limit: number) => {
-  const content = await fs.readFile(absolute, "utf8");
-  if (content.slice(0, 8192).includes("\u0000")) {
+  const { text } = decode_text(await fs.readFile(absolute));
+  if (looks_binary(text)) {
     return;
   }
-  await collect(matcher, content.split(/\r?\n/), 1, file, matches, limit);
+  await collect(matcher, text.split(/\r?\n/), 1, file, matches, limit);
 };
 
 const scan_stream = async (absolute: string, file: string, matcher: Matcher, matches: GrepMatch[], limit: number) => {
-  const stream = createReadStream(absolute, { encoding: "utf8" });
+  const { stream } = await text_stream(absolute);
   const lines = readline.createInterface({ input: stream, crlfDelay: Infinity });
   let batch: string[] = [];
   let first_line = 1;

@@ -149,6 +149,14 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
           (step) => ({ ...step, status: "awaiting_approval", approval: event.request }),
         ),
       };
+    case "tool_decision":
+      return {
+        ...state,
+        steps: update_tool(state.steps, (step) => step.call_id === event.call_id, (step) => ({
+          ...step,
+          decisions: [...(step.decisions ?? []).filter((entry) => entry.id !== event.decision.id), event.decision],
+        })),
+      };
     case "tool_end":
       return {
         ...state,
@@ -179,6 +187,7 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
             text: event.text,
             ...(event.steer_id ? { steer_id: event.steer_id } : {}),
             ...(event.attachments?.length ? { attachments: event.attachments } : {}),
+            ...(event.assistant_reference ? { assistant_reference: event.assistant_reference } : {}),
           },
         ],
       };

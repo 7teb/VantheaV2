@@ -1,4 +1,4 @@
-import type { ApprovalDecision, ApprovalRequest } from "../../shared/approval.ts";
+import type { ApprovalDecision, ApprovalRequest, HumanDecision } from "../../shared/approval.ts";
 import type { PermissionMode, ToolProgress } from "../../shared/chat.ts";
 import type { SideModelRole } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
@@ -28,7 +28,7 @@ export type ToolContext = {
   authorization?: () => string;
   delegated_task?: string;
   execution_cwd?: string;
-  execution_check?: () => Promise<boolean>;
+  human_decisions?: () => Promise<HumanDecision[]>;
   mode: PermissionMode;
   profile: ToolProfile;
   settings: Settings;

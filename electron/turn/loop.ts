@@ -55,8 +55,8 @@ const wrap_up_reason = (session: TurnSession, round: number, rounds: number, api
 
 const inject_steers = async (session: TurnSession, round: number, api_messages: ApiMessage[]): Promise<boolean> => {
   const steers = session.take_steers();
-  for (const { id, text, attachments } of steers) {
-    session.emit({ type: "steer", round, text, steer_id: id, ...(attachments.length ? { attachments } : {}) });
+  for (const { id, text, attachments, assistant_reference } of steers) {
+    session.emit({ type: "steer", round, text, steer_id: id, ...(attachments.length ? { attachments } : {}), ...(assistant_reference ? { assistant_reference } : {}) });
     api_messages.push({ role: "user", content: await user_content(`${steer_prefix}\n\n${text}`, attachments, session.model) });
   }
   return steers.length > 0;

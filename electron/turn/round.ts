@@ -1,5 +1,7 @@
 import type { ToolProgress } from "../../shared/chat.ts";
 import type { ToolEndStatus } from "../../shared/events.ts";
+import { permission_hash } from "../permissions/context.ts";
+import { human_decision } from "../permissions/decisions.ts";
 import { error_text } from "../storage/coerce.ts";
 import { cap_text } from "../context/estimate.ts";
 import type { ToolView } from "../../shared/tool-view.ts";
@@ -71,6 +73,7 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
   project_root: session.project_root,
   user_request: session.user_request,
   authorization: session.authorization,
+  human_decisions: session.human_decisions,
   get delegated_task() { return session.delegated_task; },
   mode: session.mode,
   profile,
@@ -81,6 +84,9 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
     session.emit({ type: "tool_approval", call_id, request });
     const decision = await session.wait_decision(call_id);
     session.signal.throwIfAborted();
+    const record = human_decision(request, decision, session.actor ?? "main", permission_hash(session.authorization?.() ?? session.user_request));
+    session.emit({ type: "tool_decision", call_id, decision: record });
+    await session.mirror_decision?.(record);
     session.emit({ type: "tool_start", call_id });
     return decision;
   },

@@ -1,4 +1,4 @@
-import { createReadStream } from "node:fs";
+import { looks_binary, text_stream } from "../storage/text-codec.ts";
 
 export type TextWindow = {
   start_line: number;
@@ -43,9 +43,9 @@ export const read_text_window = async (file: string, start_line: number, limit: 
     cut = false;
   };
 
-  const stream = createReadStream(file, { encoding: "utf8", highWaterMark: 64 * 1024 });
+  const { stream } = await text_stream(file);
   for await (const chunk of stream as AsyncIterable<string>) {
-    if (first_chunk && chunk.slice(0, 8192).includes("\u0000")) {
+    if (first_chunk && looks_binary(chunk)) {
       stream.destroy();
       return { start_line: start, end_line: start - 1, total_lines: 0, content: "", truncated: false, binary: true };
     }

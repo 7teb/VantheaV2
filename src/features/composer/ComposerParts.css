@@ -190,9 +190,10 @@
   }
 
   .todos-panel-count {
-    font-size: var(--font-size-xs);
-    font-weight: var(--weight-regular);
-    color: var(--text-tertiary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-detail);
   }
 
   .todos-panel-chevron {

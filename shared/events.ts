@@ -1,6 +1,7 @@
-import type { ApprovalRequest } from "./approval.ts";
+import type { ApprovalRequest, HumanDecision } from "./approval.ts";
 import type {
   AssistantMessage,
+  AssistantReference,
   Attachment,
   CompactionStep,
   ContextUsage,
@@ -25,6 +26,7 @@ export type StreamEventBody =
   | { type: "tool_start"; call_id: string }
   | { type: "tool_progress"; call_id: string; progress: ToolProgress }
   | { type: "tool_approval"; call_id: string; request: ApprovalRequest }
+  | { type: "tool_decision"; call_id: string; decision: HumanDecision }
   | {
       type: "tool_end";
       call_id: string;
@@ -33,7 +35,7 @@ export type StreamEventBody =
       error: string | null;
       result_text: string;
     }
-  | { type: "steer"; round: number; text: string; steer_id?: string; attachments?: Attachment[] }
+  | { type: "steer"; round: number; text: string; steer_id?: string; attachments?: Attachment[]; assistant_reference?: AssistantReference }
   | { type: "notice"; round: number; notice: NoticeKind; text: string }
   | { type: "compaction"; round: number; status: CompactionStep["status"]; summary: string }
   | { type: "context"; usage: ContextUsage }

@@ -13,7 +13,6 @@ import { memory_prompt_section } from "../memory/prompt.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { set_key_source } from "../model/key.ts";
 import { stream_round } from "../model/stream.ts";
-import { clear_chat_grants } from "../permissions/grants.ts";
 import { mcp_command_gate } from "../permissions/mcp-gate.ts";
 import { check_project_folders } from "../project/follow.ts";
 import { init_snapshots } from "../project/snapshots.ts";
@@ -66,7 +65,6 @@ const wire_hooks = () => {
     stop_turn(chat_id);
     clear_chat_agents(chat_id).catch((error) => console.error(`[agents] removing the agents of chat ${chat_id} failed:`, error));
     drop_pending_events(chat_id);
-    clear_chat_grants(chat_id);
     clear_authorization(chat_id);
     clear_mcp_chat(chat_id);
     clear_browser_chat(chat_id);

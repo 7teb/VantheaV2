@@ -41,6 +41,7 @@ export const resolve_agent = (ctx: ToolContext, id: string): AgentRecord => {
 export const run_context = (ctx: ToolContext, prompt: string): RunContext => ({
   chat_id: ctx.chat_id,
   parent_message_id: ctx.turn_id,
+  parent_call_id: ctx.call_id,
   project_root: ctx.project_root,
   user_request: ctx.user_request,
   authorization: ctx.authorization ?? (() => ctx.user_request),

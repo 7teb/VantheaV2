@@ -1,4 +1,4 @@
-import type { ApprovalRequest } from "./approval.ts";
+import type { ApprovalRequest, HumanDecision } from "./approval.ts";
 import type { ToolView } from "./tool-view.ts";
 
 export type PermissionMode = "ask" | "auto" | "full";
@@ -55,6 +55,7 @@ export type ToolStep = {
   status: ToolStatus;
   progress: ToolProgress | null;
   approval: ApprovalRequest | null;
+  decisions?: HumanDecision[];
   view: ToolView | null;
   error: string | null;
   result_text: string;
@@ -62,9 +63,11 @@ export type ToolStep = {
   ended_at: number | null;
 };
 
-export type SteerMessage = { id: string; text: string; attachments: Attachment[] };
+export type AssistantReference = { message_id: string; text: string };
 
-export type SteerStep = { id: string; round: number; kind: "steer"; text: string; steer_id?: string; attachments?: Attachment[] };
+export type SteerMessage = { id: string; text: string; attachments: Attachment[]; assistant_reference?: AssistantReference };
+
+export type SteerStep = { id: string; round: number; kind: "steer"; text: string; steer_id?: string; attachments?: Attachment[]; assistant_reference?: AssistantReference };
 
 export type NoticeKind = "agent_report" | "agent_update" | "update_reminder" | "plan_blocked" | "output_limit" | "todos_carried" | "context_trimmed";
 

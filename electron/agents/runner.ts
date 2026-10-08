@@ -4,6 +4,7 @@ import type { ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
 import type { ApiMessage } from "../model/types.ts";
 import { cancel_chat, wait_for_decision } from "../permissions/approvals.ts";
+import { chat_decisions, merge_decisions, mirror_decision } from "../permissions/decisions.ts";
 import { build_system_prompt } from "../prompts/index.ts";
 import { render_section } from "../prompts/sections.ts";
 import { error_text } from "../storage/coerce.ts";
@@ -41,6 +42,7 @@ export type AgentDeps = {
 export type RunContext = {
   chat_id: string;
   parent_message_id: string;
+  parent_call_id: string;
   project_root: string;
   user_request: string;
   authorization?: () => string;
@@ -204,6 +206,10 @@ const agent_session = (agent: AgentRecord, run: RunRecord, live: LiveRun, reques
     resolve_tools: (profile) => resolve_tools(profile, request.settings),
     side_model,
     wait_decision: (call_id) => wait_for_decision(agent_approval_key(run.run_id), call_id, live.controller.signal),
+    actor: agent.name,
+    human_decisions: async () =>
+      merge_decisions(await chat_decisions(agent.chat_id), live.transcript.steps.flatMap((step) => (step.kind === "tool" ? (step.decisions ?? []) : []))),
+    mirror_decision: (decision) => mirror_decision(agent.chat_id, request.parent_message_id, request.parent_call_id, decision),
     take_steers: () => [],
     profile: agent.profile,
     call_scope: run.run_id,
@@ -289,7 +295,7 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
 };
 
 const launch = (agent: AgentRecord, request: RunContext, model: ModelEntry, context: ApiMessage[]): StartedRun => {
-  const run = begin_run(agent, request.prompt, request.parent_message_id);
+  const run = begin_run(agent, request.prompt, request.parent_message_id, request.parent_call_id);
   const live = create_live(agent.agent_id, run.run_id, agent.chat_id);
   live.done = drive(agent, run, live, request, model, context);
   return { agent: public_summary(agent), run: public_run(run) };

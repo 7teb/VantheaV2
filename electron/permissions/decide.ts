@@ -1,80 +1,103 @@
-import path from "node:path";
-import type { OverseerVerdict } from "../../shared/approval.ts";
+import type { HumanDecision } from "../../shared/approval.ts";
 import type { PermissionMode } from "../../shared/chat.ts";
-import { error_text } from "../storage/coerce.ts";
 import type { SideModelCall } from "../tools/types.ts";
 import { allowed_in_auto } from "./allowlist.ts";
 import { permission_hash } from "./context.ts";
+import { approved_with_source, command_tools, decisions_text, denial_reason, last_decision_for, prefix_grants, repeated_denial_text } from "./decisions.ts";
 import { floor_reason } from "./floor.ts";
-import { grant_covers, grant_hint, suggest_prefix, type GrantContext } from "./grants.ts";
-import { build_overseer_messages, overseer_input_reason, parse_overseer_verdict } from "./overseer.ts";
+import { grant_covers, suggest_prefix } from "./grants.ts";
+import { max_action_chars, run_review } from "./overseer.ts";
 import { inspect_command_sources, type CommandSources } from "./sources.ts";
 
 export type CommandInput = {
-  command: string; mode: PermissionMode; chat_id: string; project_root: string; intent: string;
-  cwd?: string; delegated_task?: string; sources?: CommandSources;
-};
-export type CommandDecision = {
-  action: "run" | "ask" | "block"; reason: string; source: "floor" | "full" | "grant" | "mode" | "protected" | "limit" | "incomplete" | "model" | "cache" | "allowlist" | "unavailable";
-  context: GrantContext; verdict: OverseerVerdict | null; grant_prefix: string | null;
+  command: string;
+  background: boolean;
+  mode: PermissionMode;
+  project_root: string;
+  cwd: string;
+  authorization: string;
+  delegated_task?: string;
+  decisions: HumanDecision[];
 };
 
-const cache = new WeakMap<SideModelCall, Map<string, OverseerVerdict>>();
-const overseer_timeout_ms = 8000;
-const overseer_max_tokens = 200;
+export type DecisionSource =
+  | "floor"
+  | "full"
+  | "denied_before"
+  | "script"
+  | "grant"
+  | "mode"
+  | "protected"
+  | "allowlist"
+  | "limit"
+  | "model"
+  | "cache"
+  | "unavailable";
 
-export const command_context = (input: CommandInput, source_hash: string): GrantContext => ({
-  authorization_hash: permission_hash(input.intent + "\0" + (input.delegated_task ?? "")), cwd: path.resolve(input.cwd || input.project_root || "."),
-  source_hash, command_hash: permission_hash(input.command.trim()),
+export type CommandDecision = { action: "run" | "ask" | "block" | "deny"; source: DecisionSource; reason: string; grant_prefix: string | null; source_hash: string };
+
+const decided = (input: CommandInput, action: CommandDecision["action"], source: DecisionSource, reason: string, source_hash = ""): CommandDecision => ({
+  action,
+  source,
+  reason,
+  grant_prefix: action === "ask" && source !== "script" ? suggest_prefix(input.command) : null,
+  source_hash,
 });
 
-const result = (input: CommandInput, context: GrantContext, action: CommandDecision["action"], source: CommandDecision["source"],
-  reason: string, verdict: OverseerVerdict | null = null): CommandDecision =>
-  ({ action, source, reason, context, verdict, grant_prefix: action === "ask" ? suggest_prefix(input.command) : null });
-
-export const prepare_command_review = async (input: CommandInput): Promise<{ sources: CommandSources; context: GrantContext }> => {
-  const sources = input.sources ?? await inspect_command_sources(input.project_root, input.cwd || input.project_root, input.command);
-  return { sources, context: command_context(input, sources.hash) };
-};
+export const command_sources = (input: CommandInput): Promise<CommandSources> => inspect_command_sources(input.project_root, input.cwd, input.command);
 
 export const decide_command = async (input: CommandInput, side_model: SideModelCall, signal: AbortSignal): Promise<CommandDecision> => {
   signal.throwIfAborted();
   const command = input.command.trim();
-  const base = command_context(input, "");
-  if (!command) return result(input, base, "block", "floor", "The command is empty.");
+  if (!command) {
+    return decided(input, "block", "floor", "The command is empty.");
+  }
   const floor = floor_reason(command);
-  if (floor) return result(input, base, "block", "floor", floor);
-  if (input.mode === "full") return result(input, base, "run", "full", "The user selected full access.");
-  const { sources, context } = await prepare_command_review(input);
+  if (floor) {
+    return decided(input, "block", "floor", floor);
+  }
+  if (input.mode === "full") {
+    return decided(input, "run", "full", "Full access is on.");
+  }
+  const previous = last_decision_for(input.decisions, command_tools, command);
+  if (previous && !previous.approved) {
+    if (previous.context_hash === permission_hash(input.authorization)) {
+      return decided(input, "deny", "denied_before", repeated_denial_text(previous));
+    }
+    return decided(input, "ask", "denied_before", denial_reason(previous));
+  }
+  const sources = await command_sources(input);
   signal.throwIfAborted();
-  const query = { chat_id: input.chat_id, project_root: input.project_root, command, context };
-  if (sources.complete && grant_covers(query)) return result(input, context, "run", "grant", "The same command, source and authorization were already approved.");
-  if (input.mode === "ask") return result(input, context, "ask", "mode", "Ask mode requires a user approval.");
-  if (sources.protected_read) return result(input, context, "ask", "protected", "This command reads protected or credential files; a specific user approval is required.");
-  const limit = overseer_input_reason(command, input.intent, sources.text);
-  if (limit || (input.delegated_task?.length ?? 0) > 24000) {
-    return result(input, context, "ask", "limit", limit ?? "The complete delegated task exceeds the review limit.");
+  if (sources.catastrophic.length && !approved_with_source(input.decisions, command, sources.hash)) {
+    return decided(input, "ask", "script", `A script this command runs contains a destructive system operation: ${sources.catastrophic.join("; ")}`, sources.hash);
   }
-  if (!sources.complete) return result(input, context, "ask", "incomplete", "The actual script or project instructions could not be inspected completely.");
-  const messages = build_overseer_messages(command, input.intent, sources.text, {
-    project_root: input.project_root, cwd: context.cwd, approvals: grant_hint(query), delegated_task: input.delegated_task, complete: sources.complete,
-  });
-  const model_id = await side_model.model_id?.("overseer") ?? "";
-  const key = permission_hash(JSON.stringify({ messages, context, model_id }));
-  const bucket = cache.get(side_model) ?? new Map<string, OverseerVerdict>();
-  cache.set(side_model, bucket);
-  const cached = bucket.get(key);
-  if (cached) return result(input, context, cached.safe ? "run" : "ask", allowed_in_auto(command) ? "allowlist" : "cache", cached.reason, cached);
-  try {
-    const answer = await side_model("overseer", messages, overseer_max_tokens, AbortSignal.any([signal, AbortSignal.timeout(overseer_timeout_ms)]));
-    const verdict = parse_overseer_verdict(answer);
-    bucket.set(key, verdict);
-    if (bucket.size > 256) bucket.delete(bucket.keys().next().value!);
-    return result(input, context, verdict.safe ? "run" : "ask", "model", verdict.reason, verdict);
-  } catch (error) {
-    if (signal.aborted) throw error;
-    console.warn("[permissions] complete command review failed: " + error_text(error));
-    const verdict = { safe: false, reason: "The overseer is unavailable; user approval is required." };
-    return result(input, context, "ask", "unavailable", verdict.reason, verdict);
+  if (grant_covers(command, prefix_grants(input.decisions))) {
+    return decided(input, "run", "grant", "Covered by your earlier \"don't ask again\" approval.", sources.hash);
   }
+  if (input.mode === "ask") {
+    return decided(input, "ask", "mode", "Ask mode confirms every command.", sources.hash);
+  }
+  if (sources.protected_read) {
+    return decided(input, "ask", "protected", "This command reads credential or key files.", sources.hash);
+  }
+  if (allowed_in_auto(command)) {
+    return decided(input, "run", "allowlist", "Read-only command.", sources.hash);
+  }
+  if (command.length > max_action_chars) {
+    return decided(input, "ask", "limit", "The command is too long for the safety check.", sources.hash);
+  }
+  const review = await run_review(
+    side_model,
+    {
+      action: input.background ? `${command}\n(started as a background task)` : command,
+      project_root: input.project_root,
+      cwd: input.cwd,
+      authorization: input.authorization,
+      sources: sources.text,
+      delegated_task: input.delegated_task,
+      decisions: decisions_text(input.decisions),
+    },
+    signal,
+  );
+  return decided(input, review.verdict.safe ? "run" : "ask", review.source, review.verdict.reason, sources.hash);
 };

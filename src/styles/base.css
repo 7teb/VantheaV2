@@ -26,6 +26,7 @@
     font-weight: var(--weight-regular);
     line-height: var(--leading-ui);
     font-synthesis-weight: none;
+    font-variant-ligatures: none;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;

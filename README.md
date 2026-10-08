@@ -20,10 +20,12 @@ It is built with Electron, React and TypeScript. The models come from OpenRouter
 You choose how much the agent may do on its own, right in the message box.
 
 - **Ask**: every command and every file write waits for you.
-- **Auto**: harmless read-only commands run right away. Everything else is checked by a small reviewer model, which lets safe commands through and stops risky ones for you to decide.
+- **Auto**: the agent just works on what you asked for. Read-only commands run right away, everything else goes past a small reviewer model. Normal steps inside the project, like builds, tests, installing the project's dependencies or local git commits, run on their own. Anything beyond that, like deleting files outside the project, installing software system-wide, pushing or uploading, or running something downloaded, waits for your yes. Sub-agents follow the same rules.
 - **Full**: commands and writes run without asking.
 
-A short list of truly destructive commands (formatting a drive, deleting Windows or System32, wiping boot settings) is blocked in every mode and can't be approved.
+When you say no, that sticks: the exact same command is refused without asking you again until you write something new in the chat, and the reviewer sees your earlier answers, so the agent can't get around a no with a slightly different command. "Don't ask again for commands starting with ..." works for the rest of the chat, also after a restart. If the reviewer can't be reached, you are asked instead of anything running unchecked.
+
+A short list of truly destructive commands (formatting a drive, deleting Windows or System32, wiping boot settings) is blocked in every mode and can't be approved. If such a command is hidden inside a script the agent wants to run, you are asked first, even when the reviewer would let it through.
 
 ## Building it
 

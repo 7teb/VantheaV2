@@ -46,6 +46,7 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
   const Icon = tool_icon(step);
   const active = is_active_status(step.status);
   const detail = step_detail(t, step);
+  const edit = step.view?.kind === "edit" ? step.view : null;
   const duration = step_duration(step);
   const expandable = has_body(step);
   const open = expandable && (chosen ?? running);
@@ -65,7 +66,9 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
           <Icon size={14} />
         </span>
         <span className={class_names("tool-row-label", active && "is-working")}>{tool_label(t, step)}</span>
-        {detail && <span className="tool-row-detail">{detail}</span>}
+        {edit && <span className="tool-stat-add">+{edit.added}</span>}
+        {edit && <span className="tool-stat-remove">-{edit.removed}</span>}
+        {!edit && detail && <span className="tool-row-detail">{detail}</span>}
         <StatusMark status={step.status} />
         {duration !== null && !active && <span className="tool-row-duration">{format_duration(duration)}</span>}
         {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}

@@ -55,6 +55,24 @@
       "max_output": 131072
     },
     {
+      "id": "xiaomi/mimo-v2.6-pro",
+      "label": "MiMo V2.6 Pro",
+      "provider": "Xiaomi",
+      "provider_order": [
+        "gmicloud/bf16",
+        "xiaomi"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 1048576,
+      "max_output": 131072
+    },
+    {
       "id": "qwen/qwen3.7-plus",
       "label": "Qwen 3.7 Plus",
       "provider": "Qwen",
@@ -214,6 +232,24 @@
       "default_effort": "high",
       "vision": true,
       "context_length": 1050000,
+      "max_output": 128000
+    },
+    {
+      "id": "anthropic/claude-haiku-5.5",
+      "label": "Claude Haiku 5.5",
+      "provider": "Anthropic",
+      "provider_order": [
+        "anthropic"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "default_effort": "medium",
+      "vision": true,
+      "context_length": 1000000,
       "max_output": 128000
     },
     {

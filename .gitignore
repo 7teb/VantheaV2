@@ -36,3 +36,10 @@ Thumbs.db
 *.pem
 *.key
 *.pfx
+
+*.md
+!/README.md
+*.test.*
+*.spec.*
+__tests__/
+fixtures/

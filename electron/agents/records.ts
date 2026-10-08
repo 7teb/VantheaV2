@@ -2,7 +2,7 @@ import type { Sequenced, StreamEventBody } from "../../shared/events.ts";
 import type { AgentProfile, AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
 import { as_array, as_iso, as_record, as_string, is_record, pick } from "../storage/coerce.ts";
 
-export type RunRecord = AgentRunSummary & { parent_message_id: string };
+export type RunRecord = AgentRunSummary & { parent_message_id: string; parent_call_id?: string };
 
 export type AgentRecord = Omit<AgentSummary, "runs"> & {
   effort: string;
@@ -32,6 +32,7 @@ const event_types: readonly StreamEventBody["type"][] = [
   "tool_start",
   "tool_progress",
   "tool_approval",
+  "tool_decision",
   "tool_end",
   "steer",
   "notice",
@@ -87,6 +88,7 @@ const parse_run = (value: unknown, now: string): RunRecord | null => {
     ended_at: status === "running" ? now : ended_at,
     report: as_string(raw.report),
     parent_message_id: as_string(raw.parent_message_id),
+    ...(typeof raw.parent_call_id === "string" ? { parent_call_id: raw.parent_call_id } : {}),
   };
 };
 

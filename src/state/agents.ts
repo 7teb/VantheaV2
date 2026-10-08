@@ -93,7 +93,12 @@ export const answer_agent_approval = async (ref: RunRef, call_id: string, decisi
 export const init_agents = (): (() => void) => {
   const stops = [
     api.on("agents:changed", (summary) => agents_store.update((state) => receive_summary(state, summary))),
-    api.on("agent:event", (event) => agents_store.update((state) => receive_event(state, event))),
+    api.on("agent:event", (event) => {
+      agents_store.update((state) => receive_event(state, event));
+      if (event.type === "tool_approval" && agents_store.get().agents.some((agent) => agent.agent_id === event.agent_id)) {
+        open_agent_run({ agent_id: event.agent_id, run_id: event.run_id });
+      }
+    }),
   ];
   return () => {
     for (const stop of stops) {

@@ -5,6 +5,7 @@ import type { Attachment } from "../../shared/chat.ts";
 import { attachment_limits, type AttachmentUpload } from "../../shared/ipc/media.ts";
 import { error_code } from "../storage/coerce.ts";
 import { write_file_atomic } from "../storage/json-file.ts";
+import { decode_text } from "../storage/text-codec.ts";
 
 export type MediaBucket = "attachment" | "image";
 
@@ -153,7 +154,7 @@ export const read_attachment_text = async (id: string): Promise<string> => {
   if (id.startsWith("img_")) {
     throw new Error(`attachment ${id} is an image, not a text file`);
   }
-  return fs.readFile(await resolve_media_file("attachment", id), "utf8");
+  return decode_text(await fs.readFile(await resolve_media_file("attachment", id))).text;
 };
 
 export const delete_attachment = async (id: string) => {

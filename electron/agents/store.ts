@@ -164,9 +164,9 @@ export const create_agent = (fields: NewAgent): AgentRecord => {
   return record;
 };
 
-export const begin_run = (record: AgentRecord, prompt: string, parent_message_id: string): RunRecord => {
+export const begin_run = (record: AgentRecord, prompt: string, parent_message_id: string, parent_call_id?: string): RunRecord => {
   const now = now_iso();
-  const run: RunRecord = { run_id: `run_${randomUUID()}`, prompt, status: "running", started_at: now, ended_at: null, report: "", parent_message_id };
+  const run: RunRecord = { run_id: `run_${randomUUID()}`, prompt, status: "running", started_at: now, ended_at: null, report: "", parent_message_id, ...(parent_call_id ? { parent_call_id } : {}) };
   record.runs = trim_runs([...record.runs, run]);
   record.updated_at = now;
   save_index();

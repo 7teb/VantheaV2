@@ -44,6 +44,7 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
           </div>
           {request.args_preview && <Command text={request.args_preview} />}
           {request.scope && <div className="approval-reason">{request.scope}</div>}
+          {request.reason && <div className="approval-reason">{request.reason}</div>}
         </>
       );
     case "mcp_server":

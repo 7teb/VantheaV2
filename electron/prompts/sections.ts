@@ -108,7 +108,7 @@ const plan_mode = (): PromptSection => ({
 
 const permission_texts: Record<PermissionMode, string> = {
   ask: "Permission mode: ask. Every command and every file write waits for the user's approval before it runs. A denial comes back with the user's reason; adapt instead of retrying the same call.",
-  auto: "Permission mode: auto. Commands, background tasks and shell-like MCP calls are checked against operational safety and the human's actual authorization. Matching approvals and unchanged reviewed context can be reused. A rejected call does not execute and returns Tool call rejected [reason] in the normal tool output. Adapt to that reason instead of retrying it in another language or tool. File writes inside the project run directly.",
+  auto: "Permission mode: auto. Commands, background tasks and shell-like MCP calls that are a normal part of the user's task and stay inside the project run directly. Anything beyond that, such as changes outside the project, system-wide installs, pushing or uploading, or running downloaded code, pauses for the user's approval and runs once they approve. A denial comes back with the user's reason; adapt to it and never try to reach the same effect another way, through another command, language, tool or agent. File writes inside the project run directly.",
   full: "Permission mode: full. Commands and file writes run without asking. Dangerous MCP tools and installing skills or memories still ask the user.",
 };
 

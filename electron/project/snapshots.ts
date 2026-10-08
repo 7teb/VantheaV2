@@ -1,12 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { UndoResult } from "../../shared/ipc/chats.ts";
-import { as_array, as_record, as_string, error_text } from "../storage/coerce.ts";
+import { as_array, as_record, as_string, error_text, pick } from "../storage/coerce.ts";
 import { read_json, write_file_atomic, write_json } from "../storage/json-file.ts";
+import { charsets, encode_text, plain_utf8, type TextEncoding } from "../storage/text-codec.ts";
 import { invalidate_index } from "./index.ts";
 import { resolve_write_target } from "./scope.ts";
 
-type SnapshotFile = { relative: string; original: string | null };
+type SnapshotFile = { relative: string; original: string | null; encoding: TextEncoding };
 
 type Snapshot = { version: 1; turn_id: string; project_root: string; created_at: string; files: SnapshotFile[] };
 
@@ -38,7 +39,12 @@ const parse_snapshot = (turn_id: string, value: unknown): Snapshot => {
   const raw = as_record(value);
   const files = as_array(raw.files).map((entry) => {
     const file = as_record(entry);
-    return { relative: as_string(file.relative), original: typeof file.original === "string" ? file.original : null };
+    const encoding = as_record(file.encoding);
+    return {
+      relative: as_string(file.relative),
+      original: typeof file.original === "string" ? file.original : null,
+      encoding: { charset: pick(encoding.charset, charsets, plain_utf8.charset), bom: encoding.bom === true },
+    };
   });
   return {
     version: 1,
@@ -89,14 +95,14 @@ export const init_snapshots = async (snapshot_root: string) => {
   }
 };
 
-const append_original = async (turn_id: string, project_root: string, relative: string, original: string | null) => {
+const append_original = async (turn_id: string, project_root: string, relative: string, original: string | null, encoding: TextEncoding) => {
   const existing = await load_snapshot(turn_id);
   const snapshot = existing ?? { version: 1, turn_id, project_root, created_at: new Date().toISOString(), files: [] };
   const key = relative.toLowerCase();
   if (snapshot.files.some((file) => file.relative.toLowerCase() === key)) {
     return;
   }
-  snapshot.files.push({ relative, original });
+  snapshot.files.push({ relative, original, encoding });
   await write_json(snapshot_file(turn_id), snapshot);
   if (!existing) {
     prune_snapshots().catch((error: unknown) => console.warn(`[snapshots] pruning ${snapshot_dir()} failed: ${error_text(error)}`));
@@ -118,8 +124,8 @@ const enqueue = <T>(turn_id: string, work: () => Promise<T>): Promise<T> => {
   return next;
 };
 
-export const record_original = (turn_id: string, project_root: string, relative: string, original: string | null): Promise<void> =>
-  enqueue(turn_id, () => append_original(turn_id, project_root, relative, original));
+export const record_original = (turn_id: string, project_root: string, relative: string, original: string | null, encoding: TextEncoding): Promise<void> =>
+  enqueue(turn_id, () => append_original(turn_id, project_root, relative, original, encoding));
 
 const restore = async (project_root: string, file: SnapshotFile) => {
   const target = await resolve_write_target(project_root, file.relative);
@@ -127,7 +133,7 @@ const restore = async (project_root: string, file: SnapshotFile) => {
     await fs.rm(target.target, { force: true });
     return;
   }
-  await write_file_atomic(target.target, file.original);
+  await write_file_atomic(target.target, encode_text(file.original, file.encoding));
 };
 
 const undo_now = async (turn_id: string): Promise<UndoResult> => {

@@ -1,6 +1,7 @@
 import type { GrantScope, McpTier, OverseerVerdict } from "../../../shared/approval.ts";
 import { shell_candidates } from "../../mcp/risk.ts";
 import { permission_hash, permission_intent } from "../../permissions/context.ts";
+import { denial_reason, last_decision_for, repeated_denial_text } from "../../permissions/decisions.ts";
 import { rejected_text } from "../../permissions/sleep.ts";
 import type { ToolContext } from "../types.ts";
 
@@ -12,9 +13,11 @@ export type McpCall = { server: string; tool: string; tier: McpTier; args: Recor
 
 export type Verdict = { kind: "run" } | { kind: "ask"; reason: string } | { kind: "block" | "denied"; reason: string };
 
+const preview_limit = 2000;
+
 let command_gate: CommandGate | null = null;
 
-const chat_grants = new Map<string, Map<string, string>>();
+const chat_grants = new Map<string, Set<string>>();
 
 export const set_command_gate = (fn: CommandGate) => {
   command_gate = fn;
@@ -23,6 +26,13 @@ export const set_command_gate = (fn: CommandGate) => {
 export const clear_mcp_chat = (chat_id: string) => {
   chat_grants.delete(chat_id);
 };
+
+export const args_preview = (args: Record<string, unknown>) => {
+  const text = JSON.stringify(args, null, 2);
+  return text.length > preview_limit ? `${text.slice(0, preview_limit)}\n...` : text;
+};
+
+export const decision_tool = (call: Pick<McpCall, "server" | "tool">) => `mcp:${call.server}/${call.tool}`;
 
 const run: Verdict = { kind: "run" };
 
@@ -62,47 +72,71 @@ const granted_key = (call: McpCall, grant: GrantScope): string | null => {
   return null;
 };
 
-const grant_context = (ctx: ToolContext, call: McpCall) => permission_hash(permission_intent(ctx) + (ctx.delegated_task ?? "") + (ctx.execution_cwd ?? "") + JSON.stringify(call.args));
-
-const has_grant = (ctx: ToolContext, call: McpCall) => {
-  const grants = chat_grants.get(ctx.chat_id);
-  return Boolean(grants && covering_keys(call).some((key) => grants.get(key) === grant_context(ctx, call) || (!ctx.authorization && grants.get(key) === "")));
+const has_grant = (chat_id: string, call: McpCall) => {
+  const grants = chat_grants.get(chat_id);
+  return Boolean(grants && covering_keys(call).some((key) => grants.has(key)));
 };
 
-export const record_grant = (chat_id: string, call: McpCall, grant: GrantScope, ctx?: ToolContext) => {
+export const record_grant = (chat_id: string, call: McpCall, grant: GrantScope) => {
   const key = granted_key(call, grant);
   if (!key) {
     return;
   }
-  const grants = chat_grants.get(chat_id) ?? new Map<string, string>();
-  grants.set(key, ctx ? grant_context(ctx, call) : "");
+  const grants = chat_grants.get(chat_id) ?? new Set<string>();
+  grants.add(key);
   chat_grants.set(chat_id, grants);
 };
 
 const shell_verdict = async (call: McpCall, ctx: ToolContext): Promise<Verdict> => {
   const candidates = shell_candidates(call.args);
   if (!candidates.length) {
-    const reason = "The command inside this MCP tool could not be identified for review.";
-    if (ctx.mode === "auto") return { kind: "denied", reason };
-    return ctx.mode === "full" ? run : ask("This MCP tool runs a shell or system command and needs your approval.");
+    return ask("The command inside this MCP tool could not be identified for review.");
   }
   if (!command_gate) {
     return { kind: "block", reason: "The command policy is not initialized, shell MCP tools cannot run." };
   }
   const gate = await command_gate(candidates.join("\n"), ctx);
-  if (gate.action === "block") return { kind: "block", reason: "Blocked by the command policy: " + gate.reason };
-  if (gate.action === "deny") return { kind: "denied", reason: rejected_text(gate.reason) };
-  if (gate.action === "run") return run;
-  if (ctx.mode === "auto") return { kind: "denied", reason: rejected_text(gate.reason) };
-  return ask(gate.reason);
+  if (gate.action === "block") {
+    return { kind: "block", reason: `Blocked by the command policy: ${gate.reason}` };
+  }
+  if (gate.action === "deny") {
+    return { kind: "denied", reason: rejected_text(gate.reason) };
+  }
+  return gate.action === "run" ? run : ask(gate.reason);
 };
 
 export const decide = async (call: McpCall, ctx: ToolContext, overseer: Overseer): Promise<Verdict> => {
-  if (call.tier === "shell_system") return shell_verdict(call, ctx);
-  if ((call.trusted && ctx.mode === "full") || has_grant(ctx, call)) return run;
-  if (call.tier === "dangerous" && !call.trusted) return ask("Dangerous MCP tool (memory write, patch, inject or execute), needs your approval.");
-  if (ctx.mode === "full") return run;
-  if (ctx.mode === "ask") return ask("MCP tool, needs your approval in ask mode.");
-  const verdict = await overseer(call, ctx);
-  return verdict.safe ? run : { kind: "denied", reason: rejected_text(verdict.reason) };
+  if (ctx.mode !== "full") {
+    const previous = last_decision_for((await ctx.human_decisions?.()) ?? [], [decision_tool(call)], args_preview(call.args));
+    if (previous && !previous.approved) {
+      if (previous.context_hash === permission_hash(permission_intent(ctx))) {
+        return { kind: "denied", reason: repeated_denial_text(previous) };
+      }
+      return ask(denial_reason(previous));
+    }
+  }
+  if (call.tier === "shell_system") {
+    return shell_verdict(call, ctx);
+  }
+  if (ctx.mode === "full" && (call.trusted || call.tier !== "dangerous")) {
+    return run;
+  }
+  if (has_grant(ctx.chat_id, call)) {
+    return run;
+  }
+  if (call.tier === "dangerous" && !call.trusted) {
+    return ask("Dangerous MCP tool (memory write, patch, inject or execute), needs your approval.");
+  }
+  if (ctx.mode === "ask") {
+    return ask("Ask mode confirms every MCP tool call.");
+  }
+  if (call.tier === "readonly") {
+    return run;
+  }
+  const intent = permission_intent(ctx);
+  let verdict = await overseer(call, ctx);
+  if (verdict.safe && permission_intent(ctx) !== intent) {
+    verdict = await overseer(call, ctx);
+  }
+  return verdict.safe ? run : ask(verdict.reason);
 };

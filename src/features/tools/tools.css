@@ -63,10 +63,10 @@
   .tool-row-duration,
   .tool-row-status {
     flex: none;
-    font-size: var(--font-size-xs);
-    font-weight: var(--weight-regular);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
     font-variant-numeric: tabular-nums;
-    color: var(--text-muted);
+    color: var(--text-detail);
     white-space: nowrap;
   }
 
@@ -227,16 +227,22 @@
     font-size: var(--font-size-xs);
   }
 
+  .tool-stat-add,
+  .tool-stat-remove {
+    flex: none;
+    font-family: var(--font-ui);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
   .tool-stat-add {
     color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
   }
 
   .tool-stat-remove {
     color: var(--text-danger);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
   }
 
   .tool-command {

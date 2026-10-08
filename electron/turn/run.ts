@@ -12,8 +12,9 @@ import { emit } from "../ipc/handle.ts";
 import { find_model, major_effort, resolve_effort } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { stream_round } from "../model/stream.ts";
-import { authorization_text, set_authorization } from "../permissions/context.ts";
 import { cancel_chat, wait_for_decision } from "../permissions/approvals.ts";
+import { authorization_text, set_authorization } from "../permissions/context.ts";
+import { chat_decisions } from "../permissions/decisions.ts";
 import { build_system_prompt } from "../prompts/index.ts";
 import { get_settings } from "../settings/store.ts";
 import { error_text } from "../storage/coerce.ts";
@@ -24,6 +25,7 @@ import { describe_attachment_with_timeout } from "../side/vision.ts";
 import { start_title } from "../side/title.ts";
 import {
   abort_turn,
+  active_assistant_reference,
   active_turn,
   active_turns,
   clear_active,
@@ -157,6 +159,8 @@ const drive = async (plan: TurnPlan, turn: ReturnType<typeof register_active>): 
       resolve_tools: (p) => tools_for(p, settings, mcp_tools()),
       side_model,
       wait_decision: (call_id) => wait_for_decision(plan.chat_id, call_id, signal),
+      actor: "main",
+      human_decisions: () => chat_decisions(plan.chat_id),
       take_steers: () => take_steers_active(plan.chat_id),
       take_notes: () => take_agent_notes(plan.chat_id),
       idle: () => wait_for_input(plan.chat_id, plan.effort === major_effort ? major_wait_ms : 0, signal),
@@ -348,8 +352,9 @@ export const steer_turn = async (chat_id: string, text: string, attachments: Att
   if (!turn) {
     return null;
   }
+  const assistant_reference = active_assistant_reference(chat_id);
   const noted = await ensure_vision_notes(attachments, turn.model);
-  if (active_turn(chat_id) !== turn || !push_steer(chat_id, text, steer_id, noted)) {
+  if (active_turn(chat_id) !== turn || !push_steer(chat_id, text, steer_id, noted, assistant_reference)) {
     return null;
   }
   wake_idle(chat_id);
