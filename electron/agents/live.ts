@@ -114,17 +114,6 @@ export const waiting_approvals = (chat_id: string): AgentApproval[] =>
 
 export const app_closed_end = { type: "end", status: "interrupted", error: { kind: "app_closed", message: app_closed_message } } as const;
 
-export const waiting_approvals = (chat_id: string): AgentApproval[] =>
-  live_runs()
-    .filter((live) => live.chat_id === chat_id && !live.removed && live.transcript.status === "streaming")
-    .flatMap((live) =>
-      live.transcript.steps.flatMap((step) =>
-        step.kind === "tool" && step.status === "awaiting_approval" && step.approval
-          ? [{ agent_id: live.agent_id, run_id: live.run_id, call_id: step.call_id, name: get_agent(live.agent_id)?.name ?? "", request: step.approval }]
-          : [],
-      ),
-    );
-
 export const last_text = (transcript: TranscriptState): string => {
   for (let index = transcript.steps.length - 1; index >= 0; index -= 1) {
     const step = transcript.steps[index];
