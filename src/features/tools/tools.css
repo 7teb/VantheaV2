@@ -150,11 +150,20 @@
   .tool-body-mono {
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
+    font-weight: var(--weight-medium);
+    overflow-wrap: anywhere;
+  }
+
+  .tool-body-path {
+    font-family: var(--font-ui);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
     overflow-wrap: anywhere;
   }
 
   .tool-body-muted {
-    color: var(--text-muted);
+    font-weight: var(--weight-medium);
+    color: var(--text-detail);
   }
 
   .tool-body-error {

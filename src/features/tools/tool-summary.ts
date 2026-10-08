@@ -62,9 +62,6 @@ const view_detail = (t: Translate, view: ToolView): string => {
 };
 
 export const step_detail = (t: Translate, step: ToolStep): string => {
-  if (step.status === "drafting" && step.progress?.lines) {
-    return t("tools.live_lines", { n: step.progress.lines });
-  }
   if (is_active_status(step.status)) {
     return step.progress?.label ?? "";
   }

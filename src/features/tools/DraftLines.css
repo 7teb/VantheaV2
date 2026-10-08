@@ -1,0 +1,47 @@
+@property --draft-lines {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@layer components {
+  .draft-lines {
+    counter-reset: draft-lines var(--draft-lines);
+    transition: --draft-lines 0.22s linear;
+  }
+
+  .draft-lines::before {
+    display: inline-block;
+    margin-right: 0.3em;
+    content: counter(draft-lines);
+    text-shadow:
+      0 0 0 transparent,
+      0 0 0 transparent;
+  }
+
+  .draft-lines[data-tick="0"]::before {
+    animation: draft-lines-even 0.3s var(--ease-out);
+  }
+
+  .draft-lines[data-tick="1"]::before {
+    animation: draft-lines-odd 0.3s var(--ease-out);
+  }
+
+  @keyframes draft-lines-even {
+    from {
+      filter: blur(1.3px);
+      text-shadow:
+        0 -0.22em 0.14em color-mix(in srgb, var(--text-detail) 50%, transparent),
+        0 0.22em 0.14em color-mix(in srgb, var(--text-detail) 50%, transparent);
+    }
+  }
+
+  @keyframes draft-lines-odd {
+    from {
+      filter: blur(1.3px);
+      text-shadow:
+        0 -0.22em 0.14em color-mix(in srgb, var(--text-detail) 50%, transparent),
+        0 0.22em 0.14em color-mix(in srgb, var(--text-detail) 50%, transparent);
+    }
+  }
+}

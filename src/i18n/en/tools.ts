@@ -57,7 +57,7 @@ export const tools = {
   "tools.live_editing": "Editing {x}",
   "tools.live_creating_generic": "Writing file…",
   "tools.live_editing_generic": "Editing file…",
-  "tools.live_lines": "{n} lines",
+  "tools.live_lines_unit": "lines",
   "tools.timeline_activity": "Agent activity",
   "tools.timeline_done": "Done",
   "tools.grep_matches": "{n} matches",

@@ -14,7 +14,7 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
         <>
           <Command text={request.command} />
           <div className="approval-meta">
-            <span className="tool-body-mono">{request.cwd}</span>
+            <span className="tool-body-path">{request.cwd}</span>
             {request.background && <span>{t("approval.background")}</span>}
           </div>
           {request.overseer && <div className="approval-reason">{request.overseer.reason}</div>}
@@ -24,7 +24,7 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
       return (
         <>
           <div className="approval-meta">
-            <span className="tool-body-mono">{request.path}</span>
+            <span className="tool-body-path">{request.path}</span>
             {request.created && <span>{t("tools.created_file")}</span>}
             <span className="tool-stat-add">+{request.added}</span>
             <span className="tool-stat-remove">-{request.removed}</span>
@@ -53,7 +53,7 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
           {request.replaces && <div className="approval-warning">{t("approval.mcp_replaces", { x: request.name })}</div>}
           <Command text={[request.command, ...request.args].join(" ")} />
           <div className="approval-meta">
-            <span className="tool-body-mono">{request.cwd}</span>
+            <span className="tool-body-path">{request.cwd}</span>
           </div>
           <ApprovalEnv env={request.env} />
         </>

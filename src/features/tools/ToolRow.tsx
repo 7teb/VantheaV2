@@ -4,6 +4,7 @@ import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon, CircleAlertIcon, CircleSlashIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
+import { DraftLines } from "./DraftLines.tsx";
 import { has_body, tool_icon, ToolBody } from "./registry.tsx";
 import { is_active_status, tool_label } from "./tool-meta.ts";
 import { format_duration, step_detail, step_duration } from "./tool-summary.ts";
@@ -47,6 +48,7 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
   const active = is_active_status(step.status);
   const detail = step_detail(t, step);
   const edit = step.view?.kind === "edit" ? step.view : null;
+  const drafted = step.status === "drafting" ? (step.progress?.lines ?? 0) : 0;
   const duration = step_duration(step);
   const expandable = has_body(step);
   const open = expandable && (chosen ?? running);
@@ -68,7 +70,8 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
         <span className={class_names("tool-row-label", active && "is-working")}>{tool_label(t, step)}</span>
         {edit && <span className="tool-stat-add">+{edit.added}</span>}
         {edit && <span className="tool-stat-remove">-{edit.removed}</span>}
-        {!edit && detail && <span className="tool-row-detail">{detail}</span>}
+        {drafted > 0 && <DraftLines count={drafted} />}
+        {!edit && !drafted && detail && <span className="tool-row-detail">{detail}</span>}
         <StatusMark status={step.status} />
         {duration !== null && !active && <span className="tool-row-duration">{format_duration(duration)}</span>}
         {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}

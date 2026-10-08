@@ -81,15 +81,18 @@ const ViewBody = ({ view, step }: { view: ToolView; step: ToolStep }) => {
   return <Body view={view} step={step} />;
 };
 
+const output_views = new Set<ToolViewKind>(["command", "mcp", "text"]);
+
 export const has_body = (step: ToolStep) =>
   step.view !== null || Boolean(step.error) || Boolean(step.progress?.output_tail) || (!is_active_status(step.status) && step.result_text.length > 0);
 
 export const ToolBody = ({ step }: { step: ToolStep }) => {
   const t = use_t();
   const live = is_active_status(step.status) ? step.progress?.output_tail : null;
+  const error = step.view && output_views.has(step.view.kind) ? null : step.error;
   return (
     <div className="tool-body">
-      {step.error && <div className="tool-body-error">{step.error}</div>}
+      {error && <div className="tool-body-error">{error}</div>}
       {step.status === "cancelled" && <div className="tool-body-muted">{t("tools.cancelled")}</div>}
       {live && <OutputBlock text={live} />}
       {step.view && <ViewBody view={step.view} step={step} />}

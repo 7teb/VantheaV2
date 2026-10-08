@@ -325,8 +325,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
+    font-family: var(--font-ui);
+    font-size: var(--font-size-sm);
+    font-weight: var(--weight-medium);
     color: var(--text-secondary);
   }
 

@@ -59,7 +59,7 @@ export const tools: Record<keyof typeof en, string> = {
   "tools.live_editing": "Bearbeite {x}",
   "tools.live_creating_generic": "Schreibe Datei…",
   "tools.live_editing_generic": "Bearbeite Datei…",
-  "tools.live_lines": "{n} Zeilen",
+  "tools.live_lines_unit": "Zeilen",
   "tools.timeline_activity": "Agent-Aktivität",
   "tools.timeline_done": "Fertig",
   "tools.grep_matches": "{n} Treffer",

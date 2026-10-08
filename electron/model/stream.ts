@@ -12,7 +12,6 @@ type ReadResult = Awaited<ReturnType<Reader["read"]>>;
 
 type Draft = { name: string; lines: number | null };
 
-const draft_line_step = 4;
 
 export const make_call_id = () => `call_${randomUUID().replaceAll("-", "").slice(0, 24)}`;
 
@@ -67,7 +66,7 @@ const report_drafts = (outcome: ChunkOutcome, accumulator: Accumulator, drafts: 
     }
     const lines = draft_lines(call.name, call.arguments);
     const previous = drafts.get(index);
-    const grew = lines !== null && typeof previous?.lines === "number" && lines >= previous.lines + draft_line_step;
+    const grew = lines !== null && typeof previous?.lines === "number" && lines > previous.lines;
     if (previous && previous.name === call.name && !grew) {
       continue;
     }

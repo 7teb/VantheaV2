@@ -17,7 +17,7 @@ export const CommandBody = ({ view }: BodyProps<"command">) => {
         {view.command}
       </pre>
       <div className="tool-body-line tool-body-muted">
-        <span className="tool-body-mono">{view.cwd}</span>
+        {view.cwd !== "." && <span className="tool-body-path">{view.cwd}</span>}
         {view.exit_code !== null && <span>{t("tools.exit_code", { n: view.exit_code })}</span>}
         {view.timed_out && <span>{t("tools.timed_out")}</span>}
         {view.duration_ms > 0 && <span>{format_duration(view.duration_ms)}</span>}
