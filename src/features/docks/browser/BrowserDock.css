@@ -16,7 +16,7 @@
 }
 
 .browser-url .text-field-input {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
 }
 
 .browser-progress {
@@ -76,13 +76,13 @@
   padding: var(--space-6);
   background: var(--surface-inset);
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
   text-align: center;
 }
 
 .browser-error small {
   max-width: 440px;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   overflow-wrap: anywhere;
 }

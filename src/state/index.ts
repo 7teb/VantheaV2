@@ -1,3 +1,4 @@
+import { init_agent_approvals } from "./agent-approvals.ts";
 import { init_agents } from "./agents.ts";
 import { init_artifacts } from "./artifacts.ts";
 import { init_background } from "./background.ts";
@@ -6,6 +7,7 @@ import { init_chat_view } from "./chat-view.ts";
 import { init_chats } from "./chats.ts";
 import { init_composer } from "./composer.ts";
 import { init_extensions } from "./extensions.ts";
+import { init_full_window } from "./full-window.ts";
 import { init_models } from "./models.ts";
 import { init_settings } from "./settings.ts";
 import { init_terminal } from "./terminal.ts";
@@ -22,6 +24,8 @@ export const init_state = (): (() => void) => {
     init_browser(),
     init_background(),
     init_agents(),
+    init_agent_approvals(),
+    init_full_window(),
     init_artifacts(),
     init_extensions(),
     init_models(),

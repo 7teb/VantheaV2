@@ -6,6 +6,7 @@ import { register_ipc } from "./ipc/index.ts";
 import { register_media_scheme } from "./media/protocol.ts";
 
 register_media_scheme();
+app.commandLine.appendSwitch("disable-lcd-text");
 
 const start = async () => {
   Menu.setApplicationMenu(null);

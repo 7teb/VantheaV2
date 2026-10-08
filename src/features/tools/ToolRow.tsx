@@ -4,6 +4,7 @@ import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon, CircleAlertIcon, CircleSlashIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
+import { AgentRunMark } from "./AgentRunMark.tsx";
 import { DraftLines } from "./DraftLines.tsx";
 import { has_body, tool_icon, ToolBody } from "./registry.tsx";
 import { is_active_status, tool_label } from "./tool-meta.ts";
@@ -37,6 +38,8 @@ const StatusMark = ({ status }: { status: ToolStep["status"] }) => {
       return null;
   }
 };
+
+const run_starters = new Set(["deploy_agent", "continue_agent"]);
 
 type ToolRowProps = { step: ToolStep; running?: boolean };
 
@@ -72,6 +75,7 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
         {edit && <span className="tool-stat-remove">-{edit.removed}</span>}
         {drafted > 0 && <DraftLines count={drafted} />}
         {!edit && !drafted && detail && <span className="tool-row-detail">{detail}</span>}
+        {step.view?.kind === "agent" && run_starters.has(step.name) && <AgentRunMark run_id={step.view.run_id} />}
         <StatusMark status={step.status} />
         {duration !== null && !active && <span className="tool-row-duration">{format_duration(duration)}</span>}
         {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}

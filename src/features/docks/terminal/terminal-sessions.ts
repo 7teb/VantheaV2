@@ -24,7 +24,7 @@ const create_session = (tab_id: string, container: HTMLElement) => {
   container.append(host);
   const term = new Terminal({
     fontFamily: look.font_family,
-    fontSize: 13,
+    fontSize: look.font_size,
     lineHeight: 1.2,
     theme: look.theme,
     cursorBlink: true,

@@ -111,8 +111,6 @@ export const list_agents = (chat_id: string): AgentSummary[] => chat_agents(chat
 
 export const running_in_chat = (chat_id: string): number => chat_agents(chat_id).filter(is_running).length;
 
-export const running_total = (): number => [...agents.values()].filter(is_running).length;
-
 export const find_agent = (id: string, chat_id: string): AgentLookup => {
   const owned = chat_agents(chat_id);
   const exact = owned.find((record) => record.agent_id === id);

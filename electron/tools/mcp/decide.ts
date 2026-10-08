@@ -2,16 +2,17 @@ import type { GrantScope, McpTier, OverseerVerdict } from "../../../shared/appro
 import { shell_candidates } from "../../mcp/risk.ts";
 import { permission_hash, permission_intent } from "../../permissions/context.ts";
 import { denial_reason, last_decision_for, repeated_denial_text } from "../../permissions/decisions.ts";
+import { effective_mode } from "../../permissions/full-window.ts";
 import { rejected_text } from "../../permissions/sleep.ts";
 import type { ToolContext } from "../types.ts";
 
-export type CommandGate = (command: string, ctx: ToolContext) => Promise<{ action: "run" | "ask" | "block" | "deny"; reason: string }>;
+export type CommandGate = (command: string, ctx: ToolContext) => Promise<{ action: "run" | "ask" | "block" | "deny"; reason: string; unavailable?: boolean }>;
 
 export type Overseer = (call: McpCall, ctx: ToolContext) => Promise<OverseerVerdict>;
 
 export type McpCall = { server: string; tool: string; tier: McpTier; args: Record<string, unknown>; scope: string | null; trusted: boolean };
 
-export type Verdict = { kind: "run" } | { kind: "ask"; reason: string } | { kind: "block" | "denied"; reason: string };
+export type Verdict = { kind: "run" } | { kind: "ask"; reason: string; unavailable?: boolean } | { kind: "block" | "denied"; reason: string };
 
 const preview_limit = 2000;
 
@@ -36,7 +37,7 @@ export const decision_tool = (call: Pick<McpCall, "server" | "tool">) => `mcp:${
 
 const run: Verdict = { kind: "run" };
 
-const ask = (reason: string): Verdict => ({ kind: "ask", reason });
+const ask = (reason: string, unavailable = false): Verdict => ({ kind: "ask", reason, ...(unavailable ? { unavailable } : {}) });
 
 const covering_keys = (call: McpCall): string[] => {
   const { server, tool } = call;
@@ -102,11 +103,12 @@ const shell_verdict = async (call: McpCall, ctx: ToolContext): Promise<Verdict> 
   if (gate.action === "deny") {
     return { kind: "denied", reason: rejected_text(gate.reason) };
   }
-  return gate.action === "run" ? run : ask(gate.reason);
+  return gate.action === "run" ? run : ask(gate.reason, gate.unavailable);
 };
 
 export const decide = async (call: McpCall, ctx: ToolContext, overseer: Overseer): Promise<Verdict> => {
-  if (ctx.mode !== "full") {
+  const mode = effective_mode(ctx.chat_id, ctx.mode);
+  if (mode !== "full") {
     const previous = last_decision_for((await ctx.human_decisions?.()) ?? [], [decision_tool(call)], args_preview(call.args));
     if (previous && !previous.approved) {
       if (previous.context_hash === permission_hash(permission_intent(ctx))) {
@@ -118,7 +120,7 @@ export const decide = async (call: McpCall, ctx: ToolContext, overseer: Overseer
   if (call.tier === "shell_system") {
     return shell_verdict(call, ctx);
   }
-  if (ctx.mode === "full" && (call.trusted || call.tier !== "dangerous")) {
+  if (mode === "full" && (call.trusted || call.tier !== "dangerous")) {
     return run;
   }
   if (has_grant(ctx.chat_id, call)) {
@@ -127,7 +129,7 @@ export const decide = async (call: McpCall, ctx: ToolContext, overseer: Overseer
   if (call.tier === "dangerous" && !call.trusted) {
     return ask("Dangerous MCP tool (memory write, patch, inject or execute), needs your approval.");
   }
-  if (ctx.mode === "ask") {
+  if (mode === "ask") {
     return ask("Ask mode confirms every MCP tool call.");
   }
   if (call.tier === "readonly") {
@@ -138,5 +140,5 @@ export const decide = async (call: McpCall, ctx: ToolContext, overseer: Overseer
   if (verdict.safe && permission_intent(ctx) !== intent) {
     verdict = await overseer(call, ctx);
   }
-  return verdict.safe ? run : ask(verdict.reason);
+  return verdict.safe ? run : ask(verdict.reason, verdict.unavailable);
 };

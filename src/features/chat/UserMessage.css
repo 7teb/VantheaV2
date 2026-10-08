@@ -13,8 +13,8 @@
     max-width: 100%;
     padding: 11px var(--space-4);
     border-radius: var(--radius-2xl);
-    font-size: var(--font-size-lg);
-    line-height: 1.55;
+    font-size: var(--font-size-prose);
+    line-height: var(--leading-prose);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
@@ -39,7 +39,7 @@
     height: 44px;
     padding: 0 var(--space-3);
     border-radius: var(--radius-lg);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-ui);
     color: var(--text-secondary);
   }
 
@@ -53,7 +53,7 @@
 
   .user-attachment-size {
     flex: none;
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
 
@@ -75,8 +75,8 @@
     outline: 0;
     resize: none;
     background: transparent;
-    font-size: var(--font-size-lg);
-    line-height: 1.55;
+    font-size: var(--font-size-prose);
+    line-height: var(--leading-prose);
     color: var(--text-primary);
   }
 
@@ -108,7 +108,7 @@
   }
 
   .inline-error {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-ui);
     color: var(--text-danger);
   }
 
@@ -127,8 +127,7 @@
     height: 28px;
     padding: 0 var(--space-3);
     border-radius: var(--radius-full);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-body);
     color: var(--text-tertiary);
     transition:
       background var(--duration-fast) var(--ease-out),
@@ -155,7 +154,7 @@
   .origin-note-text {
     max-width: var(--size-content);
     padding: var(--space-2) var(--space-3);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-ui);
     color: var(--text-secondary);
     white-space: pre-wrap;
     overflow-wrap: anywhere;

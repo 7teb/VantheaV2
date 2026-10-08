@@ -26,8 +26,7 @@
   max-width: 560px;
   overflow: hidden;
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-ui);
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -45,6 +44,18 @@
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+.titlebar-dock {
+  position: relative;
+}
+
+.titlebar-dock-wait {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 .window-controls {

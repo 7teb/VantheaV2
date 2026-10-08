@@ -162,6 +162,15 @@ export const LineSquiggleIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const CoinsIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="8" cy="8" r="6" />
+    <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
+    <path d="M7 6h1v4" />
+    <path d="m16.71 13.88.7.71-2.82 2.82" />
+  </Icon>
+);
+
 export const CalendarClockIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5" />

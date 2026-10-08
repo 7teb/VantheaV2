@@ -7,6 +7,7 @@ import { generate_image_tool } from "./image/index.ts";
 import { add_mcp_server_tool } from "./mcp/add-server.ts";
 import { memory_tools } from "./memory/index.ts";
 import { meta_tools } from "./meta/index.ts";
+import { list_models_tool } from "./meta/models.ts";
 import { shell_tools } from "./shell/index.ts";
 import { skill_tools } from "./skills/index.ts";
 import type { Tool, ToolProfile } from "./types.ts";
@@ -17,6 +18,7 @@ const groups: Tool[][] = [
   fs_tools,
   shell_tools,
   meta_tools,
+  [list_models_tool],
   vision_tools,
   browser_tools,
   [add_mcp_server_tool],

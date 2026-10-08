@@ -13,8 +13,7 @@
   align-items: center;
   gap: 6px;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-caption);
 }
 
 .mcp-badge::before {
@@ -57,7 +56,7 @@
 .mcp-error.settings-row {
   min-height: 0;
   color: var(--text-danger);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   overflow-wrap: anywhere;
 }
 
@@ -99,7 +98,7 @@
 .mcp-tool-name {
   overflow: hidden;
   font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-code);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -108,14 +107,14 @@
   margin-top: 1px;
   overflow: hidden;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .mcp-tool-tier.select {
   height: 28px;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
 }
 
 .mcp-dialog {
@@ -135,8 +134,9 @@
 
 .mcp-dialog-title {
   margin-bottom: 6px;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-title);
   font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
 }
 
 .mcp-divider {
@@ -145,7 +145,7 @@
   gap: var(--space-3);
   margin: 6px 0 2px;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
 }
 
 .mcp-divider::after {
@@ -159,12 +159,12 @@
 .mcp-lines.text-area {
   min-height: 0;
   font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-code);
 }
 
 .mcp-note {
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   overflow-wrap: anywhere;
 }
 

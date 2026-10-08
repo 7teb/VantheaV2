@@ -82,11 +82,13 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
   progress: throttled_progress(session.emit, call_id),
   approve: async (request) => {
     session.emit({ type: "tool_approval", call_id, request });
-    const decision = await session.wait_decision(call_id);
+    const decision = await session.wait_decision(call_id, request);
     session.signal.throwIfAborted();
-    const record = human_decision(request, decision, session.actor ?? "main", permission_hash(session.authorization?.() ?? session.user_request));
-    session.emit({ type: "tool_decision", call_id, decision: record });
-    await session.mirror_decision?.(record);
+    if (decision.grant !== "full_window") {
+      const record = human_decision(request, decision, session.actor ?? "main", permission_hash(session.authorization?.() ?? session.user_request));
+      session.emit({ type: "tool_decision", call_id, decision: record });
+      await session.mirror_decision?.(record);
+    }
     session.emit({ type: "tool_start", call_id });
     return decision;
   },

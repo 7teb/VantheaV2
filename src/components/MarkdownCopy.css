@@ -7,8 +7,8 @@
     padding: 0 var(--space-2);
     border-radius: var(--radius-sm);
     font-family: var(--font-ui);
-    font-size: var(--font-size-xs);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
+    font-weight: var(--weight-regular);
     color: var(--text-secondary);
     transition:
       background var(--duration-fast) var(--ease-out),

@@ -17,8 +17,7 @@
     margin-left: -6px;
     padding: 0 var(--space-2) 0 6px;
     border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-body);
     color: var(--text-secondary);
     text-align: left;
     transition:
@@ -52,6 +51,19 @@
     color: var(--text-tertiary);
   }
 
+  .tool-row-agent {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-ui);
+    color: var(--text-tertiary);
+  }
+
+  .tool-row-agent.is-waiting {
+    color: var(--text-waiting);
+  }
+
   .tool-row-label {
     min-width: 0;
     overflow: hidden;
@@ -63,8 +75,7 @@
   .tool-row-duration,
   .tool-row-status {
     flex: none;
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-body);
     font-variant-numeric: tabular-nums;
     color: var(--text-detail);
     white-space: nowrap;
@@ -128,7 +139,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-ui);
     color: var(--text-secondary);
   }
 
@@ -149,20 +160,17 @@
 
   .tool-body-mono {
     font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-code);
     overflow-wrap: anywhere;
   }
 
   .tool-body-path {
     font-family: var(--font-ui);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
     overflow-wrap: anywhere;
   }
 
   .tool-body-muted {
-    font-weight: var(--weight-medium);
     color: var(--text-detail);
   }
 
@@ -181,8 +189,7 @@
   }
 
   .markdown.tool-body-markdown {
-    font-size: var(--font-size-sm);
-    line-height: 1.6;
+    --md-size: var(--font-size-ui);
     color: var(--text-secondary);
     white-space: normal;
   }
@@ -233,15 +240,13 @@
 
   .tool-outline-line {
     margin-left: auto;
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-ui);
   }
 
   .tool-stat-add,
   .tool-stat-remove {
     flex: none;
     font-family: var(--font-ui);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
@@ -260,8 +265,8 @@
     border-radius: var(--radius-lg);
     overflow-x: auto;
     font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    line-height: 1.6;
+    font-size: var(--font-size-code);
+    line-height: var(--leading-code);
     color: var(--text-code);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -286,8 +291,8 @@
     overflow: auto;
     border-radius: var(--radius-lg);
     font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    line-height: 1.6;
+    font-size: var(--font-size-code);
+    line-height: var(--leading-code);
     color: var(--text-code);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -300,8 +305,7 @@
   .output-block-more {
     align-self: flex-start;
     height: 26px;
-    font-size: var(--font-size-xs);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
     color: var(--text-tertiary);
     transition: color var(--duration-fast) var(--ease-out);
   }
@@ -353,7 +357,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
 

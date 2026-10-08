@@ -34,8 +34,7 @@
   padding: 0 10px;
   border-radius: var(--radius-lg);
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-ui);
   transition:
     background var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
@@ -80,8 +79,7 @@
   padding: 0 10px;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-ui);
   transition:
     background var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
@@ -110,7 +108,7 @@
 .settings-no-results {
   padding: var(--space-2) 10px;
   color: var(--text-tertiary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
 }
 
 .settings-content {
@@ -132,7 +130,7 @@
 
 .settings-heading {
   margin-bottom: var(--space-6);
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-heading);
   font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
 }

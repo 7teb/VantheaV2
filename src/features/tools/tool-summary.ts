@@ -34,6 +34,8 @@ const view_detail = (t: Translate, view: ToolView): string => {
       return view.total > 0 ? t("tools.grep_matches", { n: view.total }) : t("tools.grep_no_matches");
     case "outline":
       return t("tools.symbols_count", { n: view.symbols.length });
+    case "models":
+      return t("tools.models_count", { n: view.models.length });
     case "edit":
       return `+${view.added} -${view.removed}`;
     case "command":

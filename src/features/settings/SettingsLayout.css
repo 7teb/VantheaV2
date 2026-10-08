@@ -38,14 +38,13 @@
 }
 
 .settings-row-label {
-  font-size: var(--font-size-md);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-body);
 }
 
 .settings-row-hint {
   margin-top: 2px;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
 }
 
 .settings-row-control {
@@ -73,6 +72,6 @@
 .settings-row-error {
   flex-basis: 100%;
   color: var(--text-danger);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   overflow-wrap: anywhere;
 }

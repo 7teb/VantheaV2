@@ -33,4 +33,6 @@ export const approval: Record<keyof typeof en, string> = {
   "approval.trust_session": "Ja, und gefährlichen Tools von {x} für diese Session vertrauen",
   "approval.feedback_placeholder": "Sag, was stattdessen gemacht werden soll…",
   "approval.background": "Läuft im Hintergrund",
+  "approval.full_window": "Ja, und {n} Minuten lang alles in diesem Chat und seinen Agenten erlauben",
+  "approval.more_waiting": "{n} weitere warten",
 };

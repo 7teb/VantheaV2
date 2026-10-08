@@ -1,4 +1,5 @@
-import { on_agent_event, read_agent_run } from "../agents/live.ts";
+import type { AgentEvent } from "../../shared/events.ts";
+import { live_run, on_agent_event, read_agent_run, waiting_approvals } from "../agents/live.ts";
 import type { AgentRecord } from "../agents/records.ts";
 import { agent_approval_key, cancel_agent } from "../agents/runner.ts";
 import { get_agent, list_agents, on_agents_changed } from "../agents/store.ts";
@@ -18,9 +19,41 @@ const agent_of = (value: unknown): AgentRecord => {
   return agent;
 };
 
+const approval_events = new Set<AgentEvent["type"]>(["tool_approval", "tool_start", "tool_end", "end"]);
+
+const published = new Map<string, string>();
+
+const publish_approvals = (chat_id: string) => {
+  const approvals = waiting_approvals(chat_id);
+  const signature = approvals.map((entry) => `${entry.run_id}/${entry.call_id}`).join("|");
+  if ((published.get(chat_id) ?? "") === signature) {
+    return;
+  }
+  if (signature) {
+    published.set(chat_id, signature);
+  } else {
+    published.delete(chat_id);
+  }
+  emit("agents:approvals_changed", { chat_id, approvals });
+};
+
+export const forget_chat_approvals = (chat_id: string): void => {
+  published.delete(chat_id);
+};
+
 export const register_agents_ipc = () => {
   on_agents_changed((summary) => emit("agents:changed", summary));
-  on_agent_event((event) => emit("agent:event", event));
+  on_agent_event((event) => {
+    emit("agent:event", event);
+    const chat_id = approval_events.has(event.type) ? live_run(event.run_id)?.chat_id : undefined;
+    if (chat_id) {
+      publish_approvals(chat_id);
+    }
+  });
+  handle("agents:approvals", (chat_id) => {
+    const id = id_of(chat_id, "chat id");
+    return { chat_id: id, approvals: waiting_approvals(id) };
+  });
   handle("agents:list", (chat_id) => list_agents(id_of(chat_id, "chat id")));
   handle("agents:run", (agent_id, run_id) => {
     const agent = agent_of(agent_id);

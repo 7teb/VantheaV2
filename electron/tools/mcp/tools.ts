@@ -44,7 +44,16 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
     return { status: verdict.kind === "denied" ? "denied" : "failed", text: verdict.reason, view: mcp_view(server, info.name, verdict.reason, true) };
   }
   if (verdict.kind === "ask") {
-    const decision = await ctx.approve({ kind: "mcp", server, tool: info.name, tier, args_preview: args_preview(args), scope: call.scope, reason: verdict.reason });
+    const decision = await ctx.approve({
+      kind: "mcp",
+      server,
+      tool: info.name,
+      tier,
+      args_preview: args_preview(args),
+      scope: call.scope,
+      reason: verdict.reason,
+      ...(verdict.unavailable ? { unavailable: true } : {}),
+    });
     ctx.signal.throwIfAborted();
     if (!decision.approved) {
       const feedback = decision.feedback ? ` User feedback: ${decision.feedback}` : "";

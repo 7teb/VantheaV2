@@ -1,4 +1,4 @@
-import type { ApprovalDecision } from "../approval.ts";
+import type { ApprovalDecision, ApprovalRequest } from "../approval.ts";
 import type { AssistantMessage } from "../chat.ts";
 import type { AgentEvent } from "../events.ts";
 import { emit, invoke } from "./channel.ts";
@@ -29,6 +29,10 @@ export type AgentSummary = {
 export type AgentRun = AgentRunSummary &
   Pick<AssistantMessage, "steps" | "retry" | "error" | "context" | "last_seq"> & { agent_id: string; name: string };
 
+export type AgentApproval = { agent_id: string; run_id: string; call_id: string; name: string; request: ApprovalRequest };
+
+export type AgentApprovals = { chat_id: string; approvals: AgentApproval[] };
+
 export type BackgroundStatus = "running" | "completed" | "failed" | "cancelled" | "interrupted";
 
 export type BackgroundTask = {
@@ -49,6 +53,8 @@ export const work_channels = {
   "agents:run": invoke<[agent_id: string, run_id: string], AgentRun | null>(),
   "agents:cancel": invoke<[agent_id: string], void>(),
   "agents:approve": invoke<[agent_id: string, run_id: string, call_id: string, decision: ApprovalDecision], void>(),
+  "agents:approvals": invoke<[chat_id: string], AgentApprovals>(),
+  "agents:approvals_changed": emit<AgentApprovals>(),
   "agents:changed": emit<AgentSummary>(),
   "agent:event": emit<AgentEvent>(),
   "background:list": invoke<[chat_id: string], BackgroundTask[]>(),

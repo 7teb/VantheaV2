@@ -16,6 +16,8 @@ export type AgentReport = {
   ended_at: string;
   report_path: string | null;
   report_error?: string;
+  stop_reason: string;
+  has_report: boolean;
 };
 
 export type AgentUpdate = { chat_id: string; agent_id: string; run_id: string; name: string; text: string };
@@ -90,7 +92,7 @@ export const deliver_update = (update: AgentUpdate): void => {
 export const has_agent_notes = (chat_id: string): boolean => Boolean(pending.get(chat_id)?.length);
 
 export const report_note_content = (text: string): string =>
-  `[Internal app event, not a user message. One of your sub-agents finished. Its full report is saved in a file; read or search it when needed and use the findings to continue the work. This notification does not require an acknowledgment or a recap. If you are still waiting on other agents and it changes nothing the user needs to know now, process it silently and wait for more reports.]\n\n${report_notice_context(text)}`;
+  `[Internal app event, not a user message. One of your sub-agents finished. Its full report is saved in a file. Read the complete report before using its findings or writing your final answer. If it remains unread, identify it and explain why. Read it silently when no visible update is useful. This notification does not require an acknowledgment or a recap. You may defer reading while other useful work is in progress, but you must not silently skip the report. If other agents are still running and no visible update is useful, process the notification silently.]\n\n${report_notice_context(text)}`;
 
 export const update_note_content = (text: string): string =>
   `[Internal app event, not a user message. One of your sub-agents is still running and sent you this update. Use it to avoid duplicating its work or to adjust your plan; do not redo what it says it covers. Routine updates need no visible reply, acknowledgment or fresh summary of the task. You may process several updates silently and wait for the remaining reports. Speak only if a new result, changed action, blocker or user decision makes an update useful. Its final report notification still arrives when it finishes.]\n\n${text}`;
@@ -101,7 +103,7 @@ const turn_note = (note: PendingNote): TurnNote => {
     return { kind: "notice", notice: "agent_update", text, content: update_note_content(text) };
   }
   const { report } = note;
-  const text = report_notice_text(report.name, report.agent_id, report.status, report_seconds(report), report_file_notice(report.agent_id, report.run_id, report.report_path, report.report_error));
+  const text = report_notice_text(report.name, report.agent_id, report.status, report_seconds(report), report_file_notice(report.agent_id, report.run_id, report.report_path, report.report_error, report.stop_reason, report.has_report));
   return { kind: "notice", notice: "agent_report", text, content: report_note_content(text) };
 };
 

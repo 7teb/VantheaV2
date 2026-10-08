@@ -10,6 +10,21 @@ export type WebSource = { title: string; url: string; snippet: string };
 
 export type GeneratedImage = { id: string; width: number | null; height: number | null };
 
+export type ModelPrice = {
+  id: string;
+  label: string;
+  provider: string;
+  endpoint: string;
+  input: number | null;
+  output: number | null;
+  cache_read: number | null;
+  long_context: { min_prompt_tokens: number; input: number | null; output: number | null } | null;
+  context_length: number;
+  efforts: string[];
+  note: string;
+  error: string;
+};
+
 export type ToolView =
   | { kind: "files"; root: string; files: string[]; directories: number; truncated: boolean }
   | { kind: "read"; path: string; start_line: number; end_line: number; total_lines: number; truncated: boolean }
@@ -35,6 +50,7 @@ export type ToolView =
   | { kind: "mcp"; server: string; tool: string; text: string; is_error: boolean }
   | { kind: "memory"; action: "remember" | "forget" | "list"; text: string }
   | { kind: "skill"; action: "read" | "install"; name: string }
+  | { kind: "models"; models: ModelPrice[] }
   | { kind: "text"; text: string };
 
 export type ToolViewKind = ToolView["kind"];

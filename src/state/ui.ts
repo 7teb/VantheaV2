@@ -79,6 +79,18 @@ export const open_chat = (chat_id: string, project_path: string) => {
   ui_store.update((state) => ({ ...state, active_chat_id: chat_id, project_path, settings_open: false, search_open: false }));
 };
 
+export const on_active_chat = (listener: (chat_id: string | null) => void): (() => void) => {
+  let current = ui_store.get().active_chat_id;
+  listener(current);
+  return ui_store.subscribe(() => {
+    const next = ui_store.get().active_chat_id;
+    if (next !== current) {
+      current = next;
+      listener(next);
+    }
+  });
+};
+
 export const start_new_chat = (project_path: string) => {
   write_storage(active_chat_key, null);
   ui_store.update((state) => ({ ...state, active_chat_id: null, project_path, settings_open: false, search_open: false }));

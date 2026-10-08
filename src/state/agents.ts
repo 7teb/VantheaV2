@@ -16,7 +16,7 @@ import {
 } from "./agents-reduce.ts";
 import type { ActionResult } from "./chat-actions.ts";
 import { create_store } from "./create-store.ts";
-import { toggle_dock, ui_store } from "./ui.ts";
+import { on_active_chat, toggle_dock, ui_store } from "./ui.ts";
 
 export const agents_store = create_store<AgentsState>(empty_agents);
 
@@ -93,12 +93,8 @@ export const answer_agent_approval = async (ref: RunRef, call_id: string, decisi
 export const init_agents = (): (() => void) => {
   const stops = [
     api.on("agents:changed", (summary) => agents_store.update((state) => receive_summary(state, summary))),
-    api.on("agent:event", (event) => {
-      agents_store.update((state) => receive_event(state, event));
-      if (event.type === "tool_approval" && agents_store.get().agents.some((agent) => agent.agent_id === event.agent_id)) {
-        open_agent_run({ agent_id: event.agent_id, run_id: event.run_id });
-      }
-    }),
+    api.on("agent:event", (event) => agents_store.update((state) => receive_event(state, event))),
+    on_active_chat((chat_id) => void load_agents(chat_id)),
   ];
   return () => {
     for (const stop of stops) {

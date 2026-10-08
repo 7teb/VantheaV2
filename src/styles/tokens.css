@@ -5,7 +5,8 @@
     color-scheme: dark;
 
     --surface-shell: #060606;
-    --surface-main: #0a0a0a;
+    --surface-main-channel: 10;
+    --surface-main: rgb(var(--surface-main-channel) var(--surface-main-channel) var(--surface-main-channel));
     --surface-inset: #030303;
     --surface-raise: #101010;
     --surface-raise-2: #141414;
@@ -27,16 +28,22 @@
     --fill-track-active: rgba(255, 255, 255, 0.62);
 
     --text-primary: #ececec;
-    --text-secondary: #9a9a9a;
-    --text-muted: #7c7c7c;
-    --text-detail: #8a8a8a;
-    --text-tertiary: #5c5c5c;
+    --text-secondary: rgba(255, 255, 255, 0.588);
+    --text-detail: rgba(255, 255, 255, 0.522);
+    --text-tertiary: rgba(255, 255, 255, 0.333);
     --text-quaternary: #3a3a3a;
     --text-code: #d6d6d6;
     --text-disabled: #3e3e3e;
     --text-danger: #f0656a;
+    --text-waiting: #e3b341;
     --text-on-primary: #0a0a0a;
     --text-on-caption-close: #ffffff;
+    --current-opaque: rgb(
+      from currentColor
+      calc(var(--surface-main-channel) + (r - var(--surface-main-channel)) * alpha)
+      calc(var(--surface-main-channel) + (g - var(--surface-main-channel)) * alpha)
+      calc(var(--surface-main-channel) + (b - var(--surface-main-channel)) * alpha) / 1
+    );
 
     --thumb: #ffffff;
     --thumb-off: #6a6a6a;
@@ -137,26 +144,31 @@
       rgba(255, 255, 255, 0.025) 65%,
       transparent 100%
     );
-    --gradient-dock-fade: linear-gradient(to bottom, rgba(10, 10, 10, 0), #0a0a0a 70%);
+    --gradient-dock-fade: linear-gradient(
+      to bottom,
+      rgb(var(--surface-main-channel) var(--surface-main-channel) var(--surface-main-channel) / 0),
+      var(--surface-main) 70%
+    );
 
-    --font-ui: "Inter Variable", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
-    --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
-    --font-size-label: 11px;
-    --font-size-xs: 12px;
-    --font-size-sm: 13px;
-    --font-size-md: 14px;
-    --font-size-lg: 15px;
-    --font-size-xl: 17px;
-    --font-size-2xl: 20px;
+    --font-ui: "Segoe UI", system-ui, sans-serif;
+    --font-mono: Consolas, "Cascadia Mono", monospace;
+    --font-display: "Inter Variable", "Segoe UI", system-ui, sans-serif;
+    --font-size-caption: 12px;
+    --font-size-ui: 13px;
+    --font-size-body: 14px;
+    --font-size-prose: 14px;
+    --font-size-title: 16px;
+    --font-size-heading: 20px;
+    --font-size-code: 13px;
     --font-size-hero: 72px;
     --weight-regular: 400;
-    --weight-medium: 500;
     --weight-semibold: 600;
     --weight-hero: 800;
     --leading-tight: 1.25;
-    --leading-ui: 1.45;
-    --leading-body: 1.6;
-    --tracking-label: 0.14em;
+    --leading-ui: 1.4286;
+    --leading-prose: 1.625;
+    --leading-code: 20px;
+    --tracking-label: 0.08em;
     --tracking-hero: -0.05em;
 
     --space-1: 4px;

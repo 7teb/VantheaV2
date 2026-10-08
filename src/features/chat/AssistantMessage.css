@@ -17,13 +17,12 @@
     display: flex;
     align-items: center;
     min-height: 28px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-body);
   }
 
   .assistant-note {
     margin: 2px 0 var(--space-2);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-body);
     color: var(--text-tertiary);
   }
 
@@ -33,8 +32,7 @@
 
   .assistant-model {
     margin-left: var(--space-2);
-    font-size: var(--font-size-xs);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
 
@@ -52,8 +50,7 @@
     margin-left: -6px;
     padding: 0 var(--space-2) 0 6px;
     border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-body);
     color: var(--text-secondary);
     transition:
       background var(--duration-fast) var(--ease-out),
@@ -89,8 +86,7 @@
   }
 
   .markdown.reasoning-markdown {
-    font-size: var(--font-size-sm);
-    line-height: 1.6;
+    --md-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
 
@@ -104,7 +100,7 @@
     gap: var(--space-2);
     margin: 2px 0 14px;
     padding-left: 2px;
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-body);
     color: var(--text-secondary);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -132,7 +128,7 @@
     align-items: flex-start;
     gap: var(--space-2);
     margin: 2px 0 14px;
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-body);
     color: var(--text-secondary);
   }
 
@@ -149,10 +145,6 @@
     min-width: 0;
   }
 
-  .notice-row-title {
-    font-weight: var(--weight-medium);
-  }
-
   .notice-row-detail {
     color: var(--text-tertiary);
     white-space: pre-wrap;
@@ -166,7 +158,7 @@
     align-items: center;
     gap: var(--space-2) var(--space-3);
     margin: var(--space-1) 0 var(--space-3);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-body);
     color: var(--text-secondary);
   }
 
@@ -178,7 +170,7 @@
 
   .retry-banner-wait,
   .retry-banner-reason {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
 
@@ -201,7 +193,7 @@
     display: flex;
     align-items: flex-start;
     gap: var(--space-2);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-body);
     line-height: var(--leading-ui);
     color: var(--text-primary);
   }
@@ -221,7 +213,7 @@
     padding: 2px 0 2px var(--space-3);
     box-shadow: inset 2px 0 0 var(--rail);
     font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-code);
     color: var(--text-secondary);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -245,10 +237,6 @@
     color: var(--text-tertiary);
   }
 
-  .markdown.plan-card-body {
-    font-size: var(--font-size-md);
-  }
-
   .plan-card-actions,
   .plan-card-accepted {
     display: flex;
@@ -256,7 +244,7 @@
     gap: var(--space-3);
     padding-top: var(--space-3);
     box-shadow: inset 0 1px 0 var(--divider);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-ui);
     color: var(--text-secondary);
   }
 
@@ -279,7 +267,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-body);
     color: var(--text-secondary);
   }
 
@@ -288,7 +276,6 @@
   }
 
   .file-changes-title {
-    font-weight: var(--weight-medium);
     color: var(--text-primary);
   }
 
@@ -302,7 +289,7 @@
     gap: 6px;
     height: var(--size-control);
     padding: 0 var(--space-2);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
 
@@ -326,8 +313,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: var(--font-ui);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
     color: var(--text-secondary);
   }
 
@@ -335,6 +321,7 @@
   .file-changes[data-reverted="true"] .file-changes-title {
     color: var(--text-tertiary);
     text-decoration: line-through;
+    text-decoration-color: var(--current-opaque);
   }
 
   .file-changes .output-block-more {
@@ -352,8 +339,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-body);
     color: var(--text-secondary);
   }
 

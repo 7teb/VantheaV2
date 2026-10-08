@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import "@xterm/xterm/css/xterm.css";
 import { IconButton } from "../../../components/Button.tsx";
 import { PlusIcon } from "../../../components/icons.tsx";
@@ -10,32 +10,9 @@ import { use_store } from "../../../state/use-store.ts";
 import type { DockViewProps } from "../dock-view.ts";
 import { DockPanel, DockTitle } from "../DockPanel.tsx";
 import { DockTabs } from "../DockTabs.tsx";
-import { terminal_fonts_ready } from "./terminal-palette.ts";
 import { dispose_session } from "./terminal-sessions.ts";
 import { TerminalView } from "./TerminalView.tsx";
 import "./TerminalDock.css";
-
-let fonts_loaded = false;
-
-const use_fonts_loaded = () => {
-  const [loaded, set_loaded] = useState(fonts_loaded);
-  useEffect(() => {
-    if (loaded) {
-      return;
-    }
-    let alive = true;
-    void terminal_fonts_ready().then(() => {
-      fonts_loaded = true;
-      if (alive) {
-        set_loaded(true);
-      }
-    });
-    return () => {
-      alive = false;
-    };
-  }, [loaded]);
-  return loaded;
-};
 
 const close_tab = (tab_id: string) => {
   const last = terminal_store.get().tabs.length === 1;
@@ -57,7 +34,6 @@ export const TerminalDock = ({ visible, project_path }: DockViewProps) => {
   const t = use_t();
   const tabs = use_store(terminal_store, (state) => state.tabs);
   const active_id = use_store(terminal_store, (state) => state.active_id);
-  const fonts = use_fonts_loaded();
 
   useEffect(() => {
     if (visible) {
@@ -84,7 +60,7 @@ export const TerminalDock = ({ visible, project_path }: DockViewProps) => {
       }
     >
       <div className="terminal-surface inset-surface">
-        {!fonts || tabs.length === 0 ? (
+        {tabs.length === 0 ? (
           <TerminalSkeleton />
         ) : (
           tabs.map((tab) => (

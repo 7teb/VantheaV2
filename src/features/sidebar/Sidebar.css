@@ -40,8 +40,7 @@
   padding: 0 10px;
   border-radius: var(--radius-lg);
   color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-ui);
   transition: background var(--duration-fast) var(--ease-out);
 }
 
@@ -67,7 +66,7 @@
 
 .sidebar-nav-hint {
   font-family: var(--font-ui);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   color: var(--text-tertiary);
   opacity: 0;
   transition: opacity var(--duration-fast) var(--ease-out);
@@ -139,15 +138,15 @@
   height: 100%;
   padding: 0 10px;
   border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
 }
 
 .sidebar-row-label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  mask-image: linear-gradient(to right, var(--mask) calc(100% - 20px), transparent);
 }
 
 .sidebar-row-more {
@@ -169,7 +168,7 @@
 .chat-row-status {
   flex: none;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
@@ -201,7 +200,7 @@
   background: var(--surface-inset);
   box-shadow: var(--shadow-inset-strong);
   color: var(--text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
 }
 
 .project-toggle {
@@ -245,10 +244,6 @@
   color: var(--text-primary);
 }
 
-.project-name {
-  font-weight: var(--weight-medium);
-}
-
 .project-pin {
   color: var(--text-tertiary);
   transition: opacity var(--duration-fast) var(--ease-out);
@@ -274,7 +269,7 @@
 .sidebar-empty {
   padding: 7px 10px;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
 }
 
 .sidebar-failed {
@@ -284,7 +279,7 @@
   gap: var(--space-2);
   padding: var(--space-2) 10px;
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
 }
 
 .sidebar-footer {

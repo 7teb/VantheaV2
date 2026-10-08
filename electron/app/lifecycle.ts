@@ -5,6 +5,7 @@ import { init_background, on_background_finished, remove_chat_background, shutdo
 import { clear_browser_chat, set_vision_analyzer } from "../browser/vision.ts";
 import { init_browser_guest_security } from "../browser/guest-security.ts";
 import { flush_all_sync, get_chat, on_chat_removed } from "../chats/store.ts";
+import { forget_chat_approvals } from "../ipc/agents.ts";
 import { init_extensions } from "../ipc/extensions.ts";
 import { kill_all_terminals } from "../ipc/terminal.ts";
 import { init_mcp, set_settings_access, shutdown_mcp } from "../mcp/servers.ts";
@@ -22,6 +23,7 @@ import { side_model } from "../side/model.ts";
 import { vision_analyzer } from "../side/vision.ts";
 import { skills_prompt_section } from "../skills/store.ts";
 import { clear_authorization } from "../permissions/context.ts";
+import { close_full_window } from "../permissions/full-window.ts";
 import { init_persistence } from "../storage/init.ts";
 import { flush_pending_sync } from "../storage/json-file.ts";
 import { storage_paths } from "../storage/paths.ts";
@@ -66,6 +68,8 @@ const wire_hooks = () => {
     clear_chat_agents(chat_id).catch((error) => console.error(`[agents] removing the agents of chat ${chat_id} failed:`, error));
     drop_pending_events(chat_id);
     clear_authorization(chat_id);
+    close_full_window(chat_id);
+    forget_chat_approvals(chat_id);
     clear_mcp_chat(chat_id);
     clear_browser_chat(chat_id);
     remove_chat_background(chat_id);

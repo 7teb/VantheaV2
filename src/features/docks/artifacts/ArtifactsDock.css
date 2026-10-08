@@ -66,7 +66,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--text-secondary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -122,8 +122,8 @@
 
 .artifact-lightbox-title {
   overflow: hidden;
-  font-size: var(--font-size-md);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-body);
+  font-weight: var(--weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -133,7 +133,7 @@
   margin-top: 2px;
   overflow: hidden;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }

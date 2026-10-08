@@ -27,8 +27,8 @@
     outline: 0;
     resize: none;
     background: transparent;
-    font-size: var(--font-size-lg);
-    line-height: 1.5;
+    font-size: var(--font-size-prose);
+    line-height: var(--leading-ui);
     color: var(--text-primary);
   }
 
@@ -46,7 +46,7 @@
     align-items: center;
     gap: var(--space-1) var(--space-3);
     padding: 0 2px;
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
 
@@ -82,8 +82,7 @@
     height: var(--size-control);
     padding: 0 var(--space-2) 0 10px;
     border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
     color: var(--text-secondary);
     white-space: nowrap;
     transition:
@@ -137,7 +136,7 @@
 
   .composer-note {
     padding: 0 var(--space-2);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
 
@@ -152,8 +151,7 @@
     place-items: center;
     border-radius: inherit;
     background: var(--scrim);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
     color: var(--text-primary);
     pointer-events: none;
     animation: fade-in var(--duration-fast) var(--ease-out) backwards;

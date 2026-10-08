@@ -42,7 +42,7 @@ export const NoticeRow = memo(({ step }: { step: NoticeStep }) => {
     <div className="notice-row enter-fade-up" data-notice={step.notice}>
       <InfoIcon size={14} />
       <div className="notice-row-text">
-        <span className="notice-row-title">{t(notice_titles[step.notice])}</span>
+        <span>{t(notice_titles[step.notice])}</span>
         {step.text && <span className="notice-row-detail">{step.text}</span>}
       </div>
     </div>

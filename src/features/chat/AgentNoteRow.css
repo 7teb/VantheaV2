@@ -11,12 +11,17 @@
   }
 
   .markdown.agent-note-markdown {
-    font-size: var(--font-size-sm);
-    line-height: 1.6;
+    --md-size: var(--font-size-ui);
     color: var(--text-secondary);
   }
 
   .markdown.agent-note-markdown :is(h1, h2, h3, h4, h5, h6) {
-    font-size: var(--font-size-md);
+    margin: calc(var(--md-space) * 4) 0 var(--md-space);
+    font-size: var(--font-size-body);
+    line-height: var(--md-leading);
+  }
+
+  .markdown.agent-note-markdown > :is(h1, h2, h3, h4, h5, h6):first-child {
+    margin-top: 0;
   }
 }

@@ -41,7 +41,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--text-primary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-code);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -49,7 +49,7 @@
 .bg-task-meta {
   padding-left: 25px;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   font-variant-numeric: tabular-nums;
 }
 
@@ -59,7 +59,7 @@
 
 .bg-task-details .collapsible-header {
   min-height: 24px;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
 }
 
 .bg-task-output {
@@ -69,8 +69,8 @@
   overflow: auto;
   border-radius: var(--radius-lg);
   color: var(--text-code);
-  font-size: var(--font-size-xs);
-  line-height: 1.55;
+  font-size: var(--font-size-code);
+  line-height: var(--leading-code);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

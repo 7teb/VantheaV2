@@ -91,7 +91,7 @@ export const AgentTranscript = memo(({ transcript, chat_id, report }: AgentTrans
       {empty && <p className="agent-transcript-empty">{t("agent.no_transcript")}</p>}
       {final_report && (
         <section className="agent-report enter-fade-up">
-          <h3 className="agent-section-label">{t("agent.report")}</h3>
+          <h3 className="agent-section-label section-label">{t("agent.report")}</h3>
           <Markdown text={final_report} className="assistant-text" />
         </section>
       )}

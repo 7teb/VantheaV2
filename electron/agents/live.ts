@@ -1,13 +1,13 @@
 import { apply_event, apply_events } from "../../shared/apply-event.ts";
 import type { AgentEvent, TranscriptState } from "../../shared/events.ts";
-import type { AgentRun } from "../../shared/ipc/work.ts";
+import type { AgentApproval, AgentRun } from "../../shared/ipc/work.ts";
 import { error_text } from "../storage/coerce.ts";
 import type { Emitter } from "../turn/session.ts";
 import { append_journal, flush_journal, read_journal } from "./journal.ts";
 import { parse_event, public_run, type AgentRecord, type RunRecord, type StoredEvent } from "./records.ts";
-import { run_file } from "./store.ts";
+import { get_agent, run_file } from "./store.ts";
 
-export type StopReason = "cancelled" | "time_limit" | "app_closed";
+export type StopReason = "cancelled" | "app_closed";
 
 export type LiveRun = {
   agent_id: string;
@@ -19,6 +19,7 @@ export type LiveRun = {
   updates_sent: number;
   heard_at_call: number;
   stop_reason: StopReason | null;
+  finish_reason: string;
   removed: boolean;
   emit: Emitter;
   done: Promise<void>;
@@ -71,6 +72,7 @@ export const create_live = (agent_id: string, run_id: string, chat_id: string): 
     updates_sent: 0,
     heard_at_call: 0,
     stop_reason: null,
+    finish_reason: "",
     removed: false,
     done: Promise.resolve(),
     emit: (body) => {
@@ -99,7 +101,29 @@ export const forget_live = (run_id: string): void => {
   lives.delete(run_id);
 };
 
+export const waiting_approvals = (chat_id: string): AgentApproval[] =>
+  live_runs()
+    .filter((live) => live.chat_id === chat_id && !live.removed && live.transcript.status === "streaming")
+    .flatMap((live) =>
+      live.transcript.steps.flatMap((step) =>
+        step.kind === "tool" && step.status === "awaiting_approval" && step.approval
+          ? [{ agent_id: live.agent_id, run_id: live.run_id, call_id: step.call_id, name: get_agent(live.agent_id)?.name ?? "", request: step.approval }]
+          : [],
+      ),
+    );
+
 export const app_closed_end = { type: "end", status: "interrupted", error: { kind: "app_closed", message: app_closed_message } } as const;
+
+export const waiting_approvals = (chat_id: string): AgentApproval[] =>
+  live_runs()
+    .filter((live) => live.chat_id === chat_id && !live.removed && live.transcript.status === "streaming")
+    .flatMap((live) =>
+      live.transcript.steps.flatMap((step) =>
+        step.kind === "tool" && step.status === "awaiting_approval" && step.approval
+          ? [{ agent_id: live.agent_id, run_id: live.run_id, call_id: step.call_id, name: get_agent(live.agent_id)?.name ?? "", request: step.approval }]
+          : [],
+      ),
+    );
 
 export const last_text = (transcript: TranscriptState): string => {
   for (let index = transcript.steps.length - 1; index >= 0; index -= 1) {

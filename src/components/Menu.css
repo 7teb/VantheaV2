@@ -69,14 +69,14 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
+    font-weight: var(--weight-regular);
     text-align: left;
   }
 
   .menu-item-hint {
     padding-left: var(--space-3);
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-caption);
     color: var(--text-tertiary);
   }
 

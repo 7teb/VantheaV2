@@ -6,13 +6,13 @@
 }
 
 .context-popover-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
 }
 
 .context-popover-usage {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -39,7 +39,7 @@
 .context-popover-note,
 .context-popover-result {
   margin: 0;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   line-height: var(--leading-ui);
   color: var(--text-tertiary);
 }

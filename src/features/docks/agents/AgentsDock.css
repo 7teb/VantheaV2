@@ -37,7 +37,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
   font-weight: var(--weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -48,7 +48,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -56,7 +56,7 @@
 .agent-entry-error,
 .agent-panel-error {
   color: var(--text-danger);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   overflow-wrap: anywhere;
 }
 
@@ -111,11 +111,23 @@
   color: var(--text-danger);
 }
 
+.agent-run-wait {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+}
+
+.agent-run[data-waiting="true"] .agent-run-meta {
+  color: var(--text-waiting);
+}
+
 .agent-run-prompt {
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -123,7 +135,7 @@
 .agent-run-meta {
   flex: none;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   font-variant-numeric: tabular-nums;
 }
 
@@ -177,7 +189,6 @@
 
 .agent-transcript .markdown.assistant-text {
   margin: 0 0 12px;
-  font-size: var(--font-size-md);
 }
 
 .agent-prompt {
@@ -192,14 +203,13 @@
 
 .markdown.agent-prompt-markdown {
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  line-height: 1.6;
+  --md-size: var(--font-size-ui);
 }
 
 .agent-transcript-empty {
   padding: var(--space-6) 0;
   color: var(--text-tertiary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
 }
 
 .agent-report {
@@ -210,11 +220,6 @@
 
 .agent-section-label {
   margin: 0 0 var(--space-2);
-  color: var(--text-tertiary);
-  font-size: var(--font-size-label);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
 }
 
 .agent-skeleton-row {

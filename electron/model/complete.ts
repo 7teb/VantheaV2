@@ -1,6 +1,7 @@
 import { read_usage } from "./accumulator.ts";
 import { classify_provider_error, ModelError, read_provider_error } from "./errors.ts";
 import { as_record, as_string } from "./json.ts";
+import { safety_fields } from "./safety.ts";
 import { attempt_failure, create_watchdog, send, transport_with, with_retries, type Transport } from "./transport.ts";
 import { wire_messages, type ApiMessage, type RoundResult } from "./types.ts";
 
@@ -67,6 +68,7 @@ export const complete = async (request: CompleteRequest, signal?: AbortSignal, o
     max_completion_tokens: request.max_tokens,
     ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
     ...(request.json ? { response_format: { type: "json_object" } } : {}),
+    ...safety_fields(request.model_id),
   });
   return with_retries({
     transport,

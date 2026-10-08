@@ -9,7 +9,7 @@ It is built with Electron, React and TypeScript. The models come from OpenRouter
 - Read, search, edit and write files inside the project folder you picked. It stays inside that folder and never reads secret files like `.env` or SSH keys.
 - Run PowerShell commands, with live output while they run. Long builds or test runs can go to the background, and the agent picks up the result when they finish.
 - Plan mode: the agent only looks around and writes a plan, and nothing changes until you accept it.
-- Sub-agents for work that can run in parallel or would flood the main chat. Each one has a live transcript, and they report back when they are done.
+- Sub-agents for work that can run in parallel or would flood the main chat. Each one has a live transcript, and they report back when they are done. When an agent needs your approval, the question shows up above the message box and the agent is marked with a yellow dot, so you don't have to open each transcript.
 - Undo per turn, so every file the agent touched in a turn can be put back.
 - A built-in terminal and a browser the agent can drive.
 - Optional extras you turn on in the settings: web search through Tavily, image generation, memory across chats, skills and local MCP servers.
@@ -23,7 +23,7 @@ You choose how much the agent may do on its own, right in the message box.
 - **Auto**: the agent just works on what you asked for. Read-only commands run right away, everything else goes past a small reviewer model. Normal steps inside the project, like builds, tests, installing the project's dependencies or local git commits, run on their own. Anything beyond that, like deleting files outside the project, installing software system-wide, pushing or uploading, or running something downloaded, waits for your yes. Sub-agents follow the same rules.
 - **Full**: commands and writes run without asking.
 
-When you say no, that sticks: the exact same command is refused without asking you again until you write something new in the chat, and the reviewer sees your earlier answers, so the agent can't get around a no with a slightly different command. "Don't ask again for commands starting with ..." works for the rest of the chat, also after a restart. If the reviewer can't be reached, you are asked instead of anything running unchecked.
+When you say no, that sticks: the exact same command is refused without asking you again until you write something new in the chat, and the reviewer sees your earlier answers, so the agent can't get around a no with a slightly different command. "Don't ask again for commands starting with ..." works for the rest of the chat, also after a restart. If the reviewer can't be reached, you are asked instead of anything running unchecked. That question also lets you switch the chat and its sub-agents to Full for ten minutes; the message box shows the time left and can end it early.
 
 A short list of truly destructive commands (formatting a drive, deleting Windows or System32, wiping boot settings) is blocked in every mode and can't be approved. If such a command is hidden inside a script the agent wants to run, you are asked first, even when the reviewer would let it through.
 

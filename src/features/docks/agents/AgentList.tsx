@@ -5,6 +5,7 @@ import { class_names } from "../../../components/class-names.ts";
 import { BotIcon, ChevronRightIcon, CircleStopIcon } from "../../../components/icons.tsx";
 import { Skeleton } from "../../../components/Skeleton.tsx";
 import { use_t } from "../../../i18n/index.ts";
+import { agent_approvals_store, is_waiting } from "../../../state/agent-approvals.ts";
 import { cancel_agent, select_agent_run } from "../../../state/agents.ts";
 import { find_model, models_store } from "../../../state/models.ts";
 import { use_store } from "../../../state/use-store.ts";
@@ -33,15 +34,22 @@ type RunRowProps = { agent_id: string; run: AgentRunSummary; now: number };
 const RunRow = ({ agent_id, run, now }: RunRowProps) => {
   const t = use_t();
   const StatusIcon = status_icons[run.status];
+  const waiting = use_store(agent_approvals_store, (state) => run.status === "running" && is_waiting(state, run.run_id));
   return (
     <li>
-      <button type="button" className="agent-run" data-status={run.status} onClick={() => select_agent_run({ agent_id, run_id: run.run_id })}>
-        <StatusIcon size={14} className={class_names("agent-run-icon", run.status === "running" && "spin")} />
+      <button type="button" className="agent-run" data-status={run.status} data-waiting={waiting} onClick={() => select_agent_run({ agent_id, run_id: run.run_id })}>
+        {waiting ? (
+          <span className="agent-run-wait" title={t("agent.waiting_approval")}>
+            <span className="wait-dot" />
+          </span>
+        ) : (
+          <StatusIcon size={14} className={class_names("agent-run-icon", run.status === "running" && "spin")} />
+        )}
         <span className="agent-run-prompt" title={run.prompt}>
           {first_line(run.prompt) || t("agent.untitled_run")}
         </span>
         <span className="agent-run-meta">
-          {t(status_labels[run.status])} · {run_duration(run, now)}
+          {t(waiting ? "agent.waiting_approval" : status_labels[run.status])} · {run_duration(run, now)}
         </span>
         <ChevronRightIcon size={12} className="agent-run-chevron" />
       </button>

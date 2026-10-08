@@ -1,6 +1,6 @@
 import type { ITheme } from "@xterm/xterm";
 
-export type TerminalLook = { theme: ITheme; font_family: string };
+export type TerminalLook = { theme: ITheme; font_family: string; font_size: number };
 
 const css_var = (style: CSSStyleDeclaration, name: string) => style.getPropertyValue(name).trim();
 
@@ -15,6 +15,7 @@ export const terminal_look = (): TerminalLook => {
   const background = read("--surface-inset");
   look = {
     font_family: read("--font-mono"),
+    font_size: Number.parseFloat(read("--font-size-code")),
     theme: {
       background,
       foreground: read("--text-code"),
@@ -45,12 +46,3 @@ export const terminal_look = (): TerminalLook => {
   return look;
 };
 
-let fonts: Promise<void> | null = null;
-
-export const terminal_fonts_ready = (): Promise<void> => {
-  fonts ??= document.fonts
-    .load(`13px ${terminal_look().font_family}`)
-    .then(() => undefined)
-    .catch((error: unknown) => console.error(`[terminal] loading the font ${terminal_look().font_family} failed`, error));
-  return fonts;
-};

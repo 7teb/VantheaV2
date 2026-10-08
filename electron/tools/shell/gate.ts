@@ -32,7 +32,7 @@ export const gate_command = async (ctx: ToolContext, command: string, cwd: strin
     command,
     cwd,
     background,
-    overseer: { safe: false, reason: decision.reason },
+    overseer: { safe: false, reason: decision.reason, ...(decision.source === "unavailable" ? { unavailable: true } : {}) },
     grant_prefix: decision.grant_prefix,
     ...(decision.source_hash ? { source_hash: decision.source_hash } : {}),
   });

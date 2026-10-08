@@ -63,8 +63,26 @@ const parse_model = (value: unknown, index: number): ModelEntry => {
     context_length: as_count(raw.context_length, `${named}.context_length`),
     max_output: as_count(raw.max_output, `${named}.max_output`),
     reasoning_passback: raw.reasoning_passback === undefined ? false : as_flag(raw.reasoning_passback, `${named}.reasoning_passback`),
+    ...(raw.note === undefined ? {} : { note: as_text(raw.note, `${named}.note`) }),
   };
 };
+
+const resolve_fallbacks = (raw_models: unknown[], models: ModelEntry[]): ModelEntry[] =>
+  models.map((model, index) => {
+    const target_id = as_record(raw_models[index], `models[${index}]`).fallback;
+    if (target_id === undefined) {
+      return model;
+    }
+    const where = `models[${index}] (${model.id}).fallback`;
+    const target = models.find((entry) => entry.id === as_text(target_id, where));
+    if (!target || target.id === model.id) {
+      return fail(where, "must name another model id from this catalog");
+    }
+    if (as_record(raw_models[models.indexOf(target)], where).fallback !== undefined) {
+      return fail(where, `must name a model without its own fallback, ${target.id} has one`);
+    }
+    return { ...model, fallback: { id: target.id, label: target.label, provider_order: target.provider_order } };
+  });
 
 const parse_image_model = (value: unknown, index: number): ImageModelEntry => {
   const where = `image_models[${index}]`;
@@ -97,7 +115,7 @@ export const parse_catalog = (value: unknown): ModelCatalog => {
   if (!Array.isArray(raw.image_models)) {
     return fail("image_models", "must be an array");
   }
-  const models = raw.models.map(parse_model);
+  const models = resolve_fallbacks(raw.models, raw.models.map(parse_model));
   const image_models = raw.image_models.map(parse_image_model);
   unique_ids(
     models.map((model) => model.id),

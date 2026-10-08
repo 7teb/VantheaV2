@@ -45,6 +45,8 @@ export const agent_event_text = (report: AgentReport): string =>
     seconds: report_seconds(report),
     report_path: report.report_path,
     report_error: report.report_error,
+    stop_reason: report.stop_reason,
+    has_report: report.has_report,
   });
 
 const settle = (chat_id: string, delivered: PendingEvent[]) => {

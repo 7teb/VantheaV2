@@ -7,8 +7,8 @@
     height: var(--size-control);
     padding: 0 12px;
     border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
+    font-weight: var(--weight-regular);
     white-space: nowrap;
     transition:
       background var(--duration-fast) var(--ease-out),

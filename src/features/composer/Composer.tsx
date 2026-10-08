@@ -155,7 +155,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
           }}
         />
         <ModelPicker />
-        <ModePicker />
+        <ModePicker chat_id={chat_id} />
         <button type="button" className="composer-chip" aria-pressed={draft.plan} data-active={draft.plan} onClick={() => toggle_plan(draft_key)}>
           <ClipboardListIcon size={15} />
           <span className="composer-chip-label">{t("composer.plan")}</span>

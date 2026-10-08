@@ -11,7 +11,7 @@
     gap: var(--space-2);
     min-height: 26px;
     padding: 3px 0;
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-ui);
     line-height: 20px;
     color: var(--text-secondary);
   }
@@ -45,7 +45,7 @@
   }
 
   .todo-empty {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
 }

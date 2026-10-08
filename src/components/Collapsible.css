@@ -6,8 +6,8 @@
     min-height: 28px;
     max-width: 100%;
     color: var(--text-secondary);
-    font-size: var(--font-size-sm);
-    font-weight: var(--weight-medium);
+    font-size: var(--font-size-ui);
+    font-weight: var(--weight-regular);
     transition: color var(--duration-fast) var(--ease-out);
   }
 

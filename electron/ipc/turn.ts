@@ -7,18 +7,19 @@ import { estimate_tokens } from "../context/estimate.ts";
 import { find_model } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { resolve_decision } from "../permissions/approvals.ts";
+import { close_full_window, full_window_until, on_full_window } from "../permissions/full-window.ts";
 import { get_settings } from "../settings/store.ts";
 import { side_model } from "../side/model.ts";
 import { as_array, as_number, as_string, pick, require_record, require_string } from "../storage/coerce.ts";
 import { is_active } from "../turn/active.ts";
 import { accept_plan, continue_turn, edit_turn, start_turn, steer_turn, stop_turn } from "../turn/run.ts";
-import { handle } from "./handle.ts";
+import { emit, handle } from "./handle.ts";
 
 const modes: readonly PermissionMode[] = ["ask", "auto", "full"];
 
 const origins: readonly UserOrigin[] = ["user", "plan_accept", "continue", "background", "agent_report"];
 
-const grants: readonly GrantScope[] = ["once", "prefix", "chat", "session"];
+const grants: readonly GrantScope[] = ["once", "prefix", "chat", "session", "full_window"];
 
 const chat_id_of = (value: unknown) => require_string(value, "chat id", 200);
 
@@ -102,6 +103,7 @@ const force_compact = async (chat_id: string): Promise<CompactResult> => {
 };
 
 export const register_turn_ipc = () => {
+  on_full_window((chat_id, until) => emit("turn:full_window_changed", { chat_id, until }));
   handle("turn:send", (request) => {
     const parsed = parse_send(request);
     return start_turn(parsed, parsed.origin);
@@ -123,6 +125,11 @@ export const register_turn_ipc = () => {
   handle("turn:approve", (chat_id, call_id, decision) => {
     resolve_decision(chat_id_of(chat_id), require_string(call_id, "call id", 200), parse_decision(decision));
   });
+  handle("turn:full_window", (chat_id) => {
+    const id = chat_id_of(chat_id);
+    return { chat_id: id, until: full_window_until(id) };
+  });
+  handle("turn:end_full_window", (chat_id) => close_full_window(chat_id_of(chat_id)));
   handle("turn:context", (chat_id) => current_context(chat_id_of(chat_id)));
   handle("turn:compact", (chat_id) => force_compact(chat_id_of(chat_id)));
 };

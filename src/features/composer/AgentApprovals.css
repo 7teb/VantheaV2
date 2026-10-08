@@ -1,0 +1,55 @@
+@layer components {
+  .agent-approvals {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .agent-approvals-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: 0 var(--space-2);
+    font-size: var(--font-size-ui);
+    color: var(--text-secondary);
+  }
+
+  .agent-approvals-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+
+  .agent-approvals-more {
+    flex: none;
+    color: var(--text-tertiary);
+  }
+
+  .agent-approvals-open {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    padding: 3px var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--text-tertiary);
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .agent-approvals-open:hover {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .agent-approvals-body {
+    max-height: min(420px, 48vh);
+    overflow: auto;
+    border-radius: var(--radius-xl);
+  }
+}

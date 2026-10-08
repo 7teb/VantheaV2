@@ -20,7 +20,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-code);
     color: var(--text-tertiary);
   }
 
@@ -29,8 +29,8 @@
     padding: 2px var(--space-4) var(--space-4);
     overflow-x: auto;
     font-family: var(--font-mono);
-    font-size: var(--font-size-sm);
-    line-height: 1.65;
+    font-size: var(--font-size-code);
+    line-height: var(--leading-code);
     color: var(--text-code);
     tab-size: 4;
   }

@@ -9,7 +9,7 @@
 .pane-note {
   padding: var(--space-4);
   color: var(--text-tertiary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
 }
 
 .settings-group > .pane-note,
@@ -23,7 +23,7 @@ section + .pane-note {
 
 .pane-value {
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
 }
 
 .pane-value.is-muted {
@@ -63,16 +63,14 @@ section + .pane-note {
 
 .pane-item-title {
   overflow: hidden;
-  font-size: var(--font-size-md);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-body);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .pane-item-title.is-wrapping {
-  font-size: var(--font-size-sm);
-  font-weight: var(--weight-regular);
-  line-height: var(--leading-body);
+  font-size: var(--font-size-ui);
+  line-height: var(--leading-prose);
   white-space: normal;
   overflow-wrap: anywhere;
 }
@@ -81,7 +79,7 @@ section + .pane-note {
   margin-top: 2px;
   overflow: hidden;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -90,14 +88,14 @@ section + .pane-note {
   margin-top: 6px;
   padding-left: 10px;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   box-shadow: inset 2px 0 0 var(--rail);
 }
 
 .pane-item-error {
   margin-top: 4px;
   color: var(--text-danger);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   overflow-wrap: anywhere;
 }
 
@@ -127,8 +125,8 @@ section + .pane-note {
   overflow: auto;
   border-radius: var(--radius-lg);
   color: var(--text-code);
-  font-size: var(--font-size-xs);
-  line-height: 1.6;
+  font-size: var(--font-size-code);
+  line-height: var(--leading-code);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -159,7 +157,7 @@ section + .pane-note {
 .slider-value {
   min-width: 20px;
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -185,7 +183,7 @@ section + .pane-note {
 
 .instructions-count {
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption);
   font-variant-numeric: tabular-nums;
 }
 

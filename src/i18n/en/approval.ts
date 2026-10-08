@@ -31,4 +31,6 @@ export const approval = {
   "approval.trust_session": "Yes, and trust dangerous tools from {x} for this session",
   "approval.feedback_placeholder": "Tell it what to do instead…",
   "approval.background": "Runs in the background",
+  "approval.full_window": "Yes, and allow everything in this chat and its agents for {n} minutes",
+  "approval.more_waiting": "{n} more waiting",
 };

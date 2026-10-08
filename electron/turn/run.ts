@@ -158,7 +158,7 @@ const drive = async (plan: TurnPlan, turn: ReturnType<typeof register_active>): 
       stream: stream_round,
       resolve_tools: (p) => tools_for(p, settings, mcp_tools()),
       side_model,
-      wait_decision: (call_id) => wait_for_decision(plan.chat_id, call_id, signal),
+      wait_decision: (call_id, request) => wait_for_decision({ key: plan.chat_id, chat_id: plan.chat_id, call_id, request, signal }),
       actor: "main",
       human_decisions: () => chat_decisions(plan.chat_id),
       take_steers: () => take_steers_active(plan.chat_id),

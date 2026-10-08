@@ -6,6 +6,7 @@ import {
   BotIcon,
   ClipboardListIcon,
   ClockIcon,
+  CoinsIcon,
   FilePenIcon,
   FileTextIcon,
   GlobeCheckIcon,
@@ -25,6 +26,7 @@ import {
 import { use_t } from "../../i18n/index.ts";
 import { AgentBody, BackgroundBody, CommandBody } from "./bodies-run.tsx";
 import { EditBody, FilesBody, GrepBody, OutlineBody, ReadBody } from "./bodies-files.tsx";
+import { ModelsBody } from "./bodies-models.tsx";
 import { ImageBody, WebSearchBody } from "./bodies-web.tsx";
 import { BrowserBody, McpBody, MemoryBody, PlanBody, SkillBody, TextBody, TodosBody } from "./bodies-work.tsx";
 import type { BodyProps } from "./body-types.ts";
@@ -49,6 +51,7 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   browser: GlobeIcon,
   mcp: AtSignIcon,
   clock: ClockIcon,
+  models: CoinsIcon,
   text: MessageSquareIcon,
 };
 
@@ -71,6 +74,7 @@ export const view_bodies: Bodies = {
   mcp: McpBody,
   memory: MemoryBody,
   skill: SkillBody,
+  models: ModelsBody,
   text: TextBody,
 };
 

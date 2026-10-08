@@ -53,7 +53,7 @@ export const review_messages = (input: ReviewInput): SideMessage[] => {
 
 const unreadable = (text: string, problem: string): OverseerVerdict => {
   console.warn(`[permissions] overseer answer ${problem}: ${text.slice(0, 200)}`);
-  return { safe: false, reason: "The safety check gave no usable answer, so it needs your confirmation." };
+  return { safe: false, reason: "The safety check gave no usable answer, so it needs your confirmation.", unavailable: true };
 };
 
 export const parse_review = (text: string): OverseerVerdict => {
@@ -92,6 +92,7 @@ const offline_until = new WeakMap<SideModelCall, number>();
 const offline_verdict: OverseerVerdict = {
   safe: false,
   reason: "The safety check is unavailable right now, so this needs your confirmation. Full access or a \"don't ask again\" answer skip the check.",
+  unavailable: true,
 };
 
 export type ReviewResult = { verdict: OverseerVerdict; source: "model" | "cache" | "unavailable" };
@@ -113,6 +114,9 @@ export const run_review = async (side_model: SideModelCall, input: ReviewInput, 
     const answer = await side_model("overseer", messages, review_max_tokens, AbortSignal.any([signal, AbortSignal.timeout(review_timeout_ms)]));
     const verdict = parse_review(answer);
     offline_until.delete(side_model);
+    if (verdict.unavailable) {
+      return { verdict, source: "unavailable" };
+    }
     bucket.set(key, verdict);
     if (bucket.size > cache_limit) {
       bucket.delete(bucket.keys().next().value!);

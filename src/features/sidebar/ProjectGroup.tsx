@@ -49,7 +49,7 @@ export const ProjectGroup = ({ group, chat_total, collapsed, selected, children 
           />
         ) : (
           <button type="button" className="sidebar-row-main" title={project.path} onClick={() => start_new_chat(project.path)}>
-            <span className="sidebar-row-label project-name">{label}</span>
+            <span className="sidebar-row-label">{label}</span>
             {project.pinned && <PinIcon size={12} className="project-pin" />}
           </button>
         )}

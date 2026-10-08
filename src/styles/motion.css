@@ -84,6 +84,22 @@
     animation: spin 0.9s var(--ease-linear) infinite;
   }
 
+  @keyframes wait-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  .wait-dot {
+    flex: none;
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-full);
+    background: var(--text-waiting);
+    animation: wait-pulse 1.6s var(--ease-in-out) infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

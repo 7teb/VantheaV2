@@ -37,7 +37,7 @@
   align-items: baseline;
   gap: var(--space-2);
   min-width: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
   font-weight: var(--weight-semibold);
   white-space: nowrap;
 }
@@ -45,8 +45,8 @@
 .dock-title-meta {
   overflow: hidden;
   color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-caption);
+  font-weight: var(--weight-regular);
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
 }
@@ -70,7 +70,7 @@
 .dock-empty {
   padding: var(--space-8) var(--space-4);
   color: var(--text-tertiary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-ui);
   text-align: center;
 }
 
@@ -122,8 +122,7 @@
   height: 100%;
   padding: 0 4px 0 10px;
   border-radius: inherit;
-  font-size: var(--font-size-xs);
-  font-weight: var(--weight-medium);
+  font-size: var(--font-size-caption);
 }
 
 .dock-tab-label {

@@ -1,4 +1,5 @@
 import type { ToolView } from "../../../shared/tool-view.ts";
+import { effective_mode } from "../../permissions/full-window.ts";
 import { commit_edit, prepare_replace, prepare_write, type PreparedEdit } from "../../project/edit.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool, ToolArgumentError, type ToolContext, type ToolProfile, type ToolResult } from "../types.ts";
@@ -17,7 +18,7 @@ const edit_view = (prepared: PreparedEdit): ToolView => ({
 
 const apply_edit = async (ctx: ToolContext, prepared: PreparedEdit, summary: string): Promise<ToolResult> => {
   const view = edit_view(prepared);
-  if (ctx.mode === "ask") {
+  if (effective_mode(ctx.chat_id, ctx.mode) === "ask") {
     const decision = await ctx.approve({
       kind: "write",
       path: prepared.target.relative,

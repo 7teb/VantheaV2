@@ -14,34 +14,27 @@
     display: inline-block;
     margin-right: 0.3em;
     content: counter(draft-lines);
-    text-shadow:
-      0 0 0 transparent,
-      0 0 0 transparent;
   }
 
   .draft-lines[data-tick="0"]::before {
-    animation: draft-lines-even 0.3s var(--ease-out);
+    animation: draft-lines-even 0.24s var(--ease-out);
   }
 
   .draft-lines[data-tick="1"]::before {
-    animation: draft-lines-odd 0.3s var(--ease-out);
+    animation: draft-lines-odd 0.24s var(--ease-out);
   }
 
   @keyframes draft-lines-even {
     from {
-      filter: blur(1.3px);
-      text-shadow:
-        0 -0.22em 0.14em color-mix(in srgb, var(--text-detail) 50%, transparent),
-        0 0.22em 0.14em color-mix(in srgb, var(--text-detail) 50%, transparent);
+      filter: blur(0.8px);
+      opacity: 0.55;
     }
   }
 
   @keyframes draft-lines-odd {
     from {
-      filter: blur(1.3px);
-      text-shadow:
-        0 -0.22em 0.14em color-mix(in srgb, var(--text-detail) 50%, transparent),
-        0 0.22em 0.14em color-mix(in srgb, var(--text-detail) 50%, transparent);
+      filter: blur(0.8px);
+      opacity: 0.55;
     }
   }
 }

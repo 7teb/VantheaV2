@@ -26,7 +26,7 @@ import {
   load_context,
   remove_agents,
   run_file,
-  running_total,
+  running_in_chat,
   save_context,
   save_index_sync,
 } from "./store.ts";
@@ -56,10 +56,6 @@ export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description
 export type StartedRun = { agent: AgentSummary; run: AgentRunSummary };
 
 export const max_running_agents = 8;
-
-export const max_agent_rounds = 300;
-
-export const agent_time_limit_ms = 4 * 60 * 60 * 1000;
 
 export const max_main_messages = 10;
 
@@ -92,9 +88,9 @@ export const find_agent_model = async (id: string): Promise<ModelEntry> => {
   return found;
 };
 
-const ensure_capacity = () => {
-  if (running_total() >= max_running_agents) {
-    throw new Error(`At most ${max_running_agents} agents can run at once; wait for one to finish or cancel one.`);
+const ensure_capacity = (chat_id: string) => {
+  if (running_in_chat(chat_id) >= max_running_agents) {
+    throw new Error(`At most ${max_running_agents} agents can run at once in this chat; wait for one to finish or cancel one.`);
   }
 };
 
@@ -142,9 +138,6 @@ const final_status = (live: LiveRun): Exclude<AgentRunStatus, "running"> => {
 };
 
 const ending_note = (live: LiveRun, status: AgentRunStatus): string => {
-  if (live.stop_reason === "time_limit") {
-    return `The run reached its ${agent_time_limit_ms / 3_600_000}-hour limit and was stopped.`;
-  }
   if (status === "failed" || status === "interrupted") {
     return `The run ended early: ${live.transcript.error?.message ?? "unknown error"}.`;
   }
@@ -158,6 +151,14 @@ const report_of = (live: LiveRun, status: AgentRunStatus): string => {
     return text;
   }
   return text ? `${note}\n\nLast output:\n${text}` : note;
+};
+
+const stop_reason_of = (live: LiveRun): string => {
+  const error = live.transcript.error;
+  if (error) {
+    return `error ${error.kind}: ${error.message.slice(0, 300)}`;
+  }
+  return live.finish_reason || "unknown";
 };
 
 const close_open_calls = (messages: ApiMessage[]): ApiMessage[] => {
@@ -202,10 +203,15 @@ const agent_session = (agent: AgentRecord, run: RunRecord, live: LiveRun, reques
     plan: false,
     signal: live.controller.signal,
     emit: live.emit,
-    stream,
+    stream: async (round_request, callbacks, signal) => {
+      const result = await stream(round_request, callbacks, signal);
+      live.finish_reason = result.finish_reason;
+      return result;
+    },
     resolve_tools: (profile) => resolve_tools(profile, request.settings),
     side_model,
-    wait_decision: (call_id) => wait_for_decision(agent_approval_key(run.run_id), call_id, live.controller.signal),
+    wait_decision: (call_id, request) =>
+      wait_for_decision({ key: agent_approval_key(run.run_id), chat_id: agent.chat_id, call_id, request, signal: live.controller.signal }),
     actor: agent.name,
     human_decisions: async () =>
       merge_decisions(await chat_decisions(agent.chat_id), live.transcript.steps.flatMap((step) => (step.kind === "tool" ? (step.decisions ?? []) : []))),
@@ -213,7 +219,7 @@ const agent_session = (agent: AgentRecord, run: RunRecord, live: LiveRun, reques
     take_steers: () => [],
     profile: agent.profile,
     call_scope: run.run_id,
-    max_rounds: max_agent_rounds,
+    max_rounds: Number.POSITIVE_INFINITY,
     wrap_up_at: wrap_up_fraction,
     take_notes: () => take_notes(live),
     idle: async () => live.inbox.length > 0,
@@ -258,6 +264,8 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
       ended_at: ended.ended_at ?? new Date().toISOString(),
       report_path,
       report_error,
+      stop_reason: stop_reason_of(live),
+      has_report: report_text(live.transcript) !== "",
     });
   } catch (error) {
     console.error(`[agents] finishing run ${run.run_id} of agent ${agent.agent_id} failed:`, error);
@@ -265,8 +273,6 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
 };
 
 const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request: RunContext, model: ModelEntry, context: ApiMessage[]): Promise<void> => {
-  const timer = setTimeout(() => stop_live(live, "time_limit"), agent_time_limit_ms);
-  timer.unref();
   const api_messages: ApiMessage[] = [];
   try {
     const tools = current_deps().resolve_tools(agent.profile, request.settings);
@@ -289,7 +295,6 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
     console.error(`[agents] run ${run.run_id} of agent ${agent.agent_id} failed to start:`, error);
     live.emit({ type: "end", status: "failed", error: { kind: "internal", message: error_text(error) } });
   } finally {
-    clearTimeout(timer);
     await finish(agent, run, live, api_messages);
   }
 };
@@ -302,7 +307,7 @@ const launch = (agent: AgentRecord, request: RunContext, model: ModelEntry, cont
 };
 
 export const deploy_agent = (request: DeployRequest): StartedRun => {
-  ensure_capacity();
+  ensure_capacity(request.chat_id);
   const agent = create_agent({
     chat_id: request.chat_id,
     name: request.name,
@@ -329,7 +334,7 @@ export const continue_agent = async (agent: AgentRecord, request: RunContext): P
   const model = await find_agent_model(agent.model);
   const context = await load_context(agent.agent_id);
   ensure_idle(agent);
-  ensure_capacity();
+  ensure_capacity(agent.chat_id);
   return launch(agent, request, model, context);
 };
 

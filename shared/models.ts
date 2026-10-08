@@ -1,3 +1,5 @@
+export type ModelRoute = { id: string; label: string; provider_order: string[] };
+
 export type ModelEntry = {
   id: string;
   label: string;
@@ -9,6 +11,8 @@ export type ModelEntry = {
   context_length: number;
   max_output: number;
   reasoning_passback: boolean;
+  note?: string;
+  fallback?: ModelRoute;
 };
 
 export type SideModelRole = "title" | "overseer" | "vision" | "summarize" | "web_answer" | "memory";

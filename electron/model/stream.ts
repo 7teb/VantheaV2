@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { create_accumulator, draft_lines, type Accumulator, type ChunkOutcome } from "./accumulator.ts";
 import { api_effort } from "./catalog.ts";
-import { classify_provider_error, ModelError } from "./errors.ts";
+import { classify_provider_error, is_retryable, ModelError } from "./errors.ts";
+import { safety_fields } from "./safety.ts";
 import { create_sse_parser } from "./sse.ts";
 import { attempt_failure, create_watchdog, send, transport_with, with_retries, type Transport } from "./transport.ts";
 import { to_api_tools, wire_messages, type RoundCallbacks, type RoundRequest, type RoundResult } from "./types.ts";
@@ -25,6 +26,7 @@ export const round_body = (request: RoundRequest): Record<string, unknown> => {
     ...(request.tools.length ? { tools: to_api_tools(request.tools), tool_choice: "auto" } : {}),
     ...(model.efforts.length ? { reasoning: { effort: api_effort(model, request.effort) } } : {}),
     ...(model.provider_order.length ? { provider: { order: model.provider_order, allow_fallbacks: false } } : {}),
+    ...safety_fields(model.id),
   };
 };
 
@@ -188,20 +190,37 @@ export const stream_round = async (
   overrides: Partial<Transport> = {},
 ): Promise<RoundResult> => {
   const transport = transport_with(overrides);
-  const body = JSON.stringify(round_body(request));
   const known_tools = new Set(request.tools.map((tool) => tool.name));
-  let current: Accumulator | null = null;
-  return with_retries({
-    transport,
-    signal,
-    run: () => {
-      current = create_accumulator();
-      return run_attempt(body, known_tools, current, callbacks, signal, transport);
-    },
-    cancelled: () => partial_result(current),
-    on_retry: (attempt, max, reason, wait_ms) => {
-      current = null;
-      callbacks.on_retry(attempt, max, reason, wait_ms);
-    },
-  });
+  const fallback = request.model.fallback;
+  const total = fallback ? transport.max_attempts * 2 : transport.max_attempts;
+  const attempt_route = (model: RoundRequest["model"], offset: number) => {
+    const body = JSON.stringify(round_body({ ...request, model }));
+    let current: Accumulator | null = null;
+    return with_retries({
+      transport,
+      signal,
+      run: () => {
+        current = create_accumulator();
+        return run_attempt(body, known_tools, current, callbacks, signal, transport);
+      },
+      cancelled: () => partial_result(current),
+      on_retry: (attempt, ...[, reason, wait_ms]) => {
+        current = null;
+        callbacks.on_retry(attempt + offset, total, reason, wait_ms);
+      },
+    });
+  };
+  if (!fallback) {
+    return attempt_route(request.model, 0);
+  }
+  try {
+    return await attempt_route(request.model, 0);
+  } catch (error) {
+    if (signal.aborted || !(error instanceof ModelError) || !is_retryable(error)) {
+      throw error;
+    }
+    console.warn(`[model] ${request.model.id} failed after ${transport.max_attempts} attempts (${error.kind}), switching to ${fallback.id}: ${error.message}`);
+    callbacks.on_retry(transport.max_attempts + 1, total, fallback.label, 0);
+    return attempt_route({ ...request.model, id: fallback.id, provider_order: fallback.provider_order }, transport.max_attempts);
+  }
 };

@@ -1,4 +1,4 @@
-import type { ApprovalDecision, HumanDecision } from "../../shared/approval.ts";
+import type { ApprovalDecision, ApprovalRequest, HumanDecision } from "../../shared/approval.ts";
 import type { NoticeKind, PermissionMode, SteerMessage } from "../../shared/chat.ts";
 import type { StreamEventBody } from "../../shared/events.ts";
 import type { ModelEntry } from "../../shared/models.ts";
@@ -29,7 +29,7 @@ export type TurnSession = {
   stream: StreamFn;
   resolve_tools: (profile: ToolProfile) => Tool[];
   side_model: SideModelCall;
-  wait_decision: (call_id: string) => Promise<ApprovalDecision>;
+  wait_decision: (call_id: string, request: ApprovalRequest) => Promise<ApprovalDecision>;
   actor?: string;
   human_decisions?: () => Promise<HumanDecision[]>;
   mirror_decision?: (decision: HumanDecision) => Promise<void>;

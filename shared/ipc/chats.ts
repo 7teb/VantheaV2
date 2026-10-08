@@ -20,6 +20,8 @@ export type UndoResult = { restored: string[]; failed: string[] };
 
 export type CompactResult = { status: "done" | "nothing" | "busy" | "failed" };
 
+export type FullWindow = { chat_id: string; until: number | null };
+
 export const chats_channels = {
   "chats:list": invoke<[], ChatMeta[]>(),
   "chats:get": invoke<[chat_id: string], Chat | null>(),
@@ -40,6 +42,9 @@ export const chats_channels = {
   "turn:stop": invoke<[chat_id: string], void>(),
   "turn:steer": invoke<[chat_id: string, text: string, attachments: Attachment[], steer_id: string], string | null>(),
   "turn:approve": invoke<[chat_id: string, call_id: string, decision: ApprovalDecision], void>(),
+  "turn:full_window": invoke<[chat_id: string], FullWindow>(),
+  "turn:end_full_window": invoke<[chat_id: string], void>(),
+  "turn:full_window_changed": emit<FullWindow>(),
   "turn:undo": invoke<[chat_id: string, message_id: string], UndoResult>(),
   "turn:context": invoke<[chat_id: string], ContextUsage>(),
   "turn:compact": invoke<[chat_id: string], CompactResult>(),
