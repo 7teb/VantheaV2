@@ -265,7 +265,6 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
       report_path,
       report_error,
       stop_reason: stop_reason_of(live),
-      has_report: report_text(live.transcript) !== "",
     });
   } catch (error) {
     console.error(`[agents] finishing run ${run.run_id} of agent ${agent.agent_id} failed:`, error);

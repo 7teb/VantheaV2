@@ -17,7 +17,6 @@ export type AgentReport = {
   report_path: string | null;
   report_error?: string;
   stop_reason: string;
-  has_report: boolean;
 };
 
 export type AgentUpdate = { chat_id: string; agent_id: string; run_id: string; name: string; text: string };
@@ -103,7 +102,7 @@ const turn_note = (note: PendingNote): TurnNote => {
     return { kind: "notice", notice: "agent_update", text, content: update_note_content(text) };
   }
   const { report } = note;
-  const text = report_notice_text(report.name, report.agent_id, report.status, report_seconds(report), report_file_notice(report.agent_id, report.run_id, report.report_path, report.report_error, report.stop_reason, report.has_report));
+  const text = report_notice_text(report.name, report.agent_id, report.status, report_seconds(report), report_file_notice(report.agent_id, report.run_id, report.report_path, report.report_error, report.stop_reason));
   return { kind: "notice", notice: "agent_report", text, content: report_note_content(text) };
 };
 

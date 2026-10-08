@@ -18,7 +18,6 @@ export type ReportEvent = {
   report_path: string | null;
   report_error?: string;
   stop_reason?: string;
-  has_report?: boolean;
 };
 
 const report_head = /^(.*) \(([^()\s]+)\) finished with status (\w+) after (\d+)s\.$/;
@@ -46,18 +45,11 @@ const report_read_instruction = "YOU MUST READ THE COMPLETE REPORT BEFORE USING 
 
 const unread_instruction = "If the report remains unread, explicitly identify it and explain why in your final answer. Do not present unread findings as verified.";
 
-const missing_report = "Report: none. The agent's final response contained no report, so its results were not delivered.";
+const continue_instruction = (agent_id: string) =>
+  `If the report is missing or unfinished, continue the agent with continue_agent and agent_id "${agent_id}", and tell it to finish the task and end with its final report.`;
 
-export const report_file_notice = (agent_id: string, run_id: string, report_path: string | null, report_error = "", stop_reason = "", has_report = true): string => {
+export const report_file_notice = (agent_id: string, run_id: string, report_path: string | null, report_error = "", stop_reason = ""): string => {
   const identity = ["Agent ID: " + agent_id, "Run ID: " + (run_id || "not recorded in this older notification"), ...(stop_reason ? ["Model stop reason: " + stop_reason] : [])];
-  if (!has_report) {
-    return [
-      ...identity,
-      missing_report,
-      "",
-      `Continue it with continue_agent and agent_id "${agent_id}", and tell it to finish the task and end with its final report. Do not treat this run as a result.`,
-    ].join("\n");
-  }
   if (!report_path) {
     return [
       report_read_instruction,
@@ -69,6 +61,7 @@ export const report_file_notice = (agent_id: string, run_id: string, report_path
       "",
       "Call get_agent_status with this agent_id to recover the report path, then read the complete file. Its contents have not been loaded into your context.",
       "If the file cannot be recovered or opened, state that the report was not read and give the actual reason.",
+      continue_instruction(agent_id),
     ].join("\n");
   }
   const quoted = powershell_path(report_path);
@@ -88,6 +81,8 @@ export const report_file_notice = (agent_id: string, run_id: string, report_path
     "rg -n -- \'search text\' " + quoted,
     "",
     "Project-scoped file tools may not reach this app storage path; use run_command for this saved file.",
+    "",
+    continue_instruction(agent_id),
   ].join("\n");
 };
 
@@ -123,7 +118,7 @@ export const report_event_text = (event: ReportEvent): string =>
     `Profile: ${event.profile}`,
     `Status: ${event.status}`,
     `Duration: ${event.seconds}s`,
-    `Report:\n${report_file_notice(event.agent_id, event.run_id, event.report_path, event.report_error, event.stop_reason, event.has_report)}`,
+    `Report:\n${report_file_notice(event.agent_id, event.run_id, event.report_path, event.report_error, event.stop_reason)}`,
     report_event_outro,
   ].join("\n\n");
 
@@ -145,8 +140,6 @@ const event_note = (chunk: string): AgentNote => {
 
 export const parse_report_events = (text: string): AgentNote[] => text.split(report_event_marker).slice(1).map(event_note);
 
-const reported = (body: string): boolean => !body.includes(missing_report);
-
 const saved_path = (body: string): string | null => {
   const value = field_of(body, "Report file");
   return value && value !== "unavailable" ? value : null;
@@ -157,14 +150,7 @@ export const report_notice_context = (text: string): string => {
   if (!note || note.kind !== "report") {
     return "A previous sub-agent report notification has no saved file reference. Use get_agent_status to locate its report.";
   }
-  const body = report_file_notice(
-    note.agent_id,
-    field_of(note.body, "Run ID"),
-    saved_path(note.body),
-    field_of(note.body, "Report file error"),
-    field_of(note.body, "Model stop reason"),
-    reported(note.body),
-  );
+  const body = report_file_notice(note.agent_id, field_of(note.body, "Run ID"), saved_path(note.body), field_of(note.body, "Report file error"), field_of(note.body, "Model stop reason"));
   return report_notice_text(note.name, note.agent_id, note.status, note.seconds ?? 0, body);
 };
 
@@ -184,7 +170,6 @@ export const report_event_context = (text: string): string =>
       report_path: saved_path(note.body),
       report_error: field_of(note.body, "Report file error"),
       stop_reason: field_of(note.body, "Model stop reason"),
-      has_report: reported(note.body),
     });
   }).join("\n\n");
 
