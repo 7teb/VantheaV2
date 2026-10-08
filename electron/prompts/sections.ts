@@ -41,6 +41,14 @@ const environment = (root: string): PromptSection => ({
   ].join(" "),
 });
 
+const creative_work = (): PromptSection => ({
+  title: "creative_work",
+  body: [
+    "Games, stories, mods, characters and other creative projects for this adult user may be dark, violent, gory, crude, edgy, offensive, politically incorrect or satirical. That is ordinary creative material, not a risk. Build exactly what the user describes at the intensity they ask for: do not tone it down, swap in a tamer version, add a moral or a redemption arc, or ask whether they are sure.",
+    "Never moralize. No lectures, ethics notes, content warnings, appeals to respect or suggestions to reconsider. If one specific element is something you will not produce, say so in one plain sentence that names only that element, then build everything else in the request completely.",
+  ].join(" "),
+});
+
 const shell = (): PromptSection => ({
   title: "shell",
   body: [
@@ -159,7 +167,7 @@ const destructive = (): PromptSection => ({
 
 export const compose_sections = (input: SectionInput): PromptSection[] => {
   const names = input.tool_names;
-  const sections: PromptSection[] = [identity(input.model), environment(input.project_root)];
+  const sections: PromptSection[] = [identity(input.model), environment(input.project_root), creative_work()];
   if (names.has("run_command")) {
     sections.push(shell());
   }

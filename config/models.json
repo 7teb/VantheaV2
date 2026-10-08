@@ -145,6 +145,25 @@
       "max_output": 128000
     },
     {
+      "id": "openai/gpt-6.1-sol:floor",
+      "label": "GPT 6.1 Sol Flex",
+      "provider": "OpenAI",
+      "provider_order": [
+        "openai/flex",
+        "openai"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 1050000,
+      "max_output": 128000
+    },
+    {
       "id": "openai/gpt-6-luna",
       "label": "GPT 6 Luna",
       "provider": "OpenAI",
