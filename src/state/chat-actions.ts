@@ -6,7 +6,7 @@ import { open_chat } from "./ui.ts";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
-const failure = (error: unknown): ActionResult => ({ ok: false, error: error instanceof Error ? error.message : String(error) });
+export const failure = (error: unknown): ActionResult => ({ ok: false, error: error instanceof Error ? error.message : String(error) });
 
 const ok: ActionResult = { ok: true };
 

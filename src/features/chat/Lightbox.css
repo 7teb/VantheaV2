@@ -7,8 +7,6 @@
     display: grid;
     place-items: center;
     overflow: hidden;
-    border-radius: var(--radius-xl);
-    background: var(--surface-inset);
   }
 
   .lightbox-image {

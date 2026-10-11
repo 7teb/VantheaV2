@@ -101,7 +101,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
 
   return (
     <div
-      className={class_names("composer", "inset-surface", dragging && "is-dragging")}
+      className={class_names("composer", "raised-surface")}
       data-placement={placement}
       onDragOver={(event) => {
         if (has_files(event)) {

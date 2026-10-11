@@ -6,8 +6,8 @@
     grid-auto-columns: 1fr;
     padding: 3px;
     border-radius: var(--radius-lg);
-    background: var(--surface-inset);
-    box-shadow: var(--shadow-inset);
+    background: var(--surface-well);
+    box-shadow: inset 0 0 0 1px var(--ring-well);
   }
 
   .segmented::before {

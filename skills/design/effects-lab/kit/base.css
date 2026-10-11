@@ -1,0 +1,94 @@
+/* base.css : the chrome. Copy as is. Never edit this file, put style work in styles.css */
+:root {
+  --bg: #060606;
+  --bg-main: #0a0a0a;
+  --bg-inset: #030303;
+  --bg-raise: #101010;
+  --hover: rgba(255, 255, 255, 0.045);
+  --active: rgba(255, 255, 255, 0.075);
+  --text: #ececec;
+  --text-2: #9a9a9a;
+  --text-3: #5c5c5c;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --inset:
+    inset 0 2px 5px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(0, 0, 0, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+    0 1px 0 rgba(255, 255, 255, 0.035);
+  --inset-strong:
+    inset 0 3px 8px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(0, 0, 0, 1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--bg); scroll-behavior: smooth; }
+body {
+  font-family: var(--font); background: var(--bg-main); color: var(--text);
+  font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.28); outline-offset: 2px; }
+* { scrollbar-width: thin; scrollbar-color: #1f1f1f transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #1f1f1f; border-radius: 4px; }
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* page frame */
+.page { max-width: 1160px; margin: 0 auto; padding: 56px 24px 72px; }
+.head { margin-bottom: 26px; display: flex; flex-direction: column; gap: 8px; }
+.label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: var(--text-3); }
+.title { font-size: clamp(28px, 4vw, 42px); font-weight: 600; letter-spacing: -0.025em; line-height: 1.1; }
+
+/* the stage is the world. Its inside may use any palette. Its frame is always an inset surface. */
+.stage { position: relative; border-radius: 22px; background: var(--bg-inset); box-shadow: var(--inset); overflow: hidden; isolation: isolate; }
+.stage.h_md { height: min(64vh, 560px); }
+.stage.h_lg { height: min(78vh, 700px); }
+.stage canvas.fill { display: block; width: 100%; height: 100%; }
+.tag { position: absolute; left: 18px; bottom: 14px; z-index: 5; font-family: var(--mono); font-size: 12px; color: var(--text-3); pointer-events: none; }
+.tag.right { left: auto; right: 18px; }
+
+/* controls row, always below the stage */
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 16px; }
+.seg { display: inline-flex; padding: 4px; gap: 2px; border-radius: 12px; background: var(--bg-inset); box-shadow: var(--inset); }
+.seg button { height: 30px; padding: 0 14px; border-radius: 9px; font-size: 13px; font-weight: 500; color: var(--text-2); transition: background 0.15s var(--ease), color 0.15s var(--ease); }
+.seg button:hover { background: var(--hover); color: var(--text); }
+.seg button[aria-pressed='true'] { background: var(--active); color: var(--text); }
+.range { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 14px; border-radius: 12px; background: var(--bg-inset); box-shadow: var(--inset); font-size: 13px; font-weight: 500; color: var(--text-2); }
+.range output { font-family: var(--mono); font-size: 12px; color: var(--text-3); min-width: 30px; text-align: right; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 12px; background: var(--bg-inset); box-shadow: var(--inset); font-size: 13.5px; font-weight: 500; color: var(--text-2); transition: background 0.15s var(--ease), color 0.15s var(--ease), transform 0.15s var(--ease); }
+.btn:hover { background: #0b0b0b; color: var(--text); }
+.btn:active { transform: scale(0.97); }
+.btn[aria-pressed='true'] { background: var(--active); color: var(--text); }
+.field { height: 38px; padding: 0 14px; width: 220px; border-radius: 12px; border: 0; outline: 0; background: var(--bg-inset); box-shadow: var(--inset); color: var(--text); font: inherit; font-size: 13.5px; transition: box-shadow 0.2s var(--ease); }
+.field:focus { box-shadow: var(--inset-strong); }
+.field:focus-visible { outline: 0; }
+.swatches { display: flex; gap: 12px; align-items: center; height: 38px; padding: 0 14px; border-radius: 12px; background: var(--bg-inset); box-shadow: var(--inset); }
+.sw { width: 20px; height: 20px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16); transition: box-shadow 0.2s var(--ease), transform 0.15s var(--ease); }
+.sw:hover { transform: scale(1.12); }
+/* the ring is the swatch color pushed toward white, so a black swatch still shows a ring on the dark chip */
+.sw[aria-pressed='true'] { box-shadow: 0 0 0 3px #030303, 0 0 0 5px color-mix(in srgb, var(--c) 68%, #fff); }
+
+input[type='range'] { -webkit-appearance: none; appearance: none; width: 120px; height: 18px; background: transparent; cursor: pointer; }
+input[type='range']::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: #1c1c1c; }
+input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+input[type='range']::-moz-range-track { height: 4px; border-radius: 2px; background: #1c1c1c; }
+input[type='range']::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: var(--text); }
+
+/* skeleton, use while anything loads or builds */
+.skeleton { position: relative; overflow: hidden; border-radius: 6px; background: #101010; }
+.skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.025) 35%, rgba(255,255,255,.055) 50%, rgba(255,255,255,.025) 65%, transparent 100%); animation: skeleton-sweep 1.7s var(--ease) infinite; }
+@keyframes skeleton-sweep { to { transform: translateX(100%); } }
+
+/* entrance */
+.js .reveal { opacity: 0; transform: translateY(3px); transition: opacity 0.35s var(--ease), transform 0.35s var(--ease); }
+.js .reveal.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 760px) { .page { padding: 40px 16px 56px; } .field { width: 100%; } }

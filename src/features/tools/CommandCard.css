@@ -1,0 +1,204 @@
+@property --edge-fade-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --edge-fade-bottom {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@layer components {
+  @keyframes command-edge-fade {
+    0%,
+    1% {
+      --edge-fade-top: 0px;
+      --edge-fade-bottom: var(--edge-fade-distance);
+    }
+
+    99%,
+    100% {
+      --edge-fade-top: var(--edge-fade-distance);
+      --edge-fade-bottom: 0px;
+    }
+  }
+
+  .command-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    margin-top: 2px;
+    overflow: hidden;
+    border: 1px solid var(--rule-command);
+    border-radius: 12.5px;
+    corner-shape: superellipse(1.5);
+    background: var(--fill-command);
+    color: var(--text-tertiary);
+  }
+
+  .command-card-shell,
+  .command-card-command,
+  .command-card-empty,
+  .command-card .output-block-pre {
+    grid-column: 1 / -1;
+  }
+
+  .command-card-shell {
+    padding: 4px var(--space-2);
+    font-family: var(--font-ui);
+    font-size: var(--font-size-ui);
+    line-height: 18.5px;
+    user-select: none;
+  }
+
+  .command-card-command {
+    position: relative;
+    min-width: 0;
+  }
+
+  .command-card-text {
+    margin: 0;
+    padding: var(--space-2) 32px 0 var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-code);
+    line-height: 19.5px;
+    color: var(--text-tertiary);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+
+  .command-card-command[data-expanded="false"] .command-card-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .command-card-command[data-expanded="false"][data-clamped="true"] .command-card-text {
+    cursor: pointer;
+  }
+
+  .command-card-prompt {
+    user-select: none;
+  }
+
+  .command-card-toggle {
+    position: absolute;
+    top: 6px;
+    right: 4px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .command-card-toggle:hover {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .command-card-toggle svg {
+    transition: transform var(--duration-slow) var(--ease-out);
+  }
+
+  .command-card-command[data-expanded="true"] .command-card-toggle svg {
+    transform: rotate(180deg);
+  }
+
+  .command-card .output-block {
+    display: contents;
+  }
+
+  .command-card .output-block-pre {
+    --edge-fade-distance: 32px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column-reverse;
+    max-height: 144px;
+    margin: 0;
+    padding: var(--space-2);
+    overflow: auto;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-code);
+    line-height: 19.5px;
+    color: var(--text-tertiary);
+    white-space: pre;
+    overflow-wrap: normal;
+    scrollbar-color: var(--scrollbar-command) transparent;
+    mask: linear-gradient(to bottom, transparent, var(--mask) var(--edge-fade-top) calc(100% - var(--edge-fade-bottom)), transparent);
+  }
+
+  .command-card .output-block:has(.output-block-more) .output-block-pre {
+    --edge-fade-top: 32px;
+  }
+
+  .command-card .output-block-pre:hover {
+    animation-name: command-edge-fade;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-direction: reverse;
+    animation-timeline: scroll(self y);
+  }
+
+  .command-card .output-block-more {
+    grid-column: 1;
+    align-self: center;
+    justify-self: start;
+    height: auto;
+    padding: 2px var(--space-2) 4px;
+    font-size: var(--font-size-ui);
+    line-height: 21px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+
+  .command-card .output-block-more:focus-visible,
+  .command-card .output-block-pre:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .command-card .output-block-more:hover {
+    color: var(--text-secondary);
+  }
+
+  .command-card-empty {
+    padding: var(--space-2);
+    font-size: var(--font-size-ui);
+    line-height: 19.5px;
+  }
+
+  .command-card-footer {
+    display: flex;
+    grid-column: 2;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: 2px 10px 4px;
+    font-size: var(--font-size-body);
+    line-height: 21px;
+  }
+
+  .command-card-lead {
+    min-width: 0;
+    margin-right: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .command-card-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+}

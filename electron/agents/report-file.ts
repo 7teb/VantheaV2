@@ -30,7 +30,7 @@ export const ensure_report_file = async (agent: AgentRecord, run: RunRecord): Pr
     }
   }
   const events = (await read_journal(run_file(agent.agent_id, run.run_id)))
-    .map(parse_event)
+    .map((value) => parse_event(value, agent.chat_id))
     .filter((event): event is StoredEvent => event !== null)
     .sort((left, right) => left.seq - right.seq);
   const state: TranscriptState = {

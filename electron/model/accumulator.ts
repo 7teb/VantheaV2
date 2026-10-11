@@ -1,4 +1,5 @@
 import { create_content_splitter } from "./content-split.ts";
+import { create_draft_decoder, type DraftDecoder, type DraftSource } from "./draft-decoder.ts";
 import { read_provider_error, type ProviderError } from "./errors.ts";
 import { as_number, as_record, as_string, type JsonRecord } from "./json.ts";
 import { recover_tool_calls } from "./recover.ts";
@@ -26,6 +27,7 @@ export type Assembly = {
 export type Accumulator = {
   push(chunk: unknown): ChunkOutcome;
   tool(index: number): RoundToolCall | null;
+  draft(index: number): DraftSource | null;
   finish_reason(): string;
   content(): string;
   reasoning(): string;
@@ -33,33 +35,6 @@ export type Accumulator = {
 };
 
 const concatenated_fields = new Set(["text", "summary"]);
-
-const draft_line_fields: Record<string, string> = { write_file: "content", replace_in_file: "new_string" };
-
-export const draft_lines = (name: string, args: string): number | null => {
-  const field = draft_line_fields[name];
-  if (!field) {
-    return null;
-  }
-  const start = new RegExp(`"${field}"\\s*:\\s*"`).exec(args);
-  if (!start) {
-    return 0;
-  }
-  let breaks = 0;
-  let chars = 0;
-  for (let index = start.index + start[0].length; index < args.length; index += 1) {
-    const char = args[index];
-    if (char === '"') {
-      break;
-    }
-    chars += 1;
-    if (char === "\\") {
-      breaks += args[index + 1] === "n" ? 1 : 0;
-      index += 1;
-    }
-  }
-  return chars ? breaks + 1 : 0;
-};
 
 export const read_usage = (value: unknown): RoundUsage | null => {
   const usage = as_record(value);
@@ -104,11 +79,26 @@ const details_text = (details: unknown[]): string =>
 export const create_accumulator = (): Accumulator => {
   const splitter = create_content_splitter();
   const tools = new Map<number, RoundToolCall>();
+  const drafts = new Map<number, DraftDecoder>();
   const details: JsonRecord[] = [];
   let content = "";
   let reasoning = "";
   let finish_reason = "";
   let usage: RoundUsage | null = null;
+
+  const feed_draft = (call: RoundToolCall, piece: string) => {
+    const existing = drafts.get(call.index);
+    if (existing) {
+      existing.feed(piece);
+      return;
+    }
+    const created = create_draft_decoder(call.name);
+    if (!created) {
+      return;
+    }
+    drafts.set(call.index, created);
+    created.feed(call.arguments);
+  };
 
   const fold_tool = (raw: unknown): number | null => {
     const part = as_record(raw);
@@ -120,10 +110,12 @@ export const create_accumulator = (): Accumulator => {
     const current = tools.get(index) ?? { index, id: "", name: "", arguments: "" };
     const id = as_string(part.id);
     const name = as_string(fn?.name);
+    const piece = as_string(fn?.arguments);
     current.id ||= id;
     current.name = name ? merge_name(current.name, name) : current.name;
-    current.arguments += as_string(fn?.arguments);
+    current.arguments += piece;
     tools.set(index, current);
+    feed_draft(current, piece);
     return index;
   };
 
@@ -194,6 +186,7 @@ export const create_accumulator = (): Accumulator => {
   return {
     push,
     tool: (index) => tools.get(index) ?? null,
+    draft: (index) => drafts.get(index) ?? null,
     finish_reason: () => finish_reason,
     content: () => content,
     reasoning: () => reasoning,

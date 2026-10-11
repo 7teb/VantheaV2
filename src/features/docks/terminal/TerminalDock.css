@@ -5,6 +5,13 @@
   margin: 0 var(--space-3) var(--space-3);
   overflow: hidden;
   border-radius: var(--radius-xl);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inset);
+  transition: box-shadow var(--duration-base) var(--ease-out);
+}
+
+.terminal-surface:focus-within {
+  box-shadow: var(--shadow-inset-strong);
 }
 
 .terminal-view {

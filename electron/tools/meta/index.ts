@@ -1,6 +1,7 @@
 import type { Todo } from "../../../shared/chat.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool, ToolArgumentError, type Tool } from "../types.ts";
+import { ask_user_tool } from "./ask-user.ts";
 
 const max_todos = 20;
 
@@ -112,4 +113,4 @@ export const datetime_tool = define_tool<Record<string, never>>({
   },
 });
 
-export const meta_tools: Tool[] = [update_todos_tool, present_plan_tool, datetime_tool];
+export const meta_tools: Tool[] = [update_todos_tool, present_plan_tool, datetime_tool, ask_user_tool];

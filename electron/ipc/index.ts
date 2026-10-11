@@ -8,6 +8,7 @@ import { register_mcp_ipc } from "./mcp.ts";
 import { register_media_ipc } from "./media.ts";
 import { register_models_ipc } from "./models.ts";
 import { register_project_ipc } from "./project.ts";
+import { register_questions_ipc } from "./questions.ts";
 import { register_settings_ipc } from "./settings.ts";
 import { register_turn_ipc } from "./turn.ts";
 import { register_terminal_ipc } from "./terminal.ts";
@@ -18,6 +19,7 @@ export const register_ipc = () => {
   register_models_ipc();
   register_chats_ipc();
   register_turn_ipc();
+  register_questions_ipc();
   register_media_ipc();
   register_browser_ipc();
   register_mcp_ipc();

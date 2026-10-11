@@ -10,4 +10,8 @@ export const shell = {
   "shell.hero_generic": "What should we work on?",
   "shell.hero_project": "What should we work on in {name}?",
   "shell.dock_resize": "Drag to resize",
+  "shell.more": "More",
+  "shell.background_tasks": "Background tasks",
+  "shell.keep_awake": "Keep computer awake",
+  "shell.keep_awake_detail": "Only for this session",
 };

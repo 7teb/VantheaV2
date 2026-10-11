@@ -1,18 +1,23 @@
 import { randomUUID } from "node:crypto";
-import { create_accumulator, draft_lines, type Accumulator, type ChunkOutcome } from "./accumulator.ts";
-import { api_effort } from "./catalog.ts";
+import { create_accumulator, type Accumulator } from "./accumulator.ts";
+import { reasoning_fields } from "./catalog.ts";
+import type { DraftTake } from "./draft-decoder.ts";
 import { classify_provider_error, is_retryable, ModelError } from "./errors.ts";
+import { prompt_cache_fields } from "./prompt-cache.ts";
 import { safety_fields } from "./safety.ts";
 import { create_sse_parser } from "./sse.ts";
 import { attempt_failure, create_watchdog, send, transport_with, with_retries, type Transport } from "./transport.ts";
-import { to_api_tools, wire_messages, type RoundCallbacks, type RoundRequest, type RoundResult } from "./types.ts";
+import { to_api_tools, wire_messages, type RoundCallbacks, type RoundRequest, type RoundResult, type ToolDraftUpdate } from "./types.ts";
 
 type Reader = ReadableStreamDefaultReader<Uint8Array>;
 
 type ReadResult = Awaited<ReturnType<Reader["read"]>>;
 
-type Draft = { name: string; lines: number | null };
+type DraftReport = { name: string; at: number };
 
+type DraftReporter = { note(indices: number[]): void; flush(force: boolean): void };
+
+export const draft_interval_ms = 80;
 
 export const make_call_id = () => `call_${randomUUID().replaceAll("-", "").slice(0, 24)}`;
 
@@ -24,9 +29,10 @@ export const round_body = (request: RoundRequest): Record<string, unknown> => {
     stream: true,
     temperature: 0.2,
     ...(request.tools.length ? { tools: to_api_tools(request.tools), tool_choice: "auto" } : {}),
-    ...(model.efforts.length ? { reasoning: { effort: api_effort(model, request.effort) } } : {}),
+    ...(model.efforts.length ? { reasoning: reasoning_fields(model, request.effort) } : {}),
     ...(model.provider_order.length ? { provider: { order: model.provider_order, allow_fallbacks: false } } : {}),
     ...safety_fields(model.id),
+    ...prompt_cache_fields(model.id),
   };
 };
 
@@ -60,21 +66,43 @@ const partial_result = (accumulator: Accumulator | null): RoundResult => ({
   usage: null,
 });
 
-const report_drafts = (outcome: ChunkOutcome, accumulator: Accumulator, drafts: Map<number, Draft>, callbacks: RoundCallbacks) => {
-  for (const index of outcome.drafted) {
-    const call = accumulator.tool(index);
-    if (!call?.name) {
-      continue;
-    }
-    const lines = draft_lines(call.name, call.arguments);
-    const previous = drafts.get(index);
-    const grew = lines !== null && typeof previous?.lines === "number" && lines > previous.lines;
-    if (previous && previous.name === call.name && !grew) {
-      continue;
-    }
-    drafts.set(index, { name: call.name, lines });
-    callbacks.on_tool_draft(index, call.name, lines);
+const draft_update = (take: DraftTake | null): ToolDraftUpdate => {
+  if (!take) {
+    return { lines: null };
   }
+  return {
+    lines: take.lines,
+    ...(take.delta ? { delta: take.delta } : {}),
+    ...(take.path !== null ? { path: take.path } : {}),
+    ...(take.old_text !== null ? { old_text: take.old_text } : {}),
+  };
+};
+
+const create_draft_reporter = (accumulator: Accumulator, callbacks: RoundCallbacks, now: () => number): DraftReporter => {
+  const reports = new Map<number, DraftReport>();
+  const report = (index: number, name: string) => callbacks.on_tool_draft(index, name, draft_update(accumulator.draft(index)?.take() ?? null));
+  return {
+    note: (indices) => {
+      for (const index of indices) {
+        const name = accumulator.tool(index)?.name ?? "";
+        if (!name || reports.get(index)?.name === name) {
+          continue;
+        }
+        reports.set(index, { name, at: now() });
+        report(index, name);
+      }
+    },
+    flush: (force) => {
+      const time = now();
+      for (const [index, entry] of reports) {
+        if (!accumulator.draft(index)?.pending() || (!force && time - entry.at < draft_interval_ms)) {
+          continue;
+        }
+        entry.at = time;
+        report(index, entry.name);
+      }
+    },
+  };
 };
 
 const run_attempt = async (
@@ -88,7 +116,7 @@ const run_attempt = async (
   const watchdog = create_watchdog(signal);
   const parser = create_sse_parser();
   const decoder = new TextDecoder();
-  const drafts = new Map<number, Draft>();
+  const drafts = create_draft_reporter(accumulator, callbacks, transport.now);
   let finished = false;
   let done = false;
   const consume = (data: string) => {
@@ -111,13 +139,16 @@ const run_attempt = async (
     if (outcome.error) {
       throw classify_provider_error(null, outcome.error, "");
     }
+    if (outcome.reasoning || outcome.text) {
+      drafts.flush(true);
+    }
     if (outcome.reasoning) {
       callbacks.on_reasoning(outcome.reasoning);
     }
     if (outcome.text) {
       callbacks.on_text(outcome.text);
     }
-    report_drafts(outcome, accumulator, drafts, callbacks);
+    drafts.note(outcome.drafted);
     finished ||= Boolean(outcome.finish_reason);
   };
   watchdog.arm(transport.first_byte_ms, "first_byte");
@@ -150,6 +181,7 @@ const run_attempt = async (
           break;
         }
       }
+      drafts.flush(false);
     }
   } catch (error) {
     if (signal.aborted) {
@@ -165,6 +197,7 @@ const run_attempt = async (
   if (!finished) {
     throw new ModelError("stream_interrupted", "OpenRouter closed the stream before the answer was complete.");
   }
+  drafts.flush(true);
   const assembly = accumulator.finish(known_tools, make_call_id);
   if (assembly.flushed_reasoning) {
     callbacks.on_reasoning(assembly.flushed_reasoning);

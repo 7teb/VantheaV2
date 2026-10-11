@@ -65,7 +65,7 @@ export const ProjectGroup = ({ group, chat_total, collapsed, selected, children 
             active={menu_open}
             onClick={() => set_menu_open((was_open) => !was_open)}
           >
-            <MoreHorizontalIcon size={15} />
+            <MoreHorizontalIcon size={16} />
           </IconButton>
         )}
       </div>

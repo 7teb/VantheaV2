@@ -1,7 +1,7 @@
 import type { ModelEntry } from "../../shared/models.ts";
 import type { JsonSchema, ToolSpec } from "../tools/types.ts";
 
-export type ApiTextPart = { type: "text"; text: string };
+export type ApiTextPart = { type: "text"; text: string; prompt_cache_breakpoint?: { mode: "explicit" } };
 
 export type ApiImagePart = { type: "image_url"; image_url: { url: string; detail?: "auto" | "low" | "high" } };
 
@@ -33,10 +33,12 @@ export type RoundToolCall = { index: number; id: string; name: string; arguments
 
 export type RoundRequest = { model: ModelEntry; effort: string; messages: ApiMessage[]; tools: ToolSpec[] };
 
+export type ToolDraftUpdate = { lines: number | null; delta?: string; path?: string; old_text?: string };
+
 export type RoundCallbacks = {
   on_text(delta: string): void;
   on_reasoning(delta: string): void;
-  on_tool_draft(index: number, name: string, lines: number | null): void;
+  on_tool_draft(index: number, name: string, draft: ToolDraftUpdate): void;
   on_retry(attempt: number, max: number, reason: string, wait_ms: number): void;
 };
 

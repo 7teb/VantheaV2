@@ -1,4 +1,4 @@
-import { full_mode_covers, review_unavailable, type ApprovalDecision, type ApprovalRequest } from "../../shared/approval.ts";
+import { full_mode_covers, type ApprovalDecision, type ApprovalRequest } from "../../shared/approval.ts";
 import { full_window_until, open_full_window } from "./full-window.ts";
 
 type Pending = { chat_id: string; request: ApprovalRequest; resolve: (decision: ApprovalDecision) => void; detach: () => void };
@@ -21,7 +21,7 @@ const key_map = (key: string): Map<string, Pending> => {
   return created;
 };
 
-const settle = (key: string, call_id: string, decision: ApprovalDecision): boolean => {
+export const resolve_decision = (key: string, call_id: string, decision: ApprovalDecision): boolean => {
   const calls = registry.get(key);
   const pending = calls?.get(call_id);
   if (!calls || !pending) {
@@ -40,7 +40,7 @@ const settle_covered = (chat_id: string) => {
   for (const [key, calls] of [...registry]) {
     for (const [call_id, pending] of [...calls]) {
       if (pending.chat_id === chat_id && full_mode_covers(pending.request)) {
-        settle(key, call_id, window_grant);
+        resolve_decision(key, call_id, window_grant);
       }
     }
   }
@@ -56,27 +56,15 @@ export const wait_for_decision = ({ key, chat_id, call_id, request, signal }: Wa
       resolve(window_grant);
       return;
     }
-    const on_abort = () => settle(key, call_id, denied());
+    const on_abort = () => resolve_decision(key, call_id, denied());
     const detach = () => signal.removeEventListener("abort", on_abort);
     key_map(key).set(call_id, { chat_id, request, resolve, detach });
     signal.addEventListener("abort", on_abort, { once: true });
   });
 
-export const resolve_decision = (key: string, call_id: string, decision: ApprovalDecision): boolean => {
-  const pending = registry.get(key)?.get(call_id);
-  if (!pending) {
-    return false;
-  }
-  if (decision.grant !== "full_window") {
-    return settle(key, call_id, decision);
-  }
-  if (!decision.approved || !full_mode_covers(pending.request) || !review_unavailable(pending.request)) {
-    return settle(key, call_id, { ...decision, grant: "once" });
-  }
-  open_full_window(pending.chat_id);
-  settle(key, call_id, { ...decision, grant: "once" });
-  settle_covered(pending.chat_id);
-  return true;
+export const open_chat_window = (chat_id: string): void => {
+  open_full_window(chat_id);
+  settle_covered(chat_id);
 };
 
 export const cancel_chat = (key: string): void => {

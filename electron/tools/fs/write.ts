@@ -1,5 +1,8 @@
 import type { ToolView } from "../../../shared/tool-view.ts";
 import { effective_mode } from "../../permissions/full-window.ts";
+import { is_instruction_file } from "../../permissions/instruction-files.ts";
+import { actor_label } from "../../permissions/script-retention.ts";
+import { record_write } from "../../permissions/written-files.ts";
 import { commit_edit, prepare_replace, prepare_write, type PreparedEdit } from "../../project/edit.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool, ToolArgumentError, type ToolContext, type ToolProfile, type ToolResult } from "../types.ts";
@@ -16,9 +19,11 @@ const edit_view = (prepared: PreparedEdit): ToolView => ({
   diff: prepared.diff.lines,
 });
 
-const apply_edit = async (ctx: ToolContext, prepared: PreparedEdit, summary: string): Promise<ToolResult> => {
+const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit, summary: string): Promise<ToolResult> => {
   const view = edit_view(prepared);
-  if (effective_mode(ctx.chat_id, ctx.mode) === "ask") {
+  const mode = effective_mode(ctx.chat_id, ctx.mode);
+  const instruction_file = mode === "auto" && is_instruction_file(prepared.target.relative);
+  if (mode === "ask" || instruction_file) {
     const decision = await ctx.approve({
       kind: "write",
       path: prepared.target.relative,
@@ -26,12 +31,14 @@ const apply_edit = async (ctx: ToolContext, prepared: PreparedEdit, summary: str
       added: prepared.diff.added,
       removed: prepared.diff.removed,
       diff: prepared.diff.lines,
+      ...(instruction_file ? { instruction_file: true } : {}),
     });
     if (!decision.approved) {
       return denied(`the edit to ${prepared.target.relative}`, decision);
     }
   }
-  await commit_edit(prepared, ctx.turn_id);
+  const sha256 = await commit_edit(prepared, ctx.turn_id);
+  record_write(ctx.chat_id, prepared.target.target, { actor: actor_label(ctx.review.actor), tool, call_id: ctx.call_id, at: Date.now(), sha256 });
   return { status: "done", text: `${summary} (+${prepared.diff.added} -${prepared.diff.removed} lines)`, view };
 };
 
@@ -58,7 +65,7 @@ export const write_file_tool = define_tool<{ path: string; content: string }>({
         return { status: "done", text: `${prepared.target.relative} already has exactly this content; nothing was written.`, view: edit_view(prepared) };
       }
       const verb = prepared.previous === null ? "Created" : "Overwrote";
-      return apply_edit(ctx, prepared, `${verb} ${prepared.target.relative} (${Buffer.byteLength(args.content, "utf8")} bytes)`);
+      return apply_edit(ctx, "write_file", prepared, `${verb} ${prepared.target.relative} (${Buffer.byteLength(args.content, "utf8")} bytes)`);
     }),
 });
 
@@ -100,6 +107,6 @@ export const replace_in_file_tool = define_tool<ReplaceArgs>({
       const prepared = await prepare_replace(ctx.project_root, args.path, args.old_string, args.new_string, args.expected);
       const flexible = prepared.flexible ? ", matched with flexible whitespace" : "";
       const count = prepared.replaced === 1 ? "1 occurrence" : `${prepared.replaced} occurrences`;
-      return apply_edit(ctx, prepared, `Replaced ${count} in ${prepared.target.relative}${flexible}`);
+      return apply_edit(ctx, "replace_in_file", prepared, `Replaced ${count} in ${prepared.target.relative}${flexible}`);
     }),
 });

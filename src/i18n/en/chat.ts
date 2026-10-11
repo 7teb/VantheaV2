@@ -31,6 +31,7 @@ export const chat = {
   "chat.origin_continue": "Continued",
   "chat.origin_background": "Background task finished",
   "chat.origin_agent_report": "Agent report",
+  "chat.origin_agent_update": "Agent update",
   "chat.notice_agent_report": "Agent report",
   "chat.notice_agent_update": "Agent update",
   "chat.notice_update_reminder": "Reminded to share findings with the main agent",

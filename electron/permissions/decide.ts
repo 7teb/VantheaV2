@@ -1,13 +1,17 @@
+import { randomUUID } from "node:crypto";
 import type { HumanDecision } from "../../shared/approval.ts";
 import type { PermissionMode } from "../../shared/chat.ts";
-import type { SideModelCall } from "../tools/types.ts";
-import { allowed_in_auto } from "./allowlist.ts";
-import { permission_hash } from "./context.ts";
-import { approved_with_source, command_tools, decisions_text, denial_reason, last_decision_for, prefix_grants, repeated_denial_text } from "./decisions.ts";
+import type { ReviewNote, ReviewRaise, ReviewRecord } from "../../shared/review.ts";
+import type { Reviewer, ToolProfile } from "../tools/types.ts";
+import { read_only_command } from "./allowlist.ts";
+import { approved_with_source, prefix_grants } from "./decisions.ts";
 import { floor_reason } from "./floor.ts";
-import { grant_covers, suggest_prefix } from "./grants.ts";
-import { max_action_chars, run_review } from "./overseer.ts";
+import { covering_prefixes, suggest_prefix } from "./grants.ts";
+import { instance_key, offline_until } from "./review-state.ts";
+import { review_verdict } from "./review-verdict.ts";
+import type { PinChange, ScriptPin } from "./source-read.ts";
 import { inspect_command_sources, type CommandSources } from "./sources.ts";
+import { deny_text, workaround_text } from "./verdict-text.ts";
 
 export type CommandInput = {
   command: string;
@@ -15,89 +19,151 @@ export type CommandInput = {
   mode: PermissionMode;
   project_root: string;
   cwd: string;
-  authorization: string;
+  plan: boolean;
+  chat_id: string;
+  chat_started_at: number;
+  call_id: string;
+  profile: ToolProfile;
+  custom_instructions: string;
   delegated_task?: string;
   decisions: HumanDecision[];
+  last_human_id: string | null;
+  changed: PinChange[];
 };
 
-export type DecisionSource =
-  | "floor"
-  | "full"
-  | "denied_before"
-  | "script"
-  | "grant"
-  | "mode"
-  | "protected"
-  | "allowlist"
-  | "limit"
-  | "model"
-  | "cache"
-  | "unavailable";
+export type CommandDecision = {
+  action: "run" | "ask" | "block" | "deny";
+  reason: string;
+  record: ReviewRecord | null;
+  note: ReviewNote | null;
+  grant_prefix: string | null;
+  plan: boolean;
+  pins: ScriptPin[];
+  source_hash: string;
+  seen: ReadonlySet<string>;
+};
 
-export type CommandDecision = { action: "run" | "ask" | "block" | "deny"; source: DecisionSource; reason: string; grant_prefix: string | null; source_hash: string };
+const nothing_seen: ReadonlySet<string> = new Set();
 
-const decided = (input: CommandInput, action: CommandDecision["action"], source: DecisionSource, reason: string, source_hash = ""): CommandDecision => ({
-  action,
-  source,
+export const review_note = (record: ReviewRecord, chat_id: string, detail: Pick<ReviewNote, "gaps" | "script_floor"> = {}): ReviewNote => {
+  const until = record.failure === "offline_window" ? offline_until(instance_key(chat_id, record.actor.id)) : null;
+  return {
+    id: record.id,
+    source: record.source,
+    reason: record.reason,
+    rule_source: record.rule_source,
+    rule: record.rule,
+    ...(record.raised_by ? { raised_by: record.raised_by } : {}),
+    ...(record.granted ? { granted: record.granted } : {}),
+    ...(record.circumvents ? { circumvents: record.circumvents } : {}),
+    ...(record.failure ? { failure: record.failure } : {}),
+    ...detail,
+    ...(until !== null ? { offline_until: until } : {}),
+  };
+};
+
+const tool_name = (background: boolean) => (background ? "start_background_task" : "run_command");
+
+const command_sources = (input: CommandInput): Promise<CommandSources> =>
+  inspect_command_sources(input.project_root, input.cwd, input.command, { chat_id: input.chat_id, chat_started_at: input.chat_started_at });
+
+const floor_block = (input: CommandInput, reviewer: Reviewer, reason: string): CommandDecision => ({
+  action: "block",
   reason,
-  grant_prefix: action === "ask" && source !== "script" ? suggest_prefix(input.command) : null,
-  source_hash,
+  record: {
+    id: randomUUID(),
+    at: Date.now(),
+    actor: reviewer.actor,
+    tool: tool_name(input.background),
+    subject: input.command,
+    cwd: input.cwd,
+    verdict: "deny",
+    source: "floor",
+    reason,
+    rule_source: "none",
+    rule: "",
+    last_human_id: input.last_human_id,
+  },
+  note: null,
+  grant_prefix: null,
+  plan: false,
+  pins: [],
+  source_hash: "",
+  seen: nothing_seen,
 });
 
-export const command_sources = (input: CommandInput): Promise<CommandSources> => inspect_command_sources(input.project_root, input.cwd, input.command);
+const without_model = (action: CommandDecision["action"], plan: boolean, sources: CommandSources | null): CommandDecision => ({
+  action,
+  reason: "",
+  record: null,
+  note: null,
+  grant_prefix: null,
+  plan,
+  pins: sources?.pins ?? [],
+  source_hash: sources?.hash ?? "",
+  seen: nothing_seen,
+});
 
-export const decide_command = async (input: CommandInput, side_model: SideModelCall, signal: AbortSignal): Promise<CommandDecision> => {
+export const decide_command = async (input: CommandInput, reviewer: Reviewer, signal: AbortSignal, on_review?: () => void): Promise<CommandDecision> => {
   signal.throwIfAborted();
   const command = input.command.trim();
   if (!command) {
-    return decided(input, "block", "floor", "The command is empty.");
+    return floor_block(input, reviewer, "The command is empty.");
   }
   const floor = floor_reason(command);
   if (floor) {
-    return decided(input, "block", "floor", floor);
+    return floor_block(input, reviewer, floor);
   }
+  const plan_change = input.plan && !read_only_command(command);
   if (input.mode === "full") {
-    return decided(input, "run", "full", "Full access is on.");
-  }
-  const previous = last_decision_for(input.decisions, command_tools, command);
-  if (previous && !previous.approved) {
-    if (previous.context_hash === permission_hash(input.authorization)) {
-      return decided(input, "deny", "denied_before", repeated_denial_text(previous));
-    }
-    return decided(input, "ask", "denied_before", denial_reason(previous));
+    return without_model(plan_change ? "ask" : "run", plan_change, null);
   }
   const sources = await command_sources(input);
   signal.throwIfAborted();
-  if (sources.catastrophic.length && !approved_with_source(input.decisions, command, sources.hash)) {
-    return decided(input, "ask", "script", `A script this command runs contains a destructive system operation: ${sources.catastrophic.join("; ")}`, sources.hash);
-  }
-  if (grant_covers(command, prefix_grants(input.decisions))) {
-    return decided(input, "run", "grant", "Covered by your earlier \"don't ask again\" approval.", sources.hash);
-  }
   if (input.mode === "ask") {
-    return decided(input, "ask", "mode", "Ask mode confirms every command.", sources.hash);
+    return without_model("ask", plan_change, sources);
   }
-  if (sources.protected_read) {
-    return decided(input, "ask", "protected", "This command reads credential or key files.", sources.hash);
-  }
-  if (allowed_in_auto(command)) {
-    return decided(input, "run", "allowlist", "Read-only command.", sources.hash);
-  }
-  if (command.length > max_action_chars) {
-    return decided(input, "ask", "limit", "The command is too long for the safety check.", sources.hash);
-  }
-  const review = await run_review(
-    side_model,
-    {
-      action: input.background ? `${command}\n(started as a background task)` : command,
-      project_root: input.project_root,
-      cwd: input.cwd,
-      authorization: input.authorization,
-      sources: sources.text,
-      delegated_task: input.delegated_task,
-      decisions: decisions_text(input.decisions),
-    },
+  const raised: ReviewRaise[] = [
+    ...(sources.protected_read ? (["protected"] as const) : []),
+    ...(plan_change ? (["plan"] as const) : []),
+    ...(sources.gaps.length ? (["script_gap"] as const) : []),
+    ...(sources.catastrophic.length && !approved_with_source(input.decisions, command, sources.hash) ? (["script_floor"] as const) : []),
+  ];
+  const prefixes = covering_prefixes(command, prefix_grants(input.decisions));
+  on_review?.();
+  const verdict = await review_verdict({
+    reviewer,
+    raised,
+    granted: prefixes.length > 0,
     signal,
-  );
-  return decided(input, review.verdict.safe ? "run" : "ask", review.source, review.verdict.reason, sources.hash);
+    input: {
+      chat_id: input.chat_id,
+      project_root: input.project_root,
+      custom_instructions: input.custom_instructions,
+      actor: reviewer.actor,
+      profile: reviewer.actor.kind === "agent" ? input.profile : null,
+      delegated_task: input.delegated_task ?? null,
+      decisions: input.decisions,
+      call_id: input.call_id,
+      action: { tool: tool_name(input.background), cwd: input.cwd, background: input.background, subject: command, mcp: null, files: sources.files, gaps: sources.gaps, changed: input.changed },
+    },
+  });
+  const record = verdict.record.granted ? { ...verdict.record, grant_prefixes: prefixes } : verdict.record;
+  const action = record.verdict === "allow" ? "run" : record.verdict === "deny" ? "deny" : "ask";
+  const reason = action !== "deny" ? "" : record.earlier ? workaround_text("command", record, record.earlier) : deny_text("command", record);
+  const prefix_option = action === "ask" && record.source === "model" && !record.raised_by?.length;
+  return {
+    action,
+    reason,
+    record,
+    note: review_note(record, input.chat_id, {
+      ...(record.raised_by?.includes("script_gap") ? { gaps: [...sources.gaps, ...verdict.script_gaps] } : {}),
+      ...(record.raised_by?.includes("script_floor") ? { script_floor: sources.catastrophic } : {}),
+    }),
+    grant_prefix: prefix_option ? suggest_prefix(command) : null,
+    plan: plan_change,
+    pins: sources.pins,
+    source_hash: sources.hash,
+    seen: verdict.seen,
+  };
 };

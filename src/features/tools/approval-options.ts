@@ -1,4 +1,4 @@
-import { full_mode_covers, full_window_minutes, review_unavailable, type ApprovalRequest, type GrantScope } from "../../../shared/approval.ts";
+import type { ApprovalRequest, GrantScope } from "../../../shared/approval.ts";
 import type { MessageKey, MessageVars } from "../../i18n/translate.ts";
 
 export type GrantOption = { grant: GrantScope; label: MessageKey; vars: MessageVars };
@@ -22,7 +22,7 @@ const mcp_options = (request: Extract<ApprovalRequest, { kind: "mcp" }>): GrantO
   }
 };
 
-const scoped_options = (request: ApprovalRequest): GrantOption[] => {
+export const grant_options = (request: ApprovalRequest): GrantOption[] => {
   switch (request.kind) {
     case "command":
       return request.grant_prefix ? [once, { grant: "prefix", label: "approval.prefix", vars: { x: request.grant_prefix } }] : [once];
@@ -38,37 +38,7 @@ const scoped_options = (request: ApprovalRequest): GrantOption[] => {
   }
 };
 
-const full_window: GrantOption = { grant: "full_window", label: "approval.full_window", vars: { n: full_window_minutes } };
-
-export const grant_options = (request: ApprovalRequest): GrantOption[] =>
-  review_unavailable(request) && full_mode_covers(request) ? [...scoped_options(request), full_window] : scoped_options(request);
-
-export type ApprovalKeySource = "option" | "feedback" | "other";
-
-type ApprovalKeyAction ="submit" | "deny" | "next" | "previous" | null;
-
-type ApprovalKey = { key: string; shift: boolean; composing: boolean; source: ApprovalKeySource };
-
-export const approval_key_action = ({ key, shift, composing, source }: ApprovalKey): ApprovalKeyAction => {
-  if (key === "Enter") {
-    return !shift && !composing && source !== "other" ? "submit" : null;
-  }
-  if (source === "feedback") {
-    return null;
-  }
-  switch (key) {
-    case "Escape":
-      return "deny";
-    case "ArrowDown":
-      return "next";
-    case "ArrowUp":
-      return "previous";
-    default:
-      return null;
-  }
-};
-
-export const approval_question =(request: ApprovalRequest): { key: MessageKey; vars: MessageVars } => {
+export const approval_question = (request: ApprovalRequest): { key: MessageKey; vars: MessageVars } => {
   switch (request.kind) {
     case "command":
       return { key: "approval.question_command", vars: {} };

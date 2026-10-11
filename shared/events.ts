@@ -1,4 +1,5 @@
 import type { ApprovalRequest, HumanDecision } from "./approval.ts";
+import type { ReviewRecord } from "./review.ts";
 import type {
   AssistantMessage,
   AssistantReference,
@@ -21,12 +22,13 @@ export type StreamEventBody =
   | { type: "reasoning"; round: number; delta: string }
   | { type: "reasoning_details"; round: number; details: unknown[] }
   | { type: "retry"; round: number; attempt: number; max: number; reason: string; wait_ms: number }
-  | { type: "tool_draft"; round: number; index: number; name: string; lines: number | null }
+  | { type: "tool_draft"; round: number; index: number; name: string; lines: number | null; delta?: string; path?: string; old_text?: string }
   | { type: "tool_call"; round: number; index: number; call_id: string; name: string; args: Record<string, unknown> }
   | { type: "tool_start"; call_id: string }
   | { type: "tool_progress"; call_id: string; progress: ToolProgress }
   | { type: "tool_approval"; call_id: string; request: ApprovalRequest }
   | { type: "tool_decision"; call_id: string; decision: HumanDecision }
+  | { type: "tool_review"; call_id: string; review: ReviewRecord }
   | {
       type: "tool_end";
       call_id: string;
@@ -35,7 +37,7 @@ export type StreamEventBody =
       error: string | null;
       result_text: string;
     }
-  | { type: "steer"; round: number; text: string; steer_id?: string; attachments?: Attachment[]; assistant_reference?: AssistantReference }
+  | { type: "steer"; round: number; text: string; pushed_at?: number; steer_id?: string; attachments?: Attachment[]; assistant_reference?: AssistantReference }
   | { type: "notice"; round: number; notice: NoticeKind; text: string }
   | { type: "compaction"; round: number; status: CompactionStep["status"]; summary: string }
   | { type: "context"; usage: ContextUsage }

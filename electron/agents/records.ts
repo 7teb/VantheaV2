@@ -1,5 +1,6 @@
 import type { Sequenced, StreamEventBody } from "../../shared/events.ts";
 import type { AgentProfile, AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
+import { coerce_review } from "../permissions/review-coerce.ts";
 import { as_array, as_iso, as_record, as_string, is_record, pick } from "../storage/coerce.ts";
 
 export type RunRecord = AgentRunSummary & { parent_message_id: string; parent_call_id?: string };
@@ -33,6 +34,7 @@ const event_types: readonly StreamEventBody["type"][] = [
   "tool_progress",
   "tool_approval",
   "tool_decision",
+  "tool_review",
   "tool_end",
   "steer",
   "notice",
@@ -128,9 +130,18 @@ export const parse_index = (value: unknown, now: string): { records: AgentRecord
   return { records, interrupted };
 };
 
-export const parse_event = (value: unknown): StoredEvent | null => {
+const parse_review_event = (value: Record<string, unknown>, seq: number, at: number, chat_id: string): StoredEvent | null => {
+  const call_id = as_string(value.call_id);
+  const review = call_id ? coerce_review(value.review, chat_id, call_id) : null;
+  return review ? { type: "tool_review", call_id, review, seq, at } : null;
+};
+
+export const parse_event = (value: unknown, chat_id: string): StoredEvent | null => {
   if (!is_record(value) || typeof value.seq !== "number" || typeof value.at !== "number") {
     return null;
+  }
+  if (value.type === "tool_review") {
+    return parse_review_event(value, value.seq, value.at, chat_id);
   }
   return event_types.includes(value.type as StreamEventBody["type"]) ? (value as StoredEvent) : null;
 };

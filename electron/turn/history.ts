@@ -6,6 +6,7 @@ import { report_note_content, update_note_content } from "../agents/reports.ts";
 import { cap_text } from "../context/estimate.ts";
 import { resolve_media_file } from "../media/files.ts";
 import type { ApiAssistantMessage, ApiContentPart, ApiMessage } from "../model/types.ts";
+import { stopped_text } from "../permissions/verdict-text.ts";
 import { render_section } from "../prompts/sections.ts";
 import { api_call_id } from "./round.ts";
 
@@ -16,9 +17,22 @@ export type HistoryInput = {
   summary: ChatSummary | null;
   messages: Message[];
   model: ModelEntry;
+  agent_tools: boolean;
 };
 
 const recent_assistant_turns = 2;
+
+const awaited_review = (step: ToolStep): boolean => {
+  const last = step.reviews?.at(-1);
+  return step.status === "cancelled" && last?.verdict === "review" && !step.decisions?.some((decision) => decision.review_id === last.id);
+};
+
+const tool_result = (step: ToolStep): string => {
+  if (awaited_review(step)) {
+    return stopped_text(step.reviews?.at(-1)?.tool.startsWith("mcp:") ? "tool call" : "command");
+  }
+  return (step.name === "get_agent_status" ? agent_status_context(step.result_text) : step.result_text) || "[no result]";
+};
 
 const cap_recent_tokens = 25000;
 
@@ -85,9 +99,9 @@ export const user_content = async (
   return images.length ? [{ type: "text", text: full }, ...images] : full;
 };
 
-const build_user = async (message: Extract<Message, { role: "user" }>, model: ModelEntry, read_image: ImageReader): Promise<ApiMessage> => ({
+const build_user = async (message: Extract<Message, { role: "user" }>, model: ModelEntry, read_image: ImageReader, agent_tools: boolean): Promise<ApiMessage> => ({
   role: "user",
-  content: await user_content(message.origin === "agent_report" ? report_event_context(message.text) : message.text, message.attachments, model, read_image),
+  content: await user_content(message.origin === "agent_report" ? report_event_context(message.text, agent_tools) : message.text, message.attachments, model, read_image),
 });
 
 const rounds_of = (steps: Step[]): number[] => {
@@ -125,9 +139,9 @@ const round_reasoning = (message: AssistantMessage, round: number, steps: Step[]
   return text ? { reasoning: text } : {};
 };
 
-type ReplayInput = { cap: number; with_reasoning: boolean; model: ModelEntry; read_image: ImageReader };
+type ReplayInput = { cap: number; with_reasoning: boolean; model: ModelEntry; read_image: ImageReader; agent_tools: boolean };
 
-const replay_assistant = async (message: AssistantMessage, { cap, with_reasoning, model, read_image }: ReplayInput): Promise<ApiMessage[]> => {
+const replay_assistant = async (message: AssistantMessage, { cap, with_reasoning, model, read_image, agent_tools }: ReplayInput): Promise<ApiMessage[]> => {
   const out: ApiMessage[] = [];
   for (const round of rounds_of(message.steps)) {
     const steps = message.steps.filter((step) => step.round === round);
@@ -135,7 +149,7 @@ const replay_assistant = async (message: AssistantMessage, { cap, with_reasoning
       if (step.kind === "steer") {
         out.push({ role: "user", content: await user_content(step.text, step.attachments ?? [], model, read_image) });
       } else if (step.kind === "notice" && step.notice === "agent_report") {
-        out.push({ role: "user", content: report_note_content(step.text) });
+        out.push({ role: "user", content: report_note_content(step.text, agent_tools) });
       } else if (step.kind === "notice" && step.notice === "agent_update") {
         out.push({ role: "user", content: update_note_content(step.text) });
       }
@@ -161,7 +175,7 @@ const replay_assistant = async (message: AssistantMessage, { cap, with_reasoning
       out.push(assistant);
     }
     for (const step of tools) {
-      out.push({ role: "tool", tool_call_id: api_call_id(message.id, step.call_id), content: cap_text((step.name === "get_agent_status" ? agent_status_context(step.result_text) : step.result_text) || "[no result]", cap) });
+      out.push({ role: "tool", tool_call_id: api_call_id(message.id, step.call_id), content: cap_text(tool_result(step), cap) });
     }
   }
   const note = terminal_note(message);
@@ -178,11 +192,11 @@ export const build_api_messages = async (input: HistoryInput, read_image: ImageR
   const out: ApiMessage[] = [system_message(input.system, input.summary)];
   for (const [index, message] of messages.entries()) {
     if (message.role === "user") {
-      out.push(await build_user(message, input.model, read_image));
+      out.push(await build_user(message, input.model, read_image, input.agent_tools));
     } else {
       const cap = index >= recent_cutoff ? cap_recent_tokens : cap_old_tokens;
       const with_reasoning = input.model.reasoning_passback && message.model === input.model.id;
-      out.push(...(await replay_assistant(message, { cap, with_reasoning, model: input.model, read_image })));
+      out.push(...(await replay_assistant(message, { cap, with_reasoning, model: input.model, read_image, agent_tools: input.agent_tools })));
     }
   }
   return out;

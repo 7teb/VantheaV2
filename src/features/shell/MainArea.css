@@ -29,23 +29,16 @@
 }
 
 .composer-dock {
-  position: relative;
-  flex: none;
-  padding: 0 0 var(--space-5);
-  pointer-events: none;
-}
-
-.composer-dock::before {
-  content: "";
   position: absolute;
-  left: 0;
   right: 0;
-  bottom: 100%;
-  height: var(--space-8);
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-sticky);
+  padding: 0 0 var(--space-5);
   background: var(--gradient-dock-fade);
   pointer-events: none;
 }
 
-.composer-dock .content-column {
+.composer-dock .composer-slot {
   pointer-events: auto;
 }

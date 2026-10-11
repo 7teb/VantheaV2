@@ -1,13 +1,13 @@
 import { read_usage } from "./accumulator.ts";
 import { classify_provider_error, ModelError, read_provider_error } from "./errors.ts";
-import { as_record, as_string } from "./json.ts";
-import { safety_fields } from "./safety.ts";
+import { completion_body, type CompleteRequest } from "./completion-body.ts";
+import { as_number, as_record, as_string } from "./json.ts";
 import { attempt_failure, create_watchdog, send, transport_with, with_retries, type Transport } from "./transport.ts";
-import { wire_messages, type ApiMessage, type RoundResult } from "./types.ts";
+import type { RoundResult } from "./types.ts";
 
-export type CompleteRequest = { model_id: string; messages: ApiMessage[]; max_tokens: number; temperature?: number; json?: boolean };
+export type CompletionMeta = { id: string | null; finish_reason: string | null; cached_tokens: number; cache_write_tokens: number; cost: number | null };
 
-export type CompleteResult = { text: string; usage: RoundResult["usage"] };
+export type CompleteResult = { text: string; usage: RoundResult["usage"]; meta: CompletionMeta };
 
 const message_text = (content: unknown): string => {
   if (typeof content === "string") {
@@ -17,6 +17,18 @@ const message_text = (content: unknown): string => {
     return "";
   }
   return content.map((part) => (as_record(part)?.type === "text" ? as_string(as_record(part)?.text) : "")).join("");
+};
+
+const read_meta = (body: Record<string, unknown> | null, choice: Record<string, unknown>): CompletionMeta => {
+  const usage = as_record(body?.usage);
+  const prompt = as_record(usage?.prompt_tokens_details);
+  return {
+    id: as_string(body?.id) || null,
+    finish_reason: as_string(choice.finish_reason) || null,
+    cached_tokens: as_number(prompt?.cached_tokens) ?? 0,
+    cache_write_tokens: as_number(prompt?.cache_write_tokens) ?? 0,
+    cost: as_number(usage?.cost),
+  };
 };
 
 export const read_completion = (text: string): CompleteResult => {
@@ -40,7 +52,7 @@ export const read_completion = (text: string): CompleteResult => {
   if (choice_error) {
     throw classify_provider_error(null, choice_error, "");
   }
-  return { text: message_text(as_record(choice.message)?.content).trim(), usage: read_usage(body?.usage) };
+  return { text: message_text(as_record(choice.message)?.content).trim(), usage: read_usage(body?.usage), meta: read_meta(body, choice) };
 };
 
 const run_attempt = async (body: string, signal: AbortSignal, transport: Transport): Promise<CompleteResult> => {
@@ -62,14 +74,7 @@ const run_attempt = async (body: string, signal: AbortSignal, transport: Transpo
 export const complete = async (request: CompleteRequest, signal?: AbortSignal, overrides: Partial<Transport> = {}): Promise<CompleteResult> => {
   const transport = transport_with(overrides);
   const active = signal ?? new AbortController().signal;
-  const body = JSON.stringify({
-    model: request.model_id,
-    messages: wire_messages(request.messages, false),
-    max_completion_tokens: request.max_tokens,
-    ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
-    ...(request.json ? { response_format: { type: "json_object" } } : {}),
-    ...safety_fields(request.model_id),
-  });
+  const body = JSON.stringify(completion_body(request));
   return with_retries({
     transport,
     signal: active,

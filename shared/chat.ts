@@ -1,4 +1,6 @@
 import type { ApprovalRequest, HumanDecision } from "./approval.ts";
+import type { QuestionStates } from "./questions.ts";
+import type { ReviewRecord } from "./review.ts";
 import type { ToolView } from "./tool-view.ts";
 
 export type PermissionMode = "ask" | "auto" | "full";
@@ -12,7 +14,7 @@ export type Attachment = {
   vision_note: string | null;
 };
 
-export type UserOrigin = "user" | "plan_accept" | "continue" | "background" | "agent_report";
+export type UserOrigin = "user" | "plan_accept" | "continue" | "background" | "agent_report" | "agent_update";
 
 export type UserMessage = {
   id: string;
@@ -31,6 +33,10 @@ export type ToolProgress = {
   label: string;
   lines: number | null;
   output_tail: string | null;
+  draft_text?: string;
+  draft_path?: string;
+  draft_old?: string;
+  phase?: "review";
 };
 
 export type TextStep = { id: string; round: number; kind: "text"; text: string };
@@ -56,6 +62,7 @@ export type ToolStep = {
   progress: ToolProgress | null;
   approval: ApprovalRequest | null;
   decisions?: HumanDecision[];
+  reviews?: ReviewRecord[];
   view: ToolView | null;
   error: string | null;
   result_text: string;
@@ -65,9 +72,9 @@ export type ToolStep = {
 
 export type AssistantReference = { message_id: string; text: string };
 
-export type SteerMessage = { id: string; text: string; attachments: Attachment[]; assistant_reference?: AssistantReference };
+export type SteerMessage = { id: string; text: string; at: number; attachments: Attachment[]; assistant_reference?: AssistantReference };
 
-export type SteerStep = { id: string; round: number; kind: "steer"; text: string; steer_id?: string; attachments?: Attachment[]; assistant_reference?: AssistantReference };
+export type SteerStep = { id: string; round: number; kind: "steer"; text: string; at?: number; steer_id?: string; attachments?: Attachment[]; assistant_reference?: AssistantReference };
 
 export type NoticeKind = "agent_report" | "agent_update" | "update_reminder" | "plan_blocked" | "output_limit" | "todos_carried" | "context_trimmed";
 
@@ -124,6 +131,9 @@ export type AssistantMessage = {
 
 export type Message = UserMessage | AssistantMessage;
 
+export const message_attachments = (message: Message): Attachment[] =>
+  message.role === "user" ? message.attachments : message.steps.flatMap((step) => (step.kind === "steer" ? (step.attachments ?? []) : []));
+
 export type ChatSummary = { text: string; through_message_id: string };
 
 export type ChatMeta = {
@@ -141,6 +151,7 @@ export type ChatMeta = {
 export type Chat = ChatMeta & {
   summary: ChatSummary | null;
   messages: Message[];
+  questions: QuestionStates;
 };
 
 export type ChatSearchHit = { chat_id: string; title: string; project_path: string; snippet: string; updated_at: string };

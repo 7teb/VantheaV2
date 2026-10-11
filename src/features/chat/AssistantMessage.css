@@ -226,8 +226,8 @@
     margin: var(--space-1) 0 var(--space-4);
     padding: var(--space-4) var(--space-5);
     border-radius: var(--radius-xl);
-    background: var(--surface-raise);
-    box-shadow: var(--shadow-button);
+    background: var(--surface-card);
+    box-shadow: inset 0 0 0 1px var(--ring-card);
   }
 
   .plan-card-head {
@@ -237,7 +237,6 @@
     color: var(--text-tertiary);
   }
 
-  .plan-card-actions,
   .plan-card-accepted {
     display: flex;
     align-items: center;
@@ -248,10 +247,6 @@
     color: var(--text-secondary);
   }
 
-  .plan-card-question {
-    flex: 1;
-  }
-
   .file-changes {
     display: flex;
     flex-direction: column;
@@ -259,8 +254,8 @@
     margin: var(--space-2) 0 var(--space-1);
     padding: 10px var(--space-3) var(--space-2) var(--space-4);
     border-radius: var(--radius-xl);
-    background: var(--surface-raise);
-    box-shadow: var(--shadow-button);
+    background: var(--surface-card);
+    box-shadow: inset 0 0 0 1px var(--ring-card);
   }
 
   .file-changes-head {

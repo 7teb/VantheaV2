@@ -3,14 +3,18 @@ import ReactMarkdown, { defaultUrlTransform, type Components, type Options, type
 import remarkGfm from "remark-gfm";
 import { is_external_url, open_external } from "../state/chat-actions.ts";
 import { class_names } from "./class-names.ts";
+import { FileIcon } from "./icons.tsx";
 import { has_math, normalize_math, split_blocks } from "./markdown-blocks.ts";
 import { lazy_module, use_lazy_module } from "./markdown-lazy.ts";
+import { rehype_table_columns } from "./markdown-table.ts";
 import { CodeBlock } from "./MarkdownCode.tsx";
 import "./Markdown.css";
 
 const math = lazy_module("math", () => import("./markdown-math.ts"));
 
 const plain_plugins: Options["remarkPlugins"] = [remarkGfm];
+
+const plain_rehype_plugins: Options["rehypePlugins"] = [rehype_table_columns];
 
 const local_image = /^(vx-media:|data:image\/)/i;
 
@@ -24,7 +28,8 @@ const follow = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
 const MarkdownLink = ({ href, children }: { href?: string; children?: ReactNode }) => {
   const target = href && is_external_url(href) ? href : null;
   return (
-    <a className="md-link" href={target ?? undefined} title={target ?? undefined} onClick={(event) => follow(event, target ?? "")}>
+    <a className={class_names("md-link", !target && "md-file-link")} href={target ?? undefined} title={target ?? undefined} onClick={(event) => follow(event, target ?? "")}>
+      {!target && <FileIcon size={16} />}
       {children}
     </a>
   );
@@ -55,9 +60,9 @@ const components: Components = {
   code: ({ className, children }) => <code className={class_names("md-inline-code", className)}>{children}</code>,
   a: MarkdownLink,
   img: MarkdownImage,
-  table: ({ children }) => (
-    <div className="md-table inset-surface">
-      <table>{children}</table>
+  table: ({ node, ...props }) => (
+    <div className="md-table">
+      <table {...props} />
     </div>
   ),
 };
@@ -68,7 +73,7 @@ const MarkdownBlock = memo(({ text }: { text: string }) => {
   return (
     <ReactMarkdown
       remarkPlugins={plugins?.remark_plugins ?? plain_plugins}
-      rehypePlugins={plugins?.rehype_plugins}
+      rehypePlugins={plugins?.rehype_plugins ?? plain_rehype_plugins}
       components={components}
       urlTransform={url_transform}
     >

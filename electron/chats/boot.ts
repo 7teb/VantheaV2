@@ -8,10 +8,10 @@ import { attachment_ids, change_refs } from "./refs.ts";
 import { metas, type ChatDirs } from "./state.ts";
 
 const adopt_chat = async (chat: Chat) => {
-  const { summary, messages, ...meta } = chat;
+  const { summary, messages, questions, ...meta } = chat;
   metas.set(meta.id, { ...meta, streaming: false });
   change_refs(new Set(), attachment_ids(messages));
-  await write_chat_direct(meta, { summary, messages });
+  await write_chat_direct(meta, { summary, messages, questions });
 };
 
 const rebuild_index = async (dirs: ChatDirs) => {

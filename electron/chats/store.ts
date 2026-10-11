@@ -5,6 +5,7 @@ import { path_key } from "../storage/paths.ts";
 import { load_chat_index } from "./boot.ts";
 import { compose_chat, delete_chat_files, read_chat_file } from "./files.ts";
 import { forget_saves, persist_index, reset_saves, save_now, save_pending, schedule_save } from "./persist.ts";
+import { stored_question_states } from "./question-coerce.ts";
 import { attachment_ids, change_refs, same_ids } from "./refs.ts";
 import { settle_streaming } from "./settle.ts";
 import { bodies, chat_events, metas, reset_chat_state, sorted_metas, type ChatBody, type ChatDirs, type ChatEvents } from "./state.ts";
@@ -156,7 +157,7 @@ export const create_chat = async (project_path: string): Promise<ChatMeta> => {
     streaming: false,
   };
   metas.set(meta.id, meta);
-  cache_body(meta.id, { summary: null, messages: [] });
+  cache_body(meta.id, { summary: null, messages: [], questions: {} });
   await save_now(meta.id);
   await persist_index();
   announce(meta.id);
@@ -259,7 +260,7 @@ export const fork_chat = async (chat_id: string, message_id: string): Promise<Ch
     streaming: false,
   };
   metas.set(fork.id, fork);
-  cache_body(fork.id, { summary, messages });
+  cache_body(fork.id, { summary, messages, questions: stored_question_states(body.questions) });
   change_refs(new Set(), attachment_ids(messages));
   await save_now(fork.id);
   await persist_index();
@@ -316,7 +317,7 @@ export const truncate_after = async (chat_id: string, message_id: string): Promi
   const messages = body.messages.slice(0, at + 1);
   change_refs(attachment_ids(body.messages), attachment_ids(messages));
   const summary = body.summary && messages.some((message) => message.id === body.summary?.through_message_id) ? body.summary : null;
-  await commit(chat_id, { summary, messages }, { message_count: messages.length, updated_at: now_iso() });
+  await commit(chat_id, { ...body, summary, messages }, { message_count: messages.length, updated_at: now_iso() });
   chat_events().truncated(chat_id, message_id);
 };
 

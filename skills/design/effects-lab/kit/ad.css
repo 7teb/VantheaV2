@@ -1,0 +1,69 @@
+/* ad.css : the ad stage. Copy as is, never edit. Style work goes in styles.css. Load it after base.css. */
+
+.ad {
+  --c1: #0b0b12;            /* background, dark */
+  --c2: #ff3d9a;            /* accent 1, the main one */
+  --c3: #7a5cff;            /* accent 2 */
+  --c4: #25d0ff;            /* accent 3 */
+  --c5: #f5f2ee;            /* text */
+  --ar: 1.7778;             /* aspect ratio, changed by data-format */
+  --k: 1;                   /* type scale, changed by data-format */
+  --ad_font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  position: relative; isolation: isolate; overflow: hidden; container-type: inline-size;
+  width: min(100%, calc(80vh * var(--ar))); aspect-ratio: var(--ar); margin: 0 auto;
+  border-radius: 22px; background: var(--c1); color: var(--c5); box-shadow: var(--inset);
+  font-family: var(--ad_font);
+}
+.ad[data-format='1:1'] { --ar: 1; --k: 1.35; }
+.ad[data-format='9:16'] { --ar: 0.5625; --k: 2.1; }
+
+/* layers: every effect is one absolutely positioned child of .layers, stacked in DOM order, first is the back */
+.layers { position: absolute; inset: 0; z-index: 1; }
+.layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+
+/* Three layer hosts, back to front:
+   #layers      z1   backgrounds. The scrim (z5) dims these where the copy sits.
+   #layers_mid  z7   a hero that must stay bright. Above the scrim, below the copy.
+   #layers_top  z20  overlays (grain, scanlines, vignette). Above everything, including the copy. */
+.layers_mid { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.layers_top { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+
+/* a soft dark plate behind the copy so text always reads. It follows the layout. */
+.ad_scrim { position: absolute; inset: 0; z-index: 5; pointer-events: none;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c1) 82%, transparent) 0%, color-mix(in srgb, var(--c1) 40%, transparent) 42%, transparent 72%); }
+.ad[data-layout='center'] .ad_scrim { background: radial-gradient(70% 60% at 50% 50%, color-mix(in srgb, var(--c1) 70%, transparent), transparent 100%); }
+.ad[data-layout='bottom'] .ad_scrim { background: linear-gradient(0deg, color-mix(in srgb, var(--c1) 88%, transparent) 0%, color-mix(in srgb, var(--c1) 35%, transparent) 45%, transparent 75%); }
+
+/* In the tall 9:16 format the copy always sits at the bottom on a bottom scrim, so it reads over any hero. */
+.ad[data-format='9:16'] .ad_scrim { background: linear-gradient(0deg, color-mix(in srgb, var(--c1) 92%, transparent) 0%, color-mix(in srgb, var(--c1) 55%, transparent) 50%, transparent 80%); }
+.ad[data-format='9:16'] .ad_copy { align-content: end; }
+
+/* copy: the four slots. Sizes use cqw (percent of the ad width) times --k, so they scale with the format. */
+.ad_copy { position: absolute; inset: 0; z-index: 10; display: grid; align-content: center; justify-items: start;
+  gap: calc(var(--k) * 1.3cqw); padding: calc(var(--k) * 5.5cqw); pointer-events: none; }
+.ad[data-layout='center'] .ad_copy { justify-items: center; text-align: center; }
+.ad[data-layout='bottom'] .ad_copy { align-content: end; }
+.ad[data-layout='left'] .ad_copy > * { max-width: 62%; }
+.ad[data-format='9:16'][data-layout='left'] .ad_copy > * { max-width: 100%; }
+
+.slot_kicker { font: 600 calc(var(--k) * 1.05cqw)/1 var(--mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--c2); }
+.slot_headline { font: 800 calc(var(--k) * 7.4cqw)/0.94 var(--ad_font); letter-spacing: -0.045em; color: var(--c5); text-wrap: balance; }
+.slot_sub { font: 400 calc(var(--k) * 1.55cqw)/1.45 var(--ad_font); color: color-mix(in srgb, var(--c5) 78%, transparent); max-width: 34em; }
+.slot_cta { display: inline-flex; align-items: center; height: calc(var(--k) * 4cqw); padding: 0 calc(var(--k) * 2.2cqw); border-radius: 999px;
+  background: var(--c5); color: var(--c1); font: 600 calc(var(--k) * 1.35cqw)/1 var(--ad_font); }
+.slot_foot { position: absolute; right: calc(var(--k) * 3cqw); bottom: calc(var(--k) * 2.4cqw); z-index: 10; font: 500 calc(var(--k) * 0.9cqw)/1 var(--mono);
+  letter-spacing: 0.12em; text-transform: uppercase; color: color-mix(in srgb, var(--c5) 55%, transparent); }
+
+/* scenes reveal slots. A slot with data-show is hidden until the timeline adds the class "on". A slot without data-show is always visible.
+   --i is the order inside the scene, it staggers the entrance. */
+.slot { transition: opacity 0.7s var(--ease), transform 0.7s var(--ease), filter 0.7s var(--ease); transition-delay: calc(var(--i, 0) * 0.12s); }
+.slot[data-show]:not(.on) { opacity: 0; transform: translateY(0.5em); filter: blur(6px); }
+
+/* frosted copy plate, used when the brief has glassmorphism as the panel */
+.ad_copy.glass_copy { margin: calc(var(--k) * 4cqw); padding: calc(var(--k) * 3cqw); align-content: center; border-radius: 22px; inset: 0; width: fit-content; max-width: 60%; height: fit-content; align-self: center;
+  background: rgba(255, 255, 255, 0.07); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.09), 0 24px 60px rgba(0, 0, 0, 0.35); }
+
+.ad .tag { z-index: 12; }
+
+@media (prefers-reduced-motion: reduce) { .slot { transition-duration: 0.001s; } }

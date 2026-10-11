@@ -19,7 +19,7 @@ export const analyze_image_tool: Tool = define_tool<Args>({
   spec: {
     name: "analyze_image",
     description:
-      "Ask a focused question about an image the user attached, by its attachment id. A separate vision model reads the image and returns a text description; you do not see the picture yourself. Use it for exact text, numbers, code or a specific region in an attached image.",
+      "Ask a focused question about an image the user attached, by its attachment id. A separate vision model reads the image and returns a text answer. Use it for exact text, numbers, code or a specific region in an attached image.",
     parameters: {
       type: "object",
       properties: {

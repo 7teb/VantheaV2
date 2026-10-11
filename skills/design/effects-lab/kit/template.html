@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STYLE_NAME</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Inter and JetBrains Mono are the chrome fonts. Add the stage font to the same URL. -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="styles.css">
+  <script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+  <main class="page">
+    <div class="head reveal">
+      <span class="label">NN</span>
+      <h1 class="title">STYLE_NAME</h1>
+    </div>
+
+    <!-- The stage is the world. Everything that belongs to the style lives in here. -->
+    <div class="stage h_md reveal" id="stage">
+      <!-- canvas, svg or markup for the effect -->
+      <span class="tag">LABEL</span>
+    </div>
+
+    <!-- Controls live below the stage. 2 to 4 of them. Each one must change something visible. -->
+    <div class="controls reveal">
+      <div class="seg" id="mode" role="group" aria-label="Mode">
+        <button data-mode="a" aria-pressed="true">First</button>
+        <button data-mode="b" aria-pressed="false">Second</button>
+      </div>
+      <label class="range">Amount <input id="amount" type="range" min="0" max="100" value="50"><output id="amount_out">50</output></label>
+    </div>
+  </main>
+
+  <script src="helpers.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

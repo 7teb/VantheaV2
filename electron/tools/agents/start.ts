@@ -46,7 +46,7 @@ export const deploy_agent_tool = define_tool<DeployArgs>({
         profile: {
           type: "string",
           enum: ["explore", "worker"],
-          description: "explore is read-only and its file tools stay inside the project. worker can also edit files and run commands under the same permission checks as you, and is needed for anything outside the project folder.",
+          description: "explore is read-only and its file tools stay inside the project. worker can also edit files and run commands under the same permission checks as you, and is needed for anything outside the project folder. Neither profile has MCP or browser tools; keep that work yourself.",
         },
         model: { type: "string", description: "Exact model id from list_models, which also shows each model's price per 1M tokens. Defaults to your own model." },
         effort: { type: "string", description: "Reasoning effort for that model. Defaults to yours." },

@@ -1,26 +1,37 @@
-import type { OverseerVerdict } from "../../../shared/approval.ts";
-import { permission_intent } from "../../permissions/context.ts";
-import { decisions_text } from "../../permissions/decisions.ts";
-import { max_action_chars, run_review } from "../../permissions/overseer.ts";
-import type { ToolContext } from "../types.ts";
-import type { McpCall } from "./decide.ts";
+import { review_note } from "../../permissions/decide.ts";
+import { review_verdict } from "../../permissions/review-verdict.ts";
+import { deny_text, workaround_text } from "../../permissions/verdict-text.ts";
+import { get_settings } from "../../settings/store.ts";
+import { decision_tool, type McpReview } from "./decide.ts";
 
-export const mcp_overseer = async (call: McpCall, ctx: ToolContext): Promise<OverseerVerdict> => {
-  const args = JSON.stringify(call.args, null, 2);
-  if (args.length > max_action_chars) {
-    return { safe: false, reason: "The MCP arguments are too long for the safety check." };
-  }
-  const review = await run_review(
-    ctx.side_model,
-    {
-      action: `MCP tool call ${call.server}/${call.tool} (risk tier ${call.tier}${call.trusted ? ", trusted server" : ""})\nArguments:\n${args}`,
+export const mcp_review: McpReview = async (call, ctx, granted) => {
+  const verdict = await review_verdict({
+    reviewer: ctx.review,
+    raised: [],
+    granted,
+    signal: ctx.signal,
+    input: {
+      chat_id: ctx.chat_id,
       project_root: ctx.project_root,
-      cwd: ctx.execution_cwd || ctx.project_root,
-      authorization: permission_intent(ctx),
-      delegated_task: ctx.delegated_task,
-      decisions: decisions_text((await ctx.human_decisions?.()) ?? []),
+      custom_instructions: get_settings().custom_instructions,
+      actor: ctx.review.actor,
+      profile: ctx.review.actor.kind === "agent" ? ctx.profile : null,
+      delegated_task: ctx.delegated_task ?? null,
+      decisions: (await ctx.human_decisions?.()) ?? [],
+      call_id: ctx.call_id,
+      action: {
+        tool: decision_tool(call),
+        cwd: ctx.execution_cwd || ctx.project_root,
+        background: false,
+        subject: JSON.stringify(call.args, null, 2),
+        mcp: { tier: call.tier, trusted: call.trusted },
+        files: [],
+        gaps: [],
+        changed: [],
+      },
     },
-    ctx.signal,
-  );
-  return review.verdict;
+  });
+  const { record } = verdict;
+  const text = record.verdict !== "deny" ? "" : record.earlier ? workaround_text("tool call", record, record.earlier) : deny_text("tool call", record);
+  return { record, note: review_note(record, ctx.chat_id), text, seen: verdict.seen };
 };

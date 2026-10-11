@@ -37,6 +37,23 @@ const report_event_outro =
 
 const report_label = "\n\nReport:\n";
 
+export type UpdateEvent = {
+  agent_id: string;
+  run_id: string;
+  name: string;
+  text: string;
+};
+
+const update_event_marker = "[AGENT UPDATE EVENT]";
+
+const previous_update_event_outro =
+  "Use this update to adjust your work: do not redo what the agent says it covers, and change your plan if the update shows that something it assumes is wrong. Do not acknowledge the update, recap it or announce that you are waiting. Speak only when it leads to a new result, a changed action, a blocker or a required user decision; otherwise continue silently, and if nothing needs to change right now, end this turn with at most one short sentence.";
+
+const update_event_outro =
+  "Use this update to adjust your work: do not redo what the agent says it covers, and change your plan if the update shows that something it assumes is wrong. Do not acknowledge the update, recap it or announce that you are waiting. Speak only when it leads to a new result, a changed action, a blocker or a required user decision; otherwise continue silently, and if nothing needs to change right now, end the response with no visible text.";
+
+const update_label = "\n\nUpdate:\n";
+
 const field_of = (text: string, label: string) => new RegExp(`^${label}: (.*)$`, "m").exec(text)?.[1]?.trim() ?? "";
 
 const powershell_path = (value: string) => `'${value.replaceAll("'", "''")}'`;
@@ -48,7 +65,7 @@ const unread_instruction = "If the report remains unread, explicitly identify it
 const continue_instruction = (agent_id: string) =>
   `If the report is missing or unfinished, continue the agent with continue_agent and agent_id "${agent_id}", and tell it to finish the task and end with its final report.`;
 
-export const report_file_notice = (agent_id: string, run_id: string, report_path: string | null, report_error = "", stop_reason = ""): string => {
+export const report_file_notice = (agent_id: string, run_id: string, report_path: string | null, report_error = "", stop_reason = "", agent_tools = true): string => {
   const identity = ["Agent ID: " + agent_id, "Run ID: " + (run_id || "not recorded in this older notification"), ...(stop_reason ? ["Model stop reason: " + stop_reason] : [])];
   if (!report_path) {
     return [
@@ -59,9 +76,9 @@ export const report_file_notice = (agent_id: string, run_id: string, report_path
       "Report file: unavailable",
       ...(report_error ? ["Report file error: " + report_error] : []),
       "",
-      "Call get_agent_status with this agent_id to recover the report path, then read the complete file. Its contents have not been loaded into your context.",
+      ...(agent_tools ? ["Call get_agent_status with this agent_id to recover the report path, then read the complete file. Its contents have not been loaded into your context."] : []),
       "If the file cannot be recovered or opened, state that the report was not read and give the actual reason.",
-      continue_instruction(agent_id),
+      ...(agent_tools ? [continue_instruction(agent_id)] : []),
     ].join("\n");
   }
   const quoted = powershell_path(report_path);
@@ -78,11 +95,12 @@ export const report_file_notice = (agent_id: string, run_id: string, report_path
     "Get-Content -LiteralPath " + quoted + " -Encoding UTF8",
     "",
     "Search within the report:",
-    "rg -n -- \'search text\' " + quoted,
+    "Select-String -Pattern 'search text' -LiteralPath " + quoted,
     "",
     "Project-scoped file tools may not reach this app storage path; use run_command for this saved file.",
     "",
-    continue_instruction(agent_id),
+    ...(agent_tools ? [continue_instruction(agent_id), ""] : []),
+    "Full run log with all reasoning, text, tool calls and tool results, one JSON event per line: " + report_path.replace(/\.report\.md$/, ".jsonl"),
   ].join("\n");
 };
 
@@ -107,7 +125,7 @@ export const parse_agent_notice = (text: string): AgentNote | null => {
   return null;
 };
 
-export const report_event_text = (event: ReportEvent): string =>
+export const report_event_text = (event: ReportEvent, agent_tools = true): string =>
   [
     report_event_marker,
     "This is an internal app event, not a message written by the user. A sub-agent you deployed earlier in this chat has finished.",
@@ -118,7 +136,7 @@ export const report_event_text = (event: ReportEvent): string =>
     `Profile: ${event.profile}`,
     `Status: ${event.status}`,
     `Duration: ${event.seconds}s`,
-    `Report:\n${report_file_notice(event.agent_id, event.run_id, event.report_path, event.report_error, event.stop_reason)}`,
+    `Report:\n${report_file_notice(event.agent_id, event.run_id, event.report_path, event.report_error, event.stop_reason, agent_tools)}`,
     report_event_outro,
   ].join("\n\n");
 
@@ -140,21 +158,51 @@ const event_note = (chunk: string): AgentNote => {
 
 export const parse_report_events = (text: string): AgentNote[] => text.split(report_event_marker).slice(1).map(event_note);
 
+export const update_event_text = (event: UpdateEvent): string =>
+  [
+    update_event_marker,
+    "This is an internal app event, not a message written by the user. A sub-agent you deployed earlier in this chat is still running and sent you this update. Its final report notification will follow when it finishes.",
+    `Agent ID: ${event.agent_id}`,
+    `Run ID: ${event.run_id}`,
+    `Name: ${event.name}`,
+    `Update:\n${event.text}`,
+    update_event_outro,
+  ].join("\n\n");
+
+const update_note = (chunk: string): AgentNote => {
+  const at = chunk.indexOf(update_label);
+  const head = at < 0 ? chunk : chunk.slice(0, at);
+  const tail = at < 0 ? "" : chunk.slice(at + update_label.length);
+  const end = Math.max(...[update_event_outro, previous_update_event_outro].map((outro) => tail.lastIndexOf(`\n\n${outro}`)));
+  return {
+    kind: "update",
+    name: field_of(head, "Name"),
+    agent_id: field_of(head, "Agent ID"),
+    status: "running",
+    seconds: null,
+    body: (end < 0 ? tail : tail.slice(0, end)).trim(),
+  };
+};
+
+export const parse_update_events = (text: string): AgentNote[] => text.split(update_event_marker).slice(1).map(update_note);
+
 const saved_path = (body: string): string | null => {
   const value = field_of(body, "Report file");
   return value && value !== "unavailable" ? value : null;
 };
 
-export const report_notice_context = (text: string): string => {
+export const report_notice_context = (text: string, agent_tools = true): string => {
   const note = parse_agent_notice(text);
   if (!note || note.kind !== "report") {
-    return "A previous sub-agent report notification has no saved file reference. Use get_agent_status to locate its report.";
+    return agent_tools
+      ? "A previous sub-agent report notification has no saved file reference. Use get_agent_status to locate its report."
+      : "A previous sub-agent report notification has no saved file reference.";
   }
-  const body = report_file_notice(note.agent_id, field_of(note.body, "Run ID"), saved_path(note.body), field_of(note.body, "Report file error"), field_of(note.body, "Model stop reason"));
+  const body = report_file_notice(note.agent_id, field_of(note.body, "Run ID"), saved_path(note.body), field_of(note.body, "Report file error"), field_of(note.body, "Model stop reason"), agent_tools);
   return report_notice_text(note.name, note.agent_id, note.status, note.seconds ?? 0, body);
 };
 
-export const report_event_context = (text: string): string =>
+export const report_event_context = (text: string, agent_tools = true): string =>
   text.split(report_event_marker).slice(1).map((chunk) => {
     const note = event_note(chunk);
     const at = chunk.indexOf(report_label);
@@ -170,7 +218,7 @@ export const report_event_context = (text: string): string =>
       report_path: saved_path(note.body),
       report_error: field_of(note.body, "Report file error"),
       stop_reason: field_of(note.body, "Model stop reason"),
-    });
+    }, agent_tools);
   }).join("\n\n");
 
 export const agent_status_context = (text: string): string => {

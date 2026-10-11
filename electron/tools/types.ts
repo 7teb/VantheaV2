@@ -1,6 +1,7 @@
 import type { ApprovalDecision, ApprovalRequest, HumanDecision } from "../../shared/approval.ts";
-import type { PermissionMode, ToolProgress } from "../../shared/chat.ts";
+import type { PermissionMode, ToolProgress, ToolStep } from "../../shared/chat.ts";
 import type { SideModelRole } from "../../shared/models.ts";
+import type { ReviewActor, ReviewRecord, ReviewUsage } from "../../shared/review.ts";
 import type { Settings } from "../../shared/settings.ts";
 import type { ToolView } from "../../shared/tool-view.ts";
 
@@ -19,13 +20,29 @@ export type SideMessage = { role: "system" | "user" | "assistant"; content: stri
 
 export type SideModelCall = ((role: SideModelRole, messages: SideMessage[], max_tokens: number, signal: AbortSignal) => Promise<string>) & { model_id?: (role: SideModelRole) => Promise<string> };
 
+export type ReviewCall = { session_id: string; system: string; parts: { text: string; marker: boolean }[]; schema: { name: string; schema: JsonSchema } };
+
+export type ReviewReply = { text: string; finish_reason: string | null; usage: ReviewUsage | null };
+
+export type ReviewModelCall = (call: ReviewCall, signal: AbortSignal) => Promise<ReviewReply>;
+
+export type ReviewHistory = { records: ReviewRecord[]; steps: ToolStep[]; earlier_commands: number };
+
+export type ActorReview = {
+  actor: ReviewActor;
+  call: ReviewModelCall;
+  history: () => Promise<ReviewHistory>;
+  mirror?: (entry: ReviewRecord) => Promise<void>;
+};
+
+export type Reviewer = Omit<ActorReview, "mirror"> & { record: (entry: ReviewRecord) => Promise<void> };
+
 export type ToolContext = {
   chat_id: string;
   turn_id: string;
   call_id: string;
   project_root: string;
   user_request: string;
-  authorization?: () => string;
   delegated_task?: string;
   execution_cwd?: string;
   human_decisions?: () => Promise<HumanDecision[]>;
@@ -36,6 +53,7 @@ export type ToolContext = {
   progress: (progress: ToolProgress) => void;
   approve: (request: ApprovalRequest) => Promise<ApprovalDecision>;
   side_model: SideModelCall;
+  review: Reviewer;
   message_main: ((text: string) => boolean) | null;
 };
 

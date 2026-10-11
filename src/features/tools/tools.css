@@ -259,24 +259,6 @@
     color: var(--text-danger);
   }
 
-  .tool-command {
-    margin: 0;
-    padding: 10px var(--space-3);
-    border-radius: var(--radius-lg);
-    overflow-x: auto;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-code);
-    line-height: var(--leading-code);
-    color: var(--text-code);
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-
-  .tool-command-prompt {
-    color: var(--text-tertiary);
-    user-select: none;
-  }
-
   .output-block {
     display: flex;
     flex-direction: column;

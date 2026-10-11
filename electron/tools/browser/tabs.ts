@@ -66,7 +66,9 @@ export const browser_tab_tool = define_tool<TabArgs>({
     guarded(ctx, `tab ${args.action}`, async () => {
       if (args.action === "new") {
         const tab = await open_tab(args.url, ctx.signal);
-        return done(`Opened tab ${tab.tab_id} at ${tab_url(tab)}.`, browser_view("new tab", tab_url(tab), tab_title(tab), tab.tab_id));
+        const pending = args.url !== "about:blank" && (tab.loading || tab_url(tab) === "about:blank");
+        const at = pending ? `${args.url}, still loading` : tab_url(tab);
+        return done(`Opened tab ${tab.tab_id} at ${at}.`, browser_view("new tab", tab_url(tab), tab_title(tab), tab.tab_id));
       }
       if (args.action === "select") {
         const tab = await ensure_active(args.tab_id, ctx.signal);

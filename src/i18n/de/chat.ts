@@ -33,6 +33,7 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.origin_continue": "Fortgesetzt",
   "chat.origin_background": "Hintergrundaufgabe beendet",
   "chat.origin_agent_report": "Agent-Bericht",
+  "chat.origin_agent_update": "Agent-Update",
   "chat.notice_agent_report": "Agent-Bericht",
   "chat.notice_agent_update": "Zwischenstand eines Agenten",
   "chat.notice_update_reminder": "An Zwischenstand für den Haupt-Agenten erinnert",

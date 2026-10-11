@@ -43,6 +43,7 @@ export const chats_channels = {
   "turn:steer": invoke<[chat_id: string, text: string, attachments: Attachment[], steer_id: string], string | null>(),
   "turn:approve": invoke<[chat_id: string, call_id: string, decision: ApprovalDecision], void>(),
   "turn:full_window": invoke<[chat_id: string], FullWindow>(),
+  "turn:open_full_window": invoke<[chat_id: string], void>(),
   "turn:end_full_window": invoke<[chat_id: string], void>(),
   "turn:full_window_changed": emit<FullWindow>(),
   "turn:undo": invoke<[chat_id: string, message_id: string], UndoResult>(),

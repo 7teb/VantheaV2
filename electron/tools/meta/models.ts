@@ -10,7 +10,7 @@ export const list_models_tool = define_tool<Record<string, never>>({
   spec: {
     name: "list_models",
     description:
-      "List the models available in this app: the exact model id to pass to deploy_agent, name, provider endpoint, current OpenRouter price in USD per 1M input and output tokens, context window and reasoning efforts.",
+      "List the models available in this app: the exact model id (what deploy_agent's model takes), name, provider endpoint, current OpenRouter price in USD per 1M input and output tokens, context window and reasoning efforts.",
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   profiles: ["main", "plan", "explore", "worker"],

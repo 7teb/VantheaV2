@@ -147,13 +147,27 @@
   }
 
   .inset-surface {
-    background: var(--surface-inset);
-    box-shadow: var(--shadow-inset);
+    background: var(--surface-well);
+    box-shadow: inset 0 0 0 1px var(--ring-well);
     transition: box-shadow var(--duration-base) var(--ease-out);
   }
 
   .inset-surface:focus-within {
-    box-shadow: var(--shadow-inset-strong);
+    box-shadow: inset 0 0 0 1px var(--ring-well-focus);
+  }
+
+  .raised-surface {
+    --fill-hover: var(--raised-fill-hover);
+    --fill-active: var(--raised-fill-active);
+    --fill-selected: var(--raised-fill-active);
+    --fill-row: var(--raised-fill-hover);
+    --divider: var(--raised-divider);
+    --text-tertiary: var(--raised-text-tertiary);
+    --text-disabled: var(--raised-text-disabled);
+    --text-quaternary: var(--raised-text-disabled);
+    --text-placeholder: var(--raised-text-disabled);
+    --scrollbar: var(--raised-scrollbar);
+    --scrollbar-hover: var(--raised-scrollbar-hover);
   }
 
   .inset-surface :is(input, textarea):focus-visible {

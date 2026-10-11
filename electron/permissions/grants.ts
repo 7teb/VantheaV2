@@ -1,4 +1,4 @@
-import { allowed_in_auto } from "./allowlist.ts";
+import { read_only_command } from "./allowlist.ts";
 import { deletes } from "./floor.ts";
 import { split_statements } from "./statements.ts";
 
@@ -31,7 +31,7 @@ const never_granted = (statement: string) => deletes(statement) || process_kill.
 
 const acting_statements = (command: string): string[] => {
   const statements = split_statements(command);
-  const acting = statements.filter((statement) => !allowed_in_auto(statement));
+  const acting = statements.filter((statement) => !read_only_command(statement));
   return acting.length ? acting : statements;
 };
 
@@ -64,10 +64,20 @@ const covered_by = (statement: string, grant: PrefixGrant): boolean => {
   return [...flags_of(statement)].every((flag) => allowed.has(flag));
 };
 
-export const grant_covers = (command: string, grants: PrefixGrant[]): boolean => {
+export const covering_prefixes = (command: string, grants: PrefixGrant[]): string[] => {
   const statements = acting_statements(command);
   if (!statements.length || !grants.length) {
-    return false;
+    return [];
   }
-  return statements.every((statement) => !never_granted(statement) && grants.some((grant) => covered_by(statement, grant)));
+  const used: string[] = [];
+  for (const statement of statements) {
+    const grant = never_granted(statement) ? undefined : grants.find((entry) => covered_by(statement, entry));
+    if (!grant) {
+      return [];
+    }
+    if (!used.includes(grant.prefix)) {
+      used.push(grant.prefix);
+    }
+  }
+  return used;
 };

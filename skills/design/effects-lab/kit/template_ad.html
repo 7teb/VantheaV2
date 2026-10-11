@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STYLE_NAME</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Inter (variable weights, needed by the kinetic headline) and JetBrains Mono. Add a display font to the same URL if the brief needs one. -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="ad.css">
+  <link rel="stylesheet" href="styles.css">
+  <script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+  <main class="page">
+    <div class="head reveal">
+      <span class="label">AD</span>
+      <h1 class="title">STYLE_NAME</h1>
+    </div>
+
+    <!-- The ad. data-layout is left, center or bottom. data-format is 16:9, 1:1 or 9:16. -->
+    <div class="ad reveal" id="ad" data-layout="left" data-format="16:9">
+      <div class="layers" id="layers"></div>
+      <div class="ad_scrim"></div>
+      <div class="layers_mid" id="layers_mid"></div>
+      <div class="ad_copy" id="copy">
+        <!-- data-show lists the scenes where the slot is visible (scene numbers start at 0). style="--i:N" staggers the entrance. -->
+        <div class="slot slot_kicker" data-show="0 1 2" style="--i:0">KICKER_TEXT</div>
+        <h2 class="slot slot_headline" data-show="0 1 2" style="--i:1">HEADLINE_TEXT</h2>
+        <p class="slot slot_sub" data-show="1 2" style="--i:2">SUB_TEXT</p>
+        <span class="slot slot_cta" data-show="2" style="--i:3">CTA_TEXT</span>
+      </div>
+      <span class="slot_foot">FOOT_TEXT</span>
+      <div class="layers_top" id="layers_top"></div>
+    </div>
+
+    <!-- Controls under the ad: scene dots (one button per scene), format, replay. -->
+    <div class="controls reveal">
+      <div class="seg" id="scenes" role="group" aria-label="Scene">
+        <button aria-pressed="true">1</button>
+        <button aria-pressed="false">2</button>
+        <button aria-pressed="false">3</button>
+      </div>
+      <div class="seg" id="format" role="group" aria-label="Format">
+        <button data-format="16:9" aria-pressed="true">16:9</button>
+        <button data-format="1:1" aria-pressed="false">1:1</button>
+        <button data-format="9:16" aria-pressed="false">9:16</button>
+      </div>
+      <button class="btn" id="replay">Replay</button>
+    </div>
+  </main>
+
+  <script src="helpers.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import { dialog } from "electron";
-import { flush_reports, set_report_continuation } from "../agents/reports.ts";
+import { flush_reports, set_agent_continuation } from "../agents/reports.ts";
 import { clear_chat_agents, init_agents, shutdown_agents_sync } from "../agents/runner.ts";
 import { init_background, on_background_finished, remove_chat_background, shutdown_background_sync } from "../background/manager.ts";
 import { clear_browser_chat, set_vision_analyzer } from "../browser/vision.ts";
@@ -18,19 +18,26 @@ import { mcp_command_gate } from "../permissions/mcp-gate.ts";
 import { check_project_folders } from "../project/follow.ts";
 import { init_snapshots } from "../project/snapshots.ts";
 import { set_prompt_sections } from "../prompts/index.ts";
+import { forget_answers, settle_answers } from "../questions/answers.ts";
 import { get_secret, get_settings, update_settings } from "../settings/store.ts";
 import { side_model } from "../side/model.ts";
+import { review_call } from "../side/review.ts";
 import { vision_analyzer } from "../side/vision.ts";
 import { skills_prompt_section } from "../skills/store.ts";
 import { clear_authorization } from "../permissions/context.ts";
 import { close_full_window } from "../permissions/full-window.ts";
+import { forget_instruction_files } from "../permissions/instruction-files.ts";
+import { clear_review_chat } from "../permissions/review-state.ts";
+import { forget_chat_writes } from "../permissions/written-files.ts";
+import { set_keep_awake } from "../power/keep-awake.ts";
 import { init_persistence } from "../storage/init.ts";
 import { flush_pending_sync } from "../storage/json-file.ts";
 import { storage_paths } from "../storage/paths.ts";
 import { clear_mcp_chat, set_command_gate } from "../tools/mcp/decide.ts";
 import { tools_for } from "../tools/registry.ts";
+import { forget_user_stop } from "../turn/active.ts";
 import { interrupt_all_turns, set_turn_finished_hook, stop_turn } from "../turn/run.ts";
-import { deliver_pending_events, drop_pending_events, notify_agent_finished, notify_background_finished } from "./notifications.ts";
+import { deliver_pending_events, drop_pending_events, notify_agent, notify_background_finished } from "./notifications.ts";
 
 const run_step = async (step: string, action: () => unknown) => {
   try {
@@ -52,12 +59,13 @@ const wire_hooks = () => {
   set_vision_analyzer(vision_analyzer);
   set_command_gate(mcp_command_gate);
   set_settings_access({ get: get_settings, update: update_settings });
-  set_prompt_sections(async ({ project_path, user_text }) => {
-    const sections = await Promise.all([memory_prompt_section(project_path, user_text), skills_prompt_section()]);
+  set_prompt_sections(async ({ project_path, user_text, tool_names }) => {
+    const sections = await Promise.all([memory_prompt_section(project_path, user_text, tool_names), skills_prompt_section()]);
     return sections.filter((section) => section !== null);
   });
-  set_report_continuation(notify_agent_finished);
-  set_turn_finished_hook((chat_id) => {
+  set_agent_continuation(notify_agent);
+  set_turn_finished_hook((chat_id, message_id) => {
+    settle_answers(chat_id, message_id).catch((error) => console.error(`[questions] settling the answers of chat ${chat_id} failed:`, error));
     flush_reports(chat_id);
     deliver_pending_events(chat_id);
     extract_memories(chat_id).catch((error) => console.error(`[memory] extraction for chat ${chat_id} failed:`, error));
@@ -66,13 +74,18 @@ const wire_hooks = () => {
   on_chat_removed((chat_id) => {
     stop_turn(chat_id);
     clear_chat_agents(chat_id).catch((error) => console.error(`[agents] removing the agents of chat ${chat_id} failed:`, error));
+    forget_user_stop(chat_id);
     drop_pending_events(chat_id);
     clear_authorization(chat_id);
+    forget_instruction_files(chat_id);
+    clear_review_chat(chat_id);
+    forget_chat_writes(chat_id);
     close_full_window(chat_id);
     forget_chat_approvals(chat_id);
     clear_mcp_chat(chat_id);
     clear_browser_chat(chat_id);
     remove_chat_background(chat_id);
+    forget_answers(chat_id);
   });
 };
 
@@ -87,6 +100,7 @@ export const init_services = async (): Promise<void> => {
       stream: stream_round,
       resolve_tools: (profile, settings) => tools_for(profile, settings),
       side_model,
+      review_call,
       models: async () => (await model_catalog()).models,
     }),
   );
@@ -104,6 +118,7 @@ export const shutdown_services = (): void => {
   flush_all_sync();
   flush_pending_sync();
   shutdown_mcp();
+  set_keep_awake(false);
 };
 
 export const report_startup_failure = (error: unknown): void => {

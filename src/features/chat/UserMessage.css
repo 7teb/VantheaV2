@@ -64,6 +64,9 @@
     width: min(560px, 100%);
     padding: var(--space-3) var(--space-3) var(--space-2) var(--space-4);
     border-radius: var(--radius-2xl);
+    background: var(--surface-dock);
+    backdrop-filter: var(--filter-dock);
+    box-shadow: var(--shadow-dock);
   }
 
   .user-editor textarea {

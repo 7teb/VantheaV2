@@ -1,11 +1,11 @@
 import type { BackgroundTask } from "../../../shared/ipc/work.ts";
-import type { ToolView } from "../../../shared/tool-view.ts";
-import { cancel_background, find_background, start_background } from "../../background/manager.ts";
+import { shell_name, type ToolView } from "../../../shared/tool-view.ts";
+import { cancel_background, find_background, mark_result_read, start_background } from "../../background/manager.ts";
 import { read_string, require_string } from "../browser/common.ts";
 import { failed, guarded } from "../fs/common.ts";
 import { define_tool, ToolArgumentError } from "../types.ts";
 import { blocked_text, gate_command } from "./gate.ts";
-import { command_dir, read_command } from "./run-command.ts";
+import { command_dir, command_view, read_command } from "./run-command.ts";
 
 type StartArgs = { name: string; command: string; cwd: string };
 
@@ -13,6 +13,7 @@ const model_tail_chars = 8000;
 
 const background_view = (task: BackgroundTask): ToolView => ({
   kind: "background",
+  shell: shell_name,
   task_id: task.id,
   command: task.command,
   status: task.status,
@@ -57,10 +58,10 @@ export const start_background_task_tool = define_tool<StartArgs>({
       const dir = await command_dir(ctx.project_root, args.cwd);
       const gate = await gate_command(ctx, args.command, dir.target, true);
       if (gate.kind === "block") {
-        return failed(blocked_text(gate.reason));
+        return { ...failed(blocked_text(gate.reason)), view: command_view(args.command, dir.relative, "") };
       }
       if (gate.kind === "denied") {
-        return { status: "denied", text: gate.text, view: null };
+        return { status: "denied", text: gate.text, view: command_view(args.command, dir.relative, gate.output) };
       }
       const task = await start_background({
         chat_id: ctx.chat_id,
@@ -72,7 +73,7 @@ export const start_background_task_tool = define_tool<StartArgs>({
       });
       return {
         status: "done",
-        text: `Started background task ${task.id} (${task.name}). It keeps running after this turn; its result arrives automatically when it ends.`,
+        text: `${gate.note ? `${gate.note}\n` : ""}Started background task ${task.id} (${task.name}). It keeps running after this turn; its result arrives automatically when it ends.`,
         view: background_view(task),
       };
     }),
@@ -98,6 +99,9 @@ export const get_background_task_tool = define_tool<{ id: string }>({
       const found = find_background(args.id, ctx.chat_id);
       if (found.task === null) {
         return failed(found.error);
+      }
+      if (found.task.status !== "running") {
+        mark_result_read(found.task.id);
       }
       return { status: "done", text: describe(found.task), view: background_view(found.task) };
     }),

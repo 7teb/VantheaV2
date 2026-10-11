@@ -1,6 +1,7 @@
 import { apply_event } from "../../shared/apply-event.ts";
 import type { AssistantMessage, Chat, ContextUsage, Message } from "../../shared/chat.ts";
 import type { UndoResult } from "../../shared/ipc/chats.ts";
+import type { QuestionStates } from "../../shared/questions.ts";
 import type { Delivery } from "../api/smoother.ts";
 
 export type EventDelivery = Extract<Delivery, { kind: "event" }>;
@@ -177,6 +178,14 @@ export const fail_load = (state: ChatViewState, chat_id: string): ChatViewState 
 export const set_context = (state: ChatViewState, chat_id: string, usage: ContextUsage): ChatViewState => {
   const entry = state.entries[chat_id];
   return entry ? with_entry(state, chat_id, { ...entry, context: usage }) : state;
+};
+
+export const set_questions = (state: ChatViewState, chat_id: string, questions: QuestionStates): ChatViewState => {
+  const entry = state.entries[chat_id];
+  if (!entry?.chat) {
+    return state;
+  }
+  return with_entry(state, chat_id, { ...entry, chat: { ...entry.chat, questions } });
 };
 
 export const mark_reverted = (state: ChatViewState, chat_id: string, message_id: string, result: UndoResult): ChatViewState => {

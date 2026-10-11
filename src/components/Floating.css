@@ -6,9 +6,10 @@
     max-height: calc(100vh - var(--space-4));
     overflow: auto;
     padding: 6px;
-    border-radius: var(--radius-xl);
-    background: var(--surface-raise);
-    box-shadow: var(--shadow-float);
+    border-radius: var(--radius-2xl);
+    background: var(--surface-popover);
+    backdrop-filter: var(--filter-popover);
+    box-shadow: var(--shadow-popover);
     color: var(--text-primary);
     outline: none;
   }

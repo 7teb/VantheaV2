@@ -1,6 +1,6 @@
 import { report_file_notice, report_notice_context, report_notice_text, update_notice_text } from "../../shared/agent-notes.ts";
 import type { AgentProfile, AgentRunStatus } from "../../shared/ipc/work.ts";
-import { has_steers, is_active } from "../turn/active.ts";
+import { has_steers, is_active, user_stopped } from "../turn/active.ts";
 import type { TurnNote } from "../turn/session.ts";
 import { running_in_chat } from "./store.ts";
 
@@ -21,17 +21,17 @@ export type AgentReport = {
 
 export type AgentUpdate = { chat_id: string; agent_id: string; run_id: string; name: string; text: string };
 
-type PendingNote = { kind: "report"; report: AgentReport } | { kind: "update"; update: AgentUpdate };
+export type AgentNotice = { kind: "report"; report: AgentReport } | { kind: "update"; update: AgentUpdate };
 
 export const major_wait_ms = 30 * 60 * 1000;
 
-const pending = new Map<string, PendingNote[]>();
+const pending = new Map<string, AgentNotice[]>();
 
 const waiters = new Map<string, Set<() => void>>();
 
-let continuation: ((report: AgentReport) => void) | null = null;
+let continuation: ((notice: AgentNotice) => void) | null = null;
 
-export const set_report_continuation = (fn: (report: AgentReport) => void): void => {
+export const set_agent_continuation = (fn: (notice: AgentNotice) => void): void => {
   continuation = fn;
 };
 
@@ -52,19 +52,20 @@ export const wake_idle = (chat_id: string): void => {
   }
 };
 
-const continue_with = (report: AgentReport) => {
+const continue_with = (notice: AgentNotice) => {
+  const { chat_id, run_id } = notice.kind === "report" ? notice.report : notice.update;
   if (!continuation) {
-    console.error(`[agents] report of run ${report.run_id} in chat ${report.chat_id} has no continuation path and was dropped`);
+    console.error(`[agents] ${notice.kind} of run ${run_id} in chat ${chat_id} has no continuation path and was dropped`);
     return;
   }
   try {
-    continuation(report);
+    continuation(notice);
   } catch (error) {
-    console.error(`[agents] delivering the report of run ${report.run_id} to chat ${report.chat_id} failed:`, error);
+    console.error(`[agents] delivering the ${notice.kind} of run ${run_id} to chat ${chat_id} failed:`, error);
   }
 };
 
-const set_pending = (chat_id: string, queue: PendingNote[]) => {
+const set_pending = (chat_id: string, queue: AgentNotice[]) => {
   if (queue.length) {
     pending.set(chat_id, queue);
   } else {
@@ -78,53 +79,65 @@ export const deliver_report = (report: AgentReport): void => {
     set_pending(report.chat_id, [...superseded, { kind: "report", report }]);
   } else {
     set_pending(report.chat_id, superseded);
-    continue_with(report);
+    continue_with({ kind: "report", report });
   }
   wake_idle(report.chat_id);
 };
 
-export const deliver_update = (update: AgentUpdate): void => {
+export const hold_update = (update: AgentUpdate): void => {
   set_pending(update.chat_id, [...(pending.get(update.chat_id) ?? []), { kind: "update", update }]);
+};
+
+export const deliver_update = (update: AgentUpdate): void => {
+  if (!is_active(update.chat_id) && !user_stopped(update.chat_id)) {
+    continue_with({ kind: "update", update });
+    return;
+  }
+  hold_update(update);
   wake_idle(update.chat_id);
 };
 
 export const has_agent_notes = (chat_id: string): boolean => Boolean(pending.get(chat_id)?.length);
 
-export const report_note_content = (text: string): string =>
-  `[Internal app event, not a user message. One of your sub-agents finished. Its full report is saved in a file. Read the complete report before using its findings or writing your final answer. If it remains unread, identify it and explain why. Read it silently when no visible update is useful. This notification does not require an acknowledgment or a recap. You may defer reading while other useful work is in progress, but you must not silently skip the report. If other agents are still running and no visible update is useful, process the notification silently.]\n\n${report_notice_context(text)}`;
+export const report_note_content = (text: string, agent_tools = true): string =>
+  `[Internal app event, not a user message. One of your sub-agents finished. Its full report is saved in a file. Read the complete report before using its findings or writing your final answer. If it remains unread, identify it and explain why. Read it silently when no visible update is useful. This notification does not require an acknowledgment or a recap. You may defer reading while other useful work is in progress, but you must not silently skip the report. If other agents are still running and no visible update is useful, process the notification silently.]\n\n${report_notice_context(text, agent_tools)}`;
 
 export const update_note_content = (text: string): string =>
   `[Internal app event, not a user message. One of your sub-agents is still running and sent you this update. Use it to avoid duplicating its work or to adjust your plan; do not redo what it says it covers. Routine updates need no visible reply, acknowledgment or fresh summary of the task. You may process several updates silently and wait for the remaining reports. Speak only if a new result, changed action, blocker or user decision makes an update useful. Its final report notification still arrives when it finishes.]\n\n${text}`;
 
-const turn_note = (note: PendingNote): TurnNote => {
+const turn_note = (note: AgentNotice, agent_tools: boolean): TurnNote => {
   if (note.kind === "update") {
     const text = update_notice_text(note.update.name, note.update.agent_id, note.update.text);
     return { kind: "notice", notice: "agent_update", text, content: update_note_content(text) };
   }
   const { report } = note;
-  const text = report_notice_text(report.name, report.agent_id, report.status, report_seconds(report), report_file_notice(report.agent_id, report.run_id, report.report_path, report.report_error, report.stop_reason));
-  return { kind: "notice", notice: "agent_report", text, content: report_note_content(text) };
+  const text = report_notice_text(report.name, report.agent_id, report.status, report_seconds(report), report_file_notice(report.agent_id, report.run_id, report.report_path, report.report_error, report.stop_reason, agent_tools));
+  return { kind: "notice", notice: "agent_report", text, content: report_note_content(text, agent_tools) };
 };
 
-export const take_agent_notes = (chat_id: string): TurnNote[] => {
+export const take_agent_notes = (chat_id: string, agent_tools = true): TurnNote[] => {
   const queue = pending.get(chat_id);
   if (!queue) {
     return [];
   }
   pending.delete(chat_id);
-  return queue.map(turn_note);
+  return queue.map((note) => turn_note(note, agent_tools));
 };
 
 export const flush_reports = (chat_id: string): void => {
   const queue = pending.get(chat_id);
-  if (!queue) {
+  if (!queue || is_active(chat_id)) {
     return;
   }
-  set_pending(chat_id, queue.filter((note) => note.kind === "update"));
-  for (const note of queue) {
-    if (note.kind === "report") {
-      continue_with(note.report);
+  const kept: AgentNotice[] = user_stopped(chat_id) ? queue.filter((note) => note.kind === "update") : [];
+  const due = queue.filter((note) => !kept.includes(note));
+  set_pending(chat_id, kept);
+  for (const [at, note] of due.entries()) {
+    if (is_active(chat_id)) {
+      set_pending(chat_id, [...(pending.get(chat_id) ?? []), ...due.slice(at)]);
+      return;
     }
+    continue_with(note);
   }
 };
 

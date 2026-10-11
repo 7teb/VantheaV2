@@ -6,7 +6,7 @@ import { guarded } from "./common.ts";
 import { read_profiles, readable_file } from "./read.ts";
 
 const search_header = (query: GrepQuery, count: number, files: number, mode: string) =>
-  `${count} matching lines for ${JSON.stringify(query.query)} (${mode}, ${query.case_sensitive ? "case-sensitive" : "case-insensitive"}) in ${files} files${query.path ? ` under ${query.path}` : ""}`;
+  `${count} matching lines for ${JSON.stringify(query.query)} (${mode}, ${query.case_sensitive ? "case-sensitive" : "case-insensitive"}) in ${files} ${files === 1 ? "file" : "files"}${query.path ? ` under ${query.path}` : ""}`;
 
 export const grep_files_tool = define_tool<GrepQuery>({
   spec: {

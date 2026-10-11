@@ -4,7 +4,7 @@ import type { AgentRecord } from "./records.ts";
 
 const profile_texts: Record<AgentRecord["profile"], string> = {
   explore: "Your profile is explore: you are read-only, and your file tools reach only the open project folder.",
-  worker: "Your profile is worker: you may read, edit files and run commands, under the same permission checks as the main agent.",
+  worker: "Your profile is worker: you may read, edit files and run commands, under the same permission checks as the main agent. Destructive or system-changing actions outside the project that your task does not name explicitly: do not run them, report them as blockers.",
 };
 
 export const agent_role_section = (agent: AgentRecord): PromptSection => ({

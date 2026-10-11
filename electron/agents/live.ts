@@ -33,6 +33,14 @@ const lives = new Map<string, LiveRun>();
 
 const event_listeners = new Set<EventListener>();
 
+const journal_entry = (event: StoredEvent): StoredEvent => {
+  if (event.type !== "tool_draft") {
+    return event;
+  }
+  const { delta, path, old_text, ...entry } = event;
+  return entry;
+};
+
 const fresh_transcript = (): TranscriptState => ({
   status: "streaming",
   steps: [],
@@ -85,7 +93,7 @@ export const create_live = (agent_id: string, run_id: string, chat_id: string): 
       if (live.removed) {
         return;
       }
-      append_journal(file, event);
+      append_journal(file, journal_entry(event));
       publish({ ...event, agent_id, run_id });
     },
   };
@@ -167,7 +175,7 @@ export const read_agent_run = async (agent: AgentRecord, run: RunRecord): Promis
   const file = run_file(agent.agent_id, run.run_id);
   await flush_journal(file);
   const events = (await read_journal(file))
-    .map(parse_event)
+    .map((value) => parse_event(value, agent.chat_id))
     .filter((event): event is StoredEvent => event !== null)
     .sort((a, b) => a.seq - b.seq);
   return run_view(agent, run, settled(apply_events(fresh_transcript(), events), run));

@@ -6,13 +6,15 @@ It is built with Electron, React and TypeScript. The models come from OpenRouter
 
 ## What it can do
 
-- Read, search, edit and write files inside the project folder you picked. It stays inside that folder and never reads secret files like `.env` or SSH keys.
+- Read, search, edit and write files inside the project folder you picked. It stays inside that folder and never reads secret files like `.env` or SSH keys. While the model is still writing a file or an edit, you can open its row and watch the new text come in line by line.
 - Run PowerShell commands, with live output while they run. Long builds or test runs can go to the background, and the agent picks up the result when they finish.
 - Plan mode: the agent only looks around and writes a plan, and nothing changes until you accept it.
+- Questions while it works: the agent can ask you something above the message box without stopping. Pick an answer, write your own or close the question; your answer reaches the running turn, or starts a new one when it is done.
 - Sub-agents for work that can run in parallel or would flood the main chat. Each one has a live transcript, and they report back when they are done. When an agent needs your approval, the question shows up above the message box and the agent is marked with a yellow dot, so you don't have to open each transcript.
 - Undo per turn, so every file the agent touched in a turn can be put back.
 - A built-in terminal and a browser the agent can drive.
 - Optional extras you turn on in the settings: web search through Tavily, image generation, memory across chats, skills and local MCP servers.
+- Skills: built-in skills ship with the app and are on by default: one about VantheaX itself and `effects-lab` (group `design`), which builds visual effect pages and composed ads and checks them in a headless Edge or Chrome (needs Python with Pillow and Node 22 or newer) (they can be turned off, not removed). Your own skills live in the skills folder, one folder per skill with a `SKILL.md`, and can be sorted into group folders one level deep, for example `designs\glow\SKILL.md`.
 - English and German interface.
 
 ## Permission modes
@@ -20,12 +22,12 @@ It is built with Electron, React and TypeScript. The models come from OpenRouter
 You choose how much the agent may do on its own, right in the message box.
 
 - **Ask**: every command and every file write waits for you.
-- **Auto**: the agent just works on what you asked for. Read-only commands run right away, everything else goes past a small reviewer model. Normal steps inside the project, like builds, tests, installing the project's dependencies or local git commits, run on their own. Anything beyond that, like deleting files outside the project, installing software system-wide, pushing or uploading, or running something downloaded, waits for your yes. Sub-agents follow the same rules.
+- **Auto**: the agent just works on what you asked for. Every command, background task and MCP tool call first goes past an automatic review model, which checks it against your messages, your custom instructions, the project's `AGENTS.md` and `CLAUDE.md` and the earlier decisions in the chat. Normal steps inside the project, like builds, tests, installing the project's dependencies or local git commits, run on their own. Anything beyond that, like deleting files outside the project, installing software system-wide, pushing or uploading, or running something downloaded, waits for your yes, and something your rules forbid is refused with the reason. Changes to `AGENTS.md` or `CLAUDE.md` also wait for your yes. Sub-agents follow the same rules.
 - **Full**: commands and writes run without asking.
 
-When you say no, that sticks: the exact same command is refused without asking you again until you write something new in the chat, and the reviewer sees your earlier answers, so the agent can't get around a no with a slightly different command. "Don't ask again for commands starting with ..." works for the rest of the chat, also after a restart. If the reviewer can't be reached, you are asked instead of anything running unchecked. That question also lets you switch the chat and its sub-agents to Full for ten minutes; the message box shows the time left and can end it early.
+When you say no, that sticks: the review sees your earlier answers and refuses the same command, or another way to the same result, until you write something new in the chat. "Don't ask again for commands starting with ..." skips the question only where the review would have asked; a refusal by the review still stands. It works for the rest of the chat, also after a restart. If the review can't be reached or doesn't answer in time, you are asked instead of anything running unchecked. To let the chat and its sub-agents run without questions for ten minutes, pick "Full auto for 10 minutes" in the permission menu; the message box shows the time left and can end it early.
 
-A short list of truly destructive commands (formatting a drive, deleting Windows or System32, wiping boot settings) is blocked in every mode and can't be approved. If such a command is hidden inside a script the agent wants to run, you are asked first, even when the reviewer would let it through.
+A short list of truly destructive commands (formatting a drive, deleting Windows or System32, wiping boot settings) is blocked in every mode and can't be approved. If such a command is hidden inside a script the agent wants to run, you are asked first, even when the review would let it through.
 
 ## Building it
 

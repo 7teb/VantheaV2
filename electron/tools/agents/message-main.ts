@@ -1,4 +1,4 @@
-import { max_main_messages } from "../../agents/runner.ts";
+import { max_main_messages } from "../../agents/session.ts";
 import { failed, guarded } from "../fs/common.ts";
 import { define_tool } from "../types.ts";
 import { read_text } from "./common.ts";

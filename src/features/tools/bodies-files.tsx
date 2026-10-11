@@ -1,6 +1,8 @@
+import type { DiffLine } from "../../../shared/tool-view.ts";
 import { use_t } from "../../i18n/index.ts";
 import { DiffView } from "./DiffView.tsx";
 import type { BodyProps } from "./body-types.ts";
+import "./bodies-files.css";
 
 const max_listed = 200;
 
@@ -79,17 +81,21 @@ export const OutlineBody = ({ view }: BodyProps<"outline">) => (
   </div>
 );
 
-export const EditBody = ({ view }: BodyProps<"edit">) => {
+type EditCardProps = { path: string; created: boolean; added: number; removed: number; diff: DiffLine[] };
+
+export const EditCard = ({ path, created, added, removed, diff }: EditCardProps) => {
   const t = use_t();
   return (
-    <div className="tool-body-stack">
-      <div className="tool-body-line">
-        <span className="tool-body-path">{view.path}</span>
-        {view.created && <span className="tool-body-muted">{t("tools.created_file")}</span>}
-        <span className="tool-stat-add">+{view.added}</span>
-        <span className="tool-stat-remove">-{view.removed}</span>
+    <div className="edit-card">
+      <div className="edit-card-head">
+        <span className="tool-body-path">{path}</span>
+        {created && <span className="tool-body-muted">{t("tools.created_file")}</span>}
+        <span className="tool-stat-add">+{added}</span>
+        <span className="tool-stat-remove">-{removed}</span>
       </div>
-      <DiffView lines={view.diff} />
+      <DiffView lines={diff} />
     </div>
   );
 };
+
+export const EditBody = ({ view }: BodyProps<"edit">) => <EditCard {...view} />;

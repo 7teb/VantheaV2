@@ -1,0 +1,81 @@
+@layer components {
+  .edit-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin-top: 2px;
+    overflow: hidden;
+    border: 1px solid var(--rule-command);
+    border-radius: 12.5px;
+    corner-shape: superellipse(1.5);
+    background: var(--fill-command);
+    color: var(--text-tertiary);
+  }
+
+  .edit-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--space-2);
+    min-width: 0;
+    padding: 4px var(--space-2);
+    font-family: var(--font-ui);
+    font-size: var(--font-size-ui);
+    line-height: 18.5px;
+  }
+
+  .edit-card .diff-view {
+    display: grid;
+    grid-template-columns: minmax(max-content, 1fr);
+    align-content: start;
+    padding: 4px 0 var(--space-2);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    line-height: 19.5px;
+    scrollbar-color: var(--scrollbar-command) transparent;
+  }
+
+  .edit-card .diff-view:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .edit-card .draft-chunk {
+    display: grid;
+    grid-template-columns: minmax(max-content, 1fr);
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 624px;
+  }
+
+  .edit-card .diff-row {
+    grid-template-columns: 38px 40px 22px max-content;
+    width: auto;
+    color: var(--text-secondary);
+  }
+
+  .edit-card .diff-row[data-kind="add"] {
+    background: var(--diff-card-add-fill);
+  }
+
+  .edit-card .diff-row[data-kind="remove"] {
+    background: var(--diff-card-remove-fill);
+  }
+
+  .edit-card .diff-gutter {
+    padding-right: 0;
+    color: var(--text-tertiary);
+  }
+
+  .edit-card .diff-code {
+    padding-right: var(--space-2);
+  }
+
+  .edit-card .diff-gap {
+    padding: 0 var(--space-2) 0 100px;
+    line-height: 15px;
+  }
+
+  .edit-card .diff-empty {
+    padding: 4px var(--space-2) var(--space-2);
+  }
+}

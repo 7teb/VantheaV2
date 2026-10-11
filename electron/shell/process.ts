@@ -1,8 +1,10 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 
-const utf8_prelude = "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $OutputEncoding=[System.Text.Encoding]::UTF8; ";
+const utf8_prelude = "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; $OutputEncoding=[System.Text.UTF8Encoding]::new($false) # UTF-8 output setup added by VantheaX, not part of the command\n";
 
-export const powershell_args = (command: string): string[] => ["-NoProfile", "-NonInteractive", "-Command", `${utf8_prelude}${command}`];
+const exit_code_footer = `if (-not $?) { Set-StrictMode -Off; if ($LASTEXITCODE -is [int] -and $LASTEXITCODE -ne 0) { $host.SetShouldExit($LASTEXITCODE) } elseif ("$($Error[0].FullyQualifiedErrorId)" -notlike 'NativeCommandError*') { $host.SetShouldExit(1) } } # exit code handling added by VantheaX, not part of the command`;
+
+export const powershell_args = (command: string): string[] => ["-NoProfile", "-NonInteractive", "-Command", `${utf8_prelude}${command}\n;\n${exit_code_footer}`];
 
 export const spawn_powershell = (command: string, cwd: string): ChildProcess => {
   const child = spawn("powershell.exe", powershell_args(command), { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"] });

@@ -75,6 +75,12 @@ section + .pane-note {
   overflow-wrap: anywhere;
 }
 
+.pane-item-tag {
+  margin-left: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
 .pane-item-meta {
   margin-top: 2px;
   overflow: hidden;

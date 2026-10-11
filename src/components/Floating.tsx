@@ -126,7 +126,7 @@ export const Floating = ({
   return createPortal(
     <div
       ref={element}
-      className={class_names("floating", className)}
+      className={class_names("floating", "raised-surface", className)}
       data-floating=""
       data-state={presence.state}
       data-side={placed?.side ?? "bottom"}

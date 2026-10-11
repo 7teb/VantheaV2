@@ -1,6 +1,7 @@
 import { draft_key } from "../../state/chat-drafts.ts";
 import { AgentApprovals } from "./AgentApprovals.tsx";
 import { Composer } from "./Composer.tsx";
+import { QuestionsPanel } from "./QuestionsPanel.tsx";
 import { QueuedList } from "./QueuedList.tsx";
 import { TodosPanel } from "./TodosPanel.tsx";
 import "./ComposerParts.css";
@@ -13,6 +14,7 @@ export const ComposerSlot = ({ chat_id, project_path, placement }: ComposerSlotP
     {chat_id !== null && <AgentApprovals chat_id={chat_id} />}
     {chat_id !== null && <TodosPanel chat_id={chat_id} />}
     {chat_id !== null && <QueuedList chat_id={chat_id} />}
+    {chat_id !== null && <QuestionsPanel chat_id={chat_id} />}
     <Composer chat_id={chat_id} project_path={project_path} draft_key={draft_key(chat_id, project_path)} placement={placement} />
   </div>
 );

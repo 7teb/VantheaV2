@@ -3,7 +3,7 @@ import type { CompactResult } from "../../shared/ipc/chats.ts";
 import { api } from "../api/bridge.ts";
 import type { Delivery } from "../api/smoother.ts";
 import { start_stream } from "../api/stream.ts";
-import { begin_load, empty_chat_view, fail_load, finish_load, open_entry, receive, set_context, stale_chats, type ChatViewState } from "./chat-view-reduce.ts";
+import { begin_load, empty_chat_view, fail_load, finish_load, open_entry, receive, set_context, set_questions, stale_chats, type ChatViewState } from "./chat-view-reduce.ts";
 import { create_store } from "./create-store.ts";
 
 export const chat_view_store = create_store<ChatViewState>(empty_chat_view);
@@ -108,4 +108,14 @@ const deliver = (batch: Delivery[]) => {
   }
 };
 
-export const init_chat_view = (): (() => void) => start_stream(deliver);
+export const init_chat_view = (): (() => void) => {
+  const stops = [
+    start_stream(deliver),
+    api.on("questions:changed", ({ chat_id, questions }) => chat_view_store.update((state) => set_questions(state, chat_id, questions))),
+  ];
+  return () => {
+    for (const stop of stops) {
+      stop();
+    }
+  };
+};

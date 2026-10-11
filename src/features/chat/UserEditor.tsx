@@ -61,7 +61,7 @@ export const UserEditor = ({ chat_id, message, on_done }: UserEditorProps) => {
   };
 
   return (
-    <div className="user-editor inset-surface">
+    <div className="user-editor raised-surface">
       <textarea ref={area} rows={1} value={text} onChange={(event) => set_text(event.target.value)} onKeyDown={on_key_down} spellCheck={false} />
       <div className="user-editor-bar">
         {error && <span className="inline-error">{error}</span>}

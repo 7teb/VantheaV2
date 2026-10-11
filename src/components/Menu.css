@@ -2,13 +2,13 @@
   .menu {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    padding: 4px;
+    font-size: var(--font-size-ui);
   }
 
   .menu-section {
     display: flex;
     flex-direction: column;
-    gap: 1px;
   }
 
   .menu-section + .menu-section {
@@ -20,27 +20,30 @@
   .menu-section-label {
     display: flex;
     align-items: center;
-    height: 26px;
-    padding: 0 10px;
+    padding: 4px 8px;
+    color: var(--text-tertiary);
+  }
+
+  .menu-section + .menu-section .menu-section-label {
+    padding-top: 8px;
   }
 
   .menu-item {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     width: 100%;
-    height: var(--size-menu-item);
-    padding: 0 8px 0 10px;
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
+    padding: 5px 8px;
+    border-radius: var(--radius-item);
+    color: var(--text-menu-item);
     white-space: nowrap;
     outline: none;
-    transition: background var(--duration-fast) var(--ease-out);
   }
 
   .menu-item:hover:not(:disabled),
   .menu-item:focus-visible {
     background: var(--fill-hover);
+    color: var(--text-primary);
     outline: none;
   }
 
@@ -48,20 +51,11 @@
     background: var(--fill-active);
   }
 
-  .menu-item:disabled {
-    color: var(--text-disabled);
-  }
-
   .menu-item-icon {
     display: inline-grid;
     place-items: center;
     width: 16px;
-    color: var(--text-secondary);
-  }
-
-  .menu-item:hover .menu-item-icon,
-  .menu-item:focus-visible .menu-item-icon {
-    color: var(--text-primary);
+    height: 16px;
   }
 
   .menu-item-label {
@@ -74,10 +68,30 @@
     text-align: left;
   }
 
-  .menu-item-hint {
-    padding-left: var(--space-3);
+  .menu-item-description {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: var(--font-size-caption);
     color: var(--text-tertiary);
+  }
+
+  .menu-item-badge {
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--radius-full);
+    background: var(--fill-active);
+    font-size: var(--font-size-caption);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+
+  .menu-item-hint {
+    padding-left: 2px;
+    color: var(--text-secondary);
   }
 
   .menu-item-check {
@@ -85,16 +99,19 @@
     place-items: center;
     width: 16px;
     height: 16px;
-    color: var(--text-primary);
   }
 
-  .menu-item.is-danger,
-  .menu-item.is-danger .menu-item-icon {
+  .menu-item.is-danger {
     color: var(--text-danger);
+  }
+
+  .menu-item:disabled {
+    color: var(--text-disabled);
   }
 
   .menu-item.is-danger:hover,
   .menu-item.is-danger:focus-visible {
     background: var(--fill-danger);
+    color: var(--text-danger);
   }
 }

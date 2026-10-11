@@ -4,7 +4,7 @@ import { main_window } from "../app/window.ts";
 import { emit } from "../ipc/handle.ts";
 import { handle_debugger_message } from "./cdp.ts";
 import { browser_partition } from "./guest-policy.ts";
-import { error_text, invalidate_tab, notify_tab, random_id, tab_title, tab_url, type BrowserTab } from "./state.ts";
+import { error_text, invalidate_tab, notify_tab, pause, random_id, tab_title, tab_url, type BrowserTab } from "./state.ts";
 
 type CommandBody = BrowserCommand extends infer C ? (C extends BrowserCommand ? Omit<C, "command_id"> : never) : never;
 
@@ -14,6 +14,8 @@ export type TabInfo = { tab_id: string; active: boolean; attached: boolean; load
 
 const command_timeout_ms = 20000;
 const activation_timeout_ms = 15000;
+
+const first_load_timeout_ms = 20000;
 
 const tabs = new Map<string, BrowserTab>();
 const guest_tabs = new Map<number, string>();
@@ -142,8 +144,9 @@ const create_tab = (tab_id: string, guest: WebContents): BrowserTab => {
     invalidate_tab(tab, true);
   };
   const on_destroyed = () => cleanup_tab(tab_id);
-  guest.debugger.on("message", on_message);
-  guest.debugger.on("detach", on_detach);
+  const debug = guest.debugger;
+  debug.on("message", on_message);
+  debug.on("detach", on_detach);
   guest.on("did-start-loading", on_start);
   guest.on("did-stop-loading", on_stop);
   guest.on("did-navigate", on_navigate);
@@ -152,8 +155,8 @@ const create_tab = (tab_id: string, guest: WebContents): BrowserTab => {
   guest.on("render-process-gone", on_gone);
   guest.on("destroyed", on_destroyed);
   tab.release = () => {
-    guest.debugger.off("message", on_message);
-    guest.debugger.off("detach", on_detach);
+    debug.off("message", on_message);
+    debug.off("detach", on_detach);
     guest.off("did-start-loading", on_start);
     guest.off("did-stop-loading", on_stop);
     guest.off("did-navigate", on_navigate);
@@ -313,7 +316,12 @@ export const open_tab = async (url: string, signal: AbortSignal): Promise<Browse
     throw new Error("Browser panel opened a tab without reporting its id.");
   }
   await wait_until(() => usable(tabs.get(tab_id)), activation_timeout_ms, `Browser tab ${tab_id} did not become active.`, signal);
-  return ensure_active(tab_id, signal);
+  const tab = await ensure_active(tab_id, signal);
+  const deadline = Date.now() + first_load_timeout_ms;
+  while (url !== "about:blank" && (tab.loading || tab_url(tab) === "about:blank") && Date.now() < deadline) {
+    await pause(tab, deadline - Date.now(), signal);
+  }
+  return tab;
 };
 
 export const close_tab = async (tab_id: string, signal: AbortSignal) => {

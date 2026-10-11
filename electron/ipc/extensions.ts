@@ -1,4 +1,5 @@
-import { shell } from "electron";
+import { app, shell } from "electron";
+import path from "node:path";
 import { init_memory, memory_loaded, memory_records, remove_memory, reset_memories, resolve_pending, review_items } from "../memory/store.ts";
 import { init_skills, read_skill_raw, refresh_skills, remove_skill, set_skill_enabled, skill_entries, skills_root } from "../skills/store.ts";
 import { error_text, require_string } from "../storage/coerce.ts";
@@ -26,7 +27,8 @@ export const init_extensions = async () => {
     console.error(`[extensions] memory store init from ${paths.memories} failed, memory stays off for this session: ${error_text(error)}`);
   }
   try {
-    await init_skills({ root: paths.skills, legacy_root: paths.legacy_skills });
+    const builtin_root = app.isPackaged ? path.join(process.resourcesPath, "skills") : path.join(app.getAppPath(), "skills");
+    await init_skills({ root: paths.skills, legacy_root: paths.legacy_skills, builtin_root });
   } catch (error) {
     console.error(`[extensions] skills init from ${paths.skills} failed, no skills are loaded: ${error_text(error)}`);
   }

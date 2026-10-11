@@ -1,5 +1,5 @@
 import type { Todo } from "../../../shared/chat.ts";
-import type { DiffLine, OutlineSymbol, ToolView } from "../../../shared/tool-view.ts";
+import { shell_name, type DiffLine, type OutlineSymbol, type ToolView } from "../../../shared/tool-view.ts";
 import { as_array, as_number, as_record, as_string, is_record } from "../../storage/coerce.ts";
 
 type Raw = Record<string, unknown>;
@@ -154,6 +154,7 @@ const file_views = (name: string, args: Raw, result: Raw, ctx: ViewContext): Too
       }
       return {
         kind: "command",
+        shell: shell_name,
         command: as_string(result.command, as_string(args.command)),
         cwd: as_string(result.cwd, as_string(args.cwd, ".")),
         exit_code: typeof result.exitCode === "number" ? result.exitCode : null,
@@ -169,12 +170,13 @@ const work_views = (name: string, args: Raw, result: Raw, ctx: ViewContext): Too
   switch (name) {
     case "start_background_task":
       return result.started === true
-        ? { kind: "background", task_id: as_string(result.id), command: as_string(args.command), status: as_string(result.status, "running"), output_tail: "" }
+        ? { kind: "background", shell: shell_name, task_id: as_string(result.id), command: as_string(args.command), status: as_string(result.status, "running"), output_tail: "" }
         : null;
     case "get_background_task":
       return result.backgroundTask === true
         ? {
             kind: "background",
+            shell: shell_name,
             task_id: as_string(result.id),
             command: as_string(result.command),
             status: as_string(result.status),

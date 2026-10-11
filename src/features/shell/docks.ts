@@ -1,4 +1,4 @@
-import { BotIcon, GitBranchPlusIcon, GlobeIcon, ImageIcon, SquareTerminalIcon, type IconComponent } from "../../components/icons.tsx";
+import { BotIcon, GlobeIcon, ImageIcon, LayersIcon, SquareTerminalIcon, type IconComponent } from "../../components/icons.tsx";
 import type { MessageKey } from "../../i18n/translate.ts";
 import type { DockKind } from "../../state/ui.ts";
 
@@ -7,9 +7,9 @@ export type DockToggle = { label: MessageKey; icon: IconComponent };
 export const dock_toggles: Record<DockKind, DockToggle> = {
   terminal: { label: "terminal.open", icon: SquareTerminalIcon },
   browser: { label: "browser.open", icon: GlobeIcon },
-  background: { label: "background.title", icon: GitBranchPlusIcon },
+  background: { label: "background.title", icon: LayersIcon },
   agents: { label: "agent.title", icon: BotIcon },
   artifacts: { label: "docks.artifacts_title", icon: ImageIcon },
 };
 
-export const dock_kinds = Object.keys(dock_toggles) as DockKind[];
+export const titlebar_docks: DockKind[] = ["terminal", "browser", "agents", "artifacts"];

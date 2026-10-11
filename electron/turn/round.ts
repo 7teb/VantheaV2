@@ -1,6 +1,6 @@
 import type { ToolProgress } from "../../shared/chat.ts";
 import type { ToolEndStatus } from "../../shared/events.ts";
-import { permission_hash } from "../permissions/context.ts";
+import { last_human_id, note_human_answer } from "../permissions/context.ts";
 import { human_decision } from "../permissions/decisions.ts";
 import { error_text } from "../storage/coerce.ts";
 import { cap_text } from "../context/estimate.ts";
@@ -54,12 +54,16 @@ const assistant_api_message = (result: RoundResult): ApiAssistantMessage => {
 
 const throttled_progress = (emit: Emitter, call_id: string): ((progress: ToolProgress) => void) => {
   let last = 0;
+  let phase: ToolProgress["phase"];
   return (progress) => {
-    const now = Date.now();
-    if (now - last < progress_interval_ms) {
-      return;
+    if (progress.phase === phase) {
+      const now = Date.now();
+      if (now - last < progress_interval_ms) {
+        return;
+      }
+      last = now;
     }
-    last = now;
+    phase = progress.phase;
     emit({ type: "tool_progress", call_id, progress });
   };
 };
@@ -72,7 +76,6 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
   call_id,
   project_root: session.project_root,
   user_request: session.user_request,
-  authorization: session.authorization,
   human_decisions: session.human_decisions,
   get delegated_task() { return session.delegated_task; },
   mode: session.mode,
@@ -84,15 +87,23 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
     session.emit({ type: "tool_approval", call_id, request });
     const decision = await session.wait_decision(call_id, request);
     session.signal.throwIfAborted();
-    if (decision.grant !== "full_window") {
-      const record = human_decision(request, decision, session.actor ?? "main", permission_hash(session.authorization?.() ?? session.user_request));
-      session.emit({ type: "tool_decision", call_id, decision: record });
-      await session.mirror_decision?.(record);
-    }
+    const record = human_decision(request, decision, session.review.actor, last_human_id(session.chat_id));
+    session.emit({ type: "tool_decision", call_id, decision: record });
+    note_human_answer(session.chat_id, record.id, record.at);
+    await session.mirror_decision?.(record);
     session.emit({ type: "tool_start", call_id });
     return decision;
   },
   side_model: session.side_model,
+  review: {
+    actor: session.review.actor,
+    call: session.review.call,
+    history: session.review.history,
+    record: async (entry) => {
+      session.emit({ type: "tool_review", call_id, review: entry });
+      await session.review.mirror?.(entry);
+    },
+  },
   message_main: session.message_main ?? null,
 });
 
@@ -147,7 +158,7 @@ export const run_round = async (session: TurnSession, round: number, api_message
     {
       on_text: (delta) => session.emit({ type: "text", round, delta }),
       on_reasoning: (delta) => session.emit({ type: "reasoning", round, delta }),
-      on_tool_draft: (index, name, lines) => session.emit({ type: "tool_draft", round, index, name, lines }),
+      on_tool_draft: (index, name, draft) => session.emit({ type: "tool_draft", round, index, name, ...draft }),
       on_retry: (attempt, max, reason, wait_ms) => session.emit({ type: "retry", round, attempt, max, reason, wait_ms }),
     },
     session.signal,

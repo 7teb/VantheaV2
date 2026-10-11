@@ -32,6 +32,8 @@ const tasks = new Map<string, TaskRecord>();
 
 const pending_emits = new Map<string, ReturnType<typeof setTimeout>>();
 
+const read_results = new Set<string>();
+
 const changed_listeners = new Set<Listener>();
 
 const finished_listeners = new Set<Listener>();
@@ -212,6 +214,7 @@ export const clear_background = (chat_id: string) => {
   for (const [id, record] of tasks) {
     if (record.chat_id === chat_id && record.status !== "running") {
       tasks.delete(id);
+      read_results.delete(id);
     }
   }
   save();
@@ -226,9 +229,16 @@ export const remove_chat_background = (chat_id: string) => {
       cancel_background(id);
     }
     tasks.delete(id);
+    read_results.delete(id);
   }
   save();
 };
+
+export const mark_result_read = (task_id: string): void => {
+  read_results.add(task_id);
+};
+
+export const result_was_read = (task_id: string): boolean => read_results.has(task_id);
 
 export const on_background_changed = (listener: Listener): (() => void) => {
   changed_listeners.add(listener);

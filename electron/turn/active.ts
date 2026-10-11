@@ -10,6 +10,8 @@ const active = new Map<string, ActiveTurn>();
 
 const reserved = new Set<string>();
 
+const stopped_by_user = new Set<string>();
+
 export const is_active = (chat_id: string): boolean => active.has(chat_id) || reserved.has(chat_id);
 
 export const reserve_chat = (chat_id: string): boolean => {
@@ -25,6 +27,16 @@ export const release_chat = (chat_id: string): void => {
 };
 
 export const active_turn = (chat_id: string): ActiveTurn | null => active.get(chat_id) ?? null;
+
+export const mark_user_stop = (chat_id: string): void => {
+  stopped_by_user.add(chat_id);
+};
+
+export const user_stopped = (chat_id: string): boolean => stopped_by_user.has(chat_id);
+
+export const forget_user_stop = (chat_id: string): void => {
+  stopped_by_user.delete(chat_id);
+};
 
 export const register_active = (chat_id: string, message_id: string, emit: Emitter, model: ModelEntry, effort: string): ActiveTurn => {
   const visible: { round: number; text: string }[] = [];
@@ -59,6 +71,7 @@ export const register_active = (chat_id: string, message_id: string, emit: Emitt
       emit(body);
     },
   };
+  stopped_by_user.delete(chat_id);
   active.set(chat_id, turn);
   return turn;
 };
@@ -74,14 +87,20 @@ export const active_assistant_reference = (chat_id: string): AssistantReference 
   return turn ? { message_id: turn.message_id, text: turn.visible_text } : undefined;
 };
 
-export const push_steer = (chat_id: string, text: string, id: string = randomUUID(), attachments: Attachment[] = [], assistant_reference = active_assistant_reference(chat_id)): boolean => {
+export const steer_target = (chat_id: string): ActiveTurn | null => {
   const turn = active.get(chat_id);
-  if (!turn || turn.ended || turn.controller.signal.aborted) {
+  return turn && !turn.ended && !turn.controller.signal.aborted ? turn : null;
+};
+
+export const push_steer = (chat_id: string, text: string, id: string = randomUUID(), attachments: Attachment[] = [], assistant_reference = active_assistant_reference(chat_id)): boolean => {
+  const turn = steer_target(chat_id);
+  if (!turn) {
     return false;
   }
   if (!turn.steers.some((entry) => entry.id === id)) {
-    turn.steers.push({ id, text, attachments, ...(assistant_reference ? { assistant_reference } : {}) });
-    add_authorization(chat_id, id, text, assistant_reference, attachments);
+    const at = Date.now();
+    turn.steers.push({ id, text, at, attachments, ...(assistant_reference ? { assistant_reference } : {}) });
+    add_authorization(chat_id, id, text, assistant_reference, attachments, at);
   }
   return true;
 };

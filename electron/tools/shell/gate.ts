@@ -1,56 +1,43 @@
-import { permission_intent } from "../../permissions/context.ts";
-import { command_sources, decide_command } from "../../permissions/decide.ts";
-import { command_input } from "../../permissions/review.ts";
-import { command_sleep_reason, rejected_text } from "../../permissions/sleep.ts";
+import { reviewed_until_stable, type Settled } from "../../permissions/command-review.ts";
+import type { CommandDecision } from "../../permissions/decide.ts";
+import { effective_mode } from "../../permissions/full-window.ts";
+import { approved_note, user_denied_text } from "../../permissions/verdict-text.ts";
 import type { ToolContext } from "../types.ts";
 
-export type GateOutcome = { kind: "run" } | { kind: "block"; reason: string } | { kind: "denied"; text: string };
+export type GateOutcome = Settled;
 
-export const gate_command = async (ctx: ToolContext, command: string, cwd: string, background: boolean): Promise<GateOutcome> => {
-  ctx.signal.throwIfAborted();
-  const sleep = command_sleep_reason(ctx, command);
-  if (sleep) {
-    return { kind: "denied", text: rejected_text(sleep) };
-  }
-  let input = await command_input(ctx, command, cwd, background);
-  let decision = await decide_command(input, ctx.side_model, ctx.signal);
-  if (decision.action === "run" && (decision.source === "model" || decision.source === "cache") && permission_intent(ctx) !== input.authorization) {
-    input = await command_input(ctx, command, cwd, background);
-    decision = await decide_command(input, ctx.side_model, ctx.signal);
-  }
+const settle_command = (ctx: ToolContext, command: string, cwd: string, background: boolean) => async (decision: CommandDecision, rechecked: boolean): Promise<Settled> => {
   if (decision.action === "block") {
     return { kind: "block", reason: decision.reason };
   }
   if (decision.action === "deny") {
-    return { kind: "denied", text: decision.reason };
+    return { kind: "denied", text: decision.reason, output: "" };
   }
   if (decision.action === "run") {
-    return { kind: "run" };
+    return { kind: "run", note: null };
   }
   const answer = await ctx.approve({
     kind: "command",
     command,
     cwd,
     background,
-    overseer: { safe: false, reason: decision.reason, ...(decision.source === "unavailable" ? { unavailable: true } : {}) },
+    review: decision.note,
     grant_prefix: decision.grant_prefix,
+    ...(decision.plan ? { plan: true } : {}),
+    ...(decision.plan && effective_mode(ctx.chat_id, ctx.mode) === "full" ? { plan_rule: true } : {}),
     ...(decision.source_hash ? { source_hash: decision.source_hash } : {}),
+    ...(rechecked ? { rechecked: true } : {}),
   });
   ctx.signal.throwIfAborted();
   if (!answer.approved) {
-    return { kind: "denied", text: `The user denied this command.${answer.feedback ? ` User feedback: ${answer.feedback}` : ""}` };
+    const model_reason = decision.note?.source === "model" && decision.note.reason ? decision.note.reason : null;
+    return { kind: "denied", text: user_denied_text("command", answer.feedback, model_reason), output: "" };
   }
-  if (decision.source_hash) {
-    const current = await command_sources(input);
-    if (current.hash !== decision.source_hash && current.catastrophic.length) {
-      return {
-        kind: "denied",
-        text: `A script this command runs changed while the approval was open and now contains a destructive system operation (${current.catastrophic.join("; ")}). The command was not executed.`,
-      };
-    }
-  }
-  return { kind: "run" };
+  return { kind: "run", note: approved_note("command") };
 };
+
+export const gate_command = (ctx: ToolContext, command: string, cwd: string, background: boolean): Promise<GateOutcome> =>
+  reviewed_until_stable(ctx, { command, cwd, background }, settle_command(ctx, command, cwd, background));
 
 export const blocked_text = (reason: string) =>
   `Blocked (${reason}). This command never runs inside the app and cannot be approved here. Do not retry it or a variant; tell the user what you intended so they can run it themselves.`;

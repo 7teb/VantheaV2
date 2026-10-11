@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { AssistantMessage, Attachment, Message, UserMessage } from "../../shared/chat.ts";
+import { message_attachments, type AssistantMessage, type Attachment, type Message, type UserMessage } from "../../shared/chat.ts";
 import type { SendRequest, TurnStarted } from "../../shared/ipc/chats.ts";
 import type { UserOrigin } from "../../shared/chat.ts";
 import type { ModelEntry } from "../../shared/models.ts";
@@ -13,14 +13,18 @@ import { find_model, major_effort, resolve_effort } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { stream_round } from "../model/stream.ts";
 import { cancel_chat, wait_for_decision } from "../permissions/approvals.ts";
-import { authorization_text, set_authorization } from "../permissions/context.ts";
+import { human_requests_of, set_authorization } from "../permissions/context.ts";
 import { chat_decisions } from "../permissions/decisions.ts";
+import { instruction_snapshot, refresh_instruction_snapshot } from "../permissions/instruction-files.ts";
+import { main_review } from "../permissions/review-records.ts";
 import { build_system_prompt } from "../prompts/index.ts";
+import { take_main_steers } from "../questions/answers.ts";
 import { get_settings } from "../settings/store.ts";
 import { error_text } from "../storage/coerce.ts";
 import { mcp_tools } from "../tools/mcp/tools.ts";
 import { tools_for } from "../tools/registry.ts";
 import { side_model } from "../side/model.ts";
+import { review_call } from "../side/review.ts";
 import { describe_attachment_with_timeout } from "../side/vision.ts";
 import { start_title } from "../side/title.ts";
 import {
@@ -30,11 +34,11 @@ import {
   active_turns,
   clear_active,
   is_active,
+  mark_user_stop,
   push_steer,
   register_active,
   release_chat,
   reserve_chat,
-  take_steers_active,
   unregister_active,
 } from "./active.ts";
 import { create_emitter, type EmitDeps } from "./emit.ts";
@@ -109,9 +113,11 @@ const drive = async (plan: TurnPlan, turn: ReturnType<typeof register_active>): 
     const settings = get_settings();
     const history = loaded.messages.filter((message) => message.id !== plan.message_id);
     set_authorization(plan.chat_id, history, turn.steers);
+    await instruction_snapshot(plan.chat_id, plan.project_root, human_requests_of(plan.chat_id));
     const profile = plan.plan ? "plan" : "main";
     const offered = tools_for(profile, settings, mcp_tools());
-    const has_file_attachments = history.some((message) => message.role === "user" && message.attachments.some((entry) => entry.kind === "file"));
+    const agent_tools = offered.some((tool) => tool.spec.name === "continue_agent");
+    const has_file_attachments = history.some((message) => message_attachments(message).some((entry) => entry.kind === "file"));
     const system = await build_system_prompt({
       model: plan.model,
       settings,
@@ -125,7 +131,7 @@ const drive = async (plan: TurnPlan, turn: ReturnType<typeof register_active>): 
       has_file_attachments,
       effort: plan.effort,
     });
-    const history_input = { system, summary: loaded.summary, messages: history, model: plan.model };
+    const history_input = { system, summary: loaded.summary, messages: history, model: plan.model, agent_tools };
     let api_messages = await build_api_messages(history_input);
     if (needs_compaction(estimate_request(api_messages, offered.map((tool) => tool.spec)), plan.model)) {
       const summary = await compact_chat({
@@ -146,7 +152,6 @@ const drive = async (plan: TurnPlan, turn: ReturnType<typeof register_active>): 
       chat_id: plan.chat_id,
       message_id: plan.message_id,
       user_request: plan.user_request,
-      authorization: () => authorization_text(plan.chat_id, get_settings().custom_instructions),
       project_root: plan.project_root,
       settings,
       model: plan.model,
@@ -159,10 +164,10 @@ const drive = async (plan: TurnPlan, turn: ReturnType<typeof register_active>): 
       resolve_tools: (p) => tools_for(p, settings, mcp_tools()),
       side_model,
       wait_decision: (call_id, request) => wait_for_decision({ key: plan.chat_id, chat_id: plan.chat_id, call_id, request, signal }),
-      actor: "main",
+      review: main_review(plan.chat_id, review_call),
       human_decisions: () => chat_decisions(plan.chat_id),
-      take_steers: () => take_steers_active(plan.chat_id),
-      take_notes: () => take_agent_notes(plan.chat_id),
+      take_steers: () => take_main_steers(plan.chat_id),
+      take_notes: () => take_agent_notes(plan.chat_id, agent_tools),
       idle: () => wait_for_input(plan.chat_id, plan.effort === major_effort ? major_wait_ms : 0, signal),
     };
     await run_turn_loop(session, api_messages);
@@ -343,6 +348,9 @@ export const accept_plan = async (chat_id: string, message_id: string): Promise<
 };
 
 export const stop_turn = (chat_id: string): void => {
+  if (active_turn(chat_id)) {
+    mark_user_stop(chat_id);
+  }
   abort_turn(chat_id, new Error("the user stopped the turn"));
   cancel_chat(chat_id);
 };
@@ -357,6 +365,7 @@ export const steer_turn = async (chat_id: string, text: string, attachments: Att
   if (active_turn(chat_id) !== turn || !push_steer(chat_id, text, steer_id, noted, assistant_reference)) {
     return null;
   }
+  await refresh_instruction_snapshot(chat_id);
   wake_idle(chat_id);
   return turn.message_id;
 };

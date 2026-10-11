@@ -1,0 +1,35 @@
+@layer components {
+  .review-lines {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .review-line[data-tone="waiting"] {
+    color: var(--text-waiting);
+  }
+
+  .review-notice {
+    display: flex;
+    flex-direction: column;
+    grid-column: 1 / -1;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--space-2);
+    font-size: var(--font-size-ui);
+    line-height: 19.5px;
+    overflow-wrap: anywhere;
+  }
+
+  .review-notice-title {
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+  }
+
+  .review-notice-line[data-tone="reason"] {
+    color: var(--text-secondary);
+  }
+
+  .review-notice-line[data-tone="detail"] {
+    color: var(--text-tertiary);
+  }
+}

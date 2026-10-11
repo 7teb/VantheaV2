@@ -139,3 +139,10 @@ export const api_effort = (model: ModelEntry, effort: string): string => {
   }
   return model.efforts.filter((item) => item !== major_effort).at(-1) ?? model.default_effort;
 };
+
+const routes_to_openai = (model: ModelEntry): boolean => model.provider_order.some((route) => route === "openai" || route.startsWith("openai/"));
+
+export const reasoning_fields = (model: ModelEntry, effort: string): Record<string, string> => ({
+  effort: api_effort(model, effort),
+  ...(routes_to_openai(model) ? { summary: "detailed" } : {}),
+});

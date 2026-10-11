@@ -1,8 +1,38 @@
 @layer components {
   .composer-slot {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+  }
+
+  .composer-slot[data-placement="docked"]::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 calc(-1 * var(--space-3));
+    z-index: -1;
+    border-radius: var(--radius-2xl);
+    backdrop-filter: var(--filter-dock);
+    pointer-events: none;
+  }
+
+  .composer-dock-card {
+    max-height: min(420px, 48vh);
+    overflow: auto;
+    border-radius: 25px;
+    corner-shape: superellipse(1.5);
+    background: var(--surface-dock);
+    backdrop-filter: var(--filter-dock);
+    box-shadow: var(--shadow-dock);
+  }
+
+  .composer-slot:has(.composer-dock-card ~ .composer-dock-card) .composer-dock-card {
+    max-height: min(420px, 24vh);
+  }
+
+  .composer-dock-card .question-card {
+    border-color: transparent;
+    background: transparent;
   }
 
   .composer {
@@ -12,10 +42,9 @@
     gap: 6px;
     padding: var(--space-3) var(--space-3) 10px var(--space-4);
     border-radius: 22px;
-  }
-
-  .composer.is-dragging {
-    box-shadow: var(--shadow-inset-strong);
+    background: var(--surface-dock);
+    backdrop-filter: var(--filter-dock);
+    box-shadow: var(--shadow-dock);
   }
 
   .composer-input {

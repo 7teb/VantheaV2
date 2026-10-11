@@ -1,0 +1,91 @@
+@layer components {
+  .tool-row[data-review="true"] .tool-row-label,
+  .work-group[data-review="true"] > .work-group-head .tool-row-label {
+    color: var(--text-summary);
+  }
+
+  .tool-row[data-review="true"] .tool-row-head:hover .tool-row-label,
+  .work-group[data-review="true"] > .work-group-head:hover .tool-row-label {
+    color: var(--text-primary);
+  }
+
+  .tool-row-shield {
+    margin-left: -4px;
+    color: var(--text-tertiary);
+  }
+
+  .tool-row[data-review="true"] .tool-row-body {
+    padding-top: 0;
+  }
+
+  .tool-row[data-review="true"] .command-card {
+    margin-top: 0;
+  }
+
+  .review-pending {
+    display: flex;
+    flex-direction: column;
+    font-size: var(--font-size-body);
+    line-height: 21px;
+  }
+
+  .review-pending-head {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    max-width: 100%;
+    white-space: nowrap;
+    user-select: none;
+    cursor: default;
+  }
+
+  .review-pending-head:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--focus-ring);
+  }
+
+  .review-pending-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-review-title);
+  }
+
+  .review-pending-chevron {
+    color: var(--text-tertiary);
+    opacity: 0;
+    transition:
+      opacity 0.15s var(--ease-in-out),
+      transform 0.15s var(--ease-in-out);
+  }
+
+  .review-pending[data-open="true"] .review-pending-chevron {
+    rotate: 90deg;
+    opacity: 1;
+  }
+
+  @media (hover: hover) {
+    .review-pending-head:hover .review-pending-chevron {
+      opacity: 1;
+    }
+
+    .review-pending-head:hover .review-pending-title {
+      color: var(--text-primary);
+    }
+  }
+
+  .review-pending-motion.collapsible-body {
+    transition:
+      grid-template-rows 0.3s var(--ease-expand),
+      opacity 0.3s var(--ease-expand);
+  }
+
+  .review-pending-detail {
+    max-width: 80ch;
+    padding-top: 4px;
+    line-height: var(--leading-prose);
+    white-space: pre-wrap;
+    color: var(--text-summary);
+  }
+}

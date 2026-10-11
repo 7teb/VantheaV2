@@ -10,6 +10,7 @@
 !/electron/
 !/shared/
 !/src/
+!/skills/
 
 !/config/
 /config/*
@@ -39,6 +40,7 @@ Thumbs.db
 
 *.md
 !/README.md
+!/skills/**/*.md
 *.test.*
 *.spec.*
 __tests__/

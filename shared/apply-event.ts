@@ -1,7 +1,10 @@
-import type { Step, ToolStep } from "./chat.ts";
+import type { Step, ToolProgress, ToolStep } from "./chat.ts";
 import type { Sequenced, StreamEventBody, TranscriptState } from "./events.ts";
+import { lines_after } from "./tool-drafts.ts";
 
 type Event = Sequenced & StreamEventBody;
+
+type DraftEvent = Extract<Event, { type: "tool_draft" }>;
 
 const open_tool_statuses = new Set<ToolStep["status"]>(["queued", "running", "awaiting_approval"]);
 
@@ -32,6 +35,22 @@ const empty_tool = (round: number, index: number): ToolStep => ({
   started_at: null,
   ended_at: null,
 });
+
+const draft_progress = (progress: ToolProgress | null, event: DraftEvent): ToolProgress => {
+  const delta = event.delta ?? "";
+  const text = (progress?.draft_text ?? "") + delta;
+  const path = event.path ?? progress?.draft_path;
+  const old_text = event.old_text ?? progress?.draft_old;
+  const lines_before = progress?.draft_text ? (progress.lines ?? 0) : 0;
+  return {
+    label: "",
+    lines: text ? lines_after(lines_before, delta) : event.lines,
+    output_tail: null,
+    ...(text ? { draft_text: text } : {}),
+    ...(path !== undefined ? { draft_path: path } : {}),
+    ...(old_text !== undefined ? { draft_old: old_text } : {}),
+  };
+};
 
 const append_text = (steps: Step[], event: Extract<Event, { type: "text" }>): Step[] => {
   const last = steps.at(-1);
@@ -105,7 +124,7 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
         steps: update_tool(base, match, (step) => ({
           ...step,
           name: event.name || step.name,
-          progress: { label: "", lines: event.lines, output_tail: null },
+          progress: draft_progress(step.progress, event),
         })),
       };
     }
@@ -146,7 +165,7 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
         steps: update_tool(
           state.steps,
           (step) => step.call_id === event.call_id,
-          (step) => ({ ...step, status: "awaiting_approval", approval: event.request }),
+          (step) => ({ ...step, status: "awaiting_approval", approval: event.request, progress: null }),
         ),
       };
     case "tool_decision":
@@ -155,6 +174,14 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
         steps: update_tool(state.steps, (step) => step.call_id === event.call_id, (step) => ({
           ...step,
           decisions: [...(step.decisions ?? []).filter((entry) => entry.id !== event.decision.id), event.decision],
+        })),
+      };
+    case "tool_review":
+      return {
+        ...state,
+        steps: update_tool(state.steps, (step) => step.call_id === event.call_id, (step) => ({
+          ...step,
+          reviews: [...(step.reviews ?? []).filter((entry) => entry.id !== event.review.id), event.review],
         })),
       };
     case "tool_end":
@@ -185,6 +212,7 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
             round: event.round,
             kind: "steer",
             text: event.text,
+            ...(event.pushed_at !== undefined ? { at: event.pushed_at } : {}),
             ...(event.steer_id ? { steer_id: event.steer_id } : {}),
             ...(event.attachments?.length ? { attachments: event.attachments } : {}),
             ...(event.assistant_reference ? { assistant_reference: event.assistant_reference } : {}),

@@ -11,9 +11,10 @@
     gap: var(--space-2);
     max-width: 280px;
     padding: 5px 9px;
-    border-radius: var(--radius-sm);
-    background: var(--surface-raise-2);
-    box-shadow: var(--shadow-float);
+    border-radius: var(--radius-lg);
+    background: var(--surface-tooltip);
+    backdrop-filter: var(--filter-tooltip);
+    box-shadow: var(--shadow-tooltip);
     color: var(--text-primary);
     font-size: var(--font-size-caption);
     font-weight: var(--weight-regular);

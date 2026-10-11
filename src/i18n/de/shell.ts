@@ -12,4 +12,8 @@ export const shell: Record<keyof typeof en, string> = {
   "shell.hero_generic": "Woran arbeiten wir?",
   "shell.hero_project": "Woran arbeiten wir in {name}?",
   "shell.dock_resize": "Ziehen zum Anpassen",
+  "shell.more": "Mehr",
+  "shell.background_tasks": "Hintergrund-Tasks",
+  "shell.keep_awake": "Computer wach halten",
+  "shell.keep_awake_detail": "Nur für diese Sitzung",
 };

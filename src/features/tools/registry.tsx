@@ -1,9 +1,10 @@
 import type { ComponentType } from "react";
 import type { ToolStep } from "../../../shared/chat.ts";
-import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
+import { shell_name, type ToolView, type ToolViewKind } from "../../../shared/tool-view.ts";
 import {
   AtSignIcon,
   BotIcon,
+  CircleHelpIcon,
   ClipboardListIcon,
   ClockIcon,
   CoinsIcon,
@@ -28,9 +29,14 @@ import { AgentBody, BackgroundBody, CommandBody } from "./bodies-run.tsx";
 import { EditBody, FilesBody, GrepBody, OutlineBody, ReadBody } from "./bodies-files.tsx";
 import { ModelsBody } from "./bodies-models.tsx";
 import { ImageBody, WebSearchBody } from "./bodies-web.tsx";
-import { BrowserBody, McpBody, MemoryBody, PlanBody, SkillBody, TextBody, TodosBody } from "./bodies-work.tsx";
+import { BrowserBody, McpBody, MemoryBody, PlanBody, QuestionsBody, SkillBody, TextBody, TodosBody } from "./bodies-work.tsx";
 import type { BodyProps } from "./body-types.ts";
+import { CommandCard } from "./CommandCard.tsx";
+import { DraftCode } from "./DraftCode.tsx";
+import { live_draft } from "./live-draft.ts";
 import { OutputBlock } from "./OutputBlock.tsx";
+import { is_reviewing } from "./review-phase.ts";
+import { ReviewBody } from "./ReviewPending.tsx";
 import { is_active_status, tool_meta, type ToolIconName } from "./tool-meta.ts";
 
 export const tool_icons: Record<ToolIconName, IconComponent> = {
@@ -52,6 +58,7 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   mcp: AtSignIcon,
   clock: ClockIcon,
   models: CoinsIcon,
+  question: CircleHelpIcon,
   text: MessageSquareIcon,
 };
 
@@ -75,10 +82,14 @@ export const view_bodies: Bodies = {
   memory: MemoryBody,
   skill: SkillBody,
   models: ModelsBody,
+  questions: QuestionsBody,
   text: TextBody,
 };
 
 export const tool_icon = (step: ToolStep): IconComponent => tool_icons[tool_meta(step).icon];
+
+const LiveBody = ({ step, live }: { step: ToolStep; live: string }) =>
+  step.name === "run_command" ? <CommandCard shell={shell_name} command={String(step.args.command ?? "")} output={live} footer={null} /> : <OutputBlock text={live} />;
 
 const ViewBody = ({ view, step }: { view: ToolView; step: ToolStep }) => {
   const Body = view_bodies[view.kind] as ComponentType<{ view: ToolView; step: ToolStep }>;
@@ -88,17 +99,25 @@ const ViewBody = ({ view, step }: { view: ToolView; step: ToolStep }) => {
 const output_views = new Set<ToolViewKind>(["command", "mcp", "text"]);
 
 export const has_body = (step: ToolStep) =>
-  step.view !== null || Boolean(step.error) || Boolean(step.progress?.output_tail) || (!is_active_status(step.status) && step.result_text.length > 0);
+  is_reviewing(step) ||
+  step.view !== null ||
+  Boolean(step.error) ||
+  Boolean(step.progress?.output_tail) ||
+  (!is_active_status(step.status) && step.result_text.length > 0) ||
+  live_draft(step) !== null;
 
-export const ToolBody = ({ step }: { step: ToolStep }) => {
+export const ToolBody = ({ step, open }: { step: ToolStep; open: boolean }) => {
   const t = use_t();
   const live = is_active_status(step.status) ? step.progress?.output_tail : null;
+  const draft = live_draft(step);
   const error = step.view && output_views.has(step.view.kind) ? null : step.error;
   return (
     <div className="tool-body">
+      {is_reviewing(step) && <ReviewBody step={step} row_open={open} />}
       {error && <div className="tool-body-error">{error}</div>}
       {step.status === "cancelled" && <div className="tool-body-muted">{t("tools.cancelled")}</div>}
-      {live && <OutputBlock text={live} />}
+      {draft && <DraftCode draft={draft} />}
+      {live && <LiveBody step={step} live={live} />}
       {step.view && <ViewBody view={step.view} step={step} />}
       {!step.view && !live && !step.error && step.result_text && <OutputBlock text={step.result_text} />}
     </div>

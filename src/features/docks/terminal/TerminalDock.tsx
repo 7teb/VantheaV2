@@ -59,7 +59,7 @@ export const TerminalDock = ({ visible, project_path }: DockViewProps) => {
         </IconButton>
       }
     >
-      <div className="terminal-surface inset-surface">
+      <div className="terminal-surface">
         {tabs.length === 0 ? (
           <TerminalSkeleton />
         ) : (

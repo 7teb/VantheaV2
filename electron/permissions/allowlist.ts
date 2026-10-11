@@ -25,7 +25,7 @@ const statement_is_read = (statement: string) => {
   return exact_reads.test(quiet) || (read_commands.test(quiet) && !unsafe_fragments.test(quiet) && git_branch_lists_only(quiet));
 };
 
-export const allowed_in_auto = (command: string): boolean => {
+export const read_only_command = (command: string): boolean => {
   const statements = split_statements(String(command || ""));
   return statements.length > 0 && statements.every(statement_is_read);
 };

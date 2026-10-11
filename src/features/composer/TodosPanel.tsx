@@ -36,7 +36,7 @@ export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
     return null;
   }
   return (
-    <div className="todos-panel enter-fade-up" data-open={open}>
+    <div className="todos-panel raised-surface enter-fade-up" data-open={open}>
       <button type="button" className="todos-panel-head" aria-expanded={open} onClick={() => set_open(!open)}>
         <ListChecksIcon size={14} />
         <span className="todos-panel-title">{t("tools.todo_tasks")}</span>

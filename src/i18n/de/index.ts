@@ -12,6 +12,8 @@ import { mcp } from "./mcp.ts";
 import { personalization } from "./personalization.ts";
 import { plan } from "./plan.ts";
 import { projects } from "./projects.ts";
+import { questions } from "./questions.ts";
+import { review } from "./review.ts";
 import { search } from "./search.ts";
 import { settings } from "./settings.ts";
 import { shell } from "./shell.ts";
@@ -42,6 +44,8 @@ export const de: Record<MessageKey, string> = {
   ...personalization,
   ...plan,
   ...projects,
+  ...questions,
+  ...review,
   ...search,
   ...settings,
   ...shell,

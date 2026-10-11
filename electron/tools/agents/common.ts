@@ -44,7 +44,6 @@ export const run_context = (ctx: ToolContext, prompt: string): RunContext => ({
   parent_call_id: ctx.call_id,
   project_root: ctx.project_root,
   user_request: ctx.user_request,
-  authorization: ctx.authorization ?? (() => ctx.user_request),
   mode: ctx.mode,
   settings: ctx.settings,
   prompt,

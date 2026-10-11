@@ -130,6 +130,14 @@ export const ShieldCheckIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const ShieldTerminalIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d={shield} />
+    <path d="m8 9 2 2-2 2" />
+    <path d="M12 13h4" />
+  </Icon>
+);
+
 export const ShieldAlertIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d={shield} />

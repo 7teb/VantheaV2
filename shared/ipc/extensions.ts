@@ -14,7 +14,7 @@ export type McpServerStatus = {
   stderr_tail: string;
 };
 
-export type SkillEntry = { slug: string; name: string; description: string; enabled: boolean; files: string[]; source: string; error: string };
+export type SkillEntry = { slug: string; name: string; description: string; enabled: boolean; files: string[]; source: string; error: string; builtin: boolean; group: string };
 
 export type MemoryRecord = { id: string; text: string; project_path: string; created_at: string };
 

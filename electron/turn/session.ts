@@ -4,7 +4,7 @@ import type { StreamEventBody } from "../../shared/events.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
 import type { RoundCallbacks, RoundRequest, RoundResult } from "../model/types.ts";
-import type { SideModelCall, Tool, ToolProfile } from "../tools/types.ts";
+import type { ActorReview, SideModelCall, Tool, ToolProfile } from "../tools/types.ts";
 
 export type Emitter = (body: StreamEventBody) => void;
 
@@ -16,7 +16,6 @@ export type TurnSession = {
   chat_id: string;
   message_id: string;
   user_request: string;
-  authorization?: () => string;
   delegated_task?: string;
   project_root: string;
   settings: Settings;
@@ -30,7 +29,7 @@ export type TurnSession = {
   resolve_tools: (profile: ToolProfile) => Tool[];
   side_model: SideModelCall;
   wait_decision: (call_id: string, request: ApprovalRequest) => Promise<ApprovalDecision>;
-  actor?: string;
+  review: ActorReview;
   human_decisions?: () => Promise<HumanDecision[]>;
   mirror_decision?: (decision: HumanDecision) => Promise<void>;
   take_steers: () => SteerMessage[];

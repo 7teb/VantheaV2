@@ -36,7 +36,7 @@ export const use_follow_bottom = (jump_key: string | number) => {
         node.scrollTop = node.scrollHeight;
       }
     });
-    observer.observe(inner);
+    observer.observe(inner, { box: "border-box" });
     observer.observe(node);
     node.addEventListener("scroll", on_scroll, { passive: true });
     return () => {

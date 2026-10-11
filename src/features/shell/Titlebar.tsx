@@ -6,8 +6,9 @@ import { chats_store } from "../../state/chats.ts";
 import { toggle_dock, toggle_sidebar, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
 import { chat_label } from "../sidebar/sidebar-model.ts";
-import { dock_kinds, dock_toggles } from "./docks.ts";
+import { dock_toggles, titlebar_docks } from "./docks.ts";
 import { shortcut_hint } from "./shortcuts.ts";
+import { TitlebarMenu } from "./TitlebarMenu.tsx";
 import { WindowControls } from "./WindowControls.tsx";
 import "./Titlebar.css";
 
@@ -35,7 +36,7 @@ export const Titlebar = () => {
       <div className="titlebar-title">{title}</div>
       <div className="titlebar-end">
         <div className="titlebar-docks">
-          {dock_kinds.map((kind) => {
+          {titlebar_docks.map((kind) => {
             const { label, icon: DockIcon } = dock_toggles[kind];
             return (
               <IconButton key={kind} label={t(label)} active={open_dock === kind} aria-pressed={open_dock === kind} className="titlebar-dock" onClick={() => toggle_dock(kind)}>
@@ -44,7 +45,9 @@ export const Titlebar = () => {
               </IconButton>
             );
           })}
+          <TitlebarMenu />
         </div>
+        <span className="titlebar-divider" aria-hidden="true" />
         <WindowControls />
       </div>
     </header>

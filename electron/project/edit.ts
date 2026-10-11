@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import { error_code } from "../storage/coerce.ts";
 import { write_file_atomic } from "../storage/json-file.ts";
@@ -75,12 +76,14 @@ export const prepare_replace = async (
   };
 };
 
-export const commit_edit = async (prepared: PreparedEdit, turn_id: string) => {
+export const commit_edit = async (prepared: PreparedEdit, turn_id: string): Promise<string> => {
   const current = await read_text(prepared.target.target);
   if ((current?.text ?? null) !== prepared.previous) {
     throw new Error(`${prepared.target.relative} changed on disk after this edit was prepared; read it again and redo the edit`);
   }
   await record_original(turn_id, prepared.project_root, prepared.target.relative, prepared.previous, prepared.encoding);
-  await write_file_atomic(prepared.target.target, encode_text(prepared.next, prepared.encoding));
+  const bytes = encode_text(prepared.next, prepared.encoding);
+  await write_file_atomic(prepared.target.target, bytes);
   invalidate_index(prepared.project_root);
+  return createHash("sha256").update(bytes).digest("hex");
 };

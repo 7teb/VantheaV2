@@ -1,7 +1,8 @@
 import type { AgentEvent } from "../../shared/events.ts";
 import { live_run, on_agent_event, read_agent_run, waiting_approvals } from "../agents/live.ts";
 import type { AgentRecord } from "../agents/records.ts";
-import { agent_approval_key, cancel_agent } from "../agents/runner.ts";
+import { cancel_agent } from "../agents/runner.ts";
+import { agent_approval_key } from "../agents/session.ts";
 import { get_agent, list_agents, on_agents_changed } from "../agents/store.ts";
 import { resolve_decision } from "../permissions/approvals.ts";
 import { require_string } from "../storage/coerce.ts";

@@ -4,17 +4,21 @@ import { call_tool, default_call_timeout_ms, ready_servers, type McpToolInfo } f
 import { target_scope } from "../../mcp/risk.ts";
 import { effective_tier, is_trusted, tool_enabled } from "../../mcp/servers.ts";
 import { build_description, build_parameters } from "../../mcp/specs.ts";
+import { changed_pins, type PinChange } from "../../permissions/source-read.ts";
+import { approved_note, scripts_changed_text, user_denied_text } from "../../permissions/verdict-text.ts";
 import { define_tool, type Tool, type ToolContext, type ToolResult } from "../types.ts";
 import { args_preview, decide, record_grant, type McpCall } from "./decide.ts";
-import { mcp_overseer } from "./overseer.ts";
+import { mcp_review } from "./overseer.ts";
 
 const view_text_limit = 8000;
+
+const max_reviews = 3;
 
 const error_text = (error: unknown) => (error instanceof Error ? error.message : String(error)).slice(0, 500);
 
 const mcp_view = (server: string, tool: string, text: string, is_error: boolean): ToolView => ({ kind: "mcp", server, tool, text: text.slice(0, view_text_limit), is_error });
 
-const invoke = async (ctx: ToolContext, call: McpCall): Promise<ToolResult> => {
+const invoke = async (ctx: ToolContext, call: McpCall, note: string | null): Promise<ToolResult> => {
   const label = `${call.server} ${call.tool}`;
   ctx.progress({ label, lines: null, output_tail: null });
   try {
@@ -23,7 +27,7 @@ const invoke = async (ctx: ToolContext, call: McpCall): Promise<ToolResult> => {
       timeout_ms: default_call_timeout_ms,
       on_progress: (message) => ctx.progress({ label, lines: null, output_tail: message }),
     });
-    return { status: result.is_error ? "failed" : "done", text: result.text, view: mcp_view(call.server, call.tool, result.text, result.is_error) };
+    return { status: result.is_error ? "failed" : "done", text: note ? `${note}\n${result.text}` : result.text, view: mcp_view(call.server, call.tool, result.text, result.is_error) };
   } catch (error) {
     if (ctx.signal.aborted) {
       throw error;
@@ -39,31 +43,48 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
   const call: McpCall = { server, tool: info.name, tier, args, scope: tier === "dangerous" ? target_scope(args) : null, trusted: is_trusted(server) };
   const server_cwd = path.resolve(ctx.settings.mcp_servers[server]?.cwd || process.cwd());
   ctx.execution_cwd = typeof args.cwd === "string" ? path.resolve(server_cwd, args.cwd) : server_cwd;
-  const verdict = await decide(call, ctx, mcp_overseer);
-  if (verdict.kind === "block" || verdict.kind === "denied") {
-    return { status: verdict.kind === "denied" ? "denied" : "failed", text: verdict.reason, view: mcp_view(server, info.name, verdict.reason, true) };
-  }
-  if (verdict.kind === "ask") {
-    const decision = await ctx.approve({
-      kind: "mcp",
-      server,
-      tool: info.name,
-      tier,
-      args_preview: args_preview(args),
-      scope: call.scope,
-      reason: verdict.reason,
-      ...(verdict.unavailable ? { unavailable: true } : {}),
-    });
+  let changed: PinChange[] = [];
+  for (let pass = 1; ; pass += 1) {
+    const verdict = await decide(call, ctx, mcp_review, changed);
+    if (verdict.kind === "block" || verdict.kind === "denied") {
+      return { status: verdict.kind === "denied" ? "denied" : "failed", text: verdict.reason, view: mcp_view(server, info.name, verdict.reason, true) };
+    }
+    let note: string | null = null;
+    if (verdict.kind === "ask") {
+      const decision = await ctx.approve({
+        kind: "mcp",
+        server,
+        tool: info.name,
+        tier,
+        args_preview: args_preview(args),
+        scope: call.scope,
+        ...(verdict.reason ? { reason: verdict.reason } : {}),
+        ...(verdict.note ? { review: verdict.note } : {}),
+        ...(changed.length ? { rechecked: true } : {}),
+      });
+      ctx.signal.throwIfAborted();
+      if (!decision.approved) {
+        const model_reason = verdict.note?.source === "model" && verdict.note.reason ? verdict.note.reason : null;
+        const text = user_denied_text("tool call", decision.feedback, model_reason);
+        return { status: "denied", text, view: mcp_view(server, info.name, text, true) };
+      }
+      record_grant(ctx.chat_id, call, decision.grant);
+      note = approved_note("tool call");
+    }
+    const now = await changed_pins(verdict.pins);
     ctx.signal.throwIfAborted();
-    if (!decision.approved) {
-      const feedback = decision.feedback ? ` User feedback: ${decision.feedback}` : "";
-      const text = `The user denied ${server}/${info.name} (${verdict.reason}).${feedback}`;
+    if (!now.length) {
+      return invoke(ctx, call, note);
+    }
+    if (verdict.record) {
+      await ctx.review.record({ ...verdict.record, superseded: "scripts_changed" });
+    }
+    if (pass >= max_reviews) {
+      const text = scripts_changed_text(now.map((change) => change.path));
       return { status: "denied", text, view: mcp_view(server, info.name, text, true) };
     }
-    record_grant(ctx.chat_id, call, decision.grant);
+    changed = now;
   }
-  ctx.signal.throwIfAborted();
-  return invoke(ctx, call);
 };
 
 const mcp_tool = (server: string, info: McpToolInfo): Tool => {

@@ -12,4 +12,6 @@ export const app_channels = {
   "window:changed": emit<WindowState>(),
   "shell:open_external": invoke<[url: string], void>(),
   "shell:reveal": invoke<[path: string], void>(),
+  "power:keep_awake": invoke<[], boolean>(),
+  "power:set_keep_awake": invoke<[enabled: boolean], boolean>(),
 } as const;

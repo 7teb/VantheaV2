@@ -1,4 +1,5 @@
 import type { Todo } from "./chat.ts";
+import type { AskQuestion } from "./questions.ts";
 
 export type DiffLine = { kind: "context" | "add" | "remove" | "gap"; text: string; old_line: number | null; new_line: number | null };
 
@@ -25,6 +26,8 @@ export type ModelPrice = {
   error: string;
 };
 
+export const shell_name = "PowerShell";
+
 export type ToolView =
   | { kind: "files"; root: string; files: string[]; directories: number; truncated: boolean }
   | { kind: "read"; path: string; start_line: number; end_line: number; total_lines: number; truncated: boolean }
@@ -33,6 +36,7 @@ export type ToolView =
   | { kind: "edit"; path: string; created: boolean; added: number; removed: number; diff: DiffLine[] }
   | {
       kind: "command";
+      shell: string;
       command: string;
       cwd: string;
       exit_code: number | null;
@@ -40,7 +44,7 @@ export type ToolView =
       timed_out: boolean;
       duration_ms: number;
     }
-  | { kind: "background"; task_id: string; command: string; status: string; output_tail: string }
+  | { kind: "background"; shell: string; task_id: string; command: string; status: string; output_tail: string }
   | { kind: "agent"; agent_id: string; run_id: string; name: string; status: string; report: string }
   | { kind: "todos"; todos: Todo[] }
   | { kind: "plan"; text: string }
@@ -51,6 +55,7 @@ export type ToolView =
   | { kind: "memory"; action: "remember" | "forget" | "list"; text: string }
   | { kind: "skill"; action: "read" | "install"; name: string }
   | { kind: "models"; models: ModelPrice[] }
+  | { kind: "questions"; questions: AskQuestion[] }
   | { kind: "text"; text: string };
 
 export type ToolViewKind = ToolView["kind"];

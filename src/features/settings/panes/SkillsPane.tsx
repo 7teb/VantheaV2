@@ -14,6 +14,22 @@ import { ipc_error_text } from "./ipc-error.ts";
 import { ListSkeleton } from "./PaneSkeleton.tsx";
 import "./panes.css";
 
+type SkillSection = { key: string; group: string; items: SkillEntry[] };
+
+const skill_sections = (skills: SkillEntry[]): SkillSection[] => {
+  const sections: SkillSection[] = [];
+  for (const skill of skills) {
+    const key = `${skill.builtin ? "builtin" : "user"}/${skill.group}`;
+    const last = sections.at(-1);
+    if (last?.key === key) {
+      last.items.push(skill);
+      continue;
+    }
+    sections.push({ key, group: skill.group, items: [skill] });
+  }
+  return sections;
+};
+
 const SkillRow = ({ skill }: { skill: SkillEntry }) => {
   const t = use_t();
   const [open, set_open] = useState(false);
@@ -52,20 +68,26 @@ const SkillRow = ({ skill }: { skill: SkillEntry }) => {
     <div className="pane-item is-stacked">
       <div className="pane-item-row">
         <div className="pane-item-text">
-          <div className="pane-item-title">{skill.name}</div>
+          <div className="pane-item-title">
+            {skill.name}
+            {skill.builtin && <span className="pane-item-tag">{t("skills.builtin")}</span>}
+          </div>
           <div className="pane-item-meta">
             {skill.description || skill.slug}
             {meta}
           </div>
+          {skill.error && <div className="pane-item-error">{t("skills.broken", { x: skill.error })}</div>}
           {error && <div className="pane-item-error">{error}</div>}
         </div>
         <div className="pane-item-actions is-visible">
           <IconButton size="sm" label={open ? t("skills.hide") : t("skills.view")} onClick={() => void toggle_body()}>
             {open ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
           </IconButton>
-          <IconButton size="sm" label={t("skills.remove")} onClick={() => set_confirming(true)}>
-            <TrashIcon size={14} />
-          </IconButton>
+          {!skill.builtin && (
+            <IconButton size="sm" label={t("skills.remove")} onClick={() => set_confirming(true)}>
+              <TrashIcon size={14} />
+            </IconButton>
+          )}
           <Toggle
             checked={skill.enabled}
             label={t("skills.enable", { x: skill.name })}
@@ -128,13 +150,14 @@ export const SkillsPane = () => {
       )}
       {status === "failed" && <p className="pane-note">{t("skills.load_failed")}</p>}
       {status === "ready" && skills.length === 0 && <p className="pane-note">{t("skills.empty")}</p>}
-      {status === "ready" && skills.length > 0 && (
-        <SettingsGroup>
-          {skills.map((skill) => (
-            <SkillRow key={skill.slug} skill={skill} />
-          ))}
-        </SettingsGroup>
-      )}
+      {status === "ready" &&
+        skill_sections(skills).map((section) => (
+          <SettingsGroup key={section.key} label={section.group || undefined}>
+            {section.items.map((skill) => (
+              <SkillRow key={skill.slug} skill={skill} />
+            ))}
+          </SettingsGroup>
+        ))}
     </>
   );
 };

@@ -6,7 +6,7 @@
     display: grid;
     place-items: center;
     padding: var(--space-4);
-    background: var(--scrim);
+    background: var(--scrim-modal);
   }
 
   .dialog-backdrop[data-state="open"] {
@@ -23,9 +23,10 @@
     max-width: 100%;
     max-height: 100%;
     overflow: auto;
-    border-radius: var(--radius-2xl);
-    background: var(--surface-main);
-    box-shadow: var(--shadow-dialog);
+    border-radius: 25px;
+    background: var(--surface-modal);
+    backdrop-filter: var(--filter-modal);
+    box-shadow: var(--shadow-modal);
     outline: none;
     --pop-shift: 8px;
   }

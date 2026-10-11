@@ -1,12 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { ApprovalDecision, ApprovalRequest, HumanDecision } from "../../shared/approval.ts";
 import type { Message, ToolStep } from "../../shared/chat.ts";
+import type { ReviewActor } from "../../shared/review.ts";
 import { get_chat, update_message } from "../chats/store.ts";
 import { error_text } from "../storage/coerce.ts";
 
 const max_subject_chars = 2000;
-const shown_decisions = 12;
-const shown_subject_chars = 500;
 
 export const command_tools = ["run_command", "start_background_task"];
 
@@ -15,9 +14,9 @@ const clip = (text: string, max: number) => (text.length <= max ? text : `${text
 const request_subject = (request: ApprovalRequest): { tool: string; subject: string; cwd: string; reason: string } => {
   switch (request.kind) {
     case "command":
-      return { tool: request.background ? "start_background_task" : "run_command", subject: request.command, cwd: request.cwd, reason: request.overseer?.reason ?? "" };
+      return { tool: request.background ? "start_background_task" : "run_command", subject: request.command, cwd: request.cwd, reason: request.review?.reason ?? "" };
     case "mcp":
-      return { tool: `mcp:${request.server}/${request.tool}`, subject: request.args_preview, cwd: "", reason: request.reason ?? "" };
+      return { tool: `mcp:${request.server}/${request.tool}`, subject: request.args_preview, cwd: "", reason: request.review?.reason || request.reason || "" };
     case "write":
       return { tool: "write_file", subject: request.path, cwd: "", reason: "" };
     case "mcp_server":
@@ -31,13 +30,16 @@ const request_subject = (request: ApprovalRequest): { tool: string; subject: str
   }
 };
 
-export const human_decision = (request: ApprovalRequest, decision: ApprovalDecision, actor: string, context_hash: string): HumanDecision => {
+const review_of = (request: ApprovalRequest): string | null => (request.kind === "command" || request.kind === "mcp" ? (request.review?.id ?? null) : null);
+
+export const human_decision = (request: ApprovalRequest, decision: ApprovalDecision, actor: ReviewActor, last_human_id: string | null): HumanDecision => {
   const { tool, subject, cwd, reason } = request_subject(request);
+  const review_id = review_of(request);
   const prefix = request.kind === "command" && decision.approved && decision.grant === "prefix" ? request.grant_prefix : null;
   return {
     id: randomUUID(),
     at: Date.now(),
-    actor,
+    actor: actor.name,
     tool,
     subject: clip(subject, max_subject_chars),
     cwd,
@@ -45,9 +47,11 @@ export const human_decision = (request: ApprovalRequest, decision: ApprovalDecis
     grant: decision.grant,
     feedback: decision.feedback,
     reason,
-    context_hash,
+    actor_id: actor.id,
+    last_human_id,
+    ...(review_id ? { review_id } : {}),
     ...(prefix ? { grant_prefix: prefix } : {}),
-    ...(request.kind === "command" && request.source_hash ? { source_hash: request.source_hash } : {}),
+    ...(request.kind === "command" && request.source_hash && decision.grant !== "full_window" ? { source_hash: request.source_hash } : {}),
   };
 };
 
@@ -110,33 +114,34 @@ export const chat_decisions = async (chat_id: string): Promise<HumanDecision[]> 
   return decisions_in(chat.messages);
 };
 
-export const mirror_decision = async (chat_id: string, message_id: string, call_id: string, decision: HumanDecision): Promise<void> => {
+export const update_tool_step = async (chat_id: string, message_id: string, call_id: string, label: string, update: (step: ToolStep) => ToolStep): Promise<void> => {
   try {
     const chat = await get_chat(chat_id);
     const parent = chat?.messages.find((message) => message.id === message_id);
     const step = parent?.role === "assistant" ? parent.steps.find((entry) => entry.kind === "tool" && entry.call_id === call_id) : undefined;
     if (!step) {
-      console.warn(`[permissions] deploy step ${call_id} of chat ${chat_id} is gone, decision ${decision.id} of ${decision.actor} is kept in the agent transcript only`);
+      console.warn(`[permissions] parent step ${call_id} of chat ${chat_id} is gone, ${label} is kept in the agent transcript only`);
       return;
     }
     update_message(chat_id, message_id, (message) =>
-      message.role !== "assistant"
-        ? message
-        : {
-            ...message,
-            steps: message.steps.map((entry) =>
-              entry.kind === "tool" && entry.call_id === call_id ? { ...entry, decisions: [...(entry.decisions ?? []).filter((item) => item.id !== decision.id), decision] } : entry,
-            ),
-          },
+      message.role !== "assistant" ? message : { ...message, steps: message.steps.map((entry) => (entry.kind === "tool" && entry.call_id === call_id ? update(entry) : entry)) },
     );
   } catch (error) {
-    console.error(`[permissions] mirroring decision ${decision.id} of ${decision.actor} into chat ${chat_id} failed: ${error_text(error)}`);
+    console.error(`[permissions] mirroring ${label} into chat ${chat_id} failed: ${error_text(error)}`);
   }
 };
 
+export const mirror_decision = (chat_id: string, message_id: string, call_id: string, decision: HumanDecision): Promise<void> =>
+  update_tool_step(chat_id, message_id, call_id, `decision ${decision.id} of ${decision.actor}`, (step) => ({
+    ...step,
+    decisions: [...(step.decisions ?? []).filter((item) => item.id !== decision.id), decision],
+  }));
+
 const normalize = (text: string) => text.trim().replace(/\s+/g, " ").toLowerCase();
 
-export const last_decision_for = (decisions: HumanDecision[], tools: string[], subject: string): HumanDecision | null => {
+export const same_subject = (a: string, b: string): boolean => normalize(a) === normalize(b);
+
+export const last_decision_for =(decisions: HumanDecision[], tools: string[], subject: string): HumanDecision | null => {
   const wanted = normalize(clip(subject, max_subject_chars));
   for (let index = decisions.length - 1; index >= 0; index -= 1) {
     const entry = decisions[index];
@@ -154,28 +159,3 @@ export const approved_with_source = (decisions: HumanDecision[], command: string
 
 export const prefix_grants = (decisions: HumanDecision[]): { prefix: string; example: string }[] =>
   decisions.flatMap((entry) => (entry.approved && entry.grant === "prefix" && entry.grant_prefix && command_tools.includes(entry.tool) ? [{ prefix: entry.grant_prefix, example: entry.subject }] : []));
-
-export const denial_reason = (denial: HumanDecision): string =>
-  `You denied this exact action earlier in this chat${denial.feedback ? ` ("${clip(denial.feedback, 300)}")` : ""}, so it does not run automatically again.`;
-
-export const repeated_denial_text = (denial: HumanDecision): string =>
-  `The user already denied this exact action and has not said anything new since${denial.feedback ? `. Their feedback: ${clip(denial.feedback, 300)}` : ""}. Do not retry it or reach the same effect another way; continue differently or ask the user in your reply.`;
-
-export const decisions_text = (decisions: HumanDecision[]): string => {
-  const recent = decisions.slice(-shown_decisions);
-  if (!recent.length) {
-    return "";
-  }
-  const omitted = decisions.length - recent.length;
-  const lines = recent.map((entry) =>
-    JSON.stringify({
-      approved: entry.approved,
-      by: entry.actor,
-      tool: entry.tool,
-      action: clip(entry.subject, shown_subject_chars),
-      ...(entry.cwd ? { cwd: entry.cwd } : {}),
-      ...(entry.feedback ? { feedback: clip(entry.feedback, shown_subject_chars) } : {}),
-    }),
-  );
-  return (omitted > 0 ? `(${omitted} older decisions omitted)\n` : "") + lines.join("\n");
-};

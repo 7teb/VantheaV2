@@ -107,6 +107,6 @@ export const plan_state = (messages: Message[]): PlanState => {
 };
 
 export const last_own_send = (messages: Message[]): string => {
-  const sent = messages.findLast((message) => message.role === "user" && message.origin !== "background" && message.origin !== "agent_report");
+  const sent = messages.findLast((message) => message.role === "user" && message.origin !== "background" && message.origin !== "agent_report" && message.origin !== "agent_update");
   return sent?.id ?? "";
 };

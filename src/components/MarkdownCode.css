@@ -1,6 +1,6 @@
 @layer components {
   .code-block {
-    margin: var(--space-1) 0 var(--space-4);
+    margin: calc(var(--md-space) * 5) 0;
     border-radius: var(--radius-xl);
     overflow: hidden;
   }
@@ -19,9 +19,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-code);
-    color: var(--text-tertiary);
+    font-size: var(--font-size-ui);
   }
 
   .code-block-pre {
@@ -31,7 +29,6 @@
     font-family: var(--font-mono);
     font-size: var(--font-size-code);
     line-height: var(--leading-code);
-    color: var(--text-code);
     tab-size: 4;
   }
 

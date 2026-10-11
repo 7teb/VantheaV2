@@ -47,7 +47,7 @@ export const Dialog = ({ open, on_close, label, className, backdrop_className, i
     >
       <div
         ref={panel}
-        className={class_names("dialog-panel", className)}
+        className={class_names("dialog-panel", "raised-surface", className)}
         role="dialog"
         aria-modal="true"
         aria-label={label}

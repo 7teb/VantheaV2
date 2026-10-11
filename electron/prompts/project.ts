@@ -11,26 +11,29 @@ const ignored_dirs = new Set([".git", "node_modules", "dist", "build", ".vs", ".
 
 const max_listing_entries = 200;
 
-export const load_project_doc = async (root: string): Promise<ProjectDoc | null> => {
-  if (!root.trim()) {
+const load_doc = async (root: string, name: string): Promise<ProjectDoc | null> => {
+  try {
+    const raw = await fs.readFile(path.join(root, name), "utf8");
+    const text = (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).trim();
+    if (!text) {
+      return null;
+    }
+    const content = text.length > max_doc_chars ? `${text.slice(0, max_doc_chars)}\n...[${name} truncated to fit context]` : text;
+    return { name, content };
+  } catch (error) {
+    if ((error as { code?: string }).code !== "ENOENT") {
+      console.warn(`[prompts] reading ${name} in ${root} failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
     return null;
   }
-  for (const name of doc_candidates) {
-    try {
-      const raw = await fs.readFile(path.join(root, name), "utf8");
-      const text = (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).trim();
-      if (!text) {
-        continue;
-      }
-      const content = text.length > max_doc_chars ? `${text.slice(0, max_doc_chars)}\n...[${name} truncated to fit context]` : text;
-      return { name, content };
-    } catch (error) {
-      if ((error as { code?: string }).code !== "ENOENT") {
-        console.warn(`[prompts] reading ${name} in ${root} failed: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
+};
+
+export const load_project_docs = async (root: string): Promise<ProjectDoc[]> => {
+  if (!root.trim()) {
+    return [];
   }
-  return null;
+  const docs = await Promise.all(doc_candidates.map((name) => load_doc(root, name)));
+  return docs.filter((doc): doc is ProjectDoc => doc !== null);
 };
 
 export const list_top_level = async (root: string): Promise<string> => {

@@ -15,6 +15,7 @@ export type Transport = {
   fetch: (url: string, init: RequestInit) => Promise<Response>;
   sleep: (ms: number, signal: AbortSignal) => Promise<void>;
   random: () => number;
+  now: () => number;
   max_attempts: number;
   first_byte_ms: number;
   idle_ms: number;
@@ -39,6 +40,7 @@ const default_transport: Transport = {
   fetch: (url, init) => fetch(url, init),
   sleep: abortable_sleep,
   random: Math.random,
+  now: Date.now,
   max_attempts: 3,
   first_byte_ms: 300000,
   idle_ms: 240000,

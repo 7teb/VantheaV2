@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import type { ToolView } from "../../../shared/tool-view.ts";
+import { shell_name, type ToolView } from "../../../shared/tool-view.ts";
 import { invalidate_index } from "../../project/index.ts";
 import { resolve_inside } from "../../project/scope.ts";
 import type { OutputCollector } from "../../shell/output.ts";
@@ -60,8 +60,9 @@ const progress_reporter = (ctx: ToolContext) => {
   };
 };
 
-const command_view = (command: string, cwd: string, output: string, extra: Partial<Extract<ToolView, { kind: "command" }>> = {}): ToolView => ({
+export const command_view = (command: string, cwd: string, output: string, extra: Partial<Extract<ToolView, { kind: "command" }>> = {}): ToolView => ({
   kind: "command",
+  shell: shell_name,
   command,
   cwd,
   exit_code: null,
@@ -92,7 +93,7 @@ export const run_command_tool = define_tool<RunArgs>({
   spec: {
     name: "run_command",
     description:
-      "Run a PowerShell command in the project folder and return its combined output and exit code. The string runs directly under powershell.exe -Command, so write PowerShell (';' to chain, $null instead of >nul) and do not wrap it in powershell, pwsh, cmd /c or bash. It runs headless and must exit on its own: open programs the user should operate in their own window with Start-Process, and use start_background_task for work that takes minutes.",
+      `Run a PowerShell command in the project folder and return its combined output and exit code. The string runs directly under powershell.exe -Command, so write PowerShell (';' to chain, $null instead of >nul) and do not wrap it in powershell, pwsh, cmd /c or bash. stderr is already captured with stdout, so do not add 2>&1: Windows PowerShell turns redirected stderr of native programs into error records and reports a successful program as failed. It runs headless and must exit on its own: open programs the user should operate in their own window with Start-Process. The default timeout is ${default_timeout_ms / 1000} s; for builds, tests or installs set timeout_ms up front.`,
     parameters: {
       type: "object",
       properties: {
@@ -104,18 +105,17 @@ export const run_command_tool = define_tool<RunArgs>({
       additionalProperties: false,
     },
   },
-  profiles: ["main", "worker"],
+  profiles: ["main", "plan", "worker"],
   parse: parse_run,
   run: (ctx, args) =>
     guarded(ctx, "run_command", async () => {
       const dir = await command_dir(ctx.project_root, args.cwd);
       const gate = await gate_command(ctx, args.command, dir.target, false);
       if (gate.kind === "block") {
-        const text = blocked_text(gate.reason);
-        return { ...failed(text), view: command_view(args.command, dir.relative, text) };
+        return { ...failed(blocked_text(gate.reason)), view: command_view(args.command, dir.relative, "") };
       }
       if (gate.kind === "denied") {
-        return { status: "denied", text: gate.text, view: command_view(args.command, dir.relative, gate.text) };
+        return { status: "denied", text: gate.text, view: command_view(args.command, dir.relative, gate.output) };
       }
       const reporter = progress_reporter(ctx);
       ctx.progress({ label: "", lines: 0, output_tail: null });
@@ -133,7 +133,7 @@ export const run_command_tool = define_tool<RunArgs>({
       const seconds = (outcome.duration_ms / 1000).toFixed(1);
       return {
         status: outcome.exit_code === 0 && !outcome.timed_out ? "done" : "failed",
-        text: `${status} after ${seconds} s\n${outcome.output || "(no output)"}`,
+        text: `${gate.note ? `${gate.note}\n` : ""}${status} after ${seconds} s${outcome.timed_out ? `; for longer work raise timeout_ms (at most ${max_timeout_ms})${ctx.profile === "main" ? " or use start_background_task" : ""}` : ""}\n${outcome.output || "(no output)"}`,
         view: command_view(args.command, dir.relative, outcome.output, {
           exit_code: outcome.exit_code,
           timed_out: outcome.timed_out,

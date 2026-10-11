@@ -1,50 +1,69 @@
 import { Button } from "../../components/Button.tsx";
-import { BotIcon } from "../../components/icons.tsx";
+import { BotIcon, CheckIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { open_agent_run } from "../../state/agents.ts";
 import type { BodyProps } from "./body-types.ts";
-import { OutputBlock } from "./OutputBlock.tsx";
-import { format_duration } from "./tool-summary.ts";
+import { CommandCard } from "./CommandCard.tsx";
+import { step_outcome } from "./review-notes.ts";
+import { ReviewNotice } from "./ReviewNote.tsx";
 
-export const CommandBody = ({ view }: BodyProps<"command">) => {
+const CommandStatus = ({ exit_code, timed_out }: { exit_code: number | null; timed_out: boolean }) => {
   const t = use_t();
-  const failed = view.timed_out || (view.exit_code !== null && view.exit_code !== 0);
+  if (timed_out) {
+    return <span>{t("tools.command_timed_out")}</span>;
+  }
+  if (exit_code === null) {
+    return null;
+  }
+  if (exit_code !== 0) {
+    return <span>{t("tools.command_exit_code", { n: exit_code })}</span>;
+  }
   return (
-    <div className="tool-body-stack">
-      <pre className="tool-command inset-surface">
-        <span className="tool-command-prompt">{"$ "}</span>
-        {view.command}
-      </pre>
-      <div className="tool-body-line tool-body-muted">
-        {view.cwd !== "." && <span className="tool-body-path">{view.cwd}</span>}
-        {view.exit_code !== null && <span>{t("tools.exit_code", { n: view.exit_code })}</span>}
-        {view.timed_out && <span>{t("tools.timed_out")}</span>}
-        {view.duration_ms > 0 && <span>{format_duration(view.duration_ms)}</span>}
-      </div>
-      {view.output ? <OutputBlock text={view.output} tone={failed ? "error" : "normal"} /> : <div className="tool-body-muted">{t("tools.no_output")}</div>}
-    </div>
+    <span className="command-card-success">
+      <CheckIcon size={12} />
+      {t("tools.command_success")}
+    </span>
   );
 };
 
-export const BackgroundBody = ({ view }: BodyProps<"background">) => {
+export const CommandBody = ({ view, step }: BodyProps<"command">) => {
   const t = use_t();
+  const outcome = step_outcome(t, step);
+  const in_root = view.cwd === ".";
+  const footer = (!in_root || view.timed_out || view.exit_code !== null || outcome.footer.length > 0) && (
+    <>
+      {!in_root && <span className="command-card-lead">{view.cwd}</span>}
+      {outcome.footer.map((text) => (
+        <span key={text}>{text}</span>
+      ))}
+      <CommandStatus exit_code={view.exit_code} timed_out={view.timed_out} />
+    </>
+  );
   return (
-    <div className="tool-body-stack">
-      {view.command && (
-        <pre className="tool-command inset-surface">
-          <span className="tool-command-prompt">{"$ "}</span>
-          {view.command}
-        </pre>
-      )}
-      <div className="tool-body-line tool-body-muted">
-        <span className="tool-body-mono">{view.task_id}</span>
+    <CommandCard
+      shell={view.shell}
+      command={view.command}
+      output={view.output}
+      footer={footer}
+      notice={outcome.notice && <ReviewNotice note={outcome.notice} />}
+    />
+  );
+};
+
+export const BackgroundBody = ({ view }: BodyProps<"background">) => (
+  <CommandCard
+    shell={view.shell}
+    command={view.command}
+    output={view.output_tail}
+    footer={
+      <>
+        <span className="command-card-lead">{view.task_id}</span>
         <span>{view.status}</span>
-      </div>
-      {view.output_tail ? <OutputBlock text={view.output_tail} /> : <div className="tool-body-muted">{t("tools.no_output")}</div>}
-    </div>
-  );
-};
+      </>
+    }
+  />
+);
 
 export const AgentBody = ({ view }: BodyProps<"agent">) => {
   const t = use_t();

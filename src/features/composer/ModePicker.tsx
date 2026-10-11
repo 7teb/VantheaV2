@@ -1,12 +1,13 @@
 import { useState } from "react";
+import { full_window_minutes } from "../../../shared/approval.ts";
 import type { PermissionMode } from "../../../shared/chat.ts";
-import { ChevronDownIcon, CircleStopIcon, HandIcon, ShieldAlertIcon, ShieldCheckIcon, type IconComponent } from "../../components/icons.tsx";
-import { Menu, type MenuSection } from "../../components/Menu.tsx";
+import { ChevronDownIcon, CircleStopIcon, ClockIcon, HandIcon, ShieldAlertIcon, ShieldCheckIcon, type IconComponent } from "../../components/icons.tsx";
+import { Menu, type MenuItem, type MenuSection } from "../../components/Menu.tsx";
 import { Skeleton } from "../../components/Skeleton.tsx";
 import { use_clock } from "../../components/use-clock.ts";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
-import { end_full_window, full_window_store } from "../../state/full-window.ts";
+import { end_full_window, full_window_store, open_full_window } from "../../state/full-window.ts";
 import { settings_store, update_settings } from "../../state/settings.ts";
 import { use_store } from "../../state/use-store.ts";
 
@@ -40,27 +41,30 @@ export const ModePicker = ({ chat_id }: { chat_id: string | null }) => {
   const label = windowed ? t("composer.full_window", { x: remaining }) : t(current.label);
   const hint = windowed ? t("composer.full_window_desc", { x: remaining }) : t(current.hint);
 
-  const sections: MenuSection[] = [
-    {
-      id: "modes",
-      label: t("composer.permission_title"),
-      items: modes.map((entry) => {
-        const EntryIcon = entry.icon;
-        return {
-          id: entry.id,
-          label: t(entry.label),
-          icon: <EntryIcon size={15} />,
-          checked: entry.id === mode,
-          on_select: () => {
-            if (windowed) {
-              void end_full_window(windowed.chat_id);
-            }
-            void update_settings({ mode: entry.id });
-          },
-        };
-      }),
-    },
-  ];
+  const mode_items: MenuItem[] = modes.map((entry) => {
+    const EntryIcon = entry.icon;
+    return {
+      id: entry.id,
+      label: t(entry.label),
+      icon: <EntryIcon size={15} />,
+      checked: entry.id === mode,
+      on_select: () => {
+        if (windowed) {
+          void end_full_window(windowed.chat_id);
+        }
+        void update_settings({ mode: entry.id });
+      },
+    };
+  });
+  if (chat_id !== null && !windowed && mode !== "full") {
+    mode_items.push({
+      id: "start_window",
+      label: t("composer.full_window_start", { n: full_window_minutes }),
+      icon: <ClockIcon size={15} />,
+      on_select: () => void open_full_window(chat_id),
+    });
+  }
+  const sections: MenuSection[] = [{ id: "modes", label: t("composer.permission_title"), items: mode_items }];
   if (windowed) {
     sections.push({
       id: "window",

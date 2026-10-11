@@ -17,7 +17,7 @@
 }
 
 .settings-group-body:focus-within {
-  box-shadow: var(--shadow-inset);
+  box-shadow: inset 0 0 0 1px var(--ring-well);
 }
 
 .settings-row {

@@ -6,8 +6,6 @@
 .search-dialog {
   width: min(620px, 100%);
   overflow: hidden;
-  border-radius: var(--radius-xl);
-  background: var(--surface-raise);
 }
 
 .search-panel {
@@ -21,7 +19,7 @@
   flex: none;
   height: 44px;
   padding: 0 14px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-item);
 }
 
 .search-field .text-field-input {
@@ -52,7 +50,7 @@
   width: 100%;
   min-height: 52px;
   padding: 0 var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-item);
   text-align: left;
 }
 

@@ -1,27 +1,4 @@
 @layer components {
-  .approval-card {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    padding: var(--space-4);
-    border-radius: var(--radius-xl);
-    background: var(--surface-raise);
-    box-shadow: var(--shadow-button);
-  }
-
-  .approval-question {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--font-size-body);
-    font-weight: var(--weight-semibold);
-    color: var(--text-primary);
-  }
-
-  .approval-question svg {
-    color: var(--text-secondary);
-  }
-
   .approval-command {
     max-height: 220px;
     margin: 0;
@@ -140,81 +117,22 @@
     letter-spacing: 0.1em;
   }
 
-  .approval-options {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  .work-single > .question-card {
+    margin-top: var(--space-2);
   }
 
-  .approval-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: var(--size-row);
-    padding: 6px 10px;
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-ui);
-    color: var(--text-secondary);
-    text-align: left;
-    transition:
-      background var(--duration-fast) var(--ease-out),
-      color var(--duration-fast) var(--ease-out);
+  .question-preview > .command-card,
+  .question-preview > .edit-card {
+    margin-top: 0;
   }
 
-  .approval-option:hover,
-  .approval-option[aria-checked="true"] {
-    background: var(--fill-hover);
-    color: var(--text-primary);
+  .approval-preview-text {
+    max-height: 220px;
+    overflow: auto;
   }
 
-  .approval-radio {
-    flex: none;
-    width: 14px;
-    height: 14px;
-    border-radius: var(--radius-full);
-    background: var(--surface-inset);
-    box-shadow: var(--shadow-inset);
-    transition: box-shadow var(--duration-fast) var(--ease-out);
-  }
-
-  .approval-option[aria-checked="true"] .approval-radio {
-    background: var(--surface-primary);
-    box-shadow: inset 0 0 0 4px var(--surface-inset);
-  }
-
-  .approval-option-label {
-    min-width: 0;
+  .question-preview .command-card-lead {
+    white-space: normal;
     overflow-wrap: anywhere;
-  }
-
-  .approval-feedback {
-    width: 100%;
-    min-height: 60px;
-    padding: 10px var(--space-3);
-    border: 0;
-    border-radius: var(--radius-lg);
-    resize: vertical;
-    font-size: var(--font-size-ui);
-    line-height: var(--leading-ui);
-    color: var(--text-primary);
-    animation: fade-up var(--duration-base) var(--ease-out) backwards;
-  }
-
-  .approval-feedback::placeholder {
-    color: var(--text-tertiary);
-  }
-
-  .approval-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: var(--space-3);
-  }
-
-  .approval-error {
-    flex: 1;
-    min-width: 0;
-    font-size: var(--font-size-ui);
-    color: var(--text-danger);
   }
 }

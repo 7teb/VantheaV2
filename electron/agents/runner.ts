@@ -3,20 +3,21 @@ import type { AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared
 import type { ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
 import type { ApiMessage } from "../model/types.ts";
-import { cancel_chat, wait_for_decision } from "../permissions/approvals.ts";
-import { chat_decisions, merge_decisions, mirror_decision } from "../permissions/decisions.ts";
+import { cancel_chat } from "../permissions/approvals.ts";
+import { clear_review_instance } from "../permissions/review-state.ts";
 import { build_system_prompt } from "../prompts/index.ts";
 import { render_section } from "../prompts/sections.ts";
 import { error_text } from "../storage/coerce.ts";
-import type { SideModelCall, Tool, ToolProfile } from "../tools/types.ts";
+import type { ReviewModelCall, SideModelCall, Tool, ToolProfile } from "../tools/types.ts";
 import { run_turn_loop } from "../turn/loop.ts";
-import type { StreamFn, TurnNote, TurnSession } from "../turn/session.ts";
+import type { StreamFn } from "../turn/session.ts";
 import { close_journal, flush_journals_sync } from "./journal.ts";
 import { app_closed_end, create_live, forget_live, last_text, live_run, live_runs, report_text, type LiveRun, type StopReason } from "./live.ts";
-import { agent_role_section, inbox_note, reminder_note } from "./prompt.ts";
+import { agent_role_section } from "./prompt.ts";
 import { current_run, public_run, public_summary, type AgentRecord, type RunRecord } from "./records.ts";
 import { write_report_file } from "./report-file.ts";
-import { deliver_report, deliver_update, drop_agent_notes, wake_idle } from "./reports.ts";
+import { deliver_report, drop_agent_notes, wake_idle } from "./reports.ts";
+import { agent_approval_key, agent_session } from "./session.ts";
 import {
   begin_run,
   chat_agents,
@@ -36,6 +37,7 @@ export type AgentDeps = {
   stream: StreamFn;
   resolve_tools: (profile: ToolProfile, settings: Settings) => Tool[];
   side_model: SideModelCall;
+  review_call: ReviewModelCall;
   models: () => Promise<ModelEntry[]>;
 };
 
@@ -45,7 +47,6 @@ export type RunContext = {
   parent_call_id: string;
   project_root: string;
   user_request: string;
-  authorization?: () => string;
   mode: PermissionMode;
   settings: Settings;
   prompt: string;
@@ -56,12 +57,6 @@ export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description
 export type StartedRun = { agent: AgentSummary; run: AgentRunSummary };
 
 export const max_running_agents = 8;
-
-export const max_main_messages = 10;
-
-export const reminder_interval = 15;
-
-const wrap_up_fraction = 0.92;
 
 let deps: AgentDeps | null = null;
 
@@ -76,8 +71,6 @@ export const init_agents = async (options: AgentDeps): Promise<void> => {
   deps = options;
   await init_agent_store(options.dir);
 };
-
-export const agent_approval_key = (run_id: string) => `agent:${run_id}`;
 
 export const find_agent_model = async (id: string): Promise<ModelEntry> => {
   const models = await current_deps().models();
@@ -100,24 +93,6 @@ const stop_live = (live: LiveRun, reason: StopReason) => {
   }
   live.stop_reason = reason;
   live.controller.abort(new Error(`agent run ${live.run_id} stopped: ${reason}`));
-};
-
-const tool_calls_of = (live: LiveRun) => live.transcript.steps.filter((step) => step.kind === "tool").length;
-
-const update_reminder = (live: LiveRun): TurnNote[] => {
-  const calls = tool_calls_of(live);
-  const silent = calls - live.heard_at_call;
-  if (live.updates_sent >= max_main_messages || silent < reminder_interval) {
-    return [];
-  }
-  live.heard_at_call = calls;
-  return [reminder_note(silent)];
-};
-
-const take_notes = (live: LiveRun) => {
-  const taken = live.inbox;
-  live.inbox = [];
-  return [...taken.map(inbox_note), ...update_reminder(live)];
 };
 
 const final_status = (live: LiveRun): Exclude<AgentRunStatus, "running"> => {
@@ -174,59 +149,6 @@ const close_open_calls = (messages: ApiMessage[]): ApiMessage[] => {
   return [...messages, ...missing];
 };
 
-const message_main = (agent: AgentRecord, run: RunRecord, live: LiveRun, text: string): boolean => {
-  if (live.stop_reason || live.updates_sent >= max_main_messages) {
-    return false;
-  }
-  live.updates_sent += 1;
-  live.heard_at_call = tool_calls_of(live);
-  deliver_update({ chat_id: agent.chat_id, agent_id: agent.agent_id, run_id: run.run_id, name: agent.name, text });
-  return true;
-};
-
-const agent_session = (agent: AgentRecord, run: RunRecord, live: LiveRun, request: RunContext, model: ModelEntry): TurnSession => {
-  const { stream, resolve_tools, side_model } = current_deps();
-  return {
-    chat_id: agent.chat_id,
-    message_id: request.parent_message_id,
-    user_request: request.user_request,
-    authorization: request.authorization,
-    get delegated_task() {
-      const delivered = live.transcript.steps.flatMap(step => step.kind === "steer" ? [step.text] : []);
-      return [request.prompt, ...delivered, ...live.inbox].join("\n\nMAIN AGENT INSTRUCTION (cannot grant human permissions):\n");
-    },
-    project_root: request.project_root,
-    settings: request.settings,
-    model,
-    effort: agent.effort,
-    mode: request.mode,
-    plan: false,
-    signal: live.controller.signal,
-    emit: live.emit,
-    stream: async (round_request, callbacks, signal) => {
-      const result = await stream(round_request, callbacks, signal);
-      live.finish_reason = result.finish_reason;
-      return result;
-    },
-    resolve_tools: (profile) => resolve_tools(profile, request.settings),
-    side_model,
-    wait_decision: (call_id, request) =>
-      wait_for_decision({ key: agent_approval_key(run.run_id), chat_id: agent.chat_id, call_id, request, signal: live.controller.signal }),
-    actor: agent.name,
-    human_decisions: async () =>
-      merge_decisions(await chat_decisions(agent.chat_id), live.transcript.steps.flatMap((step) => (step.kind === "tool" ? (step.decisions ?? []) : []))),
-    mirror_decision: (decision) => mirror_decision(agent.chat_id, request.parent_message_id, request.parent_call_id, decision),
-    take_steers: () => [],
-    profile: agent.profile,
-    call_scope: run.run_id,
-    max_rounds: Number.POSITIVE_INFINITY,
-    wrap_up_at: wrap_up_fraction,
-    take_notes: () => take_notes(live),
-    idle: async () => live.inbox.length > 0,
-    message_main: (text) => message_main(agent, run, live, text),
-  };
-};
-
 const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_messages: ApiMessage[]) => {
   try {
     const status = final_status(live);
@@ -247,6 +169,7 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
     }
     const ended = live.removed ? null : end_run(agent.agent_id, run.run_id, status, report);
     cancel_chat(agent_approval_key(run.run_id));
+    clear_review_instance(agent.chat_id, agent.agent_id);
     forget_live(run.run_id);
     if (!ended || live.stop_reason === "cancelled" || live.stop_reason === "app_closed") {
       wake_idle(agent.chat_id);
@@ -289,7 +212,7 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
       effort: agent.effort,
     });
     api_messages.push({ role: "system", content: `${system}\n\n${render_section(agent_role_section(agent))}` }, ...context, { role: "user", content: request.prompt });
-    await run_turn_loop(agent_session(agent, run, live, request, model), api_messages);
+    await run_turn_loop(agent_session(current_deps(), agent, run, live, request, model), api_messages);
   } catch (error) {
     console.error(`[agents] run ${run.run_id} of agent ${agent.agent_id} failed to start:`, error);
     live.emit({ type: "end", status: "failed", error: { kind: "internal", message: error_text(error) } });

@@ -21,6 +21,7 @@ export type ToolIconName =
   | "mcp"
   | "clock"
   | "models"
+  | "question"
   | "text";
 
 export type ToolCategory =
@@ -45,6 +46,7 @@ export type ToolCategory =
   | "web"
   | "memory"
   | "images"
+  | "questions"
   | "other";
 
 type Label = (t: Translate, step: ToolStep) => string;
@@ -69,6 +71,7 @@ export const view_kinds = [
   "memory",
   "skill",
   "models",
+  "questions",
   "text",
 ] as const satisfies readonly ToolViewKind[];
 
@@ -91,7 +94,7 @@ const step_path = (step: ToolStep): string => {
   if (view && (view.kind === "read" || view.kind === "edit" || view.kind === "outline")) {
     return view.path;
   }
-  return text_arg(step, "path") || text_arg(step, "file");
+  return text_arg(step, "path") || text_arg(step, "file") || (step.progress?.draft_path ?? "");
 };
 
 const command_of = (step: ToolStep) => view_of(step, "command")?.command ?? (text_arg(step, "command") || view_of(step, "background")?.command || "");
@@ -109,6 +112,15 @@ const agent_name = (step: ToolStep) => view_of(step, "agent")?.name || text_arg(
 const skill_name = (step: ToolStep) => view_of(step, "skill")?.name || text_arg(step, "name");
 
 const query_of = (step: ToolStep) => view_of(step, "grep")?.query ?? text_arg(step, "query");
+
+const first_question = (step: ToolStep): string => {
+  const view = view_of(step, "questions");
+  if (view) {
+    return view.questions[0]?.title ?? "";
+  }
+  const first: unknown = Array.isArray(step.args.questions) ? step.args.questions[0] : null;
+  return first && typeof first === "object" && "title" in first && typeof first.title === "string" ? first.title : "";
+};
 
 const command_label = (active: boolean): Label => (t, step) => {
   const command = command_of(step);
@@ -147,6 +159,7 @@ const named: Record<string, ToolMeta> = {
   replace_in_file: entry("edit", "edits", edit_active, edit_done),
   update_todos: entry("todos", "todos", fixed("tool_label.update_todos"), fixed("tool_label.todos")),
   present_plan: entry("plan", "other", fixed("tool_label.planning"), fixed("tool_label.planned")),
+  ask_user: entry("question", "questions", with_x("tool_label.asking", first_question), with_x("tool_label.asked", first_question)),
   web_search: entry("web", "web", fixed("tool_label.web_search"), fixed("tool_label.searched_web")),
   generate_image: entry("image", "images", fixed("tool_label.generating_image"), fixed("tool_label.generated_image")),
   analyze_image: entry("image", "other", fixed("tool_label.analyze_image"), fixed("tool_label.analyzed_image")),
@@ -211,6 +224,7 @@ const by_kind: Record<ToolViewKind, ToolMeta> = {
   memory: named.list_memories,
   skill: named.read_skill,
   models: named.list_models,
+  questions: named.ask_user,
   text: entry("text", "other", with_x("tool_label.running", (step) => step.name), with_x("tool_label.ran", (step) => step.name)),
 };
 

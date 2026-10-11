@@ -67,7 +67,7 @@ export const Tooltip = ({ label, hint, placement = "bottom-center", children }: 
           <div
             ref={bubble}
             role="tooltip"
-            className="tooltip"
+            className="tooltip raised-surface"
             data-placed={placed ? "true" : "false"}
             style={{ left: placed?.left ?? 0, top: placed?.top ?? 0 }}
           >

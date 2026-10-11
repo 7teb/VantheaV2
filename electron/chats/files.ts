@@ -2,9 +2,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { brotliCompress, brotliCompressSync, brotliDecompress, constants as zlib_constants } from "node:zlib";
-import type { Chat, ChatMeta, ChatSummary, Message, RoundReasoning } from "../../shared/chat.ts";
+import type { Chat, ChatMeta, ChatSummary, Message, RoundReasoning, Step } from "../../shared/chat.ts";
 import { is_media_id } from "../media/files.ts";
+import { coerce_reviews } from "../permissions/review-coerce.ts";
 import { as_array, as_boolean, as_iso, as_number, as_record, as_string, error_code, is_record } from "../storage/coerce.ts";
+import { coerce_questions_view, parse_question_states, stored_question_states } from "./question-coerce.ts";
 import { chat_dirs, metas, refs, sorted_metas, type ChatBody } from "./state.ts";
 
 const compress = promisify(brotliCompress);
@@ -19,7 +21,7 @@ export const chat_file = (chat_id: string) => path.join(chat_dirs().data_dir, `$
 
 export const search_file = (chat_id: string) => path.join(chat_dirs().search_dir, `${chat_id}.txt`);
 
-const chat_json = (meta: ChatMeta, body: ChatBody) => JSON.stringify({ version: 1, ...meta, streaming: false, ...body });
+const chat_json = (meta: ChatMeta, body: ChatBody) => JSON.stringify({ version: 1, ...meta, streaming: false, ...body, questions: stored_question_states(body.questions) });
 
 export const encode_chat = (meta: ChatMeta, body: ChatBody): Promise<Buffer> => compress(Buffer.from(chat_json(meta, body), "utf8"), brotli_options);
 
@@ -57,8 +59,28 @@ const parse_round_reasoning = (value: unknown): RoundReasoning[] => {
   return typeof raw.round === "number" && Array.isArray(raw.details) ? [{ round: raw.round, details: raw.details }] : [];
 };
 
-const parse_message = (message: Message): Message =>
-  message.role === "assistant" ? { ...message, reasoning_details: as_array(as_record(message).reasoning_details).flatMap(parse_round_reasoning) } : message;
+const parse_step = (step: Step, chat_id: string): Step => {
+  if (!is_record(step) || step.kind !== "tool") {
+    return step;
+  }
+  const call_id = as_string(step.call_id);
+  const viewed = is_record(step.view) && step.view.kind === "questions" ? { ...step, view: coerce_questions_view(step.view, chat_id, call_id) } : step;
+  if (!("reviews" in viewed)) {
+    return viewed;
+  }
+  const { reviews, ...rest } = viewed;
+  const coerced = coerce_reviews(reviews, chat_id, call_id);
+  return coerced.length ? { ...rest, reviews: coerced } : rest;
+};
+
+const parse_message = (message: Message, chat_id: string): Message =>
+  message.role === "assistant"
+    ? {
+        ...message,
+        steps: message.steps.map((step) => parse_step(step, chat_id)),
+        reasoning_details: as_array(as_record(message).reasoning_details).flatMap(parse_round_reasoning),
+      }
+    : message;
 
 const parse_summary = (value: unknown): ChatSummary | null => {
   const raw = as_record(value);
@@ -67,12 +89,16 @@ const parse_summary = (value: unknown): ChatSummary | null => {
   return text && through ? { text, through_message_id: through } : null;
 };
 
-export const parse_body = (value: unknown): ChatBody | null => {
+export const parse_body = (value: unknown, chat_id: string): ChatBody | null => {
   const raw = as_record(value);
   if (!Array.isArray(raw.messages)) {
     return null;
   }
-  return { summary: parse_summary(raw.summary), messages: raw.messages.filter(is_message).map(parse_message) };
+  return {
+    summary: parse_summary(raw.summary),
+    messages: raw.messages.filter(is_message).map((message) => parse_message(message, chat_id)),
+    questions: parse_question_states(raw.questions, chat_id),
+  };
 };
 
 export const read_chat_file = async (chat_id: string): Promise<{ meta: ChatMeta; body: ChatBody } | null> => {
@@ -88,7 +114,7 @@ export const read_chat_file = async (chat_id: string): Promise<{ meta: ChatMeta;
   }
   const value = await decode_chat(packed);
   const meta = parse_meta(value, new Date().toISOString());
-  const body = parse_body(value);
+  const body = parse_body(value, chat_id);
   if (!meta || !body || meta.id !== chat_id) {
     console.error(`[chats] chat file for ${chat_id} does not hold a valid chat`);
     return null;
@@ -96,7 +122,7 @@ export const read_chat_file = async (chat_id: string): Promise<{ meta: ChatMeta;
   return { meta, body };
 };
 
-export const compose_chat = (meta: ChatMeta, body: ChatBody): Chat => ({ ...meta, summary: body.summary, messages: body.messages });
+export const compose_chat = (meta: ChatMeta, body: ChatBody): Chat => ({ ...meta, summary: body.summary, messages: body.messages, questions: body.questions });
 
 export const search_text = (messages: Message[]): string => {
   const parts: string[] = [];

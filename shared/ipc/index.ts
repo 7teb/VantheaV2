@@ -4,6 +4,7 @@ import { chats_channels } from "./chats.ts";
 import { extensions_channels } from "./extensions.ts";
 import { media_channels } from "./media.ts";
 import { panels_channels } from "./panels.ts";
+import { questions_channels } from "./questions.ts";
 import { settings_channels } from "./settings.ts";
 import { work_channels } from "./work.ts";
 
@@ -15,6 +16,7 @@ export const channels = {
   ...work_channels,
   ...extensions_channels,
   ...panels_channels,
+  ...questions_channels,
 } as const;
 
 export type Channels = typeof channels;

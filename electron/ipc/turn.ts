@@ -6,7 +6,7 @@ import { compact_chat, plan_compaction, render_turns } from "../context/compact.
 import { estimate_tokens } from "../context/estimate.ts";
 import { find_model } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
-import { resolve_decision } from "../permissions/approvals.ts";
+import { open_chat_window, resolve_decision } from "../permissions/approvals.ts";
 import { close_full_window, full_window_until, on_full_window } from "../permissions/full-window.ts";
 import { get_settings } from "../settings/store.ts";
 import { side_model } from "../side/model.ts";
@@ -17,9 +17,9 @@ import { emit, handle } from "./handle.ts";
 
 const modes: readonly PermissionMode[] = ["ask", "auto", "full"];
 
-const origins: readonly UserOrigin[] = ["user", "plan_accept", "continue", "background", "agent_report"];
+const origins: readonly UserOrigin[] = ["user", "plan_accept", "continue"];
 
-const grants: readonly GrantScope[] = ["once", "prefix", "chat", "session", "full_window"];
+const grants: readonly GrantScope[] = ["once", "prefix", "chat", "session"];
 
 const chat_id_of = (value: unknown) => require_string(value, "chat id", 200);
 
@@ -129,6 +129,7 @@ export const register_turn_ipc = () => {
     const id = chat_id_of(chat_id);
     return { chat_id: id, until: full_window_until(id) };
   });
+  handle("turn:open_full_window", (chat_id) => open_chat_window(chat_id_of(chat_id)));
   handle("turn:end_full_window", (chat_id) => close_full_window(chat_id_of(chat_id)));
   handle("turn:context", (chat_id) => current_context(chat_id_of(chat_id)));
   handle("turn:compact", (chat_id) => force_compact(chat_id_of(chat_id)));

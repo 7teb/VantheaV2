@@ -14,7 +14,7 @@ export const QueuedList = ({ chat_id }: { chat_id: string }) => {
     return null;
   }
   return (
-    <ul className="queued-list" aria-label={t("composer.queued_label")}>
+    <ul className="queued-list raised-surface" aria-label={t("composer.queued_label")}>
       {queue.map((entry) => (
         <li key={entry.id} className="queued-item enter-fade-up" data-steering={entry.steering}>
           <CornerDownRightIcon size={14} className="queued-mark" />

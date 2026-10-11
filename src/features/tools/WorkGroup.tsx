@@ -6,6 +6,8 @@ import { ChevronRightIcon, CombineIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
 import { ApprovalCard } from "./ApprovalCard.tsx";
+import { is_reviewing } from "./review-phase.ts";
+import { ReviewingLabel } from "./ReviewPending.tsx";
 import { is_active_status, tool_label } from "./tool-meta.ts";
 import { ToolRow } from "./ToolRow.tsx";
 import { format_duration, group_duration, group_label } from "./tool-summary.ts";
@@ -39,13 +41,15 @@ const WorkGroupView = ({ chat_id, steps, running, run }: WorkGroupProps) => {
   const open = chosen ?? running;
   const current = steps.findLast((step) => is_active_status(step.status)) ?? steps[steps.length - 1];
   const duration = group_duration(steps);
+  const reviewing = running && is_reviewing(current);
+  const label = running ? tool_label(t, current) : group_label(t, steps);
   return (
-    <div className="work-group" data-open={open}>
+    <div className="work-group" data-open={open} data-review={reviewing || undefined}>
       <button type="button" className="work-group-head" aria-expanded={open} onClick={() => set_chosen(!open)}>
         <span className="tool-row-icon">
           <CombineIcon size={14} />
         </span>
-        <span className={class_names("tool-row-label", running && "is-working")}>{running ? tool_label(t, current) : group_label(t, steps)}</span>
+        <span className={class_names("tool-row-label", running && !reviewing && "is-working")}>{reviewing ? <ReviewingLabel step={current} /> : label}</span>
         {!running && duration !== null && <span className="tool-row-duration">{format_duration(duration)}</span>}
         <ChevronRightIcon size={12} className="tool-row-chevron" />
       </button>

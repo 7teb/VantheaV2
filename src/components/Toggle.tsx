@@ -22,3 +22,9 @@ export const Toggle = ({ checked, on_change, label, disabled = false, className 
     <span className="toggle-thumb" />
   </button>
 );
+
+export const ToggleTrack = ({ checked }: { checked: boolean }) => (
+  <span className="toggle" data-checked={checked} aria-hidden="true">
+    <span className="toggle-thumb" />
+  </span>
+);

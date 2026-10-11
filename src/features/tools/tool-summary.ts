@@ -18,6 +18,27 @@ export const format_duration = (ms: number): string => {
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
 };
 
+export const format_elapsed = (ms: number): string | null => {
+  const total = Math.floor(Math.max(ms, 0) / 1000);
+  if (total < 1) {
+    return null;
+  }
+  if (total < 60) {
+    return `${total}s`;
+  }
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor(total / 3600) % 24;
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+  return `${minutes}m ${seconds}s`;
+};
+
 export const step_duration = (step: ToolStep): number | null =>
   step.started_at !== null && step.ended_at !== null ? Math.max(0, step.ended_at - step.started_at) : null;
 
@@ -55,6 +76,7 @@ const view_detail = (t: Translate, view: ToolView): string => {
     case "mcp":
       return view.is_error ? t("tools.mcp_error") : "";
     case "plan":
+    case "questions":
     case "browser":
     case "memory":
     case "skill":
@@ -81,6 +103,13 @@ const step_target = (step: ToolStep): string => {
   return typeof target === "string" ? target : step.id;
 };
 
+const bucket_count = (category: ToolCategory, bucket: ToolStep[]): number => {
+  if (category === "questions") {
+    return bucket.reduce((sum, step) => sum + (step.view?.kind === "questions" ? step.view.questions.length : 1), 0);
+  }
+  return counted_categories.has(category) ? new Set(bucket.map(step_target)).size : bucket.length;
+};
+
 const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
   commands: ["tools.combine_commands_one", "tools.combine_commands_other"],
   reads: ["tools.combine_reads_one", "tools.combine_reads_other"],
@@ -103,6 +132,7 @@ const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
   web: ["tools.combine_web_one", "tools.combine_web_other"],
   memory: ["tools.combine_memory_one", "tools.combine_memory_other"],
   images: ["tools.combine_images_one", "tools.combine_images_other"],
+  questions: ["tools.combine_questions_one", "tools.combine_questions_other"],
   other: ["tools.combine_other_one", "tools.combine_other_other"],
 };
 
@@ -121,7 +151,7 @@ export const group_label = (t: Translate, steps: ToolStep[]): string => {
   }
   const parts = order.map((category) => {
     const bucket = buckets.get(category) ?? [];
-    const n = counted_categories.has(category) ? new Set(bucket.map(step_target)).size : bucket.length;
+    const n = bucket_count(category, bucket);
     const [one, other] = combine_keys[category];
     return t(n === 1 ? one : other, { n });
   });

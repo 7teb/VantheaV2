@@ -34,6 +34,16 @@ const receive = (update: FullWindow) => {
   full_window_store.set(update);
 };
 
+export const open_full_window = async (chat_id: string): Promise<ActionResult> => {
+  try {
+    await api.invoke("turn:open_full_window", chat_id);
+    return { ok: true };
+  } catch (error) {
+    console.error(`[permissions] turn:open_full_window failed for chat ${chat_id}`, error);
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+};
+
 export const end_full_window = async (chat_id: string): Promise<ActionResult> => {
   try {
     await api.invoke("turn:end_full_window", chat_id);

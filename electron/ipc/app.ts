@@ -1,5 +1,7 @@
 import { shell } from "electron";
 import { main_window, window_state } from "../app/window.ts";
+import { keep_awake_active, set_keep_awake } from "../power/keep-awake.ts";
+import { require_boolean } from "../storage/coerce.ts";
 import { handle } from "./handle.ts";
 
 const clamp_zoom = (level: number) => Math.min(4, Math.max(-3, Math.round(level)));
@@ -45,4 +47,6 @@ export const register_app_ipc = () => {
   handle("shell:reveal", (target) => {
     shell.showItemInFolder(target);
   });
+  handle("power:keep_awake", () => keep_awake_active());
+  handle("power:set_keep_awake", (enabled) => set_keep_awake(require_boolean(enabled, "keep awake")));
 };

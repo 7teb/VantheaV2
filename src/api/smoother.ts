@@ -26,9 +26,9 @@ export type Smoother = {
   dispose: () => void;
 };
 
-type TextEvent = Extract<TurnEvent, { type: "text" | "reasoning" }>;
+type PacedEvent = Extract<TurnEvent, { type: "text" | "reasoning" | "tool_draft" }>;
 
-type Pending = { kind: "text"; event: TextEvent; rest: string } | { kind: "item"; item: StreamItem };
+type Pending = { kind: "text"; event: PacedEvent; rest: string } | { kind: "item"; item: StreamItem };
 
 type Lane = { pending: Pending[]; queued_chars: number; last_arrival: number; gap_ema: number };
 
@@ -44,7 +44,16 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 
 const item_chat = (item: StreamItem) => (item.kind === "event" ? item.event.chat_id : item.chat_id);
 
-const is_text = (event: TurnEvent): event is TextEvent => (event.type === "text" || event.type === "reasoning") && event.delta.length > 0;
+const paced = (item: StreamItem): Extract<Pending, { kind: "text" }> | null => {
+  if (item.kind !== "event") {
+    return null;
+  }
+  const event = item.event;
+  if ((event.type === "text" || event.type === "reasoning" || event.type === "tool_draft") && event.delta) {
+    return { kind: "text", event, rest: event.delta };
+  }
+  return null;
+};
 
 const as_delivery = (item: StreamItem): Delivery => (item.kind === "event" ? { kind: "event", event: item.event, partial: false } : item);
 
@@ -142,7 +151,11 @@ export const create_smoother = (deliver: (batch: Delivery[]) => void, clock: Smo
       if (lane.pending.length === 0) {
         continue;
       }
-      const rate = clamp(lane.queued_chars / horizon(lane), min_chars_per_ms, max_chars_per_ms);
+      const head = lane.pending[0];
+      const draft_blocking = head.kind === "text" && head.event.type === "tool_draft" && lane.pending.some((entry) => entry.kind === "item");
+      const rate = draft_blocking
+        ? lane.queued_chars / Math.max(close_horizon_ms - (now - lane.last_arrival), dt)
+        : clamp(lane.queued_chars / horizon(lane), min_chars_per_ms, max_chars_per_ms);
       drain_lane(lane, Math.max(1, Math.round(rate * dt)), out);
     }
     if (out.length > 0) {
@@ -171,10 +184,11 @@ export const create_smoother = (deliver: (batch: Delivery[]) => void, clock: Smo
 
   const push = (item: StreamItem) => {
     const lane = lane_for(item_chat(item));
-    if (item.kind === "event" && is_text(item.event)) {
+    const text = paced(item);
+    if (text) {
       note_arrival(lane);
-      lane.pending.push({ kind: "text", event: item.event, rest: item.event.delta });
-      lane.queued_chars += item.event.delta.length;
+      lane.pending.push(text);
+      lane.queued_chars += text.rest.length;
     } else if (lane.pending.length === 0) {
       deliver([as_delivery(item)]);
       return;

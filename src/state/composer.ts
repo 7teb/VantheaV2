@@ -133,6 +133,14 @@ const create_chat = async (project_path: string, key: string, message: OutgoingM
   }
 };
 
+const dispatch = async (chat_id: string, message: OutgoingMessage) => {
+  if (chat_busy(chat_id) || composer_store.get().sending[chat_id]) {
+    composer_store.update((state) => enqueue(state, chat_id, { ...message, id: crypto.randomUUID(), steering: false }));
+    return;
+  }
+  await send_now(chat_id, message);
+};
+
 export const submit = async (chat_id: string | null, project_path: string) => {
   const key = draft_key(chat_id, project_path);
   const current = composer_store.get();
@@ -141,14 +149,19 @@ export const submit = async (chat_id: string | null, project_path: string) => {
   }
   const taken = take_draft(current, key);
   composer_store.set(set_error(taken.state, key, ""));
-  if (chat_id !== null && (chat_busy(chat_id) || current.sending[key])) {
-    composer_store.update((state) => enqueue(state, chat_id, { ...taken.message, id: crypto.randomUUID(), steering: false }));
+  if (chat_id !== null) {
+    await dispatch(chat_id, taken.message);
     return;
   }
-  const target = chat_id ?? (await create_chat(project_path, key, taken.message));
+  const target = await create_chat(project_path, key, taken.message);
   if (target !== null) {
     await send_now(target, taken.message);
   }
+};
+
+export const send_plan_feedback = async (chat_id: string, text: string) => {
+  composer_store.update((state) => set_error(state, chat_id, ""));
+  await dispatch(chat_id, { text, attachments: [], plan: true });
 };
 
 export const send_queued = async (chat_id: string, id: string) => {

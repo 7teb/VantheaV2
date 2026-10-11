@@ -23,7 +23,36 @@
     width: 100%;
     max-width: var(--size-content);
     margin: 0 auto;
-    padding: var(--space-8) var(--space-6) var(--space-10);
+    padding: var(--space-8) var(--space-6) calc(var(--composer-dock-height) + var(--space-10));
+  }
+
+  .chat-column > .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]) {
+    margin: 2px 0 14px;
+  }
+
+  .chat-column
+    > :is(.assistant-message, .compaction-row, .agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]))
+    + :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])) {
+    margin-top: calc(2px - var(--space-8));
+  }
+
+  .chat-column > :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])) + :is(.assistant-message, .compaction-row),
+  .chat-column > :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])) + .compaction-row + .assistant-message {
+    margin-top: calc(-1 * var(--space-8));
+  }
+
+  .chat-column > .assistant-message:has(+ .compaction-row + :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]))) + .compaction-row {
+    margin-top: calc(-1 * var(--space-8));
+  }
+
+  .chat-column
+    > .assistant-message:has(+ :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])), + .compaction-row + :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])))
+    > :is(:has(+ .assistant-actions), :last-child:not(.assistant-actions)) {
+    margin-bottom: 14px;
+  }
+
+  .chat-column > .assistant-message:has(+ :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])), + .compaction-row + :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]))) > .assistant-actions {
+    display: none;
   }
 
   .chat-skeleton-answer {
@@ -43,7 +72,7 @@
   .jump-latest {
     position: absolute;
     left: 50%;
-    bottom: var(--space-3);
+    bottom: calc(var(--composer-dock-height) + var(--space-3));
     z-index: var(--z-sticky);
     display: inline-flex;
     align-items: center;
@@ -51,8 +80,9 @@
     height: 30px;
     padding: 0 var(--space-3);
     border-radius: var(--radius-full);
-    background: var(--surface-raise);
-    box-shadow: var(--shadow-float);
+    background: var(--surface-dock);
+    backdrop-filter: var(--filter-dock);
+    box-shadow: var(--shadow-dock);
     font-size: var(--font-size-ui);
     color: var(--text-secondary);
     translate: -50% 0;
@@ -63,7 +93,7 @@
   }
 
   .jump-latest:hover {
-    background: var(--surface-raise-2);
+    background: linear-gradient(var(--raised-fill-hover), var(--raised-fill-hover)), var(--surface-dock);
     color: var(--text-primary);
   }
 }

@@ -330,7 +330,7 @@
   ],
   "side": {
     "title": "google/gemini-3.1-flash-lite",
-    "overseer": "google/gemini-3.5-flash-lite",
+    "overseer": "openai/gpt-6-luna",
     "vision": "google/gemini-3.1-flash-lite",
     "summarize": "deepseek/deepseek-v4-pro",
     "web_answer": "google/gemini-3.5-flash-lite",

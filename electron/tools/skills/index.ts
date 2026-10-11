@@ -1,8 +1,11 @@
-import { skill_slug } from "../../skills/frontmatter.ts";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { max_skill_bytes } from "../../skills/frontmatter.ts";
+import type { SkillRecord } from "../../skills/scan.ts";
 import { prepare_skill } from "../../skills/source.ts";
-import { commit_skill, find_skill, installed_skill, skill_folder, usable_skills } from "../../skills/store.ts";
+import { commit_skill, find_skill, install_target, usable_skills } from "../../skills/store.ts";
 import { error_text } from "../../storage/coerce.ts";
-import { require_string } from "../browser/common.ts";
+import { read_string, require_string } from "../browser/common.ts";
 import { define_tool, type Tool, type ToolResult } from "../types.ts";
 
 const max_body_chars = 100_000;
@@ -13,21 +16,45 @@ const result = (status: ToolResult["status"], action: "read" | "install", name: 
   view: { kind: "skill", action, name },
 });
 
-const read_skill_tool = define_tool<{ name: string }>({
+const read_extra = async (skill: SkillRecord, wanted: string): Promise<ToolResult> => {
+  const key = wanted.trim().replace(/\\/g, "/").toLowerCase();
+  const name = skill.files.find((file) => file.toLowerCase() === key);
+  if (!name) {
+    const known = skill.files.length ? `Its extra files: ${skill.files.join(", ")}.` : "It has no extra files.";
+    return result("failed", "read", skill.name, `The skill "${skill.name}" has no extra file "${wanted.slice(0, 120)}". ${known}`);
+  }
+  const file = path.join(skill.dir, name);
+  try {
+    const stat = await fs.stat(file);
+    if (stat.size > max_skill_bytes) {
+      return result("failed", "read", skill.name, `${name} of the skill "${skill.name}" is ${stat.size} bytes, read_skill returns extra files up to ${max_skill_bytes} bytes. Its path is ${file}.`);
+    }
+    const content = await fs.readFile(file, "utf8");
+    return result("done", "read", skill.name, `FILE "${name}" of the skill "${skill.name}":\n\n${content}`);
+  } catch (error) {
+    console.error(`[skills] reading the extra file ${file} failed:`, error);
+    return result("failed", "read", skill.name, `Reading ${name} of the skill "${skill.name}" failed: ${error_text(error)}`);
+  }
+};
+
+const read_skill_tool = define_tool<{ name: string; file: string | null }>({
   spec: {
     name: "read_skill",
     description:
-      "Load the full text of one installed skill by its name. The installed skills are listed with their descriptions in your system prompt; call this as soon as a task matches one of those descriptions, before you start working on it. Read-only and free, so prefer reading a matching skill over guessing the procedure yourself. If the skill ships extra documents they are listed with the absolute folder they live in: that folder is outside the open project, so read those with run_command, not read_file.",
+      "Load the full text of one installed skill by its name. The installed skills are listed with their descriptions in your system prompt; call this as soon as a task matches one of those descriptions, before you start working on it. Read-only and free, so prefer reading a matching skill over guessing the procedure yourself. The result names the skill folder on disk and lists the extra files the skill ships, including files one subfolder deep such as styles/intro.md; load one by calling read_skill again with the same name and file set to that path as listed.",
     parameters: {
       type: "object",
-      properties: { name: { type: "string", description: "Exact skill name as listed in the installed skills section." } },
+      properties: {
+        name: { type: "string", description: "Exact skill name as listed in the installed skills section." },
+        file: { type: "string", description: "Optional. One extra file of the skill, exactly as listed by an earlier read_skill result (for example notes.md or styles/intro.md). Omit it to load the skill itself." },
+      },
       required: ["name"],
       additionalProperties: false,
     },
   },
   profiles: ["main", "plan", "explore", "worker"],
   available: () => usable_skills().length > 0,
-  parse: (raw) => ({ name: require_string(raw, "name") }),
+  parse: (raw) => ({ name: require_string(raw, "name"), file: read_string(raw, "file") }),
   run: async (_ctx, args) => {
     const skill = find_skill(args.name);
     if (!skill) {
@@ -35,9 +62,12 @@ const read_skill_tool = define_tool<{ name: string }>({
       const known = names.length ? `Installed skills: ${names.join(", ")}.` : "No skills are installed.";
       return result("failed", "read", args.name, `Unknown skill "${args.name.slice(0, 120)}". ${known}`);
     }
+    if (args.file) {
+      return read_extra(skill, args.file);
+    }
     const body = skill.body.length > max_body_chars ? `${skill.body.slice(0, max_body_chars)}\n\n[skill text truncated]` : skill.body;
-    const extras = skill.files.length ? `\nExtra files in ${skill_folder(skill.slug)}: ${skill.files.join(", ")}` : "";
-    return result("done", "read", skill.name, `SKILL "${skill.name}": ${skill.description}${extras}\n\n${body}`);
+    const extras = skill.files.length ? `\nExtra files (load one with read_skill and file): ${skill.files.join(", ")}` : "";
+    return result("done", "read", skill.name, `SKILL "${skill.name}": ${skill.description}\nSkill folder: ${skill.dir}${extras}\n\n${body}`);
   },
 });
 
@@ -57,8 +87,10 @@ const install_skill_tool = define_tool<{ source: string }>({
   parse: (raw) => ({ source: require_string(raw, "source") }),
   run: async (ctx, args) => {
     let prepared;
+    let existing;
     try {
       prepared = await prepare_skill(args.source, ctx.signal);
+      existing = install_target(prepared.name).replaces;
     } catch (error) {
       if (ctx.signal.aborted) {
         throw error;
@@ -66,7 +98,6 @@ const install_skill_tool = define_tool<{ source: string }>({
       console.warn(`[skills] preparing a skill from ${args.source.slice(0, 200)} failed: ${error_text(error)}`);
       return result("failed", "install", "", `Could not install a skill from ${args.source.slice(0, 200)}: ${error_text(error)}`);
     }
-    const existing = installed_skill(skill_slug(prepared.name));
     const decision = await ctx.approve({
       kind: "skill_install",
       name: prepared.name,

@@ -11,6 +11,7 @@ export const skills: Record<keyof typeof en, string> = {
   "skills.local": "lokal",
   "skills.view": "SKILL.md anzeigen",
   "skills.hide": "SKILL.md ausblenden",
+  "skills.builtin": "Integriert",
   "skills.broken": "Nicht ladbar: {x}",
   "skills.files": "{n} weitere Dateien",
   "skills.empty": "Keine Skills installiert",

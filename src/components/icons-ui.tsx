@@ -127,17 +127,17 @@ export const PinOffIcon = (props: IconProps) => (
 
 export const MoreHorizontalIcon = (props: IconProps) => (
   <Icon {...props}>
-    <circle cx="12" cy="12" r="1.25" fill="currentColor" stroke="none" />
-    <circle cx="19" cy="12" r="1.25" fill="currentColor" stroke="none" />
-    <circle cx="5" cy="12" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="4.5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="19.5" cy="12" r="1.5" fill="currentColor" stroke="none" />
   </Icon>
 );
 
 export const MoreVerticalIcon = (props: IconProps) => (
   <Icon {...props}>
-    <circle cx="12" cy="5" r="1.25" fill="currentColor" stroke="none" />
-    <circle cx="12" cy="12" r="1.25" fill="currentColor" stroke="none" />
-    <circle cx="12" cy="19" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="5" r="1.75" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="19" r="1.75" fill="currentColor" stroke="none" />
   </Icon>
 );
 

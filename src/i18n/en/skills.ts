@@ -9,6 +9,7 @@ export const skills = {
   "skills.local": "local",
   "skills.view": "Show SKILL.md",
   "skills.hide": "Hide SKILL.md",
+  "skills.builtin": "Built-in",
   "skills.broken": "Not loadable: {x}",
   "skills.files": "{n} extra files",
   "skills.empty": "No skills installed",

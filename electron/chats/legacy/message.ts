@@ -235,6 +235,7 @@ export const convert_legacy_chat = (value: unknown, now: string, legacy_root: st
     streaming: false,
     summary: legacy_summary(raw, ids),
     messages,
+    questions: {},
   };
   return { chat, media };
 };

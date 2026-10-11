@@ -2,7 +2,8 @@
   position: relative;
   z-index: var(--z-sticky);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+  grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr);
+  column-gap: var(--space-3);
   align-items: center;
   height: var(--size-titlebar);
   background: var(--surface-shell);
@@ -48,6 +49,13 @@
 
 .titlebar-dock {
   position: relative;
+}
+
+.titlebar-divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 var(--space-1);
+  background: var(--divider);
 }
 
 .titlebar-dock-wait {

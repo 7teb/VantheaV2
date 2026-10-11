@@ -2,18 +2,22 @@ import { memo, useState } from "react";
 import type { ToolStep } from "../../../shared/chat.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon, CircleAlertIcon, CircleSlashIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon, CircleAlertIcon, CircleSlashIcon, ShieldTerminalIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { AgentRunMark } from "./AgentRunMark.tsx";
 import { DraftLines } from "./DraftLines.tsx";
+import { live_draft } from "./live-draft.ts";
 import { has_body, tool_icon, ToolBody } from "./registry.tsx";
+import { step_outcome } from "./review-notes.ts";
+import { is_reviewing } from "./review-phase.ts";
+import { ReviewingLabel } from "./ReviewPending.tsx";
 import { is_active_status, tool_label } from "./tool-meta.ts";
 import { format_duration, step_detail, step_duration } from "./tool-summary.ts";
 import "./tools.css";
 
-const StatusMark = ({ status }: { status: ToolStep["status"] }) => {
+const StatusMark = ({ step }: { step: ToolStep }) => {
   const t = use_t();
-  switch (status) {
+  switch (step.status) {
     case "failed":
       return (
         <span className="tool-row-status is-failed" title={t("tools.status_failed")}>
@@ -22,7 +26,7 @@ const StatusMark = ({ status }: { status: ToolStep["status"] }) => {
       );
     case "denied":
       return (
-        <span className="tool-row-status" title={t("tools.status_denied")}>
+        <span className="tool-row-status" title={step_outcome(t, step).notice?.title ?? t("tools.status_denied")}>
           <CircleSlashIcon size={13} />
         </span>
       );
@@ -53,13 +57,14 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
   const edit = step.view?.kind === "edit" ? step.view : null;
   const drafted = step.status === "drafting" ? (step.progress?.lines ?? 0) : 0;
   const duration = step_duration(step);
+  const reviewing = is_reviewing(step);
   const expandable = has_body(step);
-  const open = expandable && (chosen ?? running);
+  const open = expandable && (chosen ?? (running && !reviewing && live_draft(step) === null));
   if (open && !seen) {
     set_seen(true);
   }
   return (
-    <div className="tool-row" data-status={step.status} data-open={open}>
+    <div className="tool-row" data-status={step.status} data-open={open} data-review={reviewing || undefined}>
       <button
         type="button"
         className="tool-row-head"
@@ -70,19 +75,22 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
         <span className="tool-row-icon">
           <Icon size={14} />
         </span>
-        <span className={class_names("tool-row-label", active && "is-working")}>{tool_label(t, step)}</span>
+        <span className={class_names("tool-row-label", active && !reviewing && "is-working")}>
+          {reviewing ? <ReviewingLabel step={step} /> : tool_label(t, step)}
+        </span>
+        {reviewing && <ShieldTerminalIcon size={16} className="tool-row-shield" />}
         {edit && <span className="tool-stat-add">+{edit.added}</span>}
         {edit && <span className="tool-stat-remove">-{edit.removed}</span>}
         {drafted > 0 && <DraftLines count={drafted} />}
         {!edit && !drafted && detail && <span className="tool-row-detail">{detail}</span>}
         {step.view?.kind === "agent" && run_starters.has(step.name) && <AgentRunMark run_id={step.view.run_id} />}
-        <StatusMark status={step.status} />
+        <StatusMark step={step} />
         {duration !== null && !active && <span className="tool-row-duration">{format_duration(duration)}</span>}
         {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}
       </button>
       {expandable && (
         <CollapsibleBody open={open}>
-          <div className="tool-row-body">{seen && <ToolBody step={step} />}</div>
+          <div className="tool-row-body">{seen && <ToolBody step={step} open={open} />}</div>
         </CollapsibleBody>
       )}
     </div>

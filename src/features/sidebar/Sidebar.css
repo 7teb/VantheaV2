@@ -197,10 +197,14 @@
   border: 0;
   border-radius: var(--radius-sm);
   outline: none;
-  background: var(--surface-inset);
-  box-shadow: var(--shadow-inset-strong);
+  background: var(--surface-well);
+  box-shadow: inset 0 0 0 1px var(--ring-well);
   color: var(--text-primary);
   font-size: var(--font-size-ui);
+}
+
+.inline-rename:focus {
+  box-shadow: inset 0 0 0 1px var(--ring-well-focus);
 }
 
 .project-toggle {
@@ -293,7 +297,16 @@
     bottom: 0;
     left: 0;
     z-index: var(--z-sidebar-overlay);
+    background: var(--surface-modal);
+    backdrop-filter: var(--filter-modal);
     box-shadow: var(--shadow-overlay);
+    --fill-hover: var(--raised-fill-hover);
+    --fill-active: var(--raised-fill-active);
+    --text-tertiary: var(--raised-text-tertiary);
+    --text-disabled: var(--raised-text-disabled);
+    --text-quaternary: var(--raised-text-disabled);
+    --scrollbar: var(--raised-scrollbar);
+    --scrollbar-hover: var(--raised-scrollbar-hover);
   }
 
   .sidebar[data-state="closed"] {

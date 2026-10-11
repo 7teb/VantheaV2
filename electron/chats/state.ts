@@ -1,6 +1,7 @@
 import type { ChatMeta, ChatSummary, Message } from "../../shared/chat.ts";
+import type { QuestionStates } from "../../shared/questions.ts";
 
-export type ChatBody = { summary: ChatSummary | null; messages: Message[] };
+export type ChatBody = { summary: ChatSummary | null; messages: Message[]; questions: QuestionStates };
 
 export type ChatDirs = { index_file: string; data_dir: string; search_dir: string };
 
@@ -9,6 +10,7 @@ export type ChatEvents = {
   removed: (chat_id: string) => void;
   appended: (chat_id: string, message: Message) => void;
   truncated: (chat_id: string, message_id: string) => void;
+  questions: (chat_id: string, questions: QuestionStates) => void;
 };
 
 export const metas = new Map<string, ChatMeta>();

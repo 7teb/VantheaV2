@@ -53,3 +53,12 @@ export const error_code = (error: unknown): string =>
   error instanceof Error && "code" in error && typeof error.code === "string" ? error.code : "";
 
 export const error_text = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+export const missing_path = (error: unknown): boolean => error_code(error) === "ENOENT" || error_code(error) === "ENOTDIR";
+
+export const require_boolean = (value: unknown, label: string): boolean => {
+  if (typeof value !== "boolean") {
+    throw new Error(`${label} must be a boolean`);
+  }
+  return value;
+};

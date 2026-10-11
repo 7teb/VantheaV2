@@ -36,6 +36,9 @@ export const is_secret_path = (relative: string): boolean => {
   if (normalized === ".git/config" || normalized.endsWith("/.git/config")) {
     return true;
   }
+  if (normalized === ".git/hooks" || normalized.startsWith(".git/hooks/") || normalized.includes("/.git/hooks/") || normalized.endsWith("/.git/hooks")) {
+    return true;
+  }
   return normalized.split("/").some((raw) => {
     const part = windows_name(raw);
     if (part === ".ssh") {

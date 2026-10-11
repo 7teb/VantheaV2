@@ -8,12 +8,14 @@ import { init_chats } from "./chats.ts";
 import { init_composer } from "./composer.ts";
 import { init_extensions } from "./extensions.ts";
 import { init_full_window } from "./full-window.ts";
+import { load_keep_awake } from "./keep-awake.ts";
 import { init_models } from "./models.ts";
 import { init_settings } from "./settings.ts";
 import { init_terminal } from "./terminal.ts";
 import { init_window } from "./window.ts";
 
 export const init_state = (): (() => void) => {
+  void load_keep_awake();
   const stops = [
     init_settings(),
     init_chats(),

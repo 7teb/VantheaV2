@@ -3,6 +3,7 @@ import { class_names } from "./class-names.ts";
 import { Floating } from "./Floating.tsx";
 import { CheckIcon } from "./icons.tsx";
 import type { Placement } from "./placement.ts";
+import { ToggleTrack } from "./Toggle.tsx";
 import "./Menu.css";
 
 export type MenuItem = {
@@ -10,7 +11,10 @@ export type MenuItem = {
   label: string;
   icon?: ReactNode;
   hint?: string;
+  description?: string;
+  badge?: string;
   checked?: boolean;
+  toggled?: boolean;
   danger?: boolean;
   disabled?: boolean;
   on_select: () => void;
@@ -57,6 +61,13 @@ const move_focus = (container: HTMLElement, step: Step) => {
   items[target_index(current, items.length, step)].focus();
 };
 
+const item_role = (item: MenuItem) => {
+  if (item.toggled !== undefined) {
+    return "menuitemcheckbox";
+  }
+  return item.checked === undefined ? "menuitem" : "menuitemradio";
+};
+
 export const Menu = ({ open, anchor, label, sections, on_close, placement = "bottom-start", min_width = 200, className }: MenuProps) => {
   const selectable = sections.some((section) => section.items.some((item) => item.checked !== undefined));
 
@@ -74,7 +85,9 @@ export const Menu = ({ open, anchor, label, sections, on_close, placement = "bot
   };
 
   const select = (item: MenuItem) => {
-    on_close();
+    if (item.toggled === undefined) {
+      on_close();
+    }
     item.on_select();
   };
 
@@ -93,21 +106,26 @@ export const Menu = ({ open, anchor, label, sections, on_close, placement = "bot
     >
       {sections.map((section) => (
         <div key={section.id} className="menu-section" role="group" aria-label={section.label}>
-          {section.label && <div className="menu-section-label section-label">{section.label}</div>}
+          {section.label && <div className="menu-section-label">{section.label}</div>}
           {section.items.map((item) => (
             <button
               key={item.id}
               type="button"
-              role={item.checked === undefined ? "menuitem" : "menuitemradio"}
-              aria-checked={item.checked}
+              role={item_role(item)}
+              aria-checked={item.toggled ?? item.checked}
               tabIndex={-1}
               disabled={item.disabled}
               className={class_names("menu-item", item.danger && "is-danger")}
               onClick={() => select(item)}
             >
               {item.icon && <span className="menu-item-icon">{item.icon}</span>}
-              <span className="menu-item-label">{item.label}</span>
+              <span className="menu-item-label">
+                {item.label}
+                {item.description && <span className="menu-item-description">{item.description}</span>}
+              </span>
               {item.hint && <span className="menu-item-hint">{item.hint}</span>}
+              {item.badge && <span className="menu-item-badge">{item.badge}</span>}
+              {item.toggled !== undefined && <ToggleTrack checked={item.toggled} />}
               {selectable && <span className="menu-item-check">{item.checked && <CheckIcon size={15} />}</span>}
             </button>
           ))}

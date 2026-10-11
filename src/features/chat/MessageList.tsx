@@ -50,7 +50,7 @@ export const MessageList = ({ chat_id, chat, reverted }: MessageListProps) => {
         </div>
       </div>
       {away && (
-        <button type="button" className="jump-latest" onClick={jump}>
+        <button type="button" className="jump-latest raised-surface" onClick={jump}>
           <ArrowDownIcon size={14} />
           <span>{t("composer.jump_latest")}</span>
         </button>

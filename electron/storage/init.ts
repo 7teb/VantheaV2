@@ -37,6 +37,7 @@ export const init_persistence = async () => {
         removed: (chat_id) => emit("chats:removed", { chat_id }),
         appended: (chat_id, message) => emit("chats:appended", { chat_id, message }),
         truncated: (chat_id, message_id) => emit("chats:truncated", { chat_id, message_id }),
+        questions: (chat_id, questions) => emit("questions:changed", { chat_id, questions }),
       },
     });
     step = "artifacts";
