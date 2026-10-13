@@ -1,11 +1,11 @@
 import { memo, useMemo, useState } from "react";
 import type { AssistantMessage } from "../../../shared/chat.ts";
+import { file_changes } from "../../../shared/file-changes.ts";
 import type { UndoResult } from "../../../shared/ipc/chats.ts";
 import { Button } from "../../components/Button.tsx";
 import { CheckIcon, FileDiffIcon, UndoIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { undo_turn } from "../../state/chat-actions.ts";
-import { file_changes } from "./assistant-blocks.ts";
 
 const collapsed_count = 3;
 
@@ -13,7 +13,7 @@ type FileChangesProps = { chat_id: string; message: AssistantMessage; busy: bool
 
 export const FileChanges = memo(({ chat_id, message, busy, reverted }: FileChangesProps) => {
   const t = use_t();
-  const changes = useMemo(() => file_changes(message), [message]);
+  const changes = useMemo(() => file_changes(message.steps), [message.steps]);
   const [expanded, set_expanded] = useState(false);
   const [pending, set_pending] = useState(false);
   const [error, set_error] = useState("");

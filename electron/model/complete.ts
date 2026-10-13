@@ -57,7 +57,7 @@ export const read_completion = (text: string): CompleteResult => {
 
 const run_attempt = async (body: string, signal: AbortSignal, transport: Transport): Promise<CompleteResult> => {
   const watchdog = create_watchdog(signal);
-  watchdog.arm(transport.first_byte_ms, "first_byte");
+  watchdog.arm(transport.first_byte_ms, "complete");
   try {
     const response = await send("POST", "/chat/completions", body, watchdog, transport);
     return read_completion(await response.text());

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { parse_report_events, parse_update_events, type AgentNote } from "../../../shared/agent-notes.ts";
+import { parse_report_events, parse_update_batch, type AgentNote } from "../../../shared/agent-notes.ts";
 import type { UserMessage, UserOrigin } from "../../../shared/chat.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { BotIcon, ChevronRightIcon, ClipboardListIcon, LayersIcon, MessageSquareIcon, RetryIcon, type IconComponent } from "../../components/icons.tsx";
@@ -20,7 +20,7 @@ const agent_notes_of = (message: UserMessage): AgentNote[] => {
     return parse_report_events(message.text);
   }
   if (message.origin === "agent_update") {
-    return parse_update_events(message.text);
+    return parse_update_batch(message.text);
   }
   return [];
 };

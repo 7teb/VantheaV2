@@ -4,9 +4,9 @@ import { delete_attachment } from "../media/files.ts";
 import { path_key } from "../storage/paths.ts";
 import { load_chat_index } from "./boot.ts";
 import { compose_chat, delete_chat_files, read_chat_file } from "./files.ts";
-import { forget_saves, persist_index, reset_saves, save_now, save_pending, schedule_save } from "./persist.ts";
+import { flush_chat, forget_saves, persist_index, reset_saves, save_now, save_pending, schedule_save } from "./persist.ts";
 import { stored_question_states } from "./question-coerce.ts";
-import { attachment_ids, change_refs, same_ids } from "./refs.ts";
+import { attachment_ids, change_refs, is_held, same_ids } from "./refs.ts";
 import { settle_streaming } from "./settle.ts";
 import { bodies, chat_events, metas, reset_chat_state, sorted_metas, type ChatBody, type ChatDirs, type ChatEvents } from "./state.ts";
 
@@ -194,6 +194,20 @@ export const delete_chat = async (chat_id: string): Promise<void> => {
   }
 };
 
+const delete_media = async (chat_id: string, ids: Iterable<string>) => {
+  for (const attachment_id of ids) {
+    try {
+      await delete_attachment(attachment_id);
+    } catch (error) {
+      console.error(`[chats] deleting attachment ${attachment_id} of chat ${chat_id} failed:`, error);
+    }
+  }
+};
+
+const delete_released = async (chat_id: string, ids: string[]) => {
+  await delete_media(chat_id, ids.filter((id) => !is_held(id)));
+};
+
 const remove_chat = async (chat_id: string): Promise<void> => {
   const body = await ensure_body(chat_id);
   await forget_saves(chat_id);
@@ -205,13 +219,7 @@ const remove_chat = async (chat_id: string): Promise<void> => {
   }
   await delete_chat_files(chat_id);
   await persist_index();
-  for (const attachment_id of released) {
-    try {
-      await delete_attachment(attachment_id);
-    } catch (error) {
-      console.error(`[chats] deleting attachment ${attachment_id} of chat ${chat_id} failed:`, error);
-    }
-  }
+  await delete_media(chat_id, released);
   chat_events().removed(chat_id);
   for (const listener of removed_listeners) {
     try {
@@ -298,11 +306,17 @@ export const update_message = (chat_id: string, message_id: string, fn: (message
   const after = fn(before);
   messages[at] = after;
   bodies.set(chat_id, { ...body, messages });
-  if (!same_ids(attachment_ids([before]), attachment_ids([after]))) {
-    change_refs(attachment_ids(body.messages), attachment_ids(messages));
-    queue_index();
-  }
   schedule_save(chat_id);
+  if (same_ids(attachment_ids([before]), attachment_ids([after]))) {
+    return;
+  }
+  const released = change_refs(attachment_ids(body.messages), attachment_ids(messages));
+  queue_index();
+  if (released.length) {
+    void flush_chat(chat_id)
+      .then(() => delete_released(chat_id, released))
+      .catch((error: unknown) => console.error(`[chats] saving chat ${chat_id} before deleting its released media failed:`, error));
+  }
 };
 
 export const truncate_after = async (chat_id: string, message_id: string): Promise<void> => {
@@ -315,9 +329,10 @@ export const truncate_after = async (chat_id: string, message_id: string): Promi
     return;
   }
   const messages = body.messages.slice(0, at + 1);
-  change_refs(attachment_ids(body.messages), attachment_ids(messages));
+  const released = change_refs(attachment_ids(body.messages), attachment_ids(messages));
   const summary = body.summary && messages.some((message) => message.id === body.summary?.through_message_id) ? body.summary : null;
   await commit(chat_id, { ...body, summary, messages }, { message_count: messages.length, updated_at: now_iso() });
+  await delete_released(chat_id, released);
   chat_events().truncated(chat_id, message_id);
 };
 

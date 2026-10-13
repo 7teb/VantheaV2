@@ -11,7 +11,7 @@ export type ApiToolCall = { id: string; type: "function"; function: { name: stri
 
 export type ApiSystemMessage = { role: "system"; content: string };
 
-export type ApiUserMessage = { role: "user"; content: string | ApiContentPart[] };
+export type ApiUserMessage = { role: "user"; content: string | ApiContentPart[]; tool_images?: true; steer?: true; instruction?: true; compaction?: true };
 
 export type ApiAssistantMessage = {
   role: "assistant";
@@ -31,7 +31,7 @@ export type RoundUsage = { prompt_tokens: number; completion_tokens: number; rea
 
 export type RoundToolCall = { index: number; id: string; name: string; arguments: string };
 
-export type RoundRequest = { model: ModelEntry; effort: string; messages: ApiMessage[]; tools: ToolSpec[] };
+export type RoundRequest = { model: ModelEntry; effort: string; messages: ApiMessage[]; tools: ToolSpec[]; tool_choice?: "none" };
 
 export type ToolDraftUpdate = { lines: number | null; delta?: string; path?: string; old_text?: string };
 
@@ -65,6 +65,9 @@ const reasoning_text = (reasoning: string | undefined, required: boolean): strin
 };
 
 const wire_message = (message: ApiMessage, keep_reasoning: boolean, reasoning_required: boolean): ApiMessage => {
+  if (message.role === "user") {
+    return { role: "user", content: message.content };
+  }
   if (message.role !== "assistant") {
     return message;
   }
@@ -83,7 +86,7 @@ const empty_assistant = (message: ApiMessage) => message.role === "assistant" &&
 
 export const wire_messages = (messages: ApiMessage[], reasoning_passback: boolean): ApiMessage[] => {
   const sent = messages.filter((message) => !empty_assistant(message));
-  const last_user = sent.findLastIndex((message) => message.role === "user");
+  const last_user = sent.findLastIndex((message) => message.role === "user" && !message.tool_images && !message.steer && !message.compaction);
   return sent.map((message, index) => {
     const current_turn = index > last_user;
     return wire_message(message, reasoning_passback || current_turn, reasoning_passback && current_turn);

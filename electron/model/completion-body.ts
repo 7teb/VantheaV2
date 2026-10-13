@@ -6,7 +6,7 @@ export type ResponseSchema = { name: string; schema: Record<string, unknown>; st
 export type CompleteRequest = {
   model_id: string;
   messages: ApiMessage[];
-  max_tokens: number;
+  max_tokens?: number;
   temperature?: number;
   json?: boolean;
   schema?: ResponseSchema;
@@ -29,7 +29,7 @@ export const completion_body = (request: CompleteRequest): Record<string, unknow
   ...(request.provider ? { provider: request.provider } : {}),
   messages: wire_messages(request.messages, false),
   ...(request.prompt_cache_options ? { prompt_cache_options: request.prompt_cache_options } : {}),
-  max_completion_tokens: request.max_tokens,
+  ...(request.max_tokens === undefined ? {} : { max_completion_tokens: request.max_tokens }),
   ...(request.temperature === undefined ? {} : { temperature: request.temperature }),
   ...(request.reasoning_effort ? { reasoning: { effort: request.reasoning_effort } } : {}),
   ...response_format(request),

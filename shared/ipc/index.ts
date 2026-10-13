@@ -41,6 +41,7 @@ export type Bridge = {
   invoke: <K extends InvokeName>(name: K, ...args: InvokeArgs<K>) => Promise<InvokeResult<K>>;
   send: <K extends SendName>(name: K, ...args: SendArgs<K>) => void;
   on: <K extends EventName>(name: K, listener: (payload: EventPayload<K>) => void) => () => void;
+  file_path: (file: File) => string;
 };
 
 export const channel_kind = (name: string): "invoke" | "send" | "event" | null =>

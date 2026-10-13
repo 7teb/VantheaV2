@@ -28,7 +28,7 @@ export type BuildPromptInput = {
   chat_id: string;
   user_text: string;
   tools: Tool[];
-  has_file_attachments: boolean;
+  user_attachments: boolean;
   effort: string;
 };
 
@@ -61,7 +61,7 @@ export const build_system_prompt = async (input: BuildPromptInput): Promise<stri
     listing,
     custom_instructions: input.settings.custom_instructions,
     tool_names,
-    has_file_attachments: input.has_file_attachments,
+    user_attachments: input.user_attachments,
     web_depth: input.settings.web_search.depth,
   });
   const major = input.effort === major_effort && tool_names.has("deploy_agent") ? [major_review()] : [];

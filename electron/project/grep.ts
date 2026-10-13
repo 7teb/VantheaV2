@@ -1,11 +1,11 @@
+import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import readline from "node:readline";
+import { rgPath } from "@vscode/ripgrep";
 import type { GrepMatch } from "../../shared/tool-view.ts";
 import { error_text } from "../storage/coerce.ts";
-import { decode_text, looks_binary, text_stream } from "../storage/text-codec.ts";
-import { walk_project } from "./index.ts";
-import { RegexWorkerError, start_regex_search } from "./regex-search.ts";
+import { ignored_dirs } from "./index.ts";
 import { is_secret_path, resolve_inside } from "./scope.ts";
 
 export type GrepQuery = { query: string; path: string; regex: boolean; case_sensitive: boolean };
@@ -15,7 +15,6 @@ export type GrepResult = {
   regex_error: string | null;
   matches: GrepMatch[];
   capped: boolean;
-  timed_out: boolean;
   files_scanned: number;
 };
 
@@ -23,149 +22,150 @@ export const max_grep_matches = 200;
 
 export const max_grep_line_chars = 300;
 
-export const regex_budget_ms = 10_000;
+const rg_binary = rgPath.replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
 
-const stream_threshold = 2 * 1024 * 1024;
+type RgRun = { matches: GrepMatch[]; capped: boolean; files_scanned: number; error: string | null };
 
-const stream_batch_lines = 5000;
-
-type Matcher = {
-  mode: GrepResult["mode"];
-  regex_error: string | null;
-  select: (lines: string[], limit: number) => Promise<number[]>;
-  timed_out: () => boolean;
-  close: () => void;
-};
-
-const literal_matcher = (query: GrepQuery): Matcher => {
-  const needle = query.case_sensitive ? query.query : query.query.toLowerCase();
-  const test = query.case_sensitive ? (line: string) => line.includes(needle) : (line: string) => line.toLowerCase().includes(needle);
-  return {
-    mode: "literal",
-    regex_error: null,
-    select: async (lines, limit) => {
-      const hits: number[] = [];
-      for (let index = 0; index < lines.length && hits.length < limit; index += 1) {
-        if (test(lines[index])) {
-          hits.push(index);
-        }
-      }
-      return hits;
-    },
-    timed_out: () => false,
-    close: () => undefined,
+type RgMessage = {
+  type?: string;
+  data?: {
+    path?: { text?: string };
+    line_number?: number;
+    lines?: { text?: string; bytes?: string };
+    stats?: { searches?: number };
   };
 };
 
-const build_matcher = (query: GrepQuery, signal: AbortSignal): Matcher => {
-  if (!query.regex) {
-    return literal_matcher(query);
-  }
-  let pattern: RegExp;
-  try {
-    pattern = new RegExp(query.query, query.case_sensitive ? "" : "i");
-  } catch (error) {
-    const regex_error = error_text(error);
-    console.warn(`[project] grep regex ${query.query.slice(0, 200)} is invalid, matching literally: ${regex_error}`);
-    return { ...literal_matcher(query), regex_error };
-  }
-  return { mode: "regex", regex_error: null, ...start_regex_search(pattern, regex_budget_ms, signal) };
-};
+const posix = (value: string) => value.split(path.sep).join("/");
 
-const match_of = (file: string, line: number, text: string): GrepMatch => ({ path: file, line, text: text.slice(0, max_grep_line_chars) });
+const line_text = (lines: { text?: string; bytes?: string } | undefined): string =>
+  (lines?.text ?? (lines?.bytes ? Buffer.from(lines.bytes, "base64").toString("utf8") : "")).replace(/\r?\n$/, "").slice(0, max_grep_line_chars);
 
-const collect = async (matcher: Matcher, lines: string[], first_line: number, file: string, matches: GrepMatch[], limit: number) => {
-  for (const index of await matcher.select(lines, limit - matches.length)) {
-    matches.push(match_of(file, first_line + index, lines[index]));
-  }
-};
+const rg_args = (query: GrepQuery, literal: boolean, target: string): string[] => [
+  "--json",
+  "--no-config",
+  "--hidden",
+  "--no-require-git",
+  query.case_sensitive ? "--case-sensitive" : "--ignore-case",
+  ...(literal ? ["--fixed-strings"] : ["--engine", "auto"]),
+  ...[...ignored_dirs].flatMap((name) => ["--glob", `!**/${name}/**`]),
+  "--regexp",
+  query.query,
+  "--",
+  target,
+];
 
-const scan_small = async (absolute: string, file: string, matcher: Matcher, matches: GrepMatch[], limit: number) => {
-  const { text } = decode_text(await fs.readFile(absolute));
-  if (looks_binary(text)) {
-    return;
-  }
-  await collect(matcher, text.split(/\r?\n/), 1, file, matches, limit);
-};
-
-const scan_stream = async (absolute: string, file: string, matcher: Matcher, matches: GrepMatch[], limit: number) => {
-  const { stream } = await text_stream(absolute);
-  const lines = readline.createInterface({ input: stream, crlfDelay: Infinity });
-  let batch: string[] = [];
-  let first_line = 1;
-  try {
-    for await (const line of lines) {
-      if (first_line === 1 && !batch.length && line.includes("\u0000")) {
+const run_rg = (root: string, args: string[], signal: AbortSignal, on_match?: (count: number) => void): Promise<RgRun> =>
+  new Promise((resolve, reject) => {
+    signal.throwIfAborted();
+    const child = spawn(rg_binary, args, { cwd: root, windowsHide: true });
+    const run: RgRun = { matches: [], capped: false, files_scanned: 0, error: null };
+    let stderr = "";
+    let settled = false;
+    const finish = (error: unknown) => {
+      if (settled) {
         return;
       }
-      batch.push(line);
-      if (batch.length < stream_batch_lines) {
-        continue;
-      }
-      await collect(matcher, batch, first_line, file, matches, limit);
-      if (matches.length >= limit || matcher.timed_out()) {
+      settled = true;
+      signal.removeEventListener("abort", on_abort);
+      if (error) {
+        reject(error);
         return;
       }
-      first_line += batch.length;
-      batch = [];
-    }
-    await collect(matcher, batch, first_line, file, matches, limit);
-  } finally {
-    lines.close();
-    stream.destroy();
-  }
-};
+      resolve(run);
+    };
+    const on_abort = () => {
+      child.kill();
+    };
+    signal.addEventListener("abort", on_abort, { once: true });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf8");
+    });
+    const lines = readline.createInterface({ input: child.stdout });
+    lines.on("line", (raw) => {
+      if (run.capped) {
+        return;
+      }
+      let message: RgMessage;
+      try {
+        message = JSON.parse(raw) as RgMessage;
+      } catch (error) {
+        console.warn(`[project] ripgrep printed a line that is not JSON (${error_text(error)}): ${raw.slice(0, 200)}`);
+        return;
+      }
+      if (message.type === "summary") {
+        run.files_scanned = message.data?.stats?.searches ?? run.files_scanned;
+        return;
+      }
+      if (message.type !== "match" || !message.data?.path?.text || !message.data.line_number) {
+        return;
+      }
+      const relative = posix(path.relative(root, path.resolve(root, message.data.path.text)));
+      if (is_secret_path(relative)) {
+        return;
+      }
+      run.matches.push({ path: relative, line: message.data.line_number, text: line_text(message.data.lines) });
+      on_match?.(run.matches.length);
+      if (run.matches.length > max_grep_matches) {
+        run.capped = true;
+        child.kill();
+      }
+    });
+    child.on("error", (error) => finish(new Error(`ripgrep could not start from ${rg_binary}: ${error_text(error)}`)));
+    child.on("close", (code) => {
+      if (signal.aborted) {
+        finish(signal.reason);
+        return;
+      }
+      if (code === 2 && !run.capped) {
+        run.error = stderr.trim() || "ripgrep failed without a message";
+      }
+      finish(null);
+    });
+  });
 
-const grep_targets = async (project_root: string, scope: string, signal: AbortSignal) => {
+const search_target = async (project_root: string, scope: string) => {
   const scoped = await resolve_inside(project_root, scope || ".");
   const stat = await fs.stat(scoped.target);
-  if (stat.isFile()) {
-    if (is_secret_path(scoped.relative)) {
-      throw new Error("Secret files are not readable by the agent");
-    }
-    return { root: scoped.root, files: [{ path: scoped.relative, size: stat.size }] };
+  if (stat.isFile() && is_secret_path(scoped.relative)) {
+    throw new Error("Secret files are not readable by the agent");
   }
-  if (!stat.isDirectory()) {
+  if (!stat.isFile() && !stat.isDirectory()) {
     throw new Error(`${scope} is not a file or directory`);
   }
-  return { root: scoped.root, files: (await walk_project(scoped.root, scoped.target, signal)).files };
+  return scoped;
 };
 
-const search = async (project_root: string, query: GrepQuery, matcher: Matcher, signal: AbortSignal): Promise<GrepResult> => {
-  const result: GrepResult = { mode: matcher.mode, regex_error: matcher.regex_error, matches: [], capped: false, timed_out: false, files_scanned: 0 };
+const sorted = (matches: GrepMatch[]): GrepMatch[] => matches.sort((a, b) => (a.path === b.path ? a.line - b.line : a.path < b.path ? -1 : 1));
+
+const result_of = (run: RgRun, mode: GrepResult["mode"], regex_error: string | null): GrepResult => ({
+  mode,
+  regex_error,
+  matches: sorted(run.matches).slice(0, max_grep_matches),
+  capped: run.capped,
+  files_scanned: run.files_scanned,
+});
+
+export const grep_project = async (project_root: string, query: GrepQuery, signal: AbortSignal, on_match?: (count: number) => void): Promise<GrepResult> => {
   if (!query.query.trim()) {
-    return result;
+    return { mode: query.regex ? "regex" : "literal", regex_error: null, matches: [], capped: false, files_scanned: 0 };
   }
-  const targets = await grep_targets(project_root, query.path, signal);
-  const limit = max_grep_matches + 1;
-  for (const file of targets.files) {
-    if (result.matches.length >= limit || matcher.timed_out()) {
-      break;
+  const scoped = await search_target(project_root, query.path);
+  if (query.regex) {
+    const run = await run_rg(scoped.root, rg_args(query, false, scoped.target), signal, on_match);
+    if (!run.error) {
+      return result_of(run, "regex", null);
     }
-    signal.throwIfAborted();
-    const absolute = path.join(targets.root, file.path);
-    try {
-      const scan = file.size > stream_threshold ? scan_stream : scan_small;
-      await scan(absolute, file.path, matcher, result.matches, limit);
-      result.files_scanned += 1;
-    } catch (error) {
-      if (signal.aborted || error instanceof RegexWorkerError) {
-        throw error;
-      }
-      console.warn(`[project] grep could not read ${absolute}: ${error_text(error)}`);
+    if (run.matches.length === 0 && /regex/i.test(run.error)) {
+      console.warn(`[project] grep regex ${query.query.slice(0, 200)} is invalid, matching literally: ${run.error}`);
+      return result_of(await run_rg(scoped.root, rg_args(query, true, scoped.target), signal, on_match), "literal", run.error);
     }
+    console.warn(`[project] ripgrep reported errors for ${query.query.slice(0, 200)}: ${run.error}`);
+    return result_of(run, "regex", null);
   }
-  result.timed_out = matcher.timed_out();
-  result.capped = result.matches.length > max_grep_matches;
-  result.matches.length = Math.min(result.matches.length, max_grep_matches);
-  return result;
-};
-
-export const grep_project = async (project_root: string, query: GrepQuery, signal: AbortSignal): Promise<GrepResult> => {
-  const matcher = build_matcher(query, signal);
-  try {
-    return await search(project_root, query, matcher, signal);
-  } finally {
-    matcher.close();
+  const run = await run_rg(scoped.root, rg_args(query, true, scoped.target), signal, on_match);
+  if (run.error) {
+    console.warn(`[project] ripgrep reported errors for ${query.query.slice(0, 200)}: ${run.error}`);
   }
+  return result_of(run, "literal", null);
 };

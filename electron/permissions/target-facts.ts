@@ -4,10 +4,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { to_posix } from "../project/scope.ts";
 import { error_code, error_text, missing_path } from "../storage/coerce.ts";
+import { walk_command, type Step, type StepWord } from "./command-walk.ts";
+import { location_matches, type ProgramFact } from "./launch-targets.ts";
 import { git_location } from "./project-profile.ts";
-import { dynamic_path, shell_source, words } from "./script-refs.ts";
+import { change_text } from "./review-action.ts";
+import { dynamic_path, script_dialect, shell_source } from "./script-refs.ts";
+import { shell_words, type Word } from "./shell-words.ts";
 import type { ScriptFile } from "./sources.ts";
-import { split_statements } from "./statements.ts";
+import type { Dialect } from "./statements.ts";
 
 export type Target = { written: string; where: string | null; path: string };
 
@@ -27,6 +31,20 @@ const git_timeout_ms = 2000;
 
 const git_safety = ["--no-optional-locks", "-c", "core.fsmonitor=false"];
 
+const program_kinds: Record<ProgramFact["kind"], string> = {
+  native: "native executable",
+  missing: "does not exist",
+  network: "network path, not checked",
+  script: "script, unchanged in this chat, not read",
+  installed: "installed, not read",
+  not_found: "not found on PATH",
+  command: "no file of that name on PATH",
+  powershell_command: "not a file on PATH, runs as a PowerShell function, alias or module command of that name if one exists",
+  builtin: "PowerShell built-in command, not a file",
+  unresolved_folder: "native executable by name, its folder is not known",
+  unreadable: "could not be read",
+};
+
 export const run_git: GitRunner = (args, cwd) =>
   new Promise((resolve, reject) => {
     execFile("git", args, { cwd, timeout: git_timeout_ms, windowsHide: true, maxBuffer: 4 * 1024 * 1024 }, (error, stdout) => {
@@ -36,23 +54,6 @@ export const run_git: GitRunner = (args, cwd) =>
   });
 
 const path_like = (token: string): boolean => /[\\/]/.test(token) || /\.[A-Za-z0-9]{1,8}$/.test(token);
-
-const assignments = (command: string): Map<string, string> => {
-  const found = new Map<string, string>();
-  for (const statement of split_statements(command)) {
-    const match = /^\s*\$([A-Za-z_]\w*)\s*=\s*(["'])([^"'$`]*)\2\s*$/.exec(statement);
-    if (match) found.set((match[1] ?? "").toLowerCase(), match[3] ?? "");
-  }
-  return found;
-};
-
-const env_reference = /\$\{env:([^}]+)\}|\$env:(\w+)|%([A-Za-z_][\w()]*)%/gi;
-
-const expand_env = (token: string): string =>
-  token.replace(env_reference, (whole: string, braced?: string, plain?: string, percent?: string) => {
-    const value = process.env[braced ?? plain ?? percent ?? ""];
-    return value && !value.includes(path.delimiter) ? value : whole;
-  });
 
 const remote_path = (value: string): boolean => /^(?:\\\\|\/\/)/.test(value) || /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
 
@@ -69,7 +70,64 @@ const exists = async (file: string): Promise<boolean> => {
   }
 };
 
-export const command_targets = async (command: string, cwd: string, scripts: ScriptFile[]): Promise<TargetList> => {
+const option_target = (value: string, quoted: boolean, dialect: Dialect): string | null => {
+  if (!value || /^\d+$/.test(value)) return null;
+  if (value.startsWith("-")) {
+    const option = /^-[A-Za-z][\w-]*:(.+)$/.exec(value)?.[1] ?? "";
+    return path_like(option) ? option : null;
+  }
+  if (value.startsWith("/")) {
+    if (dialect !== "cmd" && (value === "/" || /^\/[^/\\:]{2,}\//.test(value))) return value;
+    if (/^\/[A-Za-z][\w+]*(?::[^\\/.]*)?$/.test(value)) return null;
+    return /^\/[A-Za-z][\w+]*?:?([A-Za-z]:[\\/].*)$/.exec(value)?.[1] ?? /^\/[A-Za-z]+:(.+)$/.exec(value)?.[1] ?? null;
+  }
+  const text = value.startsWith("@") && (quoted || dialect === "cmd") ? value.slice(1) : value;
+  return text && !/[|<>"]/.test(text) && (!/\s/.test(text) || /^(?:[A-Za-z]:[\\/]|\\\\|\.{1,2}[\\/])/.test(text)) ? text : null;
+};
+
+const unquoted = (raw: string): string => (/^'[^']*'$|^"[^"]*"$/.test(raw) ? raw.slice(1, -1) : raw);
+
+const head_words = (step: Step): number => {
+  const first = (step.words[0]?.word.raw ?? "").toLowerCase().replace(/^@+/, "");
+  if (step.dialect === "cmd") return first === "call" ? 2 : 1;
+  if (step.dialect === "posix") return first === "source" || first === "." ? 2 : 1;
+  return first === "&" || first === "." ? 2 : 1;
+};
+
+const static_call_arguments = (step: Step): StepWord[] =>
+  step.words.flatMap((entry, index) => {
+    const call = step.words[index + 1];
+    const group = call?.word.pieces[0];
+    if (!/^\[[\w.]+\]::\w+$/.test(entry.word.raw) || !call?.word.glued || !call.items || group?.kind !== "group") return [];
+    const items: Word[][] = [[]];
+    for (const word of shell_words(group.text, "powershell", "expression")) {
+      if (word.op === ",") items.push([]);
+      else items.at(-1)?.push(word);
+    }
+    return call.items.flatMap((value, at) => {
+      const words = items[at] ?? [];
+      const first = words[0];
+      return first ? [{ word: { ...first, raw: words.map((word) => word.raw).join(" ") }, value, items: null }] : [];
+    });
+  });
+
+const value_after = (step: Step, raw: string): boolean => {
+  const program = (step.words[head_words(step) - 1]?.word.raw ?? "").split(/[\\/]/).pop()?.toLowerCase().replace(/\.exe$/, "") ?? "";
+  if (step.dialect === "powershell" && /^-(?:filter|include|exclude):?$/i.test(raw)) return true;
+  if (/^(?:python[\d.]*|py)$/.test(program)) return raw === "-c" || raw === "-m";
+  return /^(?:node|tsx|ts-node)$/.test(program) && /^(?:-e|--eval|-p|--print)$/.test(raw);
+};
+
+const argument_words = (step: Step): StepWord[] => {
+  if (step.payload?.walked && "values" in step.payload.value) return [];
+  if (!step.command && step.dialect === "powershell") return static_call_arguments(step);
+  if (!step.command && step.dialect !== "cmd") return [];
+  if (step.dialect === "powershell" && /^join-path$/i.test(step.words[0]?.word.raw ?? "")) return [];
+  const words = step.words.slice(head_words(step));
+  return words.filter((entry, index) => !entry.word.op && entry.word.pieces[0]?.kind !== "block" && !value_after(step, words[index - 1]?.word.raw ?? ""));
+};
+
+export const command_targets = async (command: string, cwd: string, scripts: ScriptFile[], env: Record<string, string | undefined> = process.env, shell: Dialect = "powershell"): Promise<TargetList> => {
   const targets: Target[] = [];
   const unresolved: string[] = [];
   const seen = new Set<string>();
@@ -79,32 +137,43 @@ export const command_targets = async (command: string, cwd: string, scripts: Scr
     seen.add(key);
     targets.push({ written, where, path: absolute });
   };
-  const statement_targets = async (text: string, base: string, where: (statement: string) => string | null) => {
-    const values = assignments(text);
-    for (const statement of split_statements(text)) {
-      if (/^\s*\$[A-Za-z_]\w*\s*=/.test(statement)) continue;
-      for (const token of words(statement).slice(1)) {
-        if (token.startsWith("-") || /^\/[a-z?]{1,3}$/i.test(token) || /^\d+$/.test(token)) continue;
-        const literal = expand_env(token);
-        if (dynamic_path.test(literal)) {
-          const variable = /^\$([A-Za-z_]\w*)$/.exec(token)?.[1]?.toLowerCase();
-          const value = variable ? values.get(variable) : undefined;
-          if (value) add(token, `${where(statement) ?? "command"}, = '${value}'`, resolve_target(base, value));
-          else if (/[\\/.]/.test(token) && unresolved.length < max_targets) unresolved.push(token);
+  const unresolved_word = (written: string) => {
+    if (/[\\/.]/.test(written) && unresolved.length < max_targets && !unresolved.includes(written)) unresolved.push(written);
+  };
+  const step_targets = async (step: Step, where: string | null) => {
+    const bases = "values" in step.location ? step.location.values : null;
+    for (const entry of argument_words(step)) {
+      const raw = unquoted(entry.word.raw);
+      if ("unresolved" in entry.value) {
+        if (!raw.startsWith("-")) unresolved_word(raw);
+        continue;
+      }
+      const piece = entry.word.pieces[0];
+      const quoted = piece?.kind === "text" && piece.quote !== "none" && piece.quote !== "verbatim";
+      const variable = /^\$\{?[A-Za-z_]\w*\}?$/.test(raw);
+      for (const value of entry.value.values) {
+        const text = option_target(value, quoted, step.dialect);
+        if (!text) continue;
+        const remote = remote_path(text);
+        if (!remote && !path.win32.isAbsolute(text) && !bases) {
+          unresolved_word(raw);
           continue;
         }
-        if (path_like(literal) || remote_path(literal) || (/^[\w.-]+$/.test(literal) && (await exists(path.resolve(base, literal))))) {
-          add(token, where(statement), resolve_target(base, literal));
+        const shown = variable ? `${where ?? "command"}, = '${value}'` : where;
+        for (const base of remote ? [cwd] : (bases ?? [cwd])) {
+          if (remote || path_like(text) || (/^[\w.-]+$/.test(text) && (await exists(path.resolve(base, text))))) add(raw, shown, resolve_target(base, text));
         }
       }
     }
   };
-  await statement_targets(command, cwd, () => null);
+  const walked = async (text: string, dialect: Dialect, script_path: string, where: (step: Step) => string | null) => {
+    for (const step of walk_command(text, { location: cwd, dialect, env, script_path, matches: location_matches })) await step_targets(step, where(step));
+  };
+  await walked(command, shell, "", () => null);
   for (const script of scripts) {
     if (!script.text || !script.abs) continue;
     if (shell_source.test(script.abs)) {
-      const lines = script.text.split(/\r?\n/);
-      for (const [index, line] of lines.entries()) await statement_targets(line, cwd, () => `${script.path} line ${index + 1}`);
+      await walked(script.text, script_dialect(script.abs) ?? "powershell", script.abs, (step) => `${script.path} line ${step.line}`);
       continue;
     }
     for (const [index, line] of script.text.split(/\r?\n/).entries()) {
@@ -118,6 +187,22 @@ export const command_targets = async (command: string, cwd: string, scripts: Scr
   }
   return { targets, unresolved };
 };
+
+export const program_lines = (programs: ProgramFact[], notes: string[], scripts: ScriptFile[]): string[] => [
+  ...programs.map((fact) => {
+    const origin = fact.origin ? `${scripts.find((script) => script.abs === fact.origin)?.path || fact.origin} line ${fact.line}` : "";
+    const how = [fact.how, origin].filter(Boolean).join(", ");
+    const parts = [
+      fact.path,
+      program_kinds[fact.kind],
+      ...(fact.bytes !== null ? [`${fact.bytes} bytes`] : []),
+      ...(fact.outside ? ["outside the project"] : []),
+      ...(fact.change ? [change_text(fact.change)] : []),
+    ];
+    return `started ${unquoted(fact.written)}${how ? ` (${how})` : ""}: ${parts.join(", ")}`;
+  }),
+  ...notes.map((text) => `note: ${text}`),
+];
 
 type Shape =
   | { kind: "file"; bytes: number }

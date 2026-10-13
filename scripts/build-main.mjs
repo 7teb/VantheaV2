@@ -9,7 +9,7 @@ const targets = [
     entryPoints: ["electron/main.ts"],
     outfile: "dist-electron/main.js",
     format: "esm",
-    external: ["electron", "node-pty", "@modelcontextprotocol/sdk"],
+    external: ["electron", "node-pty", "@modelcontextprotocol/sdk", "@vscode/ripgrep"],
     banner: { js: require_shim },
   },
   {

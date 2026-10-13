@@ -11,6 +11,9 @@ export const use_chat_busy = (chat_id: string | null): boolean => {
   return streaming ?? listed;
 };
 
+export const focus_composer_input = (node: Element) =>
+  node.closest(".composer-slot")?.querySelector<HTMLElement>("textarea.composer-input")?.focus({ preventScroll: true });
+
 export const use_context_usage = (chat_id: string | null): ContextUsage | null =>
   use_store(chat_view_store, (state) => {
     const entry = chat_id ? state.entries[chat_id] : undefined;

@@ -3,11 +3,12 @@ import type { ToolView } from "../../../shared/tool-view.ts";
 import { call_tool, default_call_timeout_ms, ready_servers, type McpToolInfo } from "../../mcp/client.ts";
 import { target_scope } from "../../mcp/risk.ts";
 import { effective_tier, is_trusted, tool_enabled } from "../../mcp/servers.ts";
-import { build_description, build_parameters } from "../../mcp/specs.ts";
+import { build_description, build_parameters, type McpResultText } from "../../mcp/specs.ts";
 import { changed_pins, type PinChange } from "../../permissions/source-read.ts";
 import { approved_note, scripts_changed_text, user_denied_text } from "../../permissions/verdict-text.ts";
 import { define_tool, type Tool, type ToolContext, type ToolResult } from "../types.ts";
-import { args_preview, decide, record_grant, type McpCall } from "./decide.ts";
+import { decide, record_grant, type McpCall } from "./decide.ts";
+import { mcp_images } from "./images.ts";
 import { mcp_review } from "./overseer.ts";
 
 const view_text_limit = 8000;
@@ -20,14 +21,14 @@ const mcp_view = (server: string, tool: string, text: string, is_error: boolean)
 
 const invoke = async (ctx: ToolContext, call: McpCall, note: string | null): Promise<ToolResult> => {
   const label = `${call.server} ${call.tool}`;
-  ctx.progress({ label, lines: null, output_tail: null });
+  ctx.progress({ label: "", lines: null, output_tail: null });
+  let result: McpResultText;
   try {
-    const result = await call_tool(call.server, call.tool, call.args, {
+    result = await call_tool(call.server, call.tool, call.args, {
       signal: ctx.signal,
       timeout_ms: default_call_timeout_ms,
-      on_progress: (message) => ctx.progress({ label, lines: null, output_tail: message }),
+      on_progress: (message) => ctx.progress({ label: "", lines: null, output_tail: message }),
     });
-    return { status: result.is_error ? "failed" : "done", text: note ? `${note}\n${result.text}` : result.text, view: mcp_view(call.server, call.tool, result.text, result.is_error) };
   } catch (error) {
     if (ctx.signal.aborted) {
       throw error;
@@ -36,6 +37,13 @@ const invoke = async (ctx: ToolContext, call: McpCall, note: string | null): Pro
     console.warn(`[mcp] ${label} failed: ${error_text(error)}`);
     return { status: "failed", text, view: mcp_view(call.server, call.tool, text, true) };
   }
+  const media = await mcp_images(ctx, call.server, call.tool, result.images);
+  return {
+    status: result.is_error ? "failed" : "done",
+    text: [...(note ? [note] : []), ...media.notes, result.text].join("\n"),
+    view: mcp_view(call.server, call.tool, result.text, result.is_error),
+    ...(media.images.length ? { images: media.images } : {}),
+  };
 };
 
 const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args: Record<string, unknown>): Promise<ToolResult> => {
@@ -56,7 +64,7 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
         server,
         tool: info.name,
         tier,
-        args_preview: args_preview(args),
+        args_preview: JSON.stringify(args, null, 2),
         scope: call.scope,
         ...(verdict.reason ? { reason: verdict.reason } : {}),
         ...(verdict.note ? { review: verdict.note } : {}),
@@ -88,9 +96,8 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
 };
 
 const mcp_tool = (server: string, info: McpToolInfo): Tool => {
-  const { parameters, degraded } = build_parameters(info.input_schema);
   return define_tool<Record<string, unknown>>({
-    spec: { name: info.spec_name, description: build_description(server, info.name, info.description, degraded), parameters },
+    spec: { name: info.spec_name, description: build_description(server, info.name, info.description), parameters: build_parameters(info.input_schema) },
     profiles: ["main"],
     parse: (raw) => raw,
     run: (ctx, args) => run_mcp(ctx, server, info, args),

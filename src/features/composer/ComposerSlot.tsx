@@ -13,8 +13,8 @@ export const ComposerSlot = ({ chat_id, project_path, placement }: ComposerSlotP
   <div className="composer-slot" data-placement={placement}>
     {chat_id !== null && <AgentApprovals chat_id={chat_id} />}
     {chat_id !== null && <TodosPanel chat_id={chat_id} />}
-    {chat_id !== null && <QueuedList chat_id={chat_id} />}
     {chat_id !== null && <QuestionsPanel chat_id={chat_id} />}
+    {chat_id !== null && <QueuedList key={chat_id} chat_id={chat_id} />}
     <Composer chat_id={chat_id} project_path={project_path} draft_key={draft_key(chat_id, project_path)} placement={placement} />
   </div>
 );

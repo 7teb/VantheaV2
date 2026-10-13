@@ -24,7 +24,9 @@ export type AxEntry = {
   level: number;
 };
 
-export type SnapshotRef = AxEntry & { tab_id: string; session_id: string; epoch: number; created_at: number };
+export type Box = { left: number; top: number; right: number; bottom: number };
+
+export type SnapshotRef = AxEntry & { tab_id: string; session_id: string; epoch: number; created_at: number; box?: Box };
 
 export type Snapshot = {
   snapshot_id: string;
@@ -50,6 +52,9 @@ export type Visual = {
   zoom_factor: number;
   capture_width: number;
   capture_height: number;
+  image_width: number;
+  image_height: number;
+  retake_tool: "browser_screenshot" | "browser_visual_analyze";
   created_at: number;
   image: NativeImage;
   regions: Map<string, VisualRegion>;

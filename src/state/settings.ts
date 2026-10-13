@@ -1,4 +1,4 @@
-import type { ProjectEntry, SecretName, SettingsPatch, SettingsView } from "../../shared/settings.ts";
+import type { ModelContext, ProjectEntry, SecretName, SettingsPatch, SettingsView } from "../../shared/settings.ts";
 import { api } from "../api/bridge.ts";
 import { set_language } from "../i18n/index.ts";
 import { create_store } from "./create-store.ts";
@@ -17,6 +17,9 @@ export const reload_settings = async () => {
     console.error("[settings] settings:get failed", error);
   }
 };
+
+export const set_model_context = (model_id: string, next: ModelContext) =>
+  update_settings({ model_context: { ...(settings_store.get()?.model_context ?? {}), [model_id]: next } });
 
 export const update_settings = async (patch: SettingsPatch) => {
   const current = settings_store.get();

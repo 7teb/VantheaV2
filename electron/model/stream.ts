@@ -19,6 +19,8 @@ type DraftReporter = { note(indices: number[]): void; flush(force: boolean): voi
 
 export const draft_interval_ms = 80;
 
+const fallback_after_attempts = 3;
+
 export const make_call_id = () => `call_${randomUUID().replaceAll("-", "").slice(0, 24)}`;
 
 export const round_body = (request: RoundRequest): Record<string, unknown> => {
@@ -28,7 +30,7 @@ export const round_body = (request: RoundRequest): Record<string, unknown> => {
     messages: wire_messages(request.messages, model.reasoning_passback),
     stream: true,
     temperature: 0.2,
-    ...(request.tools.length ? { tools: to_api_tools(request.tools), tool_choice: "auto" } : {}),
+    ...(request.tools.length ? { tools: to_api_tools(request.tools), tool_choice: request.tool_choice ?? "auto" } : {}),
     ...(model.efforts.length ? { reasoning: reasoning_fields(model, request.effort) } : {}),
     ...(model.provider_order.length ? { provider: { order: model.provider_order, allow_fallbacks: false } } : {}),
     ...safety_fields(model.id),
@@ -225,12 +227,13 @@ export const stream_round = async (
   const transport = transport_with(overrides);
   const known_tools = new Set(request.tools.map((tool) => tool.name));
   const fallback = request.model.fallback;
-  const total = fallback ? transport.max_attempts * 2 : transport.max_attempts;
-  const attempt_route = (model: RoundRequest["model"], offset: number) => {
+  const primary = fallback ? { ...transport, max_attempts: Math.min(transport.max_attempts, fallback_after_attempts) } : transport;
+  const total = fallback ? primary.max_attempts + transport.max_attempts : transport.max_attempts;
+  const attempt_route = (model: RoundRequest["model"], offset: number, route: Transport) => {
     const body = JSON.stringify(round_body({ ...request, model }));
     let current: Accumulator | null = null;
     return with_retries({
-      transport,
+      transport: route,
       signal,
       run: () => {
         current = create_accumulator();
@@ -244,16 +247,16 @@ export const stream_round = async (
     });
   };
   if (!fallback) {
-    return attempt_route(request.model, 0);
+    return attempt_route(request.model, 0, transport);
   }
   try {
-    return await attempt_route(request.model, 0);
+    return await attempt_route(request.model, 0, primary);
   } catch (error) {
     if (signal.aborted || !(error instanceof ModelError) || !is_retryable(error)) {
       throw error;
     }
-    console.warn(`[model] ${request.model.id} failed after ${transport.max_attempts} attempts (${error.kind}), switching to ${fallback.id}: ${error.message}`);
-    callbacks.on_retry(transport.max_attempts + 1, total, fallback.label, 0);
-    return attempt_route({ ...request.model, id: fallback.id, provider_order: fallback.provider_order }, transport.max_attempts);
+    console.warn(`[model] ${request.model.id} failed after ${primary.max_attempts} attempts (${error.kind}), switching to ${fallback.id}: ${error.message}`);
+    callbacks.on_retry(primary.max_attempts + 1, total, fallback.label, 0);
+    return attempt_route({ ...request.model, id: fallback.id, provider_order: fallback.provider_order }, primary.max_attempts, transport);
   }
 };

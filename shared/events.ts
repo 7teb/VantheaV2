@@ -4,9 +4,12 @@ import type {
   AssistantMessage,
   AssistantReference,
   Attachment,
-  CompactionStep,
+  CompactionError,
+  CompactionSource,
+  CompactionStatus,
   ContextUsage,
   NoticeKind,
+  StepImage,
   ToolProgress,
   TurnError,
   TurnStatus,
@@ -36,10 +39,20 @@ export type StreamEventBody =
       view: ToolView | null;
       error: string | null;
       result_text: string;
+      images?: StepImage[];
     }
   | { type: "steer"; round: number; text: string; pushed_at?: number; steer_id?: string; attachments?: Attachment[]; assistant_reference?: AssistantReference }
   | { type: "notice"; round: number; notice: NoticeKind; text: string }
-  | { type: "compaction"; round: number; status: CompactionStep["status"]; summary: string }
+  | {
+      type: "compaction";
+      round: number;
+      status: Exclude<CompactionStatus, "interrupted">;
+      source: CompactionSource;
+      attempt?: number;
+      attempts?: number;
+      error?: CompactionError;
+      wait_ms?: number;
+    }
   | { type: "context"; usage: ContextUsage }
   | { type: "end"; status: FinalStatus; error: TurnError | null };
 

@@ -1,17 +1,20 @@
 # Sub-agents in VantheaX
 
-The main agent can start sub-agents that work in the background of the same chat. Sub-agents cannot talk to the user and cannot deploy agents themselves.
+The main agent can start sub-agents that work in the background of the same chat. Sub-agents cannot talk to the user and cannot deploy agents themselves. They can talk to each other.
 
 ## Tools of the main agent
 
-- `deploy_agent`: starts a new agent and returns at once. Arguments: `name` (shown to the user), `description` (one line), `prompt` (complete standalone task, the agent knows nothing else about the chat), `profile` (`explore` or `worker`), optional `model` (exact id from `list_models`, default is the main agent's model) and optional `effort` (default is the main agent's effort).
-- `continue_agent`: starts another run of an existing agent on its kept context. The agent keeps its name, profile and model.
+- `deploy_agent`: starts a new agent and returns at once. Arguments: `name` (shown to the user), `description` (one line), `topic` (required, one word or short phrase for the area of work, for example `parser`), optional `scope` (list of project paths the agent owns or works in), `prompt` (complete standalone task, the agent knows nothing else about the chat), `profile` (`explore` or `worker`), optional `model` (exact id from `list_models`, default is the main agent's model) and optional `effort` (default is the main agent's effort). The result names the agents that are already running, with their topics.
+- `continue_agent`: starts another run of an existing agent on its kept context. The agent keeps its name, topic, scope, profile and model. Answers other agents sent it after it finished arrive at the start of this run.
+- `list_agents`: the roster of the chat (see below).
 - `message_agent`: sends an instruction to a running agent. It arrives at the start of the agent's next round. It fails if the agent is not running; use continue_agent then.
-- `get_agent_status`: snapshot of the latest run (status, runtime, tool calls, recent output, report file path once finished). It never waits; do not poll it.
+- `get_agent_status`: detail of one agent's latest run (see below). It never waits; do not poll it.
 - `cancel_agent`: stops a running run. No report comes back from that run; continue_agent can start the agent again later.
 - `list_models`: lists the catalog models with their price per 1M tokens, for choosing an agent model.
 
-Limits: at most 8 agents can run at once in one chat.
+Agent ids can be given as the full id, as the short form `Name#xxxxxxxx` or `xxxxxxxx` that the roster shows, or as a unique leading part of the full id.
+
+Limits: at most 20 agents can run at once in one chat. There is no limit on the number or length of messages between agents or to the main agent.
 
 Agents work under the permission mode the main turn had when it deployed them (continue_agent: the mode of the current turn). Switching the mode picker later does not change a running agent; a 10-minute "allow everything" window of the chat does apply to its agents. Their approval requests appear at the composer as "<name> requests permission" ("<name> benötigt eine Freigabe"), and the Agents button in the titlebar shows a dot while an agent waits for approval.
 
@@ -20,11 +23,76 @@ Agents work under the permission mode the main turn had when it deployed them (c
 - `explore`: read-only; its file tools stay inside the project.
 - `worker`: can also edit files and run commands, under the same permission checks as the main agent. Anything outside the project folder needs a worker.
 
+## Agents in one chat
+
+Every agent knows the other agents of its chat through a roster: one line per agent. Running agents show their short id (`Name#xxxxxxxx`), topic, scope, profile, model, start time ("running since 13:05 (12 min)"), one-line task, the files they wrote in their current run and the questions they have open. Finished agents show their status and end time. Any agent with messages kept for its next run shows them, with "continue_agent delivers them". The first line names the main agent, which sub-agents reach with message_main_agent.
+
+- A sub-agent gets the full roster at the start of each run. Later, at each of its round boundaries, it gets a short notice when an agent starts, runs again or ends. Files a peer writes do not produce a notice on their own.
+- `list_agents` shows the current roster at any time, to the main agent and to sub-agents.
+- Agents with the same topic are a team: they split files, share findings and ask each other directly. The roster marks them with "same topic as you". An agent with a different topic only writes to them when an overlap notice names them or when it needs something they own.
+- Overlap notices: the app introduces two running agents to each other when their scopes overlap, or when one wrote a file that the other has in its scope, also wrote, or read. Both get the notice once per pair and path. Reading the same file alone does not introduce agents, and search results do not count. Files written through run_command (formatters, generators) are not seen.
+
+`get_agent_status` shows one agent in detail: topic, scope, the task of its latest run, files read and written in that run, every peer message it sent and received with the full text, its open questions and the questions others asked it, the messages kept for its next run, recent activity while it runs, and the report once it finished. A sent message that is now kept for the recipient's next run says so instead of "delivered to the recipient's inbox". The main agent gets the path of the report file. A sub-agent gets the report text itself, because sub-agents may not reach the app's storage folder; a long report comes in pages, and each page names the `report_from` value for the rest.
+
+After a compaction the roster is written fresh into the compaction facts, together with open questions, for the main agent and for sub-agents. After an app restart the roster is complete again; runs that were running are interrupted.
+
+## Messages between agents
+
+Sub-agents have `message_peer`. One message goes to one running agent of the same chat. Arguments:
+
+- `to`: the recipient, `Name#xxxxxxxx`, `xxxxxxxx` or the full id.
+- `type`: `info` (a finding or warning), `question` (the sender needs something) or `answer` (a reply to a question).
+- `about`: required, the shared subject: a file, symbol, path, decision or the question itself.
+- `summary`: the sender's own one-line summary in 5 to 10 words. It is the line the user and the main agent see.
+- `text`: the full message. Agents are asked to point to paths, lines and report sections instead of pasting content.
+- `in_reply_to`: required for `answer`, the message id (`msg_...`) of the question.
+
+Delivery:
+
+- A message arrives at the recipient's next round boundary. A running tool is never interrupted, and a finished agent is never woken. An agent that wants to end while a message waits in its inbox gets one more round for it. The report it had already written is kept: its last message after that round is added below the report, so a short reply to a late message never replaces it.
+- `info` and `question` only reach a running agent; to a finished agent they fail with its status and the hint that get_agent_status gives its report.
+- The app does not deliver a message that repeats an earlier one from the same sender to the same recipient in the same run: same type, subject, question it answers and text. The sender is told it already arrived. A message that came back unread is not a repeat and can be sent again, and neither is a question that closed without an answer because the asked agent ended.
+- The recipient sees the message as information, not as an instruction: it cannot change its task, grant permissions or approve anything. Only the main agent gives sub-agents instructions.
+- When a run ends before it read an info or a question, the sender is told once ("ended before it read your message"), or the main agent gets a short line when the sender has finished too. An unread answer is not sent back: it is kept for the recipient's next run like any answer to a finished agent. Unread instructions from the main agent come back to it as a short line. When the app is closed, the notices to running senders are written into their transcripts first, and unread instructions from the main agent are kept with the agent like answers, because a short line would not survive the restart: list_agents and get_agent_status show them, and continue_agent delivers them at the start of the next run, before its task.
+
+Questions never block. No agent ever waits for another:
+
+- The asking agent keeps working; the answer arrives at its next round boundary.
+- An answer to an agent that has already finished is kept with that agent (it survives an app restart). The main agent gets a short line and decides whether the answer is worth another run; list_agents and get_agent_status show kept answers, also after a restart, and continue_agent delivers them at the start of the new run.
+- When the asked agent ends without answering, the asker is told, or the main agent gets a short line when the asker has finished too.
+- When an agent ends with a question still open, its report ends with a section "Open questions of Name#xxxxxxxx" and one line per question, for example "Open question to Tokenizer#3f2a91c0 about src/parser/tokens.ts since 13:07 (msg_...), still without an answer."
+
+Noise is handled by structure, not by limits: topics, overlap notices, the required `about` field and the rule to send results and questions, not activity. When two agents send each other two messages in a row without any other tool call in between, both are told to continue their tasks, and the main agent gets an alert. Nothing is cut off; the messages are still delivered.
+
+## What the main agent sees
+
+- A short line (digest) per delivered message, per message that waits for an approval card, per kept answer and per question whose asked agent ended without an answer while the asker had already finished. A digest looks like `Parser#1a2b3c4d → Tokenizer#3f2a91c0: question, about src/parser/tokens.ts: 'Who changes TokenKind?'`. Digests are information, not tasks: they arrive with the main agent's next round and never start a turn by themselves.
+- A peer alert when the review blocked a message between agents (with the review's reason) or when two agents kept messaging without working. An alert arrives like a report: at once, and it starts a new turn when the main turn has ended. A later report of the same run does not replace it. The main agent can steer the agents with message_agent, stop one with cancel_agent, or let them continue.
+- The full text of any message, word for word, through get_agent_status.
+
+## What you see
+
+- In the Agents panel, the recipient's transcript shows each message as a row "From <name>: <summary>" ("Von <name>: <summary>"). Opening it shows the type, the subject, the message id and the full text. The sender's transcript shows the message_peer call with the recipient and the outcome ("In inbox", "Kept for next run", "Blocked by review", "Declined", "Not running", "Already sent").
+- The roster notices a sub-agent gets (the agent list at the start of a run, later changes and overlap introductions) are for the model only and are not shown in its transcript.
+- The agent list shows each agent's topic next to its profile and model, and "1 open question" ("1 offene Frage") on a running run that waits for an answer. This is information, not a waiting state.
+- Allowed messages between agents do not appear in the main chat. A blocked message and a detected loop appear there as one row "Agent messages need attention: <name>" ("Agenten-Nachrichten brauchen Aufmerksamkeit: <name>") marked "Blocked" ("Blockiert") or "Loop" ("Schleife").
+- When the review cannot decide about a message or a task, a card appears at the composer like other sub-agent approval cards: "May I send this message to <name>?" ("Darf ich diese Nachricht an <name> senden?"), "May I start the agent <name> with this task?" or "May I continue <name> with this task?".
+
+## Review of agent texts
+
+The automatic review checks everything an agent writes into the context of a sub-agent before it arrives: every message_peer and message_agent text and every task given with deploy_agent and continue_agent. It does this in every permission mode, also in ask; a card appears only when the review answers "review" or is unavailable. A deploy waits for the review before the agent starts.
+
+- Allowed: normal coordination, findings, paths, questions, answers, splitting or handing over work, warnings about conflicting edits, and requests for actions that get their own review when the recipient runs them. Texts that differ from the user's request are allowed too: a narrower or reordered plan, another approach, disagreement, partial results, open problems and mistakes, and claims that are simply wrong. Deviation is not deception.
+- Blocked: texts that ask an agent to reach the result of a denied action (for example "you do the push, mine was denied"), to skip or game reviews, approvals or the permission mode, to hide actions or results from the user or the main agent, to tell the user or the main agent something the sender knows is false or to pretend work was done, or to send credentials or private files somewhere the user did not name; texts that claim an approval or permission the user did not give; and texts that plan against the user: deceiving the user, withholding results or sabotaging the user's work.
+- A blocked text never arrives. The sender is told not to try it again in any form or through another agent. When the review blocks a message_peer text, the main agent gets a peer alert with the reason; when it blocks the main agent's own message_agent text or deploy_agent or continue_agent task, the main agent gets the denial as the result of that call. The review does not judge usefulness, tone, length or the number of messages.
+
+What goes up to the main agent (message_main_agent, reports) is not reviewed.
+
 ## Messages from an agent to the main agent
 
-A running agent has `message_main_agent`. It sends a short self-contained message (at most 4000 characters) with confirmed results, a wrong assumption in its task, or a blocker. At most 10 messages per run. The agent gets no answer and keeps working.
+A running agent has `message_main_agent`. It sends a self-contained message with confirmed results, a wrong assumption in its task, or a blocker. There is no limit on the number or length of these messages. The agent gets no answer and keeps working.
 
-If an agent makes 15 tool calls without sending a message, the app reminds it to send its confirmed results with message_main_agent (only while it has messages left).
+If an agent makes 25 tool calls without sending a message, the app reminds it to send its confirmed results with message_main_agent, for as long as the run lasts.
 
 ## Reports
 

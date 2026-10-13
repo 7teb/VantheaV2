@@ -11,7 +11,7 @@ export type ProjectWalk = { files: IndexEntry[]; directories: string[]; truncate
 
 export type ProjectIndex = ProjectWalk & { root: string; built_at: number };
 
-const ignored_dirs = new Set([".git", "node_modules", "dist", "build", ".vs", ".idea", ".vscode", "bin", "obj", "target", ".cache", "__pycache__", ".venv"]);
+export const ignored_dirs = new Set([".git", "node_modules", "dist", "build", ".vs", ".idea", ".vscode", "bin", "obj", "target", ".cache", "__pycache__", ".venv"]);
 
 export const max_walk_entries = 50_000;
 

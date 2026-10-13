@@ -15,6 +15,8 @@ export type EndpointPrice = {
 
 const cache_ms = 600000;
 
+const lookup_attempts = 3;
+
 const cache = new Map<string, { at: number; endpoints: EndpointPrice[] }>();
 
 const per_million = (value: unknown): number | null => {
@@ -88,7 +90,7 @@ const read_endpoints = async (model_id: string, signal: AbortSignal, overrides: 
   if (hit && Date.now() - hit.at < cache_ms) {
     return hit.endpoints;
   }
-  const transport = transport_with(overrides);
+  const transport = transport_with({ max_attempts: lookup_attempts, ...overrides });
   const endpoints = await with_retries({
     transport,
     signal,

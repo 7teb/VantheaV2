@@ -67,8 +67,18 @@
     }
   }
 
+  @keyframes delayed-reveal {
+    from {
+      visibility: hidden;
+    }
+  }
+
   .enter-fade-up {
     animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+  }
+
+  .delayed-reveal {
+    animation: delayed-reveal 0s var(--reveal-delay, 0s) both;
   }
 
   .is-working {
@@ -110,6 +120,10 @@
       transition-duration: 0.01ms !important;
       transition-delay: 0ms !important;
       scroll-behavior: auto !important;
+    }
+
+    .delayed-reveal {
+      animation-delay: var(--reveal-delay, 0s) !important;
     }
   }
 }

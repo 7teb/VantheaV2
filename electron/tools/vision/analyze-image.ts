@@ -1,4 +1,5 @@
 import { describe_attachment_image } from "../../side/vision.ts";
+import { chat_attachment } from "../attachments/index.ts";
 import { ToolArgumentError, define_tool, type Tool } from "../types.ts";
 
 type Args = { attachment_id: string; question: string };
@@ -33,7 +34,12 @@ export const analyze_image_tool: Tool = define_tool<Args>({
   profiles: ["main", "plan", "explore", "worker"],
   parse,
   run: async (ctx, args) => {
-    const text = await describe_attachment_image(args.attachment_id, args.question, ctx.signal);
+    const attachment = await chat_attachment(ctx.chat_id, args.attachment_id, "image");
+    if (!attachment) {
+      const text = `No image with the id "${args.attachment_id.slice(0, 80)}" is attached to this chat.`;
+      return { status: "failed", text, view: { kind: "text", text } };
+    }
+    const text = await describe_attachment_image(attachment.model?.id ?? attachment.id, ctx.signal, args.question);
     return { status: "done", text, view: { kind: "text", text } };
   },
 });

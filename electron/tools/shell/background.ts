@@ -1,30 +1,31 @@
 import type { BackgroundTask } from "../../../shared/ipc/work.ts";
 import { shell_name, type ToolView } from "../../../shared/tool-view.ts";
 import { cancel_background, find_background, mark_result_read, start_background } from "../../background/manager.ts";
+import { estimate_tokens, result_cap_tokens } from "../../context/estimate.ts";
+import type { OutputView } from "../../shell/output.ts";
 import { read_string, require_string } from "../browser/common.ts";
 import { failed, guarded } from "../fs/common.ts";
-import { define_tool, ToolArgumentError } from "../types.ts";
+import { define_tool, ToolArgumentError, type ToolResult } from "../types.ts";
 import { blocked_text, gate_command } from "./gate.ts";
 import { command_dir, command_view, read_command } from "./run-command.ts";
 
 type StartArgs = { name: string; command: string; cwd: string };
 
-const model_tail_chars = 8000;
-
-const background_view = (task: BackgroundTask): ToolView => ({
+const background_view = (task: BackgroundTask, output: string): ToolView => ({
   kind: "background",
   shell: shell_name,
   task_id: task.id,
   command: task.command,
   status: task.status,
-  output_tail: task.output_tail,
+  output_tail: output,
 });
 
-const describe = (task: BackgroundTask) => {
+const described = (task: BackgroundTask, output: OutputView): ToolResult => {
   const exit = task.exit_code === null ? "" : `, exit code ${task.exit_code}`;
   const ended = task.ended_at ? `, ended ${task.ended_at}` : "";
-  const tail = task.output_tail.slice(-model_tail_chars);
-  return [`Background task ${task.id} (${task.name}): ${task.status}${exit}, started ${task.started_at}${ended}`, `Command: ${task.command}`, tail ? `Output tail:\n${tail}` : "No output yet."].join("\n");
+  const lead = `Background task ${task.id} (${task.name}): ${task.status}${exit}, started ${task.started_at}${ended}\nCommand: ${task.command}\n`;
+  const shown = output.text(result_cap_tokens - estimate_tokens(`${lead}Output:\n`));
+  return { status: "done", text: `${lead}${shown ? `Output:\n${shown}` : "No output yet."}`, view: background_view(task, shown) };
 };
 
 const parse_start = (raw: Record<string, unknown>): StartArgs => {
@@ -74,7 +75,7 @@ export const start_background_task_tool = define_tool<StartArgs>({
       return {
         status: "done",
         text: `${gate.note ? `${gate.note}\n` : ""}Started background task ${task.id} (${task.name}). It keeps running after this turn; its result arrives automatically when it ends.`,
-        view: background_view(task),
+        view: background_view(task, task.output_tail),
       };
     }),
 });
@@ -89,7 +90,7 @@ const id_parameters = {
 export const get_background_task_tool = define_tool<{ id: string }>({
   spec: {
     name: "get_background_task",
-    description: "Read the status, exit code and output tail of a background task in this chat.",
+    description: `Read the status, exit code and output of a background task in this chat. Output over the ${result_cap_tokens}-token cap per tool result keeps its start and end and says how many characters are omitted.`,
     parameters: id_parameters,
   },
   profiles: ["main", "plan"],
@@ -103,7 +104,7 @@ export const get_background_task_tool = define_tool<{ id: string }>({
       if (found.task.status !== "running") {
         mark_result_read(found.task.id);
       }
-      return { status: "done", text: describe(found.task), view: background_view(found.task) };
+      return described(found.task, found.output);
     }),
 });
 
@@ -122,9 +123,8 @@ export const cancel_background_task_tool = define_tool<{ id: string }>({
         return failed(found.error);
       }
       if (found.task.status !== "running") {
-        return { status: "done", text: `Background task ${found.task.id} already ended (${found.task.status}); nothing was stopped.`, view: background_view(found.task) };
+        return { status: "done", text: `Background task ${found.task.id} already ended (${found.task.status}); nothing was stopped.`, view: background_view(found.task, found.task.output_tail) };
       }
-      const task = cancel_background(found.task.id);
-      return { status: "done", text: describe(task), view: background_view(task) };
+      return described(cancel_background(found.task.id), found.output);
     }),
 });

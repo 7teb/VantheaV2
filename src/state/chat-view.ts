@@ -60,10 +60,6 @@ const refresh_context = async (chat_id: string) => {
 export const compact_chat_now = async (chat_id: string): Promise<CompactResult["status"]> => {
   try {
     const result = await api.invoke("turn:compact", chat_id);
-    if (result.status === "done") {
-      await load_chat(chat_id);
-      await refresh_context(chat_id);
-    }
     return result.status;
   } catch (error) {
     console.error(`[chat-view] turn:compact failed for chat ${chat_id}`, error);

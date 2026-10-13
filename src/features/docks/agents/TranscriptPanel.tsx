@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AgentSummary } from "../../../../shared/ipc/work.ts";
 import { Button, IconButton } from "../../../components/Button.tsx";
+import { ContextRing } from "../../../components/ContextRing.tsx";
 import { ArrowLeftIcon, CircleStopIcon } from "../../../components/icons.tsx";
 import { use_t } from "../../../i18n/index.ts";
 import { cancel_agent, close_agent_run } from "../../../state/agents.ts";
@@ -53,11 +54,14 @@ export const TranscriptPanel = ({ entry, agents, now }: TranscriptPanelProps) =>
       }
       close_label={t("agent.close")}
       actions={
-        status === "running" && (
-          <Button variant="ghost" icon={<CircleStopIcon size={14} />} disabled={stopping} onClick={() => void stop()}>
-            {t("agent.stop")}
-          </Button>
-        )
+        <>
+          {transcript?.context && <ContextRing usage={transcript.context} placement="bottom-end" />}
+          {status === "running" && (
+            <Button variant="ghost" icon={<CircleStopIcon size={14} />} disabled={stopping} onClick={() => void stop()}>
+              {t("agent.stop")}
+            </Button>
+          )}
+        </>
       }
     >
       {error && <div className="agent-panel-error">{error}</div>}

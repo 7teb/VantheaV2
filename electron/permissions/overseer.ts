@@ -4,9 +4,6 @@ import { error_text } from "../storage/coerce.ts";
 import type { Reviewer } from "../tools/types.ts";
 import { parse_review_answer } from "./review-answer.ts";
 import type { AssembledReview } from "./review-request.ts";
-import { close_offline, offline_until, open_offline } from "./review-state.ts";
-
-const offline_ms = 60000;
 
 export type ReviewOutcome =
   | { kind: "answer"; answer: ReviewAnswer; workaround: string | null; usage: ReviewUsage | null }
@@ -39,12 +36,8 @@ const failure_kind = (error: unknown): ReviewFailure => {
 };
 
 export const run_review = async (reviewer: Pick<Reviewer, "call">, instance: string, assembled: AssembledReview, signal: AbortSignal): Promise<ReviewOutcome> => {
-  if (offline_until(instance) !== null) {
-    return { kind: "failure", failure: "offline_window", usage: null };
-  }
   try {
     const reply = await reviewer.call(assembled.call, signal);
-    close_offline(instance);
     const usage = reply.usage ? { ...reply.usage, estimated_tokens: assembled.estimated_tokens } : null;
     const parsed = parse_review_answer(reply.text, reply.finish_reason, {
       blocking: new Set(assembled.lines.filter((line) => line.blocking).map((line) => line.id)),
@@ -58,9 +51,6 @@ export const run_review = async (reviewer: Pick<Reviewer, "call">, instance: str
     }
     const failure = failure_kind(error);
     console.warn(`[permissions] automatic review of ${instance} failed (${failure}): ${error_text(error)}`);
-    if (failure === "timeout") {
-      open_offline(instance, Date.now() + offline_ms);
-    }
     return { kind: "failure", failure, usage: null };
   }
 };

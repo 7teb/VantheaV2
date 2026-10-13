@@ -16,7 +16,7 @@ export const answer_questions = async (chat_id: string, answers: QuestionAnswer[
     return;
   }
   if (!active_turn(chat_id)) {
-    await start_turn(answer_request(chat, group.text, get_settings()), "user");
+    await start_turn(answer_request(chat, group.text, get_settings()), [], "user");
     return;
   }
   const turn = steer_target(chat_id);

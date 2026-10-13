@@ -1,10 +1,13 @@
 import { dialog } from "electron";
 import fs from "node:fs/promises";
-import type { AttachmentUpload } from "../../shared/ipc/media.ts";
+import type { Attachment } from "../../shared/chat.ts";
+import { attachment_limits, type AttachmentUpload } from "../../shared/ipc/media.ts";
 import { main_window } from "../app/window.ts";
 import { find_artifact, list_artifacts, update_artifact } from "../media/artifacts.ts";
 import { is_media_id, read_attachment_text, resolve_media_file, save_attachment } from "../media/files.ts";
-import { optional_boolean, optional_string, require_record, require_string } from "../storage/coerce.ts";
+import { save_model_copy } from "../media/model-copy.ts";
+import { discard_uploads, remember_upload } from "../media/uploads.ts";
+import { as_array, optional_boolean, optional_string, require_record, require_string } from "../storage/coerce.ts";
 import { handle } from "./handle.ts";
 
 const media_id = (value: unknown, label: string): string => {
@@ -14,12 +17,35 @@ const media_id = (value: unknown, label: string): string => {
   return value;
 };
 
+export const parse_ids = (value: unknown): string[] => {
+  const ids = as_array(value);
+  if (ids.length > attachment_limits.max_files) {
+    throw new Error(`${ids.length} attachments, at most ${attachment_limits.max_files} are allowed`);
+  }
+  return ids.map((id) => media_id(id, "attachment id"));
+};
+
 const upload = (value: unknown): AttachmentUpload => {
   const raw = require_record(value, "attachment upload");
   if (!(raw.bytes instanceof Uint8Array)) {
     throw new Error("attachment upload bytes must be a Uint8Array");
   }
-  return { name: require_string(raw.name, "attachment name", 1000), mime: require_string(raw.mime, "attachment mime", 200), bytes: raw.bytes };
+  if (raw.model_source !== undefined && !(raw.model_source instanceof Uint8Array)) {
+    throw new Error("attachment model source must be a Uint8Array");
+  }
+  return {
+    name: require_string(raw.name, "attachment name", 1000),
+    mime: require_string(raw.mime, "attachment mime", 200),
+    bytes: raw.bytes,
+    ...(raw.model_source ? { model_source: raw.model_source } : {}),
+    ...(raw.source_path !== undefined ? { source_path: require_string(raw.source_path, "attachment source path", 1000) } : {}),
+  };
+};
+
+const save_upload = async (value: AttachmentUpload): Promise<Attachment> => {
+  const original = await save_attachment(value);
+  const saved = original.kind === "image" && value.model_source ? await save_model_copy(value.model_source, original) : original;
+  return remember_upload(saved);
 };
 
 const artifact_patch = (value: unknown) => {
@@ -43,7 +69,8 @@ const export_artifact = async (artifact_id: string): Promise<boolean> => {
 };
 
 export const register_media_ipc = () => {
-  handle("attachments:save", (value) => save_attachment(upload(value)));
+  handle("attachments:save", (value) => save_upload(upload(value)));
+  handle("attachments:discard", (ids) => discard_uploads(parse_ids(ids)));
   handle("attachments:read_text", (id) => read_attachment_text(media_id(id, "attachment id")));
   handle("artifacts:list", (project_path) => list_artifacts(require_string(project_path, "project path", 2000)));
   handle("artifacts:update", (id, patch) => update_artifact(media_id(id, "artifact id"), artifact_patch(patch)));

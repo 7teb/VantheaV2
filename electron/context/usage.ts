@@ -27,5 +27,6 @@ const message_tokens = (message: ApiMessage): number => {
 
 export const estimate_messages = (messages: ApiMessage[]): number => messages.reduce((sum, message) => sum + message_tokens(message), 0);
 
-export const estimate_request = (messages: ApiMessage[], tools: ToolSpec[]): number =>
-  estimate_messages(messages) + (tools.length ? estimate_tokens(JSON.stringify(tools)) : 0);
+export const estimate_tools = (tools: ToolSpec[]): number => (tools.length ? estimate_tokens(JSON.stringify(tools)) : 0);
+
+export const estimate_request = (messages: ApiMessage[], tools: ToolSpec[]): number => estimate_messages(messages) + estimate_tools(tools);

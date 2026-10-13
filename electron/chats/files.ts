@@ -2,10 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { brotliCompress, brotliCompressSync, brotliDecompress, constants as zlib_constants } from "node:zlib";
-import type { Chat, ChatMeta, ChatSummary, Message, RoundReasoning, Step } from "../../shared/chat.ts";
+import type { Chat, ChatMeta, ChatSummary, Message, RoundReasoning, Step, StepImage, ToolStep } from "../../shared/chat.ts";
+import { coerce_context_usage } from "../context/calibration.ts";
 import { is_media_id } from "../media/files.ts";
 import { coerce_reviews } from "../permissions/review-coerce.ts";
 import { as_array, as_boolean, as_iso, as_number, as_record, as_string, error_code, is_record } from "../storage/coerce.ts";
+import { parse_attachments } from "./attachment-coerce.ts";
 import { coerce_questions_view, parse_question_states, stored_question_states } from "./question-coerce.ts";
 import { chat_dirs, metas, refs, sorted_metas, type ChatBody } from "./state.ts";
 
@@ -59,12 +61,28 @@ const parse_round_reasoning = (value: unknown): RoundReasoning[] => {
   return typeof raw.round === "number" && Array.isArray(raw.details) ? [{ round: raw.round, details: raw.details }] : [];
 };
 
+const parse_step_images = (step: ToolStep): ToolStep => {
+  if (!("images" in step)) {
+    return step;
+  }
+  const { images, ...rest } = step;
+  const valid = as_array(images).flatMap((entry): StepImage[] => {
+    const raw = as_record(entry);
+    return is_media_id(raw.id) && typeof raw.label === "string" ? [{ id: raw.id, label: raw.label }] : [];
+  });
+  return valid.length ? { ...rest, images: valid } : rest;
+};
+
 const parse_step = (step: Step, chat_id: string): Step => {
+  if (is_record(step) && step.kind === "steer" && step.attachments !== undefined) {
+    return { ...step, attachments: parse_attachments(step.attachments, chat_id) };
+  }
   if (!is_record(step) || step.kind !== "tool") {
     return step;
   }
   const call_id = as_string(step.call_id);
-  const viewed = is_record(step.view) && step.view.kind === "questions" ? { ...step, view: coerce_questions_view(step.view, chat_id, call_id) } : step;
+  const imaged = parse_step_images(step);
+  const viewed = is_record(imaged.view) && imaged.view.kind === "questions" ? { ...imaged, view: coerce_questions_view(imaged.view, chat_id, call_id) } : imaged;
   if (!("reviews" in viewed)) {
     return viewed;
   }
@@ -79,14 +97,25 @@ const parse_message = (message: Message, chat_id: string): Message =>
         ...message,
         steps: message.steps.map((step) => parse_step(step, chat_id)),
         reasoning_details: as_array(as_record(message).reasoning_details).flatMap(parse_round_reasoning),
+        context: coerce_context_usage(message.context),
       }
-    : message;
+    : { ...message, attachments: parse_attachments(message.attachments, chat_id) };
 
 const parse_summary = (value: unknown): ChatSummary | null => {
   const raw = as_record(value);
   const text = as_string(raw.text);
   const through = as_string(raw.through_message_id);
-  return text && through ? { text, through_message_id: through } : null;
+  if (!text || !through) {
+    return null;
+  }
+  const round = raw.through_round;
+  const facts = as_string(raw.facts);
+  return {
+    text,
+    through_message_id: through,
+    ...(typeof round === "number" && Number.isInteger(round) && round >= -1 ? { through_round: round } : {}),
+    ...(facts ? { facts } : {}),
+  };
 };
 
 export const parse_body = (value: unknown, chat_id: string): ChatBody | null => {

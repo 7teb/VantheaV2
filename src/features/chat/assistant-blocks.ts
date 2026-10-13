@@ -1,6 +1,6 @@
 import type { AssistantMessage, CompactionStep, Message, NoticeStep, ReasoningStep, SteerStep, Step, TextStep, ToolStep } from "../../../shared/chat.ts";
 import type { ToolView } from "../../../shared/tool-view.ts";
-import { is_hidden_step } from "../tools/tool-meta.ts";
+import { is_active_status, is_hidden_step } from "../tools/tool-meta.ts";
 
 export type Block =
   | { kind: "reasoning"; id: string; step: ReasoningStep }
@@ -21,7 +21,7 @@ const plain_block = (step: Exclude<Step, ToolStep>): Block | null => {
     case "steer":
       return { kind: "steer", id: step.id, step };
     case "notice":
-      return { kind: "notice", id: step.id, step };
+      return step.notice === "peer_digest" || step.notice === "agent_roster" ? null : { kind: "notice", id: step.id, step };
     case "compaction":
       return { kind: "compaction", id: step.id, step };
   }
@@ -44,7 +44,7 @@ export const build_blocks = (steps: Step[]): Block[] => {
       blocks.push({ kind: "plan", id: step.id, step, text: step.view.text });
       continue;
     }
-    if (step.view?.kind === "image") {
+    if (step.view?.kind === "image" && step.view.images.length > 0) {
       blocks.push({ kind: "image", id: step.id, step, view: step.view });
       continue;
     }
@@ -58,30 +58,27 @@ export const build_blocks = (steps: Step[]): Block[] => {
   return blocks;
 };
 
+export const is_live_block = (block: Block | undefined): boolean => {
+  switch (block?.kind) {
+    case "reasoning":
+      return block.step.ended_at === null;
+    case "text":
+      return true;
+    case "tools":
+      return block.steps.some((step) => is_active_status(step.status));
+    case "compaction":
+      return block.step.status === "running" || block.step.status === "waiting";
+    default:
+      return false;
+  }
+};
+
+export const shows_thinking = (streaming: boolean, retrying: boolean, blocks: Block[]): boolean => streaming && !retrying && !is_live_block(blocks.at(-1));
+
 export const answer_text = (message: AssistantMessage) =>
   message.steps
     .flatMap((step) => (step.kind === "text" && step.text.trim() ? [step.text.trim()] : []))
     .join("\n\n");
-
-type FileChange = { path: string; added: number; removed: number; created: boolean };
-
-export const file_changes = (message: AssistantMessage): FileChange[] => {
-  const changes = new Map<string, FileChange>();
-  for (const step of message.steps) {
-    if (step.kind !== "tool" || step.status !== "done" || step.view?.kind !== "edit") {
-      continue;
-    }
-    const view = step.view;
-    const previous = changes.get(view.path);
-    changes.set(view.path, {
-      path: view.path,
-      added: (previous?.added ?? 0) + view.added,
-      removed: (previous?.removed ?? 0) + view.removed,
-      created: (previous?.created ?? false) || view.created,
-    });
-  }
-  return [...changes.values()];
-};
 
 const has_plan = (message: Message) =>
   message.role === "assistant" && message.steps.some((step) => step.kind === "tool" && step.view?.kind === "plan");

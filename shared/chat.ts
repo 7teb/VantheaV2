@@ -5,6 +5,8 @@ import type { ToolView } from "./tool-view.ts";
 
 export type PermissionMode = "ask" | "auto" | "full";
 
+export type AttachmentModel = { id: string; width: number; height: number };
+
 export type Attachment = {
   id: string;
   kind: "image" | "file";
@@ -12,6 +14,10 @@ export type Attachment = {
   mime: string;
   size: number;
   vision_note: string | null;
+  width?: number;
+  height?: number;
+  model?: AttachmentModel;
+  source_path?: string;
 };
 
 export type UserOrigin = "user" | "plan_accept" | "continue" | "background" | "agent_report" | "agent_update";
@@ -50,6 +56,8 @@ export type ReasoningStep = {
   ended_at: number | null;
 };
 
+export type StepImage = { id: string; label: string };
+
 export type ToolStep = {
   id: string;
   round: number;
@@ -66,6 +74,7 @@ export type ToolStep = {
   view: ToolView | null;
   error: string | null;
   result_text: string;
+  images?: StepImage[];
   started_at: number | null;
   ended_at: number | null;
 };
@@ -76,16 +85,36 @@ export type SteerMessage = { id: string; text: string; at: number; attachments: 
 
 export type SteerStep = { id: string; round: number; kind: "steer"; text: string; at?: number; steer_id?: string; attachments?: Attachment[]; assistant_reference?: AssistantReference };
 
-export type NoticeKind = "agent_report" | "agent_update" | "update_reminder" | "plan_blocked" | "output_limit" | "todos_carried" | "context_trimmed";
+export type NoticeKind =
+  | "agent_report"
+  | "agent_update"
+  | "update_reminder"
+  | "plan_blocked"
+  | "output_limit"
+  | "todos_carried"
+  | "context_trimmed"
+  | "agent_roster"
+  | "peer_message"
+  | "peer_status"
+  | "peer_digest";
 
 export type NoticeStep = { id: string; round: number; kind: "notice"; notice: NoticeKind; text: string };
+
+export type CompactionSource = "auto" | "manual";
+
+export type CompactionStatus = "running" | "waiting" | "done" | "failed" | "interrupted";
 
 export type CompactionStep = {
   id: string;
   round: number;
   kind: "compaction";
-  status: "running" | "done" | "failed";
-  summary: string;
+  status: CompactionStatus;
+  source?: CompactionSource;
+  started_at?: number;
+  attempt?: number;
+  attempts?: number;
+  error?: CompactionError;
+  retry_at?: number;
 };
 
 export type Step = TextStep | ReasoningStep | ToolStep | SteerStep | NoticeStep | CompactionStep;
@@ -105,9 +134,17 @@ export type TurnErrorKind =
 
 export type TurnError = { kind: TurnErrorKind; message: string };
 
+export type CompactionErrorKind = TurnErrorKind | "empty_note";
+
+export type CompactionError = { kind: CompactionErrorKind; message: string };
+
 export type RetryState = { attempt: number; max: number; reason: string; until: number };
 
-export type ContextUsage = { used: number; limit: number };
+export type ContextCalibration = { prompt_tokens: number; estimate: number };
+
+export type ContextUsage = { used: number; limit: number; calibration?: ContextCalibration; floor?: number };
+
+export const compact_fraction = 0.7;
 
 export type RoundReasoning = { round: number; details: unknown[] };
 
@@ -131,10 +168,15 @@ export type AssistantMessage = {
 
 export type Message = UserMessage | AssistantMessage;
 
+export const has_work = (message: Message): boolean => message.role === "assistant" && message.steps.some((step) => step.kind === "text" || step.kind === "tool");
+
+export const manual_compaction_only = (message: AssistantMessage): boolean =>
+  message.steps.length > 0 && message.steps.every((step) => step.kind === "compaction" && step.source === "manual");
+
 export const message_attachments = (message: Message): Attachment[] =>
   message.role === "user" ? message.attachments : message.steps.flatMap((step) => (step.kind === "steer" ? (step.attachments ?? []) : []));
 
-export type ChatSummary = { text: string; through_message_id: string };
+export type ChatSummary = { text: string; through_message_id: string; through_round?: number; facts?: string };
 
 export type ChatMeta = {
   id: string;

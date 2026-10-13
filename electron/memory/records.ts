@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { as_array, as_iso, as_number, as_record, as_string, pick } from "../storage/coerce.ts";
 import { path_key } from "../storage/paths.ts";
-import { clean_text, contains_secret, memory_kinds, normalize_memory_key, redact_secrets, words_for, type MemoryKind } from "./text.ts";
+import { clean_text, contains_secret, memory_kinds, memory_text_chars, normalize_memory_key, redact_secrets, words_for, type MemoryKind } from "./text.ts";
 
 export type MemoryStatus = "pending" | "confirmed" | "rejected";
 
@@ -44,7 +44,7 @@ const confidence_of = (value: unknown) => Math.max(0, Math.min(1, as_number(Numb
 export const normalize_entry = (value: unknown, now: string): MemoryEntry | null => {
   const raw = as_record(value);
   const kind = pick(raw.kind, memory_kinds, "global_preference");
-  const text = redact_secrets(raw.text).slice(0, 500);
+  const text = redact_secrets(raw.text, memory_text_chars);
   if (!text) {
     return null;
   }
@@ -56,7 +56,7 @@ export const normalize_entry = (value: unknown, now: string): MemoryEntry | null
     scope,
     project_path: scope === "project" ? path_key(as_string(raw.project_path)) : "",
     text,
-    evidence: redact_secrets(raw.evidence),
+    evidence: redact_secrets(raw.evidence, memory_text_chars),
     confidence: confidence_of(raw.confidence),
     status: pick(raw.status, statuses, "pending"),
     source_chat_id: clean_text(raw.source_chat_id, 160),
@@ -123,12 +123,12 @@ export const same_scope = (left: MemoryEntry, right: MemoryEntry) =>
 export const sanitize_candidate = (candidate: unknown, source: MemorySource, now: string): MemoryEntry | null => {
   const raw = as_record(candidate);
   const kind = memory_kinds.find((entry) => entry === raw.kind);
-  const text = clean_text(raw.text, 500);
-  const evidence = clean_text(raw.evidence, 500);
+  const text = clean_text(raw.text, memory_text_chars);
+  const evidence = clean_text(raw.evidence, memory_text_chars);
   if (!kind || !text || !evidence || raw.explicit !== true || contains_secret(text) || contains_secret(evidence)) {
     return null;
   }
-  const source_text = clean_text(source.content, 8000).toLowerCase();
+  const source_text = clean_text(source.content, Number.POSITIVE_INFINITY).toLowerCase();
   if (!source_text.includes(evidence.toLowerCase())) {
     return null;
   }

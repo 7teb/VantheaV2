@@ -86,8 +86,8 @@ const settle_step = (step: Step, at: number): Step => {
   if (step.kind === "tool" && open_tool_statuses.has(step.status)) {
     return { ...step, status: "cancelled", approval: null, ended_at: at };
   }
-  if (step.kind === "compaction" && step.status === "running") {
-    return { ...step, status: "failed" };
+  if (step.kind === "compaction" && (step.status === "running" || step.status === "waiting")) {
+    return { ...step, status: "interrupted" };
   }
   return step;
 };
@@ -196,6 +196,7 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
             view: event.view,
             error: event.error,
             result_text: event.result_text,
+            ...(event.images?.length ? { images: event.images } : {}),
             approval: null,
             progress: null,
             ended_at: event.at,
@@ -229,9 +230,21 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
       };
     case "compaction": {
       const id = `compaction:${event.round}`;
-      const step: Step = { id, round: event.round, kind: "compaction", status: event.status, summary: event.summary };
-      const exists = state.steps.some((entry) => entry.id === id);
-      return { ...state, steps: exists ? state.steps.map((entry) => (entry.id === id ? step : entry)) : [...state.steps, step] };
+      const before = state.steps.find((entry) => entry.id === id);
+      const started_at = (before?.kind === "compaction" ? before.started_at : undefined) ?? (event.status === "running" ? event.at : undefined);
+      const step: Step = {
+        id,
+        round: event.round,
+        kind: "compaction",
+        status: event.status,
+        source: event.source,
+        ...(started_at === undefined ? {} : { started_at }),
+        ...(event.attempt === undefined ? {} : { attempt: event.attempt, attempts: event.attempts }),
+        ...(event.error ? { error: event.error } : {}),
+        ...(event.wait_ms === undefined ? {} : { retry_at: event.at + event.wait_ms }),
+      };
+      const steps = close_reasoning(state.steps, event.at);
+      return { ...state, retry: null, steps: before ? steps.map((entry) => (entry.id === id ? step : entry)) : [...steps, step] };
     }
     case "context":
       return { ...state, context: event.usage };

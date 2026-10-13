@@ -1,5 +1,5 @@
 import type { ChildProcess } from "node:child_process";
-import { output_collector, type OutputCollector } from "./output.ts";
+import { output_collector, type OutputView } from "./output.ts";
 import { kill_tree, spawn_powershell } from "./process.ts";
 
 export type ShellSpawner = (command: string, cwd: string) => ChildProcess;
@@ -9,14 +9,10 @@ export type ShellRun = {
   cwd: string;
   timeout_ms: number;
   signal: AbortSignal;
-  on_output: (output: OutputCollector) => void;
+  on_output: (output: OutputView) => void;
 };
 
-export type ShellOutcome = { exit_code: number | null; output: string; lines: number; timed_out: boolean; duration_ms: number };
-
-const output_head_chars = 8000;
-
-const output_tail_chars = 24000;
+export type ShellOutcome = { exit_code: number | null; output: OutputView; timed_out: boolean; duration_ms: number };
 
 const exit_grace_ms = 2000;
 
@@ -27,7 +23,7 @@ export const run_shell = (run: ShellRun, spawner: ShellSpawner = spawn_powershel
       return;
     }
     const started = Date.now();
-    const output = output_collector(output_head_chars, output_tail_chars);
+    const output = output_collector();
     const child = spawner(run.command, run.cwd);
     let settled = false;
     let exit_code: number | null = null;
@@ -45,7 +41,7 @@ export const run_shell = (run: ShellRun, spawner: ShellSpawner = spawn_powershel
         return;
       }
       cleanup();
-      resolve({ exit_code, output: output.text(), lines: output.lines(), timed_out, duration_ms: Date.now() - started });
+      resolve({ exit_code, output, timed_out, duration_ms: Date.now() - started });
     };
     const on_abort = () => {
       if (settled) {

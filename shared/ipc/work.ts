@@ -14,6 +14,7 @@ export type AgentRunSummary = {
   started_at: string;
   ended_at: string | null;
   report: string;
+  open_questions: number;
 };
 
 export type AgentSummary = {
@@ -21,6 +22,7 @@ export type AgentSummary = {
   chat_id: string;
   name: string;
   description: string;
+  topic: string;
   model: string;
   profile: AgentProfile;
   runs: AgentRunSummary[];

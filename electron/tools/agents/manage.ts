@@ -1,48 +1,18 @@
-import { report_file_notice } from "../../../shared/agent-notes.ts";
-import { last_text, live_run } from "../../agents/live.ts";
-import { ensure_report_file } from "../../agents/report-file.ts";
+import { agent_detail } from "../../agents/detail.ts";
+import { reachable_live, unreachable_state } from "../../agents/live.ts";
 import { current_run, type AgentRecord, type RunRecord } from "../../agents/records.ts";
+import { label_of } from "../../agents/roster.ts";
 import { cancel_agent, message_agent } from "../../agents/runner.ts";
-import { failed, guarded } from "../fs/common.ts";
+import { failed, guarded, read_int_arg } from "../fs/common.ts";
 import { define_tool } from "../types.ts";
 import { agent_id_property, agent_view, read_agent_id, read_text, resolve_agent } from "./common.ts";
-
-const activity_chars = 500;
+import { agent_text_gate, agent_text_subject } from "./text-gate.ts";
 
 const id_parameters = {
   type: "object" as const,
   properties: { agent_id: agent_id_property },
   required: ["agent_id"],
   additionalProperties: false,
-};
-
-const elapsed_seconds = (run: RunRecord) => {
-  const started = Date.parse(run.started_at);
-  const ended = run.ended_at ? Date.parse(run.ended_at) : Date.now();
-  return Number.isFinite(started) && Number.isFinite(ended) ? Math.max(0, Math.round((ended - started) / 1000)) : 0;
-};
-
-const running_detail = (run: RunRecord): string => {
-  const live = live_run(run.run_id);
-  if (!live) {
-    return "No live progress is available.";
-  }
-  const tools = live.transcript.steps.flatMap((step) => (step.kind === "tool" && step.name ? [step.name] : []));
-  const latest = last_text(live.transcript).slice(-activity_chars);
-  return [
-    `Tool calls so far: ${tools.length}.${tools.length ? ` Most recent: ${tools.slice(-8).join(", ")}.` : ""}`,
-    latest ? `Latest output: ${latest}` : "No text output yet.",
-    "It is still working; its report arrives automatically when it finishes.",
-  ].join("\n");
-};
-
-const describe = async (agent: AgentRecord, run: RunRecord): Promise<string> => {
-  const head = `Agent ${agent.agent_id} ("${agent.name}"), ${agent.profile}, model ${agent.model}. Run ${run.run_id}: ${run.status} after ${elapsed_seconds(run)}s.`;
-  if (run.status === "running") {
-    return `${head}\n${running_detail(run)}`;
-  }
-  const file = await ensure_report_file(agent, run);
-  return `${head}\n${report_file_notice(agent.agent_id, run.run_id, file)}`;
 };
 
 const latest = (agent: AgentRecord): RunRecord => {
@@ -53,20 +23,28 @@ const latest = (agent: AgentRecord): RunRecord => {
   return run;
 };
 
-export const get_agent_status_tool = define_tool<{ agent_id: string }>({
+export const get_agent_status_tool = define_tool<{ agent_id: string; report_from: number }>({
   spec: {
     name: "get_agent_status",
     description:
-      "Snapshot of an agent's latest run: status, runtime, tool calls, recent activity, and the complete report file path once it finished. Read or search the file with run_command when needed. It never waits; completion notifications arrive automatically, so do not poll it.",
-    parameters: id_parameters,
+      "Detail of one agent's latest run: status and runtime, topic and scope, the task, files read and written, every peer message it sent and received with the full text, open questions, recent activity while it runs, and its report once it finished. The main agent gets the path of the complete report file; a sub-agent gets the report text itself, in pages: when the report continues, the result names the report_from value for the rest. It never waits; completion notifications arrive automatically, so do not poll it.",
+    parameters: {
+      type: "object",
+      properties: {
+        agent_id: agent_id_property,
+        report_from: { type: "integer", description: "Sub-agents only: the character offset of the report to continue from, as named at the end of the previous page. Default 0." },
+      },
+      required: ["agent_id"],
+      additionalProperties: false,
+    },
   },
-  profiles: ["main"],
-  parse: (raw) => ({ agent_id: read_agent_id(raw) }),
+  profiles: ["main", "explore", "worker"],
+  parse: (raw) => ({ agent_id: read_agent_id(raw), report_from: read_int_arg(raw, "report_from", 0, Number.MAX_SAFE_INTEGER) ?? 0 }),
   run: (ctx, args) =>
     guarded(ctx, "get_agent_status", async () => {
       const agent = resolve_agent(ctx, args.agent_id);
       const run = latest(agent);
-      return { status: "done", text: await describe(agent, run), view: agent_view(agent, run) };
+      return { status: "done", text: await agent_detail(agent, run, ctx.profile, args.report_from), view: agent_view(agent, run) };
     }),
 });
 
@@ -90,11 +68,14 @@ export const cancel_agent_tool = define_tool<{ agent_id: string }>({
     }),
 });
 
+const not_running = (agent: AgentRecord) =>
+  failed(`Agent ${agent.agent_id} ${unreachable_state(agent)}, so it cannot receive a message. Use continue_agent to start a new run on its kept context once it has ended.`);
+
 export const message_agent_tool = define_tool<{ agent_id: string; text: string }>({
   spec: {
     name: "message_agent",
     description:
-      "Send an instruction to a running agent. It arrives at the start of the agent's next round, after the step it is on. Use it to narrow the scope, hand over a missing fact, or tell it to wrap up and report now.",
+      "Send an instruction to a running agent. It arrives at the start of the agent's next round, after the step it is on. Use it to narrow the scope, hand over a missing fact, tell it to wrap up and report now, or step in when agents are stuck messaging each other. The automatic review checks the text before it arrives.",
     parameters: {
       type: "object",
       properties: {
@@ -106,13 +87,21 @@ export const message_agent_tool = define_tool<{ agent_id: string; text: string }
     },
   },
   profiles: ["main"],
-  parse: (raw) => ({ agent_id: read_agent_id(raw), text: read_text(raw, "text", 4000) }),
+  parse: (raw) => ({ agent_id: read_agent_id(raw), text: read_text(raw, "text") }),
   run: (ctx, args) =>
     guarded(ctx, "message_agent", async () => {
       const agent = resolve_agent(ctx, args.agent_id);
       const run = latest(agent);
+      if (!reachable_live(agent)) {
+        return not_running(agent);
+      }
+      const subject = agent_text_subject([`message_agent to ${label_of(agent)}, topic ${agent.topic || "none"}, a running sub-agent`, "an instruction from the main agent"], args.text);
+      const gate = await agent_text_gate(ctx, { tool: "message_agent", to_name: label_of(agent), to_id: agent.agent_id, about: agent.topic, text: args.text }, subject);
+      if (gate.kind !== "pass") {
+        return { status: "denied", text: gate.text, view: agent_view(agent, run) };
+      }
       if (!message_agent(agent, args.text)) {
-        return failed(`Agent ${agent.agent_id} is not running (${run.status}), so it cannot receive a message. Use continue_agent to start a new run on its kept context.`);
+        return not_running(agent);
       }
       return { status: "done", text: `Queued for agent ${agent.agent_id}; it arrives at the start of the agent's next round.`, view: agent_view(agent, run) };
     }),

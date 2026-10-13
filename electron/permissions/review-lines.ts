@@ -24,8 +24,6 @@ export type FeedLine = {
 
 export type TextClip = { action: number; reason: number; feedback: number };
 
-const full_clip: TextClip = { action: 2000, reason: 600, feedback: 1000 };
-
 export const short_clip: TextClip = { action: 500, reason: 300, feedback: 300 };
 
 const command_names = new Set(["run_command", "start_background_task"]);
@@ -55,7 +53,7 @@ const record_status = (record: ReviewRecord, answer: HumanDecision | undefined, 
 
 const spoke_since = (mark: string | null, anchor: string | null): boolean => (anchor === null ? mark !== null : mark !== anchor);
 
-export const decision_feed = (source: FeedSource, self: ReviewActor, mark: string | null, clip: TextClip = full_clip): FeedLine[] => {
+export const decision_feed = (source: FeedSource, self: ReviewActor, mark: string | null): FeedLine[] => {
   const records = dedupe(source.records);
   const decisions = dedupe(source.decisions);
   const answers = new Map(decisions.flatMap((decision) => (decision.review_id ? [[decision.review_id, decision] as const] : [])));
@@ -86,12 +84,12 @@ export const decision_feed = (source: FeedSource, self: ReviewActor, mark: strin
       id: entry.id,
       by: record ? actor_label(record.actor) : decision ? decision_label(decision) : "main",
       tool,
-      action: head_tail(action, clip.action),
+      action,
       cwd,
       status,
-      reason: reason.slice(0, clip.reason),
+      reason,
       ...(record?.rule ? { rule: record.rule } : {}),
-      ...(decision?.feedback ? { feedback: decision.feedback.slice(0, clip.feedback) } : {}),
+      ...(decision?.feedback ? { feedback: decision.feedback } : {}),
       ...(decision?.approved && decision.grant === "prefix" && decision.grant_prefix ? { grant: "prefix", prefix: decision.grant_prefix } : {}),
       human_spoke_since,
     };
@@ -115,7 +113,7 @@ export const decision_feed = (source: FeedSource, self: ReviewActor, mark: strin
 
 export const feed_text = (line: FeedLine): string => JSON.stringify(line.fields);
 
-export type ActionLine = { key: string; kind: "command" | "write" | "other"; text: string; path_only: string };
+export type ActionLine = { key: string; kind: "command" | "write" | "other"; full: string; text: string; path_only: string };
 
 const write_chars = 4000;
 
@@ -138,14 +136,16 @@ export const action_lines = (steps: ToolStep[], feed: FeedLine[], current_call: 
       const command = typeof step.args.command === "string" ? step.args.command : "";
       const last = step.reviews?.at(-1);
       const exit = step.view?.kind === "command" ? step.view.exit_code : null;
-      const text = JSON.stringify({
-        tool: step.name,
-        command: command.length > command_chars ? `${command.slice(0, command_chars)}…` : command,
-        ...(last && by_record.has(last.id) ? { decision: by_record.get(last.id) } : {}),
-        status: step.status,
-        ...(exit === null ? {} : { exit }),
-      });
-      return { key: step.id, kind: "command", text, path_only: text };
+      const line = (shown: string) =>
+        JSON.stringify({
+          tool: step.name,
+          command: shown,
+          ...(last && by_record.has(last.id) ? { decision: by_record.get(last.id) } : {}),
+          status: step.status,
+          ...(exit === null ? {} : { exit }),
+        });
+      const text = line(command.length > command_chars ? `${command.slice(0, command_chars)}…` : command);
+      return { key: step.id, kind: "command", full: line(command), text, path_only: text };
     }
     if (step.name === "write_file" || step.name === "replace_in_file") {
       const target = typeof step.args.path === "string" ? step.args.path : "";
@@ -154,10 +154,11 @@ export const action_lines = (steps: ToolStep[], feed: FeedLine[], current_call: 
       const base = { tool: step.name, path: target, ...(step.name === "write_file" ? { chars: content.length } : {}), status: step.status };
       const path_only = JSON.stringify(base);
       const text = writes.includes(step) && content ? JSON.stringify({ ...base, text: head_tail(content, write_chars) }) : path_only;
-      return { key: step.id, kind: "write", text, path_only };
+      const full = content ? JSON.stringify({ ...base, text: content }) : path_only;
+      return { key: step.id, kind: "write", full, text, path_only };
     }
     const arg = string_arg(step.args);
     const text = JSON.stringify({ tool: step.name, arg: arg.length > arg_chars ? `${arg.slice(0, arg_chars)}…` : arg, status: step.status });
-    return { key: step.id, kind: "other", text, path_only: text };
+    return { key: step.id, kind: "other", full: JSON.stringify({ tool: step.name, arg, status: step.status }), text, path_only: text };
   });
 };

@@ -1,16 +1,16 @@
-import { useState } from "react";
-import type { ContextUsage } from "../../../shared/chat.ts";
-import type { CompactResult } from "../../../shared/ipc/chats.ts";
-import { Button } from "../../components/Button.tsx";
-import { Popover } from "../../components/Popover.tsx";
-import { use_t, type MessageKey } from "../../i18n/index.ts";
-import { compact_chat_now } from "../../state/chat-view.ts";
+import { useState, type ReactNode } from "react";
+import type { ContextUsage } from "../../shared/chat.ts";
+import type { CompactResult } from "../../shared/ipc/chats.ts";
+import { Button } from "./Button.tsx";
+import type { Placement } from "./placement.ts";
+import { Popover } from "./Popover.tsx";
+import { use_t, type MessageKey } from "../i18n/index.ts";
 import "./ContextRing.css";
 
 const radius = 7;
 const circumference = 2 * Math.PI * radius;
 
-const compact_tokens = (value: number) => {
+export const compact_tokens = (value: number) => {
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}M`;
   }
@@ -21,15 +21,17 @@ const compact_tokens = (value: number) => {
 };
 
 const result_keys: Record<CompactResult["status"], MessageKey> = {
-  done: "context.compact_done",
+  done: "context.compacted_manual",
   nothing: "context.compact_nothing",
   busy: "context.compact_busy",
   failed: "context.compaction_failed",
 };
 
-type ContextRingProps = { usage: ContextUsage; chat_id: string; busy: boolean };
+export type ContextCompact = { run: () => Promise<CompactResult["status"]>; busy: boolean };
 
-export const ContextRing = ({ usage, chat_id, busy }: ContextRingProps) => {
+type ContextRingProps = { usage: ContextUsage; compact?: ContextCompact; mark?: number; placement?: Placement; children?: ReactNode };
+
+export const ContextRing = ({ usage, compact, mark, placement = "top-end", children }: ContextRingProps) => {
   const t = use_t();
   const [anchor, set_anchor] = useState<HTMLButtonElement | null>(null);
   const [open, set_open] = useState(false);
@@ -39,10 +41,10 @@ export const ContextRing = ({ usage, chat_id, busy }: ContextRingProps) => {
   const percent = Math.round(ratio * 100);
   const label = t("composer.context_usage", { used: compact_tokens(usage.used), limit: compact_tokens(usage.limit), percent });
 
-  const compact = async () => {
+  const run_compact = async (action: ContextCompact) => {
     set_running(true);
     set_result(null);
-    set_result(await compact_chat_now(chat_id));
+    set_result(await action.run());
     set_running(false);
   };
 
@@ -73,21 +75,24 @@ export const ContextRing = ({ usage, chat_id, busy }: ContextRingProps) => {
           />
         </svg>
       </button>
-      <Popover open={open} anchor={anchor} label={t("context.title")} on_close={() => set_open(false)} placement="top-end" className="context-popover">
+      <Popover open={open} anchor={anchor} label={t("context.title")} on_close={() => set_open(false)} placement={placement} className="context-popover">
         <div className="context-popover-title">{t("context.title")}</div>
         <div className="context-popover-usage">{label}</div>
         <div className="context-popover-bar" aria-hidden="true">
           <span style={{ width: `${percent}%` }} data-level={ratio >= 0.9 ? "high" : "normal"} />
+          {mark !== undefined && <i className="context-popover-mark" style={{ left: `${mark * 100}%` }} title={t("context.compact_mark")} />}
         </div>
-        <p className="context-popover-note">{t("context.auto_note")}</p>
+        {children}
         {result && (
           <p className="context-popover-result" data-status={result}>
             {t(result_keys[result])}
           </p>
         )}
-        <Button className={running ? "is-working" : undefined} disabled={busy || running} onClick={() => void compact()}>
-          {running ? t("context.compressing") : t("context.compact_now")}
-        </Button>
+        {compact && (
+          <Button className={running ? "is-working" : undefined} disabled={compact.busy || running} onClick={() => void run_compact(compact)}>
+            {running ? t("context.compacting") : t("context.compact_now")}
+          </Button>
+        )}
       </Popover>
     </>
   );

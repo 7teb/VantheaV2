@@ -14,6 +14,8 @@ export const record_write = (chat_id: string, file: string, entry: WriteEntry): 
 
 export const write_entry = (chat_id: string, file: string): WriteEntry | null => ledger.get(chat_id)?.get(path_key(file)) ?? null;
 
+export const chat_written = (chat_id: string): string[] => [...(ledger.get(chat_id)?.keys() ?? [])];
+
 export const forget_chat_writes = (chat_id: string): void => {
   ledger.delete(chat_id);
 };

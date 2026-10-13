@@ -39,8 +39,8 @@ const run_title = async (chat_id: string, text: string) => {
   if (!chat || chat.title.trim()) {
     return;
   }
-  const { side_model } = await import("./model.ts");
-  const title = await generate_title(text, side_model);
+  const { side_complete } = await import("./model.ts");
+  const title = await generate_title(text, async (role, messages, max_tokens, signal) => (await side_complete(role, messages, max_tokens, signal)).text);
   const current = await get_chat(chat_id);
   if (title && current && !current.title.trim()) {
     await update_meta(chat_id, { title });

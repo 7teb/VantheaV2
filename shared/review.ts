@@ -23,11 +23,11 @@ export const review_sources = ["model", "floor", "unavailable"] as const;
 
 export type ReviewSource = (typeof review_sources)[number];
 
-export const review_raises = ["protected", "plan", "script_gap", "script_floor"] as const;
+export const review_raises = ["protected", "plan", "script_floor"] as const;
 
 export type ReviewRaise = (typeof review_raises)[number];
 
-export const review_failures = ["timeout", "network", "provider", "rate_limited", "auth", "credits", "refused", "too_large", "unreadable", "offline_window"] as const;
+export const review_failures = ["timeout", "network", "provider", "rate_limited", "auth", "credits", "refused", "too_large", "unreadable"] as const;
 
 export type ReviewFailure = (typeof review_failures)[number];
 
@@ -35,9 +35,9 @@ export const earlier_statuses = ["user_denied", "review_denied", "blocked", "wai
 
 export type ReviewEarlier = { action: string; status: (typeof earlier_statuses)[number]; agent: string | null };
 
-export const review_deadline_ms = 30000;
+export const review_deadline_ms = 60000;
 
-export const script_roles = ["started", "named", "loaded", "manifest", "payload"] as const;
+export const script_roles = ["started", "named", "loaded", "manifest", "payload", "input"] as const;
 
 export type ScriptRole = (typeof script_roles)[number];
 
@@ -89,7 +89,5 @@ export type ReviewRecord = {
 };
 
 export type ReviewNote = Pick<ReviewRecord, "id" | "source" | "reason" | "rule_source" | "rule" | "raised_by" | "granted" | "circumvents" | "failure"> & {
-  gaps?: string[];
   script_floor?: string[];
-  offline_until?: number;
 };

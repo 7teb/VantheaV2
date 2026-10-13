@@ -1,8 +1,10 @@
 import { report_event_text, update_event_text } from "../../shared/agent-notes.ts";
 import type { UserOrigin } from "../../shared/chat.ts";
 import type { BackgroundTask } from "../../shared/ipc/work.ts";
-import { hold_update, report_seconds, type AgentNotice, type AgentReport, type AgentUpdate } from "../agents/reports.ts";
+import { alert_note_content, alert_text, hold_update, report_seconds, type AgentNotice, type AgentReport, type AgentUpdate } from "../agents/reports.ts";
+import { background_event_text } from "../background/event-text.ts";
 import { result_was_read } from "../background/manager.ts";
+import type { OutputView } from "../shell/output.ts";
 import { user_stopped } from "../turn/active.ts";
 import { start_internal_turn } from "../turn/run.ts";
 
@@ -11,30 +13,6 @@ type PendingEvent = { origin: Extract<UserOrigin, "background" | "agent_report" 
 const pending = new Map<string, PendingEvent[]>();
 
 const delivering = new Set<string>();
-
-const output_cap = 6000;
-
-const duration_seconds = (task: BackgroundTask) => {
-  const started = Date.parse(task.started_at);
-  const ended = task.ended_at ? Date.parse(task.ended_at) : Date.now();
-  return Number.isFinite(started) && Number.isFinite(ended) ? Math.max(0, Math.round((ended - started) / 1000)) : 0;
-};
-
-export const background_event_text = (task: BackgroundTask): string => {
-  const output = task.output_tail.trim();
-  return [
-    "[BACKGROUND TASK EVENT]",
-    "This is an internal app event, not a message written by the user. A long-running task you started earlier in this chat has finished.",
-    `ID: ${task.id}`,
-    `Name: ${task.name}`,
-    `Command: ${task.command}`,
-    `Status: ${task.status}`,
-    `Exit code: ${task.exit_code ?? "none"}`,
-    `Duration: ${duration_seconds(task)}s`,
-    output ? `Output tail:\n${output.slice(-output_cap)}` : "Output tail: empty",
-    "Use this as new evidence and continue the original work if it is still relevant. Do not say the user sent this event. If nothing is left to do, reply briefly.",
-  ].join("\n\n");
-};
 
 export const agent_event_text = (report: AgentReport): string =>
   report_event_text({
@@ -106,7 +84,8 @@ const queue_event = (chat_id: string, event: PendingEvent) => {
   void deliver(chat_id);
 };
 
-export const notify_background_finished = (task: BackgroundTask): void => queue_event(task.chat_id, { origin: "background", text: background_event_text(task), task_id: task.id });
+export const notify_background_finished = (task: BackgroundTask, output: OutputView): void =>
+  queue_event(task.chat_id, { origin: "background", text: background_event_text(task, output), task_id: task.id });
 
 const notify_agent_finished = (report: AgentReport): void => {
   const superseded = (pending.get(report.chat_id) ?? []).filter((event) => event.update?.run_id !== report.run_id);
@@ -122,11 +101,16 @@ const notify_agent_update = (update: AgentUpdate): void =>
   });
 
 export const notify_agent = (notice: AgentNotice): void => {
-  if (notice.kind === "report") {
-    notify_agent_finished(notice.report);
-    return;
+  switch (notice.kind) {
+    case "report":
+      notify_agent_finished(notice.report);
+      return;
+    case "update":
+      notify_agent_update(notice.update);
+      return;
+    case "alert":
+      queue_event(notice.alert.chat_id, { origin: "agent_update", text: alert_note_content(alert_text(notice.alert)) });
   }
-  notify_agent_update(notice.update);
 };
 
 export const deliver_pending_events = (chat_id: string): void => {

@@ -5,8 +5,11 @@ import type { AgentRunStatus, AgentSummary } from "../../shared/ipc/work.ts";
 import type { ApiMessage } from "../model/types.ts";
 import { as_array, error_text, is_record } from "../storage/coerce.ts";
 import { keep_corrupt, read_json, write_json, write_json_sync } from "../storage/json-file.ts";
+import type { HeldEntry } from "./inbox.ts";
 import { drop_journal } from "./journal.ts";
+import { mark_task_prompts } from "./legacy-context.ts";
 import {
+  current_run,
   is_running,
   max_stored_agents,
   newest_first,
@@ -18,7 +21,7 @@ import {
   type RunRecord,
 } from "./records.ts";
 
-export type NewAgent = Pick<AgentRecord, "chat_id" | "name" | "description" | "model" | "effort" | "profile" | "project_root">;
+export type NewAgent = Pick<AgentRecord, "chat_id" | "name" | "description" | "topic" | "scope" | "model" | "effort" | "profile" | "project_root">;
 
 export type AgentLookup = { agent: AgentRecord } | { agent: null; error: string };
 
@@ -111,10 +114,13 @@ export const list_agents = (chat_id: string): AgentSummary[] => chat_agents(chat
 
 export const running_in_chat = (chat_id: string): number => chat_agents(chat_id).filter(is_running).length;
 
+const id_part = (id: string): string => id.slice(id.lastIndexOf("#") + 1).trim();
+
 export const find_agent = (id: string, chat_id: string): AgentLookup => {
   const owned = chat_agents(chat_id);
-  const exact = owned.find((record) => record.agent_id === id);
-  const matches = exact ? [exact] : owned.filter((record) => id !== "" && record.agent_id.startsWith(id));
+  const key = id_part(id);
+  const exact = owned.find((record) => record.agent_id === key);
+  const matches = exact ? [exact] : owned.filter((record) => key !== "" && (record.agent_id.startsWith(key) || record.agent_id.startsWith(`agent_${key}`)));
   const [only] = matches;
   if (only && matches.length === 1) {
     return { agent: only };
@@ -156,7 +162,7 @@ const prune = () => {
 
 export const create_agent = (fields: NewAgent): AgentRecord => {
   const now = now_iso();
-  const record: AgentRecord = { ...fields, agent_id: `agent_${randomUUID()}`, created_at: now, updated_at: now, runs: [] };
+  const record: AgentRecord = { ...fields, agent_id: `agent_${randomUUID()}`, created_at: now, updated_at: now, runs: [], held: [] };
   agents.set(record.agent_id, record);
   prune();
   return record;
@@ -164,7 +170,17 @@ export const create_agent = (fields: NewAgent): AgentRecord => {
 
 export const begin_run = (record: AgentRecord, prompt: string, parent_message_id: string, parent_call_id?: string): RunRecord => {
   const now = now_iso();
-  const run: RunRecord = { run_id: `run_${randomUUID()}`, prompt, status: "running", started_at: now, ended_at: null, report: "", parent_message_id, ...(parent_call_id ? { parent_call_id } : {}) };
+  const run: RunRecord = {
+    run_id: `run_${randomUUID()}`,
+    prompt,
+    status: "running",
+    started_at: now,
+    ended_at: null,
+    report: "",
+    open_questions: 0,
+    parent_message_id,
+    ...(parent_call_id ? { parent_call_id } : {}),
+  };
   record.runs = trim_runs([...record.runs, run]);
   record.updated_at = now;
   save_index();
@@ -185,6 +201,37 @@ export const end_run = (agent_id: string, run_id: string, status: Exclude<AgentR
   save_index();
   changed(record);
   return run;
+};
+
+export const set_open_questions = (agent_id: string, count: number): void => {
+  const record = agents.get(agent_id);
+  const run = record ? current_run(record) : null;
+  if (!record || !run || run.open_questions === count) {
+    return;
+  }
+  run.open_questions = count;
+  changed(record);
+};
+
+export const hold_message = (agent_id: string, entry: HeldEntry): boolean => {
+  const record = agents.get(agent_id);
+  if (!record) {
+    return false;
+  }
+  record.held = [...record.held, entry];
+  save_index();
+  return true;
+};
+
+export const take_held = (agent_id: string): HeldEntry[] => {
+  const record = agents.get(agent_id);
+  if (!record?.held.length) {
+    return [];
+  }
+  const held = record.held;
+  record.held = [];
+  save_index();
+  return held;
 };
 
 const valid_message = (entry: unknown): entry is ApiMessage => {
@@ -211,14 +258,14 @@ export const save_context = async (agent_id: string, messages: ApiMessage[]): Pr
   }
 };
 
-export const load_context = async (agent_id: string): Promise<ApiMessage[]> => {
-  const file = context_file(agent_id);
+export const load_context = async (agent: AgentRecord): Promise<ApiMessage[]> => {
+  const file = context_file(agent.agent_id);
   const stored = await read_json(file);
   if (stored.status === "missing") {
     return [];
   }
   if (stored.status === "corrupt") {
-    throw new Error(`the saved context of agent ${agent_id} (${file}) is not valid JSON: ${stored.error}`);
+    throw new Error(`the saved context of agent ${agent.agent_id} (${file}) is not valid JSON: ${stored.error}`);
   }
-  return parse_context(stored.value);
+  return mark_task_prompts(parse_context(stored.value), agent.runs.map((run) => run.prompt));
 };

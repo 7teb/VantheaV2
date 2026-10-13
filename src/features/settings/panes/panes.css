@@ -183,14 +183,8 @@ section + .pane-note {
 .instructions-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: var(--space-3);
-}
-
-.instructions-count {
-  color: var(--text-tertiary);
-  font-size: var(--font-size-caption);
-  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 720px) {

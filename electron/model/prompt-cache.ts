@@ -1,6 +1,8 @@
 export const prompt_cache_fields = (model_id: string): Record<string, unknown> =>
   model_id.startsWith("anthropic/") ? { cache_control: { type: "ephemeral" } } : {};
 
+export const reasoning_bound_to_prefix = (model_id: string): boolean => model_id.startsWith("anthropic/");
+
 const single_marker_prefix_chars = 20000;
 
 export const explicit_review_cache = (model_id: string): boolean => model_id.startsWith("openai/");

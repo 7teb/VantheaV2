@@ -52,6 +52,7 @@
     --text-disabled: #3e3e3e;
     --text-danger: #f0656a;
     --text-waiting: #e3b341;
+    --text-warning: #ff8549;
     --text-on-primary: #0a0a0a;
     --text-placeholder: rgba(252, 252, 252, 0.235);
     --text-on-caption-close: #ffffff;
@@ -75,6 +76,8 @@
     --ring-well-focus: rgba(252, 252, 252, 0.106);
     --ring-card: rgba(252, 252, 252, 0.075);
     --ring-on-raised: rgba(252, 252, 252, 0.075);
+    --ring-rail: rgba(252, 252, 252, 0.06);
+    --ring-strong: rgba(252, 252, 252, 0.2);
     --ring-accent: #a67df2;
     --raised-divider: rgba(252, 252, 252, 0.075);
     --highlight: rgba(255, 255, 255, 0.06);

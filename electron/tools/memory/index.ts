@@ -2,10 +2,11 @@ import type { ApprovalDecision } from "../../../shared/approval.ts";
 import { canonicalize_memory } from "../../memory/canonical.ts";
 import { new_memory_id } from "../../memory/records.ts";
 import { confirm_memory, confirmed_memories, find_confirmed, known_memories, memory_loaded, remove_memory } from "../../memory/store.ts";
-import { memory_handle, normalize_memory_key, redact_secrets } from "../../memory/text.ts";
+import { memory_handle, memory_text_chars, normalize_memory_key, redact_secrets } from "../../memory/text.ts";
 import { path_key } from "../../storage/paths.ts";
 import { require_string } from "../browser/common.ts";
-import { define_tool, type Tool, type ToolResult } from "../types.ts";
+import { tool_gate } from "../../permissions/tool-gate.ts";
+import { define_tool, ToolArgumentError, type Tool, type ToolContext, type ToolResult } from "../types.ts";
 
 type MemoryAction = "remember" | "forget" | "list";
 
@@ -23,11 +24,23 @@ const declined = (action: MemoryAction, text: string, decision: ApprovalDecision
 
 const memory_enabled = (settings: { memory: { enabled: boolean } }) => settings.memory.enabled;
 
+const refused = async (ctx: ToolContext, action: "remember" | "forget", text: string): Promise<ToolResult | null> => {
+  const gate = await tool_gate(ctx, `memory_${action}`, text);
+  if (gate.kind === "run") {
+    return null;
+  }
+  if (gate.kind === "denied") {
+    return result("denied", action, gate.text, text);
+  }
+  const decision = await ctx.approve({ kind: "memory", action, text, ...(gate.note ? { review: gate.note } : {}) });
+  return decision.approved ? null : declined(action, text, decision);
+};
+
 const remember_tool = define_tool<{ text: string }>({
   spec: {
     name: "remember",
     description:
-      "Propose saving ONE short durable fact about the user to your long-term memory, so it is available in future chats. Use it when the user states a stable preference, convention, workflow rule, or fact about their stack that will still matter in unrelated future chats, or explicitly asks you to remember something. Do NOT save one-off task details, transient state, secrets, or file contents. The user is ALWAYS asked to approve the save first, so never assume it succeeded until the tool result confirms it, and do not re-propose a fact the user just declined.",
+      "Propose saving ONE short durable fact about the user to your long-term memory, so it is available in future chats. Use it when the user states a stable preference, convention, workflow rule, or fact about their stack that will still matter in unrelated future chats, or explicitly asks you to remember something. Do NOT save one-off task details, transient state, secrets, or file contents. The automatic review checks the save and may ask the user (in ask mode the user always approves it), so never assume it succeeded until the tool result confirms it, and do not re-propose a fact that was declined or denied.",
     parameters: {
       type: "object",
       properties: { text: { type: "string", description: "The single durable fact to save, one concise self-contained sentence." } },
@@ -37,7 +50,13 @@ const remember_tool = define_tool<{ text: string }>({
   },
   profiles: ["main"],
   available: memory_enabled,
-  parse: (raw) => ({ text: require_string(raw, "text").trim().slice(0, 500) }),
+  parse: (raw) => {
+    const text = require_string(raw, "text").trim();
+    if (text.length > memory_text_chars) {
+      throw new ToolArgumentError(`text is ${text.length} characters, over the ${memory_text_chars}-character limit for one memory. Nothing was saved. Shorten the fact and call remember again.`);
+    }
+    return { text };
+  },
   run: async (ctx, args) => {
     if (!memory_loaded()) {
       return unavailable("remember");
@@ -45,10 +64,10 @@ const remember_tool = define_tool<{ text: string }>({
     const canonical = await canonicalize_memory(args.text, known_memories(), ctx.side_model, ctx.signal);
     const project = path_key(ctx.project_root);
     const kind = canonical.kind === "project_rule" && !project ? "global_preference" : canonical.kind;
-    const text = redact_secrets(canonical.text, 500);
-    const decision = await ctx.approve({ kind: "memory", action: "remember", text });
-    if (!decision.approved) {
-      return declined("remember", text, decision);
+    const text = redact_secrets(canonical.text, memory_text_chars);
+    const stop = await refused(ctx, "remember", text);
+    if (stop) {
+      return stop;
     }
     const now = new Date().toISOString();
     const saved = await confirm_memory({
@@ -66,7 +85,9 @@ const remember_tool = define_tool<{ text: string }>({
       created_at: now,
       updated_at: now,
     });
-    return result("done", "remember", `Saved to memory as (${memory_handle(saved.id)}) [${saved.scope}/${saved.kind}]: ${saved.text}`, saved.text);
+    const saved_line = `Saved to memory as (${memory_handle(saved.id)}) [${saved.scope}/${saved.kind}]: ${saved.text}`;
+    const fallback = canonical.failure ? `\nThe memory model could not classify this fact (${canonical.failure}), so it was saved as written, as a global preference without a canonical key.` : "";
+    return result("done", "remember", `${saved_line}${fallback}`, saved.text);
   },
 });
 
@@ -74,7 +95,7 @@ const forget_tool = define_tool<{ id: string }>({
   spec: {
     name: "forget",
     description:
-      "Propose deleting ONE saved memory. Pass id = the memory's short handle, the characters shown in parentheses at the start of each remembered line (for example a1b2c3); the memory's exact full text also works if you do not have the handle. Call list_memories first if you are unsure which id to use. The user is ALWAYS asked to approve the deletion and is shown the memory's text, so never assume it succeeded until the tool result confirms it.",
+      "Propose deleting ONE saved memory. Pass id = the memory's short handle, the characters shown in parentheses at the start of each remembered line (for example a1b2c3); the memory's exact full text also works if you do not have the handle. Call list_memories first if you are unsure which id to use. The automatic review checks the deletion and may ask the user (in ask mode the user always approves it), so never assume it succeeded until the tool result confirms it.",
     parameters: {
       type: "object",
       properties: { id: { type: "string", description: "The memory's handle from the parentheses (for example a1b2c3), or its exact text." } },
@@ -93,9 +114,9 @@ const forget_tool = define_tool<{ id: string }>({
     if (!target) {
       return result("failed", "forget", `No memory matches "${args.id.slice(0, 120)}". Call list_memories to see every memory with its id.`, "");
     }
-    const decision = await ctx.approve({ kind: "memory", action: "forget", text: target.text });
-    if (!decision.approved) {
-      return declined("forget", target.text, decision);
+    const stop = await refused(ctx, "forget", target.text);
+    if (stop) {
+      return stop;
     }
     if (!(await remove_memory(target.id))) {
       return result("failed", "forget", "That memory no longer exists, nothing was deleted.", target.text);

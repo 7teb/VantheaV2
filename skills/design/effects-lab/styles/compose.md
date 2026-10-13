@@ -6,7 +6,7 @@ Use `python "SKILL_DIR/tools/scaffold.py" compose OUT` to start (SKILL_DIR is th
 
 ## Step 1. Write `OUT/brief.md` BEFORE any code
 
-Exactly these lines, one per line, in this order. The checker reads this file and checks your page against it.
+Exactly these lines, one per line, in this order. check.py reads this file and checks your page against it.
 
 ```
 subject: Night market lanterns
@@ -41,7 +41,7 @@ Rules for each line:
 
 ## Step 2. Styles, roles, and how to lift them
 
-Only the 13 EFFECT styles can be composed. The 7 WORLD styles (comic_book, split_flap, pixel_art, bauhaus, art_deco, neo_brutalism, blueprint) each own a whole look and cannot be mixed. Build those as single style pages. The checker fails a brief that lists a world.
+Only the 13 EFFECT styles can be composed. The 7 WORLD styles (comic_book, split_flap, pixel_art, bauhaus, art_deco, neo_brutalism, blueprint) each own a whole look and cannot be mixed. Build those as single style pages. check.py fails a brief that lists a world.
 
 | style | allowed roles | what it gives | lift from its card |
 |---|---|---|---|
@@ -66,7 +66,7 @@ Only the 13 EFFECT styles can be composed. The 7 WORLD styles (comic_book, split
 Pass the right host to the layer function: `layer_retro_vhs($('#layers_top'), pal)`. The hosts are all exactly the size of the ad. The class `.goo` filter, canvases and `cqw` sizes work the same in all three.
 
 ### The layer contract (every layer follows it)
-A JS layer is a function named `layer_<style>(host, pal)` that adds its element to `host` (one of the three hosts above) and returns an object with a `frame(t, dt, env)` method. The ONE exception is `layer_kinetic_type(el)`: it takes the headline element (`$('.slot_headline')`), not a host, because the headline is real text in the copy. Put your lifted functions at the top level of `app.js`, above `init()`. Always call `palette(ad)` with the ad element (it also works without an argument, but be explicit). `env.ptr` is the pointer state over the ad, `env.tl` is the timeline. Use `env.tl.mood` (0 calm to 1 intense, it eases between scenes) to make the layer more intense in the energetic scene. `pal` is the array from `palette()`: `pal[0]` is c1 (dark), `pal[1]` c2, `pal[2]` c3, `pal[3]` c4, `pal[4]` c5 (text). Layers use only `pal`, never their own colors. A CSS only layer needs no function, but write a comment `/* <style> */` before its rules so the checker can see it.
+A JS layer is a function named `layer_<style>(host, pal)` that adds its element to `host` (one of the three hosts above) and returns an object with a `frame(t, dt, env)` method. The ONE exception is `layer_kinetic_type(el)`: it takes the headline element (`$('.slot_headline')`), not a host, because the headline is real text in the copy. Put your lifted functions at the top level of `app.js`, above `init()`. Always call `palette(ad)` with the ad element (it also works without an argument, but be explicit). `env.ptr` is the pointer state over the ad, `env.tl` is the timeline. Use `env.tl.mood` (0 calm to 1 intense, it eases between scenes) to make the layer more intense in the energetic scene. `pal` is the array from `palette()`: `pal[0]` is c1 (dark), `pal[1]` c2, `pal[2]` c3, `pal[3]` c4, `pal[4]` c5 (text). Layers use only `pal`, never their own colors. A CSS only layer needs no function, but write a comment `/* <style> */` before its rules so check.py can see it.
 
 Working layers, copy them into `app.js` and delete the ones you do not use.
 
@@ -231,12 +231,12 @@ The headline layer works on a DOM element, so list it last or anywhere, it does 
 The hero must never touch the ad border: the cluster half width is about `9cqw + spread`, so keep `cx` between .25 and .72 and `cy` between .3 and .7 for a goo or wire hero. In the 9:16 format the width is small, so also set `cx: .5` in `@container`-free code by reading `ad.dataset.format` in the frame (`const portrait = ad.dataset.format === '9:16'`) and using `cx = portrait ? .5 : .72` and `cy = portrait ? .3 : .5`.
 In 9:16 the copy sits over the hero. Move the scrim to the bottom for that format with `.ad[data-format='9:16'] .ad_scrim { background: linear-gradient(0deg, color-mix(in srgb, var(--c1) 90%, transparent), color-mix(in srgb, var(--c1) 45%, transparent) 55%, transparent 80%); }` in `styles.css`, and keep the copy at the bottom (`.ad[data-format='9:16'] .ad_copy { align-content: end; }`).
 
-Slots: `data-show="0 1 2"` lists the scenes where a slot is visible (scene numbers start at 0). Usual pattern: kicker and headline in every scene, sub from scene 1, cta only in the last scene. Change `data-show` to match your brief. The foot text (`FOOT_TEXT`) is a tiny mono label with the generic subject and a year, for example `Coffee roaster, 2026`. Prefer keeping it, it is a craft detail. Replace every placeholder in `index.html` (`SUBJECT_TITLE`, `KICKER_TEXT`, `HEADLINE_TEXT`, `SUB_TEXT`, `CTA_TEXT`, `FOOT_TEXT`). The checker lists the ones you forgot.
+Slots: `data-show="0 1 2"` lists the scenes where a slot is visible (scene numbers start at 0). Usual pattern: kicker and headline in every scene, sub from scene 1, cta only in the last scene. Change `data-show` to match your brief. The foot text (`FOOT_TEXT`) is a tiny mono label with the generic subject and a year, for example `Coffee roaster, 2026`. Prefer keeping it, it is a craft detail. Replace every placeholder in `index.html` (`SUBJECT_TITLE`, `KICKER_TEXT`, `HEADLINE_TEXT`, `SUB_TEXT`, `CTA_TEXT`, `FOOT_TEXT`). check.py lists the ones you forgot.
 
 The `#scenes` control needs exactly one button per scene.
 
 ## Checking your own work
-- The scene shots are taken again, at a different animation moment, on every checker run. Read pixels from `OUT/_shots` only AFTER your last checker run, and say which run the numbers came from.
+- The scene shots are taken again, at a different animation moment, on every check_page run. Read pixels from `OUT/_shots` only AFTER your last check_page run, and say which run the numbers came from.
 - Measure the hero in all three formats (use the Format control, or set `ad.dataset.format` in a scratch script). Its mass must stay at least 6 percent of the ad size away from every border, also at mood 1 (the scene with the biggest swell).
 - Measure the headline contrast on the third of the line that crosses the hero. It should be at least 3 to 1 against what is behind it. If it is lower, move the hero, lower its mood, or darken the scrim.
 
@@ -245,16 +245,16 @@ The `#scenes` control needs exactly one button per scene.
 2. Layers do not fight. Background moves slowly, hero moves medium, nothing moves fast except in the energetic scene.
 3. Each scene differs: different slots, a different mood, ideally a different composition of the hero.
 4. Palette discipline: only `c1` to `c5`. No other colors anywhere (grey shades of c5 by `color-mix` are fine).
-5. Copy is short and real. The checker rejects long copy, claims and prices.
+5. Copy is short and real. check.py rejects long copy, claims and prices.
 6. Performance: at most 3 layers, one canvas at most, particles 70 or fewer, blobs 6 or fewer.
 7. All three formats (16:9, 1:1, 9:16) still read. Use the Format control to test. Positions come from fractions of the ad size, never fixed pixels.
 
 ## Pitfalls
-- A fourth layer, or a layer that is not in `brief.md`. The checker compares them.
+- A fourth layer, or a layer that is not in `brief.md`. check.py compares them.
 - Hard coded hex colors inside layers. Use `pal`.
 - The hero hidden behind the text on `left` layout. Move `cx` to the right side.
 - `backdrop-filter` (glass_copy) over a flat background looks like a grey box. Keep a colorful mesh or goo layer behind it.
-- Scenes longer than 16 seconds in total. The checker plays only 20 seconds.
+- Scenes longer than 16 seconds in total. check_page plays only 20 seconds.
 - Editing `ad.css` or `helpers.js`. Do not. Put overrides in `styles.css`.
 
 ## Done when

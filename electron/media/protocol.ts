@@ -1,15 +1,9 @@
-import { protocol } from "electron";
+import { protocol, type CustomScheme } from "electron";
 import fs from "node:fs/promises";
 import { error_code } from "../storage/coerce.ts";
 import { is_media_id, media_mime, resolve_media_file, type MediaBucket } from "./files.ts";
 
-const scheme = "vx-media";
-
-export const register_media_scheme = () => {
-  protocol.registerSchemesAsPrivileged([
-    { scheme, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
-  ]);
-};
+export const media_scheme: CustomScheme = { scheme: "vx-media", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } };
 
 const not_found = () => new Response(null, { status: 404 });
 
@@ -41,5 +35,5 @@ const serve_media = async (request: Request): Promise<Response> => {
 };
 
 export const register_media_protocol = () => {
-  protocol.handle(scheme, serve_media);
+  protocol.handle(media_scheme.scheme, serve_media);
 };

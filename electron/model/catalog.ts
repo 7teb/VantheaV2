@@ -4,7 +4,7 @@ export const major_effort = "major";
 
 const effort_rank = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
 
-const side_roles: SideModelRole[] = ["title", "overseer", "vision", "summarize", "web_answer", "memory"];
+const side_roles: SideModelRole[] = ["title", "overseer", "vision", "web_answer", "memory"];
 
 type Raw = Record<string, unknown>;
 
@@ -81,6 +81,9 @@ const resolve_fallbacks = (raw_models: unknown[], models: ModelEntry[]): ModelEn
     if (as_record(raw_models[models.indexOf(target)], where).fallback !== undefined) {
       return fail(where, `must name a model without its own fallback, ${target.id} has one`);
     }
+    if (model.vision && !target.vision) {
+      return fail(where, `must name a model that takes images, because ${model.id} has vision true and ${target.id} has vision false`);
+    }
     return { ...model, fallback: { id: target.id, label: target.label, provider_order: target.provider_order } };
   });
 
@@ -138,6 +141,16 @@ export const api_effort = (model: ModelEntry, effort: string): string => {
     return chosen;
   }
   return model.efforts.filter((item) => item !== major_effort).at(-1) ?? model.default_effort;
+};
+
+export const compaction_effort = (model: ModelEntry, effort: string): string => {
+  const levels = model.efforts.filter((item) => item !== major_effort);
+  const floor = levels.at(-2) ?? levels.at(-1);
+  if (floor === undefined) {
+    return effort;
+  }
+  const chosen = api_effort(model, effort);
+  return levels.indexOf(chosen) > levels.indexOf(floor) ? chosen : floor;
 };
 
 const routes_to_openai = (model: ModelEntry): boolean => model.provider_order.some((route) => route === "openai" || route.startsWith("openai/"));

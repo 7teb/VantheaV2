@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import type { ToolStep } from "../../../shared/chat.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon, CombineIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon, SquareTerminalIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
 import { ApprovalCard } from "./ApprovalCard.tsx";
@@ -10,7 +10,7 @@ import { is_reviewing } from "./review-phase.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
 import { is_active_status, tool_label } from "./tool-meta.ts";
 import { ToolRow } from "./ToolRow.tsx";
-import { format_duration, group_duration, group_label } from "./tool-summary.ts";
+import { format_duration, group_current, group_duration, group_label } from "./tool-summary.ts";
 import "./tools.css";
 
 type ApprovalsProps = { chat_id: string; steps: ToolStep[]; run?: RunRef };
@@ -25,29 +25,30 @@ const Approvals = ({ chat_id, steps, run }: ApprovalsProps) => (
   </>
 );
 
-type WorkGroupProps = { chat_id: string; steps: ToolStep[]; running: boolean; run?: RunRef };
+type WorkGroupProps = { chat_id: string; steps: ToolStep[]; streaming: boolean; tail: boolean; run?: RunRef };
 
-const WorkGroupView = ({ chat_id, steps, running, run }: WorkGroupProps) => {
+const WorkGroupView = ({ chat_id, steps, streaming, tail, run }: WorkGroupProps) => {
   const t = use_t();
   const [chosen, set_chosen] = useState<boolean | null>(null);
   if (steps.length === 1) {
     return (
       <div className="work-single">
-        <ToolRow step={steps[0]} running={running} />
+        <ToolRow step={steps[0]} running={streaming && (tail || is_active_status(steps[0].status))} />
         <Approvals chat_id={chat_id} steps={steps} run={run} />
       </div>
     );
   }
-  const open = chosen ?? running;
-  const current = steps.findLast((step) => is_active_status(step.status)) ?? steps[steps.length - 1];
+  const current = streaming ? group_current(steps) : null;
+  const running = current !== null;
+  const open = chosen ?? (streaming && (tail || running));
   const duration = group_duration(steps);
-  const reviewing = running && is_reviewing(current);
-  const label = running ? tool_label(t, current) : group_label(t, steps);
+  const reviewing = current !== null && is_reviewing(current);
+  const label = current ? tool_label(t, current) : group_label(t, steps);
   return (
     <div className="work-group" data-open={open} data-review={reviewing || undefined}>
       <button type="button" className="work-group-head" aria-expanded={open} onClick={() => set_chosen(!open)}>
         <span className="tool-row-icon">
-          <CombineIcon size={14} />
+          <SquareTerminalIcon size={14} />
         </span>
         <span className={class_names("tool-row-label", running && !reviewing && "is-working")}>{reviewing ? <ReviewingLabel step={current} /> : label}</span>
         {!running && duration !== null && <span className="tool-row-duration">{format_duration(duration)}</span>}
@@ -70,5 +71,9 @@ const same_steps = (left: ToolStep[], right: ToolStep[]) => left.length === righ
 export const WorkGroup = memo(
   WorkGroupView,
   (previous, next) =>
-    previous.chat_id === next.chat_id && previous.running === next.running && previous.run === next.run && same_steps(previous.steps, next.steps),
+    previous.chat_id === next.chat_id &&
+    previous.streaming === next.streaming &&
+    previous.tail === next.tail &&
+    previous.run === next.run &&
+    same_steps(previous.steps, next.steps),
 );

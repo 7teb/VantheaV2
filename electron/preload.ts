@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from "electron";
 import { channel_kind, type Bridge } from "../shared/ipc/index.ts";
 
 const require_kind = (name: string, kind: "invoke" | "send" | "event") => {
@@ -24,6 +24,7 @@ const bridge: Bridge = {
       ipcRenderer.removeListener(name, wrapped);
     };
   },
+  file_path: (file) => webUtils.getPathForFile(file),
 };
 
 contextBridge.exposeInMainWorld("vx", bridge);

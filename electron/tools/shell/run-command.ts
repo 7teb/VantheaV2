@@ -2,7 +2,8 @@ import fs from "node:fs/promises";
 import { shell_name, type ToolView } from "../../../shared/tool-view.ts";
 import { invalidate_index } from "../../project/index.ts";
 import { resolve_inside } from "../../project/scope.ts";
-import type { OutputCollector } from "../../shell/output.ts";
+import { estimate_tokens, result_cap_tokens } from "../../context/estimate.ts";
+import type { OutputView } from "../../shell/output.ts";
 import { run_shell } from "../../shell/run.ts";
 import { read_number, read_string, require_string } from "../browser/common.ts";
 import { failed, guarded } from "../fs/common.ts";
@@ -30,7 +31,7 @@ export const command_dir = async (project_root: string, cwd: string) => {
 const progress_reporter = (ctx: ToolContext) => {
   let last = 0;
   let pending: ReturnType<typeof setTimeout> | null = null;
-  let latest: OutputCollector | null = null;
+  let latest: OutputView | null = null;
   const send = () => {
     pending = null;
     last = Date.now();
@@ -39,7 +40,7 @@ const progress_reporter = (ctx: ToolContext) => {
     }
   };
   return {
-    update: (output: OutputCollector) => {
+    update: (output: OutputView) => {
       latest = output;
       if (pending) {
         return;
@@ -131,10 +132,12 @@ export const run_command_tool = define_tool<RunArgs>({
       });
       const status = outcome.timed_out ? "timed out" : `exit code ${outcome.exit_code ?? "unknown"}`;
       const seconds = (outcome.duration_ms / 1000).toFixed(1);
+      const lead = `${gate.note ? `${gate.note}\n` : ""}${status} after ${seconds} s${outcome.timed_out ? `; for longer work raise timeout_ms (at most ${max_timeout_ms})${ctx.profile === "main" ? " or use start_background_task" : ""}` : ""}\n`;
+      const output = outcome.output.text(result_cap_tokens - estimate_tokens(lead));
       return {
         status: outcome.exit_code === 0 && !outcome.timed_out ? "done" : "failed",
-        text: `${gate.note ? `${gate.note}\n` : ""}${status} after ${seconds} s${outcome.timed_out ? `; for longer work raise timeout_ms (at most ${max_timeout_ms})${ctx.profile === "main" ? " or use start_background_task" : ""}` : ""}\n${outcome.output || "(no output)"}`,
-        view: command_view(args.command, dir.relative, outcome.output, {
+        text: `${lead}${output || "(no output)"}`,
+        view: command_view(args.command, dir.relative, output, {
           exit_code: outcome.exit_code,
           timed_out: outcome.timed_out,
           duration_ms: outcome.duration_ms,

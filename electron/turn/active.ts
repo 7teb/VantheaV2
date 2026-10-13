@@ -4,7 +4,17 @@ import type { ModelEntry } from "../../shared/models.ts";
 import type { Emitter } from "./session.ts";
 import { add_authorization } from "../permissions/context.ts";
 
-export type ActiveTurn = { controller: AbortController; message_id: string; steers: SteerMessage[]; ended: boolean; emit: Emitter; model: ModelEntry; effort: string; visible_text: string };
+export type ActiveTurn = {
+  controller: AbortController;
+  message_id: string;
+  steers: SteerMessage[];
+  notes: Map<string, Promise<Attachment[]>>;
+  ended: boolean;
+  emit: Emitter;
+  model: ModelEntry;
+  effort: string;
+  visible_text: string;
+};
 
 const active = new Map<string, ActiveTurn>();
 
@@ -45,6 +55,7 @@ export const register_active = (chat_id: string, message_id: string, emit: Emitt
     controller: new AbortController(),
     message_id,
     steers: [],
+    notes: new Map(),
     ended: false,
     model,
     effort,
@@ -107,14 +118,23 @@ export const push_steer = (chat_id: string, text: string, id: string = randomUUI
 
 export const has_steers = (chat_id: string): boolean => Boolean(active.get(chat_id)?.steers.length);
 
-export const take_steers_active = (chat_id: string): SteerMessage[] => {
-  const turn = active.get(chat_id);
-  if (!turn || !turn.steers.length) {
-    return [];
+export const drop_untaken_steers = (chat_id: string, turn: ActiveTurn): void => {
+  const left = turn.steers.splice(0);
+  if (!left.length) {
+    return;
   }
-  const taken = turn.steers;
-  turn.steers = [];
-  return taken;
+  const listed = left.map((steer) => `${steer.id} (attachments: ${steer.attachments.map((attachment) => attachment.id).join(", ") || "none"})`).join("; ");
+  console.warn(`[turn] turn ${turn.message_id} in chat ${chat_id} ended with steers it did not take: ${listed}`);
+};
+
+export const take_steer_active = (chat_id: string, steer_id: string): SteerMessage | null => {
+  const turn = active.get(chat_id);
+  const at = turn ? turn.steers.findIndex((entry) => entry.id === steer_id) : -1;
+  if (!turn || at < 0) {
+    return null;
+  }
+  turn.notes.delete(steer_id);
+  return turn.steers.splice(at, 1)[0] ?? null;
 };
 
 export const abort_turn = (chat_id: string, reason: Error): boolean => {

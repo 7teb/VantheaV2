@@ -1,11 +1,12 @@
-import { app, Menu } from "electron";
+import { app, Menu, protocol } from "electron";
 import { init_services, report_startup_failure, shutdown_services } from "./app/lifecycle.ts";
 import { create_window, main_window } from "./app/window.ts";
+import { check_scheme } from "./check/session.ts";
 import { emit } from "./ipc/handle.ts";
 import { register_ipc } from "./ipc/index.ts";
-import { register_media_scheme } from "./media/protocol.ts";
+import { media_scheme } from "./media/protocol.ts";
 
-register_media_scheme();
+protocol.registerSchemesAsPrivileged([media_scheme, check_scheme]);
 app.commandLine.appendSwitch("disable-lcd-text");
 
 const start = async () => {

@@ -5,6 +5,7 @@ import { same_subject } from "./decisions.ts";
 import { run_review, type ReviewOutcome } from "./overseer.ts";
 import { review_input, type InputRequest } from "./review-input.ts";
 import { review_statuses } from "./review-prompt.ts";
+import { request_cap_tokens } from "./review-budget.ts";
 import { assemble_review } from "./review-request.ts";
 import { instance_key } from "./review-state.ts";
 import type { ScriptFile } from "./sources.ts";
@@ -12,7 +13,7 @@ import { earlier_line } from "./verdict-text.ts";
 
 export type VerdictRequest = { reviewer: Reviewer; input: Omit<InputRequest, "records" | "steps" | "earlier_commands">; raised: ReviewRaise[]; granted: boolean; signal: AbortSignal };
 
-export type VerdictResult = { record: ReviewRecord; seen: ReadonlySet<string>; script_gaps: string[] };
+export type VerdictResult = { record: ReviewRecord; seen: ReadonlySet<string> };
 
 const rank: Record<ReviewVerdict, number> = { allow: 0, review: 1, deny: 2 };
 
@@ -35,11 +36,11 @@ export const review_verdict = async (request: VerdictRequest): Promise<VerdictRe
   const { reviewer, signal } = request;
   const history = await reviewer.history();
   const input = await review_input({ ...request.input, records: history.records, steps: history.steps, earlier_commands: history.earlier_commands });
-  const assembled = assemble_review(input);
+  const room = (await reviewer.call.prompt_room?.()) ?? request_cap_tokens;
+  const assembled = assemble_review(input, room);
   const instance = instance_key(request.input.chat_id, reviewer.actor.id);
   const outcome: ReviewOutcome = assembled.too_large ? { kind: "failure", failure: "too_large", usage: null } : await run_review(reviewer, instance, assembled, signal);
   const seen = new Set(history.records.map((record) => record.id));
-  const script_gaps = assembled.script_gaps;
   const scripts = review_scripts(request.input.action.files, assembled.sent, outcome.kind === "answer" ? outcome.answer.script_summary : "");
   const base = {
     id: randomUUID(),
@@ -54,10 +55,9 @@ export const review_verdict = async (request: VerdictRequest): Promise<VerdictRe
   };
   if (outcome.kind === "failure") {
     const record: ReviewRecord = { ...base, verdict: "review", source: "unavailable", reason: "", rule_source: "none", rule: "", failure: outcome.failure };
-    return { record, seen, script_gaps };
+    return { record, seen };
   }
   const { answer } = outcome;
-  const minimums: ReviewRaise[] = script_gaps.length && !request.raised.includes("script_gap") ? [...request.raised, "script_gap"] : request.raised;
   const line = outcome.workaround ? assembled.lines.find((entry) => entry.id === outcome.workaround) : undefined;
   let model = answer.decision;
   let earlier: ReviewEarlier | null = null;
@@ -72,9 +72,9 @@ export const review_verdict = async (request: VerdictRequest): Promise<VerdictRe
       earlier = earlier_line(line.action, line.status, line.agent);
     }
   }
-  const raised = model === "deny" ? [] : minimums;
-  const verdict = stricter(model, minimums.length ? "review" : "allow");
-  const granted = verdict === "review" && model === "review" && !minimums.length && request.granted;
+  const raised = model === "deny" ? [] : request.raised;
+  const verdict = stricter(model, request.raised.length ? "review" : "allow");
+  const granted = verdict === "review" && model === "review" && !request.raised.length && request.granted;
   const record: ReviewRecord = {
     ...base,
     verdict: granted ? "allow" : verdict,
@@ -87,5 +87,5 @@ export const review_verdict = async (request: VerdictRequest): Promise<VerdictRe
     ...(circumvents ? { circumvents } : {}),
     ...(earlier ? { earlier } : {}),
   };
-  return { record, seen, script_gaps };
+  return { record, seen };
 };

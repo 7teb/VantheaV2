@@ -1,6 +1,6 @@
 import { read_ax_node, type AxNode } from "./ax.ts";
 import { call_for_object, call_on, cdp, evaluate_value, frame_session, read_frames } from "./cdp.ts";
-import type { BrowserTab, FrameInfo, SnapshotRef } from "./state.ts";
+import type { AxEntry, BrowserTab, FrameInfo, SnapshotRef } from "./state.ts";
 
 type Rect = { x: number; y: number; width: number; height: number };
 
@@ -54,18 +54,18 @@ const probe_node = `function(){
   };
 }`;
 
-const hit_test = `function(x,y){const hit=this.ownerDocument.elementFromPoint(x,y);if(!hit)return{ok:false,by:""};const own=this===hit||this.contains(hit)||hit.contains(this)||this.control===hit;return{ok:own,by:own?"":hit.localName}}`;
+export const hit_test = `function(x,y){const hit=this.ownerDocument.elementFromPoint(x,y);if(!hit)return{ok:false,by:""};const own=this===hit||this.contains(hit)||hit.contains(this)||this.control===hit;return{ok:own,by:own?"":hit.localName}}`;
 
 const visible_label = `function(){for(const label of this.labels||[]){const style=getComputedStyle(label);const box=label.getBoundingClientRect();if(box.width>0&&box.height>0&&style.display!=="none"&&style.visibility==="visible"&&Number(style.opacity)!==0&&style.pointerEvents!=="none")return label}return null}`;
 
 const stale = (problem: string) => new Error(`${problem} Call browser_snapshot again.`);
 
-const describe = (ref: SnapshotRef) => {
+export const describe = (ref: Pick<AxEntry, "role" | "name">) => {
   const kind = ref.role === "statictext" ? "text" : ref.role;
   return ref.name ? `${kind} ${JSON.stringify(ref.name.slice(0, 80))}` : kind;
 };
 
-export const resolve_object = async (tab: BrowserTab, ref: SnapshotRef, signal: AbortSignal) => {
+export const resolve_object = async (tab: BrowserTab, ref: Pick<SnapshotRef, "backend_node_id" | "session_id">, signal: AbortSignal) => {
   const resolved = await cdp<{ object?: { objectId?: string } }>(tab, "DOM.resolveNode", { backendNodeId: ref.backend_node_id }, ref.session_id, signal);
   const object_id = resolved.object?.objectId;
   if (!object_id) {
@@ -91,7 +91,7 @@ const scroll_frame_owners = async (tab: BrowserTab, frame_id: string, frames: Ma
   }
 };
 
-const quad_bounds = (quad: number[]) => {
+export const quad_bounds = (quad: number[]) => {
   const xs = [quad[0], quad[2], quad[4], quad[6]];
   const ys = [quad[1], quad[3], quad[5], quad[7]];
   return { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys), bottom: Math.max(...ys) };
@@ -110,7 +110,7 @@ const has_area = (quad: number[]) => {
   return bounds.right > bounds.left && bounds.bottom > bounds.top;
 };
 
-const probe = async (tab: BrowserTab, session_id: string, object_id: string, signal: AbortSignal) =>
+export const probe = async (tab: BrowserTab, session_id: string, object_id: string, signal: AbortSignal) =>
   evaluate_value<Probe>(await call_on(tab, session_id, object_id, probe_node, [], signal));
 
 const place = async (tab: BrowserTab, session_id: string, object_id: string, info: Probe, signal: AbortSignal): Promise<Placement> => {

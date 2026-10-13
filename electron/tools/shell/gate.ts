@@ -37,7 +37,7 @@ const settle_command = (ctx: ToolContext, command: string, cwd: string, backgrou
 };
 
 export const gate_command = (ctx: ToolContext, command: string, cwd: string, background: boolean): Promise<GateOutcome> =>
-  reviewed_until_stable(ctx, { command, cwd, background }, settle_command(ctx, command, cwd, background));
+  reviewed_until_stable(ctx, { command, cwd, background, shell: "powershell" }, settle_command(ctx, command, cwd, background));
 
 export const blocked_text = (reason: string) =>
   `Blocked (${reason}). This command never runs inside the app and cannot be approved here. Do not retry it or a variant; tell the user what you intended so they can run it themselves.`;

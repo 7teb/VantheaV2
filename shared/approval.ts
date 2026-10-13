@@ -18,10 +18,12 @@ export type ApprovalRequest =
     }
   | { kind: "write"; path: string; created: boolean; added: number; removed: number; diff: DiffLine[]; instruction_file?: boolean }
   | { kind: "mcp"; server: string; tool: string; tier: McpTier; args_preview: string; scope: string | null; reason?: string; review?: ReviewNote; rechecked?: boolean }
-  | { kind: "mcp_server"; name: string; command: string; args: string[]; cwd: string; env: Record<string, string>; replaces: boolean }
-  | { kind: "skill_install"; name: string; description: string; files: string[]; source: string; replaces: string | null; content: string }
-  | { kind: "memory"; action: "remember" | "forget"; text: string }
-  | { kind: "browser_vision"; url: string };
+  | { kind: "mcp_server"; name: string; command: string; args: string[]; cwd: string; env: Record<string, string>; replaces: boolean; review?: ReviewNote }
+  | { kind: "skill_install"; name: string; description: string; files: string[]; source: string; replaces: string | null; content: string; review?: ReviewNote }
+  | { kind: "memory"; action: "remember" | "forget"; text: string; review?: ReviewNote }
+  | { kind: "agent_message"; tool: AgentTextTool; to_name: string; to_id: string | null; about: string; text: string; review?: ReviewNote };
+
+export type AgentTextTool = "message_peer" | "message_agent" | "deploy_agent" | "continue_agent";
 
 export type GrantScope = "once" | "prefix" | "chat" | "session" | "full_window";
 

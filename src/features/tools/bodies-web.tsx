@@ -31,10 +31,7 @@ export const WebSearchBody = ({ view }: BodyProps<"web_search">) => {
   const hidden = view.sources.length - visible_sources;
   return (
     <div className="tool-body-stack">
-      <div className="tool-body-line tool-body-muted">
-        <span>{view.query}</span>
-        <span>{t(view.depth === "advanced" ? "tools.depth_advanced" : "tools.depth_basic")}</span>
-      </div>
+      <div className="tool-body-muted">{t(view.depth === "advanced" ? "tools.depth_advanced" : "tools.depth_basic")}</div>
       {view.sources.length > 0 && (
         <div className="web-sources">
           {shown.map((source, index) => (
@@ -65,15 +62,17 @@ export const ImageBody = ({ view }: BodyProps<"image">) => {
   return (
     <div className="tool-body-stack">
       {view.prompt && <div className="tool-body-quote">{view.prompt}</div>}
-      <div className="generated-images">
-        {view.images.map((image) => {
-          const src = image_src(image.id);
-          const ratio = image.width && image.height ? image.width / image.height : null;
-          return (
-            <MediaImage key={image.id} src={src} alt={view.prompt} ratio={ratio} className="generated-image" on_open={() => set_open({ src, alt: view.prompt })} />
-          );
-        })}
-      </div>
+      {view.images.length > 0 && (
+        <div className="generated-images">
+          {view.images.map((image) => {
+            const src = image_src(image.id);
+            const ratio = image.width && image.height ? image.width / image.height : null;
+            return (
+              <MediaImage key={image.id} src={src} alt={view.prompt} ratio={ratio} className="generated-image" on_open={() => set_open({ src, alt: view.prompt })} />
+            );
+          })}
+        </div>
+      )}
       <Lightbox image={open} on_close={() => set_open(null)} />
     </div>
   );

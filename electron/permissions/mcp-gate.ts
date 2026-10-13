@@ -10,5 +10,5 @@ export const mcp_command_gate = async (command: string, ctx: ToolContext, change
   if (sleep) {
     return { action: "deny", reason: rejected_text(sleep), record: null, note: null, grant_prefix: null, plan: false, pins: [], source_hash: "", seen: new Set() };
   }
-  return command_pass(ctx, { command, cwd: ctx.execution_cwd || ".", background: false }, changed);
+  return command_pass(ctx, { command, cwd: ctx.execution_cwd || ".", background: false, shell: "unknown" }, changed);
 };

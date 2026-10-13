@@ -2,13 +2,14 @@ import { dialog } from "electron";
 import { flush_reports, set_agent_continuation } from "../agents/reports.ts";
 import { clear_chat_agents, init_agents, shutdown_agents_sync } from "../agents/runner.ts";
 import { init_background, on_background_finished, remove_chat_background, shutdown_background_sync } from "../background/manager.ts";
-import { clear_browser_chat, set_vision_analyzer } from "../browser/vision.ts";
+import { set_vision_analyzer } from "../browser/vision.ts";
 import { init_browser_guest_security } from "../browser/guest-security.ts";
 import { flush_all_sync, get_chat, on_chat_removed } from "../chats/store.ts";
 import { forget_chat_approvals } from "../ipc/agents.ts";
 import { init_extensions } from "../ipc/extensions.ts";
 import { kill_all_terminals } from "../ipc/terminal.ts";
 import { init_mcp, set_settings_access, shutdown_mcp } from "../mcp/servers.ts";
+import { sweep_attachments } from "../media/sweep.ts";
 import { extract_memories_after_turn } from "../memory/extract.ts";
 import { memory_prompt_section } from "../memory/prompt.ts";
 import { model_catalog } from "../model/catalog-file.ts";
@@ -21,6 +22,7 @@ import { set_prompt_sections } from "../prompts/index.ts";
 import { forget_answers, settle_answers } from "../questions/answers.ts";
 import { get_secret, get_settings, update_settings } from "../settings/store.ts";
 import { side_model } from "../side/model.ts";
+import { context_model } from "../settings/model-context.ts";
 import { review_call } from "../side/review.ts";
 import { vision_analyzer } from "../side/vision.ts";
 import { skills_prompt_section } from "../skills/store.ts";
@@ -36,7 +38,8 @@ import { storage_paths } from "../storage/paths.ts";
 import { clear_mcp_chat, set_command_gate } from "../tools/mcp/decide.ts";
 import { tools_for } from "../tools/registry.ts";
 import { forget_user_stop } from "../turn/active.ts";
-import { interrupt_all_turns, set_turn_finished_hook, stop_turn } from "../turn/run.ts";
+import { set_turn_finished_hook } from "../turn/drive.ts";
+import { interrupt_all_turns, stop_turn } from "../turn/run.ts";
 import { deliver_pending_events, drop_pending_events, notify_agent, notify_background_finished } from "./notifications.ts";
 
 const run_step = async (step: string, action: () => unknown) => {
@@ -83,7 +86,6 @@ const wire_hooks = () => {
     close_full_window(chat_id);
     forget_chat_approvals(chat_id);
     clear_mcp_chat(chat_id);
-    clear_browser_chat(chat_id);
     remove_chat_background(chat_id);
     forget_answers(chat_id);
   });
@@ -92,16 +94,17 @@ const wire_hooks = () => {
 export const init_services = async (): Promise<void> => {
   wire_hooks();
   await run_step("storage", init_persistence);
+  sweep_attachments().catch((error) => console.error("[media] attachment sweep failed:", error));
   await run_step("snapshots", () => init_snapshots(storage_paths().snapshots));
   await run_step("background tasks", () => init_background());
   await run_step("agents", () =>
     init_agents({
       dir: storage_paths().agents,
       stream: stream_round,
-      resolve_tools: (profile, settings) => tools_for(profile, settings),
+      resolve_tools: (profile, settings, model) => tools_for(profile, settings, model),
       side_model,
       review_call,
-      models: async () => (await model_catalog()).models,
+      models: async () => (await model_catalog()).models.map(context_model),
     }),
   );
   await run_step("memory and skills", init_extensions);

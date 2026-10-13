@@ -2,6 +2,7 @@ import type { PermissionMode } from "../../shared/chat.ts";
 import type { AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
+import { no_stored_context, type StoredContext } from "../context/calibration.ts";
 import type { ApiMessage } from "../model/types.ts";
 import { cancel_chat } from "../permissions/approvals.ts";
 import { clear_review_instance } from "../permissions/review-state.ts";
@@ -9,12 +10,16 @@ import { build_system_prompt } from "../prompts/index.ts";
 import { render_section } from "../prompts/sections.ts";
 import { error_text } from "../storage/coerce.ts";
 import type { ReviewModelCall, SideModelCall, Tool, ToolProfile } from "../tools/types.ts";
-import { run_turn_loop } from "../turn/loop.ts";
+import { without_images } from "../turn/carriers.ts";
+import { push_notes, run_turn_loop } from "../turn/loop.ts";
 import type { StreamFn } from "../turn/session.ts";
 import { close_journal, flush_journals_sync } from "./journal.ts";
-import { app_closed_end, create_live, forget_live, last_text, live_run, live_runs, report_text, type LiveRun, type StopReason } from "./live.ts";
-import { agent_role_section } from "./prompt.ts";
+import { app_closed_end, create_live, final_report, forget_live, last_text, live_run, live_runs, reachable_live, stored_agent_context, type LiveRun, type StopReason } from "./live.ts";
+import { deliver_to, forget_chat_peers, on_peer_ended, return_undelivered } from "./peers.ts";
+import { agent_role_section, kept_instruction_note, peer_note } from "./prompt.ts";
+import { questions_asked_by, sync_open_questions } from "./questions.ts";
 import { current_run, public_run, public_summary, type AgentRecord, type RunRecord } from "./records.ts";
+import { label_of, question_line } from "./roster.ts";
 import { write_report_file } from "./report-file.ts";
 import { deliver_report, drop_agent_notes, wake_idle } from "./reports.ts";
 import { agent_approval_key, agent_session } from "./session.ts";
@@ -23,6 +28,7 @@ import {
   chat_agents,
   create_agent,
   end_run,
+  get_agent,
   init_agent_store,
   load_context,
   remove_agents,
@@ -30,12 +36,13 @@ import {
   running_in_chat,
   save_context,
   save_index_sync,
+  take_held,
 } from "./store.ts";
 
 export type AgentDeps = {
   dir: string;
   stream: StreamFn;
-  resolve_tools: (profile: ToolProfile, settings: Settings) => Tool[];
+  resolve_tools: (profile: ToolProfile, settings: Settings, model: ModelEntry) => Tool[];
   side_model: SideModelCall;
   review_call: ReviewModelCall;
   models: () => Promise<ModelEntry[]>;
@@ -52,11 +59,11 @@ export type RunContext = {
   prompt: string;
 };
 
-export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description" | "profile" | "effort"> & { model: ModelEntry };
+export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description" | "topic" | "scope" | "profile" | "effort"> & { model: ModelEntry };
 
 export type StartedRun = { agent: AgentSummary; run: AgentRunSummary };
 
-export const max_running_agents = 8;
+export const max_running_agents = 20;
 
 let deps: AgentDeps | null = null;
 
@@ -81,7 +88,7 @@ export const find_agent_model = async (id: string): Promise<ModelEntry> => {
   return found;
 };
 
-const ensure_capacity = (chat_id: string) => {
+export const ensure_capacity = (chat_id: string): void => {
   if (running_in_chat(chat_id) >= max_running_agents) {
     throw new Error(`At most ${max_running_agents} agents can run at once in this chat; wait for one to finish or cancel one.`);
   }
@@ -119,13 +126,18 @@ const ending_note = (live: LiveRun, status: AgentRunStatus): string => {
   return "";
 };
 
-const report_of = (live: LiveRun, status: AgentRunStatus): string => {
-  const text = report_text(live.transcript);
+const ended_report = (live: LiveRun, status: AgentRunStatus): string => {
+  const text = final_report(live);
   const note = ending_note(live, status);
   if (!note) {
     return text;
   }
   return text ? `${note}\n\nLast output:\n${text}` : note;
+};
+
+const with_open_questions = (agent: Pick<AgentRecord, "agent_id" | "name">, report: string): string => {
+  const open = questions_asked_by(agent.agent_id).map((question) => `- Open question ${question_line(question)}, still without an answer.`);
+  return open.length ? [report, `Open questions of ${label_of(agent)}:`, ...open].filter(Boolean).join("\n\n") : report;
 };
 
 const stop_reason_of = (live: LiveRun): string => {
@@ -152,7 +164,7 @@ const close_open_calls = (messages: ApiMessage[]): ApiMessage[] => {
 const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_messages: ApiMessage[]) => {
   try {
     const status = final_status(live);
-    const report = report_of(live, status);
+    const report = with_open_questions(agent, ended_report(live, status));
     let report_path: string | null = null;
     let report_error = "";
     if (!live.removed) {
@@ -170,7 +182,11 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
     const ended = live.removed ? null : end_run(agent.agent_id, run.run_id, status, report);
     cancel_chat(agent_approval_key(run.run_id));
     clear_review_instance(agent.chat_id, agent.agent_id);
+    return_undelivered(live);
     forget_live(run.run_id);
+    if (ended) {
+      on_peer_ended(agent);
+    }
     if (!ended || live.stop_reason === "cancelled" || live.stop_reason === "app_closed") {
       wake_idle(agent.chat_id);
       return;
@@ -194,10 +210,10 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
   }
 };
 
-const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request: RunContext, model: ModelEntry, context: ApiMessage[]): Promise<void> => {
+const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request: RunContext, model: ModelEntry, context: ApiMessage[], stored: StoredContext): Promise<void> => {
   const api_messages: ApiMessage[] = [];
   try {
-    const tools = current_deps().resolve_tools(agent.profile, request.settings);
+    const tools = current_deps().resolve_tools(agent.profile, request.settings, model);
     const system = await build_system_prompt({
       model,
       settings: request.settings,
@@ -208,11 +224,14 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
       chat_id: agent.chat_id,
       user_text: request.prompt,
       tools,
-      has_file_attachments: false,
+      user_attachments: false,
       effort: agent.effort,
     });
-    api_messages.push({ role: "system", content: `${system}\n\n${render_section(agent_role_section(agent))}` }, ...context, { role: "user", content: request.prompt });
-    await run_turn_loop(agent_session(current_deps(), agent, run, live, request, model), api_messages);
+    const held = take_held(agent.agent_id).map((entry) => (entry.from === "main" ? kept_instruction_note(entry.text) : peer_note(entry)));
+    api_messages.push({ role: "system", content: `${system}\n\n${render_section(agent_role_section(agent))}` }, ...context);
+    push_notes(live.emit, held, 0, api_messages);
+    api_messages.push({ role: "user", instruction: true, content: request.prompt });
+    await run_turn_loop(agent_session(current_deps(), agent, run, live, request, model, stored), api_messages);
   } catch (error) {
     console.error(`[agents] run ${run.run_id} of agent ${agent.agent_id} failed to start:`, error);
     live.emit({ type: "end", status: "failed", error: { kind: "internal", message: error_text(error) } });
@@ -221,10 +240,11 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
   }
 };
 
-const launch = (agent: AgentRecord, request: RunContext, model: ModelEntry, context: ApiMessage[]): StartedRun => {
+const launch = (agent: AgentRecord, request: RunContext, model: ModelEntry, context: ApiMessage[], stored: StoredContext): StartedRun => {
   const run = begin_run(agent, request.prompt, request.parent_message_id, request.parent_call_id);
+  sync_open_questions(agent.agent_id);
   const live = create_live(agent.agent_id, run.run_id, agent.chat_id);
-  live.done = drive(agent, run, live, request, model, context);
+  live.done = drive(agent, run, live, request, model, context, stored);
   return { agent: public_summary(agent), run: public_run(run) };
 };
 
@@ -234,12 +254,14 @@ export const deploy_agent = (request: DeployRequest): StartedRun => {
     chat_id: request.chat_id,
     name: request.name,
     description: request.description,
+    topic: request.topic,
+    scope: request.scope,
     model: request.model.id,
     effort: request.effort,
     profile: request.profile,
     project_root: request.project_root,
   });
-  return launch(agent, request, request.model, []);
+  return launch(agent, request, request.model, [], no_stored_context);
 };
 
 const ensure_idle = (agent: AgentRecord) => {
@@ -248,16 +270,22 @@ const ensure_idle = (agent: AgentRecord) => {
   }
 };
 
-export const continue_agent = async (agent: AgentRecord, request: RunContext): Promise<StartedRun> => {
-  if (agent.project_root !== request.project_root) {
+export const ensure_continuable = (agent: AgentRecord, project_root: string): void => {
+  if (agent.project_root !== project_root) {
     throw new Error(`Agent ${agent.agent_id} belongs to the project ${agent.project_root}, not the open one.`);
   }
   ensure_idle(agent);
+};
+
+export const continue_agent = async (agent: AgentRecord, request: RunContext): Promise<StartedRun> => {
+  ensure_continuable(agent, request.project_root);
   const model = await find_agent_model(agent.model);
-  const context = await load_context(agent.agent_id);
+  const saved = await load_context(agent);
+  const context = model.vision ? saved : without_images(saved);
+  const stored = await stored_agent_context(agent);
   ensure_idle(agent);
   ensure_capacity(agent.chat_id);
-  return launch(agent, request, model, context);
+  return launch(agent, request, model, context, stored);
 };
 
 export const cancel_agent = (agent: AgentRecord): boolean => {
@@ -270,22 +298,23 @@ export const cancel_agent = (agent: AgentRecord): boolean => {
     stop_live(live, "cancelled");
   }
   end_run(agent.agent_id, run.run_id, "cancelled", live ? last_text(live.transcript) : "");
+  on_peer_ended(agent);
   wake_idle(agent.chat_id);
   return true;
 };
 
 export const message_agent = (agent: AgentRecord, text: string): boolean => {
-  const run = current_run(agent);
-  const live = run?.status === "running" ? live_run(run.run_id) : null;
-  if (!live || live.stop_reason) {
+  const live = reachable_live(agent);
+  if (!live) {
     return false;
   }
-  live.inbox.push(text);
+  deliver_to(live, { from: "main", text });
   return true;
 };
 
 export const clear_chat_agents = async (chat_id: string): Promise<void> => {
   drop_agent_notes(chat_id);
+  forget_chat_peers(chat_id);
   const owned = chat_agents(chat_id).map((agent) => agent.agent_id);
   const settling: Promise<void>[] = [];
   for (const live of live_runs()) {
@@ -301,10 +330,14 @@ export const clear_chat_agents = async (chat_id: string): Promise<void> => {
 };
 
 export const shutdown_agents_sync = (): void => {
+  const reports = new Map(live_runs().map((live) => [live.run_id, with_open_questions({ agent_id: live.agent_id, name: get_agent(live.agent_id)?.name ?? "Agent" }, final_report(live))]));
+  for (const live of live_runs()) {
+    return_undelivered(live, true);
+  }
   for (const live of live_runs()) {
     live.emit(app_closed_end);
     stop_live(live, "app_closed");
-    end_run(live.agent_id, live.run_id, "interrupted", last_text(live.transcript));
+    end_run(live.agent_id, live.run_id, "interrupted", reports.get(live.run_id) ?? "");
   }
   flush_journals_sync();
   save_index_sync();

@@ -16,8 +16,6 @@ import { MemoryLists } from "./MemoryLists.tsx";
 import { PaneSkeleton } from "./PaneSkeleton.tsx";
 import "./panes.css";
 
-const max_instructions = 8000;
-
 const personalities: { id: Personality; label: MessageKey; description: MessageKey }[] = [
   { id: "pragmatic", label: "personalization.pragmatic", description: "personalization.pragmatic_desc" },
   { id: "friendly", label: "personalization.friendly", description: "personalization.friendly_desc" },
@@ -54,7 +52,6 @@ const InstructionsRow = ({ saved }: { saved: string }) => {
         <TextArea
           className="instructions-input"
           value={draft}
-          maxLength={max_instructions}
           rows={6}
           placeholder={t("personalization.instructions_placeholder")}
           aria-label={t("personalization.instructions")}
@@ -64,7 +61,6 @@ const InstructionsRow = ({ saved }: { saved: string }) => {
           }}
         />
         <div className="instructions-footer">
-          <span className="instructions-count">{t("personalization.chars", { n: draft.length, max: max_instructions })}</span>
           <Button
             disabled={draft === saved || state === "saving"}
             icon={state === "saved" && draft === saved ? <CheckIcon size={15} /> : undefined}

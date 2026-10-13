@@ -14,7 +14,7 @@ import {
   type MemorySource,
   type MemoryState,
 } from "./records.ts";
-import { clean_text, memory_handle, similarity, words_for } from "./text.ts";
+import { clean_text, memory_handle, memory_text_chars, similarity, words_for } from "./text.ts";
 
 export type MemoryFiles = { file: string; legacy_file: string };
 
@@ -183,7 +183,7 @@ export const memory_records = (): MemoryRecord[] =>
   confirmed().map((entry) => ({ id: entry.id, text: entry.text, project_path: entry.project_path, created_at: entry.created_at }));
 
 export const find_confirmed = (wanted: string): MemoryEntry | null => {
-  const value = clean_text(wanted, 500).toLowerCase();
+  const value = clean_text(wanted, memory_text_chars).toLowerCase();
   const list = confirmed();
   return (
     list.find((entry) => entry.id.toLowerCase() === value) ??
@@ -218,11 +218,14 @@ export const reset_memories = async () => {
   await persist();
 };
 
+const in_scope = (project: string): MemoryEntry[] => confirmed().filter((entry) => entry.scope === "global" || (project !== "" && entry.project_path === project));
+
+export const memory_count = (project_path: string): number => in_scope(path_key(project_path)).length;
+
 export const retrieve_memories = (project_path: string, query: string, limit: number): MemoryEntry[] => {
   const project = path_key(project_path);
   const words = words_for(query);
-  return confirmed()
-    .filter((entry) => entry.scope === "global" || (project !== "" && entry.project_path === project))
+  return in_scope(project)
     .map((entry) => ({ entry, score: relevance(entry, words, project) }))
     .sort((a, b) => b.score - a.score || b.entry.updated_at.localeCompare(a.entry.updated_at))
     .slice(0, limit)

@@ -33,7 +33,6 @@ export const ModelPicker = () => {
       items: catalog.models.map((entry) => ({
         id: entry.id,
         label: entry.label,
-        hint: entry.provider,
         checked: entry.id === settings.model,
         on_select: () => select_model(entry),
       })),

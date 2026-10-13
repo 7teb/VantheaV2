@@ -2,6 +2,7 @@ import type { McpServerConfig } from "../../../shared/settings.ts";
 import { detect_server } from "../../mcp/detect.ts";
 import { mcp_status, server_exists, upsert_server } from "../../mcp/servers.ts";
 import { sanitize_server_name } from "../../mcp/specs.ts";
+import { tool_gate } from "../../permissions/tool-gate.ts";
 import { define_tool, ToolArgumentError, type ToolResult } from "../types.ts";
 
 type AddArgs = { folder: string | null; name: string | null; command: string | null; args: string[] | null; env: Record<string, string> | null };
@@ -45,7 +46,7 @@ export const add_mcp_server_tool = define_tool<AddArgs>({
   spec: {
     name: "add_mcp_server",
     description:
-      "Connect a local MCP server so its tools become available as mcp__<server>__<tool>. Use it when the user asks to add, connect or set up an MCP server (for example an IDA or Cheat Engine bridge). Prefer folder = the absolute path to the server's folder: the app reads its README and files and detects the launch command. Pass name, command, args and env only when the user gave the exact config. The user must approve before the server is added.",
+      "Connect a local MCP server so its tools become available as mcp__<server>__<tool>. Use it when the user asks to add, connect or set up an MCP server (for example an IDA or Cheat Engine bridge). Prefer folder = the absolute path to the server's folder: the app reads its README and files and detects the launch command. Pass name, command, args and env only when the user gave the exact config. The automatic review checks the server before it is added and may ask the user; in ask mode the user always approves it.",
     parameters: {
       type: "object",
       properties: {
@@ -75,18 +76,34 @@ export const add_mcp_server_tool = define_tool<AddArgs>({
       env: args.env ?? detected?.config.env ?? {},
       enabled: true,
     };
-    const decision = await ctx.approve({
-      kind: "mcp_server",
-      name,
-      command,
-      args: config.args,
-      cwd: config.cwd,
-      env: config.env,
-      replaces: server_exists(name),
-    });
-    if (!decision.approved) {
-      const feedback = decision.feedback ? ` User feedback: ${decision.feedback}` : "";
-      return result("denied", name, `The user declined adding MCP server ${name}.${feedback}`);
+    const replaces = server_exists(name);
+    const subject = [
+      `name: ${name}`,
+      `command: ${[command, ...config.args].join(" ")}`,
+      `working directory: ${config.cwd || "(the app's working directory)"}`,
+      `environment variables set: ${Object.keys(config.env).join(", ") || "none"}`,
+      `replaces an existing server: ${replaces ? "yes" : "no"}`,
+      ...(detected ? [`detected from ${args.folder} (${detected.source}): ${detected.note}`] : []),
+    ].join("\n");
+    const gate = await tool_gate(ctx, "add_mcp_server", subject);
+    if (gate.kind === "denied") {
+      return result("denied", name, gate.text);
+    }
+    if (gate.kind === "ask") {
+      const decision = await ctx.approve({
+        kind: "mcp_server",
+        name,
+        command,
+        args: config.args,
+        cwd: config.cwd,
+        env: config.env,
+        replaces,
+        ...(gate.note ? { review: gate.note } : {}),
+      });
+      if (!decision.approved) {
+        const feedback = decision.feedback ? ` User feedback: ${decision.feedback}` : "";
+        return result("denied", name, `The user declined adding MCP server ${name}.${feedback}`);
+      }
     }
     await upsert_server(name, config, { reset_trust: true });
     const status = mcp_status().find((entry) => entry.name === name);

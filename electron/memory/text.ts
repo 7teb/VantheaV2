@@ -15,6 +15,8 @@ const key_pattern = /\b(?:sk|tvly)-[A-Za-z0-9_-]{10,}/g;
 
 const assignment_pattern = /\b(api[_ -]?key|access[_ -]?token|token|password|secret)\s*[:=]\s*[^\s,;]+/gi;
 
+export const memory_text_chars = 25000;
+
 export const clean_text = (value: unknown, limit = 500): string =>
   (typeof value === "string" ? value : "").replace(/\s+/g, " ").trim().slice(0, limit);
 

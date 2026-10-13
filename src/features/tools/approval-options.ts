@@ -1,4 +1,4 @@
-import type { ApprovalRequest, GrantScope } from "../../../shared/approval.ts";
+import type { AgentTextTool, ApprovalRequest, GrantScope } from "../../../shared/approval.ts";
 import type { MessageKey, MessageVars } from "../../i18n/translate.ts";
 
 export type GrantOption = { grant: GrantScope; label: MessageKey; vars: MessageVars };
@@ -22,18 +22,24 @@ const mcp_options = (request: Extract<ApprovalRequest, { kind: "mcp" }>): GrantO
   }
 };
 
+const agent_questions: Record<AgentTextTool, MessageKey> = {
+  message_peer: "approval.question_agent_message",
+  message_agent: "approval.question_agent_message",
+  deploy_agent: "approval.question_agent_deploy",
+  continue_agent: "approval.question_agent_continue",
+};
+
 export const grant_options = (request: ApprovalRequest): GrantOption[] => {
   switch (request.kind) {
     case "command":
       return request.grant_prefix ? [once, { grant: "prefix", label: "approval.prefix", vars: { x: request.grant_prefix } }] : [once];
     case "mcp":
       return mcp_options(request);
-    case "browser_vision":
-      return [once, { grant: "chat", label: "approval.allow_browser_vision_chat", vars: {} }];
     case "write":
     case "mcp_server":
     case "skill_install":
     case "memory":
+    case "agent_message":
       return [once];
   }
 };
@@ -52,7 +58,7 @@ export const approval_question = (request: ApprovalRequest): { key: MessageKey; 
       return { key: "approval.question_skill", vars: {} };
     case "memory":
       return { key: request.action === "forget" ? "approval.question_forget" : "approval.question_remember", vars: {} };
-    case "browser_vision":
-      return { key: "approval.question_browser_vision", vars: {} };
+    case "agent_message":
+      return { key: agent_questions[request.tool], vars: { x: request.to_name } };
   }
 };

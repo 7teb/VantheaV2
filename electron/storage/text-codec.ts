@@ -73,8 +73,10 @@ const decode_body = (body: Buffer, charset: Charset): string => {
   return body.toString("utf8");
 };
 
+export const bytes_encoding = (bytes: Uint8Array): TextEncoding => detect_encoding(bytes.subarray(0, sniff_bytes));
+
 export const decode_text = (bytes: Buffer): { text: string; encoding: TextEncoding } => {
-  const encoding = detect_encoding(bytes.subarray(0, sniff_bytes));
+  const encoding = bytes_encoding(bytes);
   return { text: decode_body(bytes.subarray(bom_length(encoding)), encoding.charset), encoding };
 };
 
@@ -86,7 +88,7 @@ export const encode_text = (text: string, encoding: TextEncoding): Buffer => {
 
 export const looks_binary = (text: string): boolean => text.slice(0, 8192).includes("\u0000");
 
-const read_head = async (file: string): Promise<Buffer> => {
+export const read_head = async (file: string): Promise<Buffer> => {
   const handle = await fs.open(file, "r");
   try {
     const buffer = Buffer.alloc(sniff_bytes);

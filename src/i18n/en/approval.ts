@@ -17,9 +17,6 @@ export const approval = {
   "approval.question_add_mcp": "May I add and connect the MCP server “{x}”?",
   "approval.question_remember": "May I save this memory?",
   "approval.question_forget": "May I delete this memory?",
-  "approval.question_browser_vision": "May I send the visible browser page to OpenRouter for visual analysis?",
-  "approval.browser_vision_target": "Visible browser page",
-  "approval.allow_browser_vision_chat": "Yes, and allow browser vision for this chat",
   "approval.yes": "Yes",
   "approval.no": "No, tell it what to do differently",
   "approval.skip": "Skip",
@@ -31,4 +28,8 @@ export const approval = {
   "approval.allow_scope": "Yes, and allow this tool for the same target",
   "approval.trust_session": "Yes, and trust dangerous tools from {x} for this session",
   "approval.background": "Runs in the background",
+  "approval.question_agent_message": "May I send this message to {x}?",
+  "approval.question_agent_deploy": "May I start the agent {x} with this task?",
+  "approval.question_agent_continue": "May I continue {x} with this task?",
+  "approval.agent_about": "About {x}",
 };

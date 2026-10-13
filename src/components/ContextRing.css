@@ -1,7 +1,41 @@
+@layer components {
+  .context-ring {
+    display: inline-grid;
+    place-items: center;
+    width: var(--size-control);
+    height: var(--size-control);
+    border-radius: var(--radius-md);
+    transition: background var(--duration-fast) var(--ease-out);
+  }
+
+  .context-ring:hover {
+    background: var(--fill-hover);
+  }
+
+  .context-ring circle {
+    fill: none;
+    stroke-width: 2.25;
+  }
+
+  .context-ring-track {
+    stroke: var(--fill-track);
+  }
+
+  .context-ring-value {
+    stroke: var(--fill-track-active);
+    stroke-linecap: round;
+    transition: stroke-dashoffset var(--duration-slower) var(--ease-out);
+  }
+
+  .context-ring[data-level="high"] .context-ring-value {
+    stroke: var(--text-danger);
+  }
+}
+
 .context-popover {
   display: grid;
   gap: var(--space-3);
-  width: 260px;
+  width: 300px;
   padding: var(--space-4);
 }
 
@@ -18,10 +52,21 @@
 }
 
 .context-popover-bar {
+  position: relative;
   height: 4px;
   border-radius: var(--radius-full);
   background: var(--fill-track);
-  overflow: hidden;
+}
+
+.context-popover-mark {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 10px;
+  border-radius: 1px;
+  background: var(--text-secondary);
+  transform: translateX(-1px);
+  transition: left var(--duration-base) var(--ease-out);
 }
 
 .context-popover-bar span {
@@ -36,7 +81,6 @@
   background: var(--text-danger);
 }
 
-.context-popover-note,
 .context-popover-result {
   margin: 0;
   font-size: var(--font-size-caption);

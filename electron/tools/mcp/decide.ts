@@ -1,28 +1,24 @@
 import type { GrantScope, McpTier } from "../../../shared/approval.ts";
 import type { ReviewNote, ReviewRecord } from "../../../shared/review.ts";
 import { shell_candidates } from "../../mcp/risk.ts";
-import { peer_block_since, under_review } from "../../permissions/command-review.ts";
-import { last_human_id } from "../../permissions/context.ts";
+import { review_and_record } from "../../permissions/command-review.ts";
 import type { CommandDecision } from "../../permissions/decide.ts";
 import { effective_mode } from "../../permissions/full-window.ts";
 import type { PinChange, ScriptPin } from "../../permissions/source-read.ts";
+import type { CallReview } from "../../permissions/tool-gate.ts";
 import type { ToolContext } from "../types.ts";
 
 export type CommandGate = (command: string, ctx: ToolContext, changed: PinChange[]) => Promise<CommandDecision>;
 
 export type McpCall = { server: string; tool: string; tier: McpTier; args: Record<string, unknown>; scope: string | null; trusted: boolean };
 
-export type McpReviewResult = { record: ReviewRecord; note: ReviewNote; text: string; seen: ReadonlySet<string> };
-
-export type McpReview = (call: McpCall, ctx: ToolContext, granted: boolean) => Promise<McpReviewResult>;
+export type McpReview = (call: McpCall, ctx: ToolContext, granted: boolean) => Promise<CallReview>;
 
 export type Verdict =
   | { kind: "run"; pins: ScriptPin[]; record: ReviewRecord | null }
   | { kind: "ask"; reason: string; note: ReviewNote | null; pins: ScriptPin[]; record: ReviewRecord | null }
   | { kind: "block"; reason: string }
   | { kind: "denied"; reason: string };
-
-const preview_limit = 2000;
 
 let command_gate: CommandGate | null = null;
 
@@ -34,11 +30,6 @@ export const set_command_gate = (fn: CommandGate) => {
 
 export const clear_mcp_chat = (chat_id: string) => {
   chat_grants.delete(chat_id);
-};
-
-export const args_preview = (args: Record<string, unknown>) => {
-  const text = JSON.stringify(args, null, 2);
-  return text.length > preview_limit ? `${text.slice(0, preview_limit)}\n...` : text;
 };
 
 export const decision_tool = (call: Pick<McpCall, "server" | "tool">) => `mcp:${call.server}/${call.tool}`;
@@ -116,14 +107,7 @@ const shell_verdict = async (call: McpCall, ctx: ToolContext, changed: PinChange
 
 const model_verdict = async (call: McpCall, ctx: ToolContext, review: McpReview): Promise<Verdict> => {
   const granted = has_grant(ctx.chat_id, call);
-  const mark = last_human_id(ctx.chat_id);
-  const result = await under_review(ctx, async (enter) => {
-    enter();
-    const first = await review(call, ctx, granted);
-    const recheck = first.record.verdict === "allow" && first.record.source === "model" && (last_human_id(ctx.chat_id) !== mark || (await peer_block_since(ctx, first.seen)));
-    return recheck ? review(call, ctx, granted) : first;
-  });
-  await ctx.review.record(result.record);
+  const result = await review_and_record(ctx, () => review(call, ctx, granted));
   if (result.record.verdict === "allow") {
     return { kind: "run", pins: [], record: result.record };
   }

@@ -8,10 +8,6 @@ export type GitLocation = { work_tree: string; git_dir: string; common_dir: stri
 
 export type ProjectProfile = { root: string; git: string; listing: string; readme: string | null; scripts: string | null };
 
-const readme_chars = 1500;
-
-const scripts_chars = 2000;
-
 const read_optional = async (file: string): Promise<string | null> => {
   try {
     return await fs.readFile(file, "utf8");
@@ -107,8 +103,7 @@ const package_scripts = (text: string | null): string | null => {
     if (!scripts || typeof scripts !== "object") {
       return null;
     }
-    const rendered = JSON.stringify(scripts);
-    return rendered.length > scripts_chars ? `${rendered.slice(0, scripts_chars)}…` : rendered;
+    return JSON.stringify(scripts);
   } catch (error) {
     console.warn(`[permissions] package.json scripts are not readable JSON: ${String(error)}`);
     return null;
@@ -129,7 +124,7 @@ export const read_profile = async (root: string): Promise<ProjectProfile> => {
     root,
     git: await git_line(root, location),
     listing,
-    readme: readme === null ? null : readme.replace(/^﻿/, "").slice(0, readme_chars).trimEnd(),
+    readme: readme === null ? null : readme.replace(/^﻿/, "").trimEnd(),
     scripts: package_scripts(manifest),
   };
 };

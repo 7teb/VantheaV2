@@ -57,4 +57,11 @@ export const chat = {
   "chat.blocked": "This turn was blocked.",
   "chat.empty_answer": "The model returned no answer.",
   "chat.changes_undo_failed": "{n} files could not be restored",
+  "chat.notice_agent_roster": "Agents in this chat",
+  "chat.notice_peer_message": "Message from an agent",
+  "chat.notice_peer_status": "Agent message status",
+  "chat.notice_peer_digest": "Message between agents",
+  "chat.peer_alert_from": "Agent messages need attention: {x}",
+  "chat.peer_alert_blocked": "Blocked",
+  "chat.peer_alert_loop": "Loop",
 };

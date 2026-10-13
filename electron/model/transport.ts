@@ -5,7 +5,9 @@ import {
   network_error,
   parse_error_body,
   parse_retry_after,
+  retry_backoff_ms,
   retry_delay,
+  retry_window_ms,
 } from "./errors.ts";
 import { current_key } from "./key.ts";
 
@@ -41,14 +43,14 @@ const default_transport: Transport = {
   sleep: abortable_sleep,
   random: Math.random,
   now: Date.now,
-  max_attempts: 3,
+  max_attempts: retry_backoff_ms.length + 1,
   first_byte_ms: 300000,
   idle_ms: 240000,
 };
 
 export const transport_with = (overrides: Partial<Transport> = {}): Transport => ({ ...default_transport, ...overrides });
 
-type Expiry = { phase: "first_byte" | "idle"; ms: number };
+type Expiry = { phase: "first_byte" | "idle" | "complete"; ms: number };
 
 export type Watchdog = {
   signal: AbortSignal;
@@ -84,15 +86,19 @@ export const create_watchdog = (parent: AbortSignal): Watchdog => {
   };
 };
 
-const timeout_error = (expiry: Expiry) => {
+const timeout_text = (expiry: Expiry): string => {
   const seconds = Math.round(expiry.ms / 1000);
-  return new ModelError(
-    "timeout",
-    expiry.phase === "first_byte"
-      ? `OpenRouter sent nothing for ${seconds} s after the request.`
-      : `The OpenRouter stream went silent for ${seconds} s before the answer was complete.`,
-  );
+  switch (expiry.phase) {
+    case "first_byte":
+      return `OpenRouter sent nothing for ${seconds} s after the request.`;
+    case "idle":
+      return `The OpenRouter stream went silent for ${seconds} s before the answer was complete.`;
+    case "complete":
+      return `OpenRouter returned no complete answer within ${seconds} s of the request.`;
+  }
 };
+
+const timeout_error = (expiry: Expiry) => new ModelError("timeout", timeout_text(expiry));
 
 export const attempt_failure = (error: unknown, watchdog: Watchdog, phase: "connect" | "read"): ModelError => {
   if (error instanceof ModelError) {
@@ -146,6 +152,7 @@ export type RetryPlan<T> = {
 
 export const with_retries = async <T>(plan: RetryPlan<T>): Promise<T> => {
   const { transport, signal } = plan;
+  const started = transport.now();
   for (let attempt = 1; ; attempt += 1) {
     if (signal.aborted) {
       return plan.cancelled();
@@ -159,10 +166,10 @@ export const with_retries = async <T>(plan: RetryPlan<T>): Promise<T> => {
       if (!(error instanceof ModelError) || !is_retryable(error)) {
         throw error;
       }
-      if (attempt >= transport.max_attempts) {
+      const wait_ms = retry_delay(attempt, error, transport.random);
+      if (attempt >= transport.max_attempts || transport.now() - started + wait_ms > retry_window_ms) {
         throw attempt > 1 ? new ModelError(error.kind, `${error.message} (gave up after ${attempt} attempts)`, error.status) : error;
       }
-      const wait_ms = retry_delay(attempt, error, transport.random);
       console.warn(`[model] attempt ${attempt} failed (${error.kind}), retrying in ${wait_ms} ms: ${error.message}`);
       plan.on_retry?.(attempt + 1, transport.max_attempts, error.kind, wait_ms);
       await transport.sleep(wait_ms, signal);

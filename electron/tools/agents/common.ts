@@ -6,7 +6,7 @@ import { find_agent } from "../../agents/store.ts";
 import { require_string } from "../browser/common.ts";
 import { ToolArgumentError, type ToolContext } from "../types.ts";
 
-export const agent_id_property = { type: "string", description: "Agent id from deploy_agent, or a unique leading part of it." };
+export const agent_id_property = { type: "string", description: "Agent id from deploy_agent or list_agents, its short form Name#xxxxxxxx or xxxxxxxx, or a unique leading part of the id." };
 
 export const agent_view = (agent: Pick<AgentSummary, "agent_id" | "name">, run: AgentRunSummary): ToolView => ({
   kind: "agent",
@@ -19,12 +19,12 @@ export const agent_view = (agent: Pick<AgentSummary, "agent_id" | "name">, run: 
 
 export const read_agent_id = (raw: Record<string, unknown>): string => require_string(raw, "agent_id").trim();
 
-export const read_text = (raw: Record<string, unknown>, key: string, max: number): string => {
+export const read_text = (raw: Record<string, unknown>, key: string, max?: number): string => {
   const text = require_string(raw, key).trim();
   if (!text) {
     throw new ToolArgumentError(`${key} must not be blank`);
   }
-  if (text.length > max) {
+  if (max !== undefined && text.length > max) {
     throw new ToolArgumentError(`${key} is longer than ${max} characters`);
   }
   return text;

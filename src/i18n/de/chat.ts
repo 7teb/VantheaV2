@@ -59,4 +59,11 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.blocked": "Dieser Turn wurde blockiert.",
   "chat.empty_answer": "Das Modell hat keine Antwort geliefert.",
   "chat.changes_undo_failed": "{n} Dateien konnten nicht wiederhergestellt werden",
+  "chat.notice_agent_roster": "Agenten in diesem Chat",
+  "chat.notice_peer_message": "Nachricht von einem Agenten",
+  "chat.notice_peer_status": "Status einer Agenten-Nachricht",
+  "chat.notice_peer_digest": "Nachricht zwischen Agenten",
+  "chat.peer_alert_from": "Agenten-Nachrichten brauchen Aufmerksamkeit: {x}",
+  "chat.peer_alert_blocked": "Blockiert",
+  "chat.peer_alert_loop": "Schleife",
 };

@@ -10,8 +10,6 @@ export type SearchOptions = { query: string; depth: "basic" | "advanced"; topic:
 
 export const tavily_base = "https://api.tavily.com";
 
-export const max_source_chars = 4000;
-
 const max_attempts = 3;
 
 const backoff_ms = [1000, 3000];
@@ -49,14 +47,14 @@ export const map_search_results = (value: unknown): SourceText[] =>
       return [];
     }
     const title = as_string(raw.title).replace(/\s+/g, " ").trim().slice(0, 160) || url;
-    return [{ title, url, content: as_string(raw.content).slice(0, max_source_chars) }];
+    return [{ title, url, content: as_string(raw.content) }];
   });
 
 export const map_extract_results = (value: unknown): SourceText[] =>
   as_array(as_record(value).results).flatMap((entry) => {
     const raw = as_record(entry);
     const url = web_url(raw.url);
-    return url ? [{ title: url, url, content: as_string(raw.raw_content).slice(0, max_source_chars) }] : [];
+    return url ? [{ title: url, url, content: as_string(raw.raw_content) }] : [];
   });
 
 export const failed_extracts = (value: unknown): string[] =>

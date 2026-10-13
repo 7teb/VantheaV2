@@ -146,6 +146,8 @@ export const coerce_review = (value: unknown, chat_id: string, call_id: string):
   }
   if (member(review_failures, raw.failure)) {
     record.failure = raw.failure;
+  } else if (raw.failure === "offline_window") {
+    record.failure = "timeout";
   } else if (raw.failure !== undefined) {
     dropped.push("failure");
   }

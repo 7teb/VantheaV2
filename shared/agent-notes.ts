@@ -1,5 +1,7 @@
+import { parse_peer_alerts } from "./peer-notes.ts";
+
 export type AgentNote = {
-  kind: "report" | "update";
+  kind: "report" | "update" | "alert";
   name: string;
   agent_id: string;
   status: string;
@@ -186,6 +188,11 @@ const update_note = (chunk: string): AgentNote => {
 
 export const parse_update_events = (text: string): AgentNote[] => text.split(update_event_marker).slice(1).map(update_note);
 
+export const parse_update_batch = (text: string): AgentNote[] => {
+  const [lead = "", ...events] = text.split(update_event_marker);
+  return [...parse_peer_alerts(lead), ...events.flatMap((chunk) => [update_note(chunk), ...parse_peer_alerts(chunk)])];
+};
+
 const saved_path = (body: string): string | null => {
   const value = field_of(body, "Report file");
   return value && value !== "unavailable" ? value : null;
@@ -220,8 +227,3 @@ export const report_event_context = (text: string, agent_tools = true): string =
       stop_reason: field_of(note.body, "Model stop reason"),
     }, agent_tools);
   }).join("\n\n");
-
-export const agent_status_context = (text: string): string => {
-  const at = text.indexOf("\nReport:\n");
-  return at < 0 ? text : `${text.slice(0, at)}\nCall get_agent_status to obtain the complete report file path. The older inline report has been omitted.`;
-};

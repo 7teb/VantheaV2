@@ -4,14 +4,8 @@
       "id": "deepseek/deepseek-v4.1-flash",
       "label": "DeepSeek V4.1 Flash",
       "provider": "DeepSeek",
-      "provider_order": [
-        "deepseek"
-      ],
-      "efforts": [
-        "low",
-        "high",
-        "max"
-      ],
+      "provider_order": ["deepseek"],
+      "efforts": ["low", "high", "max"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1048576,
@@ -22,14 +16,8 @@
       "id": "deepseek/deepseek-v4-pro-0813",
       "label": "DeepSeek V4 Pro 0813",
       "provider": "DeepSeek",
-      "provider_order": [
-        "deepseek"
-      ],
-      "efforts": [
-        "low",
-        "high",
-        "max"
-      ],
+      "provider_order": ["deepseek"],
+      "efforts": ["low", "high", "max"],
       "default_effort": "max",
       "vision": false,
       "context_length": 1048576,
@@ -40,15 +28,8 @@
       "id": "moonshotai/kimi-k3",
       "label": "Kimi K3",
       "provider": "Moonshot",
-      "provider_order": [
-        "moonshotai",
-        "moonshotai/mxfp4"
-      ],
-      "efforts": [
-        "low",
-        "high",
-        "max"
-      ],
+      "provider_order": ["moonshotai", "moonshotai/mxfp4"],
+      "efforts": ["low", "high", "max"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1048576,
@@ -58,15 +39,8 @@
       "id": "xiaomi/mimo-v2.6-pro",
       "label": "MiMo V2.6 Pro",
       "provider": "Xiaomi",
-      "provider_order": [
-        "gmicloud/bf16",
-        "xiaomi"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high"
-      ],
+      "provider_order": ["gmicloud/bf16", "xiaomi"],
+      "efforts": ["low", "medium", "high"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1048576,
@@ -76,15 +50,8 @@
       "id": "qwen/qwen3.7-plus",
       "label": "Qwen 3.7 Plus",
       "provider": "Qwen",
-      "provider_order": [
-        "alibaba"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high",
-        "xhigh"
-      ],
+      "provider_order": ["alibaba"],
+      "efforts": ["low", "medium", "high", "xhigh"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1000000,
@@ -94,15 +61,8 @@
       "id": "qwen/qwen3.7-max",
       "label": "Qwen 3.7 Max",
       "provider": "Qwen",
-      "provider_order": [
-        "alibaba"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high",
-        "xhigh"
-      ],
+      "provider_order": ["alibaba"],
+      "efforts": ["low", "medium", "high", "xhigh"],
       "default_effort": "high",
       "vision": false,
       "context_length": 1000000,
@@ -112,15 +72,8 @@
       "id": "qwen/qwen3.8-max",
       "label": "Qwen 3.8 Max",
       "provider": "Qwen",
-      "provider_order": [
-        "alibaba"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high",
-        "xhigh"
-      ],
+      "provider_order": ["alibaba"],
+      "efforts": ["low", "medium", "high", "xhigh"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1000000,
@@ -130,15 +83,8 @@
       "id": "openai/gpt-6.1-sol",
       "label": "GPT 6.1 Sol",
       "provider": "OpenAI",
-      "provider_order": [
-        "openai"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high",
-        "xhigh"
-      ],
+      "provider_order": ["openai"],
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1050000,
@@ -148,16 +94,8 @@
       "id": "openai/gpt-6.1-sol:floor",
       "label": "GPT 6.1 Sol Flex",
       "provider": "OpenAI",
-      "provider_order": [
-        "openai/flex",
-        "openai"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high",
-        "xhigh"
-      ],
+      "provider_order": ["openai/flex", "openai"],
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1050000,
@@ -167,15 +105,8 @@
       "id": "openai/gpt-6-luna",
       "label": "GPT 6 Luna",
       "provider": "OpenAI",
-      "provider_order": [
-        "openai"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high",
-        "xhigh"
-      ],
+      "provider_order": ["openai"],
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1050000,
@@ -185,15 +116,8 @@
       "id": "google/gemini-3.8-flash",
       "label": "Gemini 3.8 Flash",
       "provider": "Google",
-      "provider_order": [
-        "google-vertex/global",
-        "google-ai-studio"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high"
-      ],
+      "provider_order": ["google-vertex/global", "google-ai-studio"],
+      "efforts": ["low", "medium", "high"],
       "default_effort": "medium",
       "vision": true,
       "context_length": 1048576,
@@ -203,17 +127,8 @@
       "id": "google/gemini-3.8-flash:floor",
       "label": "Gemini 3.8 Flash Flex",
       "provider": "Google",
-      "provider_order": [
-        "google-vertex/global/flex",
-        "google-ai-studio/flex",
-        "google-vertex/global",
-        "google-ai-studio"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high"
-      ],
+      "provider_order": ["google-vertex/global/flex", "google-ai-studio/flex", "google-vertex/global", "google-ai-studio"],
+      "efforts": ["low", "medium", "high"],
       "default_effort": "medium",
       "vision": true,
       "context_length": 1048576,
@@ -223,13 +138,8 @@
       "id": "openai/gpt-oss-120b",
       "label": "GPT OSS 120B",
       "provider": "OpenAI",
-      "provider_order": [
-        "cerebras/fp16"
-      ],
-      "efforts": [
-        "low",
-        "medium"
-      ],
+      "provider_order": ["cerebras/fp16"],
+      "efforts": ["low", "medium"],
       "default_effort": "medium",
       "vision": false,
       "context_length": 131072,
@@ -240,15 +150,8 @@
       "id": "z-ai/glm-5.3",
       "label": "GLM 5.3",
       "provider": "Z.ai",
-      "provider_order": [
-        "gmicloud/fp8",
-        "baidu/fp8"
-      ],
-      "efforts": [
-        "low",
-        "high",
-        "max"
-      ],
+      "provider_order": ["gmicloud/fp8", "baidu/fp8"],
+      "efforts": ["low", "high", "max"],
       "default_effort": "high",
       "vision": false,
       "context_length": 1048576,
@@ -258,14 +161,8 @@
       "id": "z-ai/glm-5.3:nitro",
       "label": "GLM 5.3 Fast",
       "provider": "Z.ai",
-      "provider_order": [
-        "baseten/fast"
-      ],
-      "efforts": [
-        "low",
-        "high",
-        "max"
-      ],
+      "provider_order": ["baseten/fast"],
+      "efforts": ["low", "high", "max"],
       "default_effort": "high",
       "vision": false,
       "context_length": 1048576,
@@ -273,19 +170,35 @@
       "fallback": "z-ai/glm-5.3"
     },
     {
+      "id": "z-ai/glm-5.3-flash",
+      "label": "GLM 5.3 Flash",
+      "provider": "Z.ai",
+      "provider_order": ["coreweave/nvfp4"],
+      "efforts": ["low", "high", "max"],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 1048576,
+      "max_output": 131072,
+      "note": "Fast and cheap (about 150 to 240 output tokens per second). Reliable on ordinary coding tasks; weaker on long exact counting or mental arithmetic, where it can spend its whole output budget reasoning. Good for workers and simple to medium tasks."
+    },
+    {
+      "id": "inclusionai/ling-3.1-flash",
+      "label": "Ling 3.1 Flash",
+      "provider": "inclusionAI",
+      "provider_order": ["novita"],
+      "efforts": ["none", "high"],
+      "default_effort": "high",
+      "vision": false,
+      "context_length": 262144,
+      "max_output": 235929,
+      "note": "Free on OpenRouter, served only by Novita. Hybrid reasoning mixture of experts (25B active of 560B parameters). Text only, it cannot read images, and its window is 262k tokens, so its context compacts earlier than on the 1M models. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
+    },
+    {
       "id": "anthropic/claude-haiku-5.5",
       "label": "Claude Haiku 5.5",
       "provider": "Anthropic",
-      "provider_order": [
-        "google-vertex/us",
-        "anthropic"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high",
-        "xhigh"
-      ],
+      "provider_order": ["google-vertex/us", "anthropic"],
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
       "default_effort": "medium",
       "vision": true,
       "context_length": 1000000,
@@ -295,15 +208,8 @@
       "id": "anthropic/claude-sonnet-5.5",
       "label": "Claude Sonnet 5.5",
       "provider": "Anthropic",
-      "provider_order": [
-        "anthropic"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high",
-        "xhigh"
-      ],
+      "provider_order": ["anthropic"],
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1000000,
@@ -313,26 +219,30 @@
       "id": "anthropic/claude-opus-5.5",
       "label": "Claude Opus 5.5",
       "provider": "Anthropic",
-      "provider_order": [
-        "anthropic"
-      ],
-      "efforts": [
-        "low",
-        "medium",
-        "high",
-        "xhigh"
-      ],
+      "provider_order": ["anthropic"],
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
       "default_effort": "high",
       "vision": true,
       "context_length": 1000000,
       "max_output": 128000
+    },
+    {
+      "id": "meta/muse-wonder",
+      "label": "Muse Wonder",
+      "provider": "Meta",
+      "provider_order": ["meta"],
+      "efforts": ["minimal", "low", "medium", "high", "xhigh", "max"],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 1048576,
+      "max_output": 943718,
+      "note": "Meta's frontier reasoning model for agentic work, served only by Meta. Reads images, 1M window. Expensive: 4 USD per million input tokens and 20 USD per million output tokens. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
     }
   ],
   "side": {
     "title": "google/gemini-3.1-flash-lite",
     "overseer": "openai/gpt-6-luna",
     "vision": "google/gemini-3.1-flash-lite",
-    "summarize": "deepseek/deepseek-v4-pro",
     "web_answer": "google/gemini-3.5-flash-lite",
     "memory": "deepseek/deepseek-v4-flash"
   },

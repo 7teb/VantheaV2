@@ -20,17 +20,17 @@ const request_subject = (request: ApprovalRequest): { tool: string; subject: str
     case "write":
       return { tool: "write_file", subject: request.path, cwd: "", reason: "" };
     case "mcp_server":
-      return { tool: "add_mcp_server", subject: `${request.name}: ${[request.command, ...request.args].join(" ")}`, cwd: request.cwd, reason: "" };
+      return { tool: "add_mcp_server", subject: `${request.name}: ${[request.command, ...request.args].join(" ")}`, cwd: request.cwd, reason: request.review?.reason ?? "" };
     case "skill_install":
-      return { tool: "install_skill", subject: request.name, cwd: "", reason: "" };
+      return { tool: "install_skill", subject: request.name, cwd: "", reason: request.review?.reason ?? "" };
     case "memory":
-      return { tool: `memory_${request.action}`, subject: request.text, cwd: "", reason: "" };
-    case "browser_vision":
-      return { tool: "browser_vision", subject: request.url, cwd: "", reason: "" };
+      return { tool: `memory_${request.action}`, subject: request.text, cwd: "", reason: request.review?.reason ?? "" };
+    case "agent_message":
+      return { tool: request.tool, subject: `${request.to_name}: ${request.text}`, cwd: "", reason: request.review?.reason ?? "" };
   }
 };
 
-const review_of = (request: ApprovalRequest): string | null => (request.kind === "command" || request.kind === "mcp" ? (request.review?.id ?? null) : null);
+const review_of = (request: ApprovalRequest): string | null => (request.kind === "write" ? null : (request.review?.id ?? null));
 
 export const human_decision = (request: ApprovalRequest, decision: ApprovalDecision, actor: ReviewActor, last_human_id: string | null): HumanDecision => {
   const { tool, subject, cwd, reason } = request_subject(request);

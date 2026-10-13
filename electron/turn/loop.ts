@@ -1,32 +1,25 @@
-import type { TurnError } from "../../shared/chat.ts";
+import type { ContextCalibration, TurnError } from "../../shared/chat.ts";
 import type { FinalStatus } from "../../shared/events.ts";
-import { usage_from_round } from "../context/estimate.ts";
+import { calibrate, calibration_scale, context_usage, measure_request } from "../context/calibration.ts";
+import { compact_threshold, compaction_due, compaction_floor } from "../context/compact.ts";
 import { trim_tool_messages } from "../context/trim.ts";
-import { estimate_messages } from "../context/usage.ts";
+import { fit_window } from "../context/window.ts";
 import { error_text } from "../storage/coerce.ts";
 import { ModelError } from "../model/errors.ts";
 import type { ApiMessage } from "../model/types.ts";
-import { user_content } from "./history.ts";
-import { run_round } from "./round.ts";
-import type { TurnSession } from "./session.ts";
-
-export const max_rounds = 200;
-
-const steer_prefix =
-  "[The user sent this while you were working on this turn. Reply to it in your next visible output before your next tool call, in one or two sentences, then keep working. It does not end the turn.]";
+import type { ToolSpec } from "../tools/types.ts";
+import { compact_context, compaction_turn_error } from "./compaction.ts";
+import { round_profile, run_round } from "./round.ts";
+import type { TurnNote, TurnSession } from "./session.ts";
+import { steer_message } from "./user-input.ts";
 
 const continuation_text = "Your last message hit the model's maximum output length and was cut off. Continue exactly where you left off and keep going until the task is finished. Do not start over or repeat what you already wrote.";
 
 const output_limit_note = "The previous response reached the model's maximum output length and was continued.";
 
-const context_trimmed_note = "Older tool output in this turn was shortened to stay inside the context window.";
+const window_note = "The conversation did not fit into the model's context window, so the oldest tool outputs were removed from this request.";
 
-const wrap_up_texts = {
-  context: "[The context window is nearly full, so tools are no longer available. Write your complete final answer now from the work already done.]",
-  rounds: "[This is the last round this run may use, so tools are no longer available. Write your complete final answer now from the work already done.]",
-};
-
-const wrap_up_note = "The context window is nearly full, so tools were removed and the final answer was requested.";
+const compaction_fallback_note = "Compacting the context failed, so older tool output in this turn was dropped instead.";
 
 const interrupted_kinds = new Set<TurnError["kind"]>(["stream_interrupted", "timeout", "provider_unavailable"]);
 
@@ -43,73 +36,114 @@ const end_status = (error: unknown): FinalStatus => {
 const end_error = (error: unknown): TurnError =>
   error instanceof ModelError ? { kind: error.kind, message: error.message } : { kind: "internal", message: error_text(error) };
 
-const wrap_up_reason = (session: TurnSession, round: number, rounds: number, api_messages: ApiMessage[]): keyof typeof wrap_up_texts | null => {
-  if (session.wrap_up_at === undefined) {
-    return null;
-  }
-  if (round === rounds - 1) {
-    return "rounds";
-  }
-  return estimate_messages(api_messages) > session.model.context_length * session.wrap_up_at ? "context" : null;
-};
+const round_specs = (session: TurnSession): ToolSpec[] => session.resolve_tools(round_profile(session)).map((tool) => tool.spec);
+
+const measure = (session: TurnSession, messages: ApiMessage[], calibration: ContextCalibration | null): number =>
+  measure_request(messages, round_specs(session), session.model, calibration);
+
+const report_context = (session: TurnSession, used: number, calibration: ContextCalibration | null, floor: number) =>
+  session.emit({ type: "context", usage: context_usage(used, session.model, calibration, floor) });
 
 const inject_steers = async (session: TurnSession, round: number, api_messages: ApiMessage[]): Promise<boolean> => {
-  const steers = session.take_steers();
-  for (const { id, text, at, attachments, assistant_reference } of steers) {
-    session.emit({ type: "steer", round, text, pushed_at: at, steer_id: id, ...(attachments.length ? { attachments } : {}), ...(assistant_reference ? { assistant_reference } : {}) });
-    api_messages.push({ role: "user", content: await user_content(`${steer_prefix}\n\n${text}`, attachments, session.model) });
+  const source = session.steers;
+  if (!source) {
+    return false;
   }
-  return steers.length > 0;
+  let taken = false;
+  for (let steer = source.next(); steer; steer = source.next()) {
+    const attachments = await source.noted(steer);
+    if (session.signal.aborted) {
+      return taken;
+    }
+    source.take(steer.id);
+    session.emit({
+      type: "steer",
+      round,
+      text: steer.text,
+      pushed_at: steer.at,
+      steer_id: steer.id,
+      ...(attachments.length ? { attachments } : {}),
+      ...(steer.assistant_reference ? { assistant_reference: steer.assistant_reference } : {}),
+    });
+    api_messages.push(await steer_message(steer.text, attachments, session.model));
+    taken = true;
+  }
+  return taken;
+};
+
+export const push_notes = (emit: TurnSession["emit"], notes: TurnNote[], round: number, api_messages: ApiMessage[]): void => {
+  for (const note of notes) {
+    emit(note.kind === "steer" ? { type: "steer", round, text: note.text } : { type: "notice", round, notice: note.notice, text: note.text });
+    api_messages.push({ role: "user", content: note.content, ...(note.kind === "steer" ? { instruction: true as const } : {}) });
+  }
+};
+
+const deliver_input = async (session: TurnSession, round: number, api_messages: ApiMessage[]) => {
+  await inject_steers(session, round, api_messages);
+  push_notes(session.emit, session.take_notes?.() ?? [], round, api_messages);
+};
+
+const drop_old_results = (session: TurnSession, round: number, api_messages: ApiMessage[], calibration: ContextCalibration | null) => {
+  if (trim_tool_messages(api_messages, session.model, compact_threshold(session.model), calibration_scale(calibration))) {
+    session.emit({ type: "notice", round, notice: "context_trimmed", text: compaction_fallback_note });
+  }
 };
 
 export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessage[]): Promise<void> => {
-  const rounds = session.max_rounds ?? max_rounds;
-  let wrapping = false;
+  let calibration = session.stored_context?.calibration ?? null;
+  let floor = session.stored_context?.floor ?? 0;
+  let carried_floor = floor;
   try {
-    for (let round = 0; round < rounds; round += 1) {
+    for (let round = 0; ; round += 1) {
       if (session.signal.aborted) {
         session.emit({ type: "end", status: "stopped", error: null });
         return;
       }
-      await inject_steers(session, round, api_messages);
-      for (const note of session.take_notes?.() ?? []) {
-        session.emit(note.kind === "steer" ? { type: "steer", round, text: note.text } : { type: "notice", round, notice: note.notice, text: note.text });
-        api_messages.push({ role: "user", content: note.content });
-      }
-      if (trim_tool_messages(api_messages, session.model)) {
-        session.emit({ type: "notice", round, notice: "context_trimmed", text: context_trimmed_note });
-      }
-      const reason = wrapping ? null : wrap_up_reason(session, round, rounds, api_messages);
-      if (reason) {
-        wrapping = true;
-        if (reason === "context") {
-          session.emit({ type: "notice", round, notice: "context_trimmed", text: wrap_up_note });
+      await deliver_input(session, round, api_messages);
+      const tokens = measure(session, api_messages, calibration);
+      report_context(session, tokens, calibration, carried_floor);
+      if (compaction_due(tokens, floor, session.model)) {
+        const compaction = await compact_context(session, round, api_messages, "auto", calibration);
+        if (compaction.status === "stopped") {
+          session.emit({ type: "end", status: "stopped", error: null });
+          return;
         }
-        api_messages.push({ role: "user", content: wrap_up_texts[reason] });
+        if (compaction.status === "failed") {
+          drop_old_results(session, round, api_messages, calibration);
+        }
+        floor = compaction_floor(compaction.status === "done" ? compaction.tokens : tokens, session.model);
+        carried_floor = compaction.status === "done" ? floor : 0;
+        report_context(session, measure(session, api_messages, calibration), calibration, carried_floor);
+        await deliver_input(session, round, api_messages);
       }
-      const outcome = await run_round(session, round, api_messages, !wrapping);
-      if (outcome.usage) {
-        session.emit({ type: "context", usage: usage_from_round(outcome.usage, session.model) });
+      if (fit_window(api_messages, session.model, measure(session, api_messages, calibration), undefined, 1, calibration_scale(calibration)).length) {
+        session.emit({ type: "notice", round, notice: "context_trimmed", text: window_note });
       }
+      const outcome = await run_round(session, round, api_messages);
+      const next = calibrate(outcome.usage, outcome.estimate) ?? calibration;
+      const rescale = calibration_scale(next) / calibration_scale(calibration);
+      floor = Math.ceil(floor * rescale);
+      carried_floor = Math.ceil(carried_floor * rescale);
+      calibration = next;
+      report_context(session, measure(session, api_messages, calibration), calibration, carried_floor);
       if (outcome.aborted) {
         session.emit({ type: "end", status: "stopped", error: null });
         return;
       }
-      const last_round = round === rounds - 1;
       if (outcome.plan_presented) {
-        if (!last_round && (await inject_steers(session, round + 1, api_messages))) {
+        if (await inject_steers(session, round + 1, api_messages)) {
           continue;
         }
-        session.emit({ type: "end", status: "done", error: null });
+        session.emit({ type: "end", status: session.signal.aborted ? "stopped" : "done", error: null });
         return;
       }
       if (outcome.tool_calls === 0) {
-        if (outcome.finish_reason === "length" && !last_round) {
+        if (outcome.finish_reason === "length") {
           session.emit({ type: "notice", round, notice: "output_limit", text: output_limit_note });
           api_messages.push({ role: "user", content: continuation_text });
           continue;
         }
-        if (!last_round && (await inject_steers(session, round + 1, api_messages))) {
+        if (await inject_steers(session, round + 1, api_messages)) {
           continue;
         }
         if (session.idle && (await session.idle())) {
@@ -119,8 +153,24 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
         return;
       }
     }
-    session.emit({ type: "end", status: "done", error: null });
   } catch (error) {
+    if (session.signal.aborted) {
+      session.emit({ type: "end", status: "stopped", error: null });
+      return;
+    }
     session.emit({ type: "end", status: end_status(error), error: end_error(error) });
   }
+};
+
+export const run_compaction_turn = async (session: TurnSession, api_messages: ApiMessage[]): Promise<void> => {
+  const calibration = session.stored_context?.calibration ?? null;
+  const outcome = await compact_context(session, 0, api_messages, "manual", calibration);
+  if (outcome.status === "failed") {
+    session.emit({ type: "end", status: "failed", error: compaction_turn_error(outcome.error) });
+    return;
+  }
+  if (outcome.status === "done") {
+    report_context(session, outcome.tokens, calibration, compaction_floor(outcome.tokens, session.model));
+  }
+  session.emit({ type: "end", status: outcome.status === "done" ? "done" : "stopped", error: null });
 };

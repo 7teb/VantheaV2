@@ -49,7 +49,13 @@ const RunRow = ({ agent_id, run, now }: RunRowProps) => {
           {first_line(run.prompt) || t("agent.untitled_run")}
         </span>
         <span className="agent-run-meta">
-          {t(waiting ? "agent.waiting_approval" : status_labels[run.status])} · {run_duration(run, now)}
+          {[
+            t(waiting ? "agent.waiting_approval" : status_labels[run.status]),
+            ...(run.status === "running" && run.open_questions > 0
+              ? [t(run.open_questions === 1 ? "agent.open_questions_one" : "agent.open_questions_other", { n: run.open_questions })]
+              : []),
+            run_duration(run, now),
+          ].join(" · ")}
         </span>
         <ChevronRightIcon size={12} className="agent-run-chevron" />
       </button>
@@ -80,7 +86,7 @@ const AgentEntry = ({ agent, now }: { agent: AgentSummary; now: number }) => {
           {agent.name}
         </span>
         <span className="agent-entry-meta">
-          {t(profile_labels[agent.profile])} · {model}
+          {[agent.topic, t(profile_labels[agent.profile]), model].filter(Boolean).join(" · ")}
         </span>
         {running && (
           <IconButton size="sm" label={t("agent.cancel")} disabled={stopping} onClick={() => void stop()}>

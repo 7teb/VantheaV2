@@ -6,7 +6,7 @@ Sets up the output folder for a build. Works on Windows, macOS and Linux.
 
 It copies the kit, writes index.html from the right template with the number and title filled in,
 picks the stage height class from the card, and creates empty styles.css and app.js with a TODO marker.
-The checker fails while a TODO marker or a placeholder word is still in the files.
+check.py fails while a TODO marker or a placeholder word is still in the files.
 """
 import re, shutil, sys, pathlib
 

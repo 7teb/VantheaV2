@@ -5,6 +5,7 @@ import { save_generated_image } from "../../media/artifacts.ts";
 import { is_media_id, media_exists, resolve_media_file, sniff_image } from "../../media/files.ts";
 import { model_catalog } from "../../model/catalog-file.ts";
 import { error_text } from "../../storage/coerce.ts";
+import { chat_attachment } from "../attachments/index.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool, type ToolResult } from "../types.ts";
 import { read_string_list } from "../web/args.ts";
@@ -20,11 +21,14 @@ const image_view = (prompt: string, images: GeneratedImage[]): ToolView => ({ ki
 
 const failed = (prompt: string, text: string): ToolResult => ({ status: "failed", text, view: image_view(prompt, []) });
 
-const read_source = async (id: string): Promise<string> => {
+const read_source = async (chat_id: string, id: string): Promise<string> => {
   if (!is_media_id(id) || !id.startsWith("img_")) {
     throw new Error(`"${id.slice(0, 80)}" is not an image id`);
   }
   const bucket = (await media_exists("attachment", id)) ? "attachment" : "image";
+  if (bucket === "attachment" && !(await chat_attachment(chat_id, id, "image"))) {
+    throw new Error(`${id} is not an image attached to chat ${chat_id}`);
+  }
   const bytes = await fs.readFile(await resolve_media_file(bucket, id));
   const kind = sniff_image(bytes);
   if (!kind) {
@@ -37,7 +41,7 @@ export const generate_image_tool = define_tool<ImageArgs>({
   spec: {
     name: "generate_image",
     description:
-      "Generate or edit an image with a dedicated image model; the result is shown to the user directly in the chat. WHEN to call: ONLY when the user explicitly asked for an image (a logo, artwork, mockup, photo edit, 'generate/draw/make me a picture of ...'), or when you offered it and the user said yes. If an image would merely be nice but was NOT requested, ASK the user in plain text first and do NOT call this tool. Never generate images unprompted and never as decoration. To EDIT or transform an image, pass its id in source_images: an image the user attached (the id from its attachment note) or one you generated earlier in this chat (the id this tool returned). Write prompt as one complete, self-contained visual description in English (subject, style, composition, colors, any text to render); the image model sees nothing of this chat except the prompt and the source images. The user sees the result automatically, you only get back the saved image id.",
+      "Generate or edit an image with a dedicated image model; the result is shown to the user directly in the chat. WHEN to call: ONLY when the user explicitly asked for an image (a logo, artwork, mockup, photo edit, 'generate/draw/make me a picture of ...'), or when you offered it and the user said yes. If an image would merely be nice but was NOT requested, ASK the user in plain text first and do NOT call this tool. Never generate images unprompted and never as decoration. To EDIT or transform an image, pass its id in source_images: an image the user attached (the id attribute of its <image> tag) or one you generated earlier in this chat (the id this tool returned). Write prompt as one complete, self-contained visual description in English (subject, style, composition, colors, any text to render); the image model sees nothing of this chat except the prompt and the source images. The user sees the result automatically, you only get back the saved image id.",
     parameters: {
       type: "object",
       properties: {
@@ -70,10 +74,10 @@ export const generate_image_tool = define_tool<ImageArgs>({
     const references: string[] = [];
     for (const id of args.source_images) {
       try {
-        references.push(await read_source(id));
+        references.push(await read_source(ctx.chat_id, id));
       } catch (error) {
         console.warn(`[image] source image ${id.slice(0, 80)} could not be read: ${error_text(error)}`);
-        return failed(args.prompt, `No readable image with the id "${id.slice(0, 80)}" was found. Use the id exactly as shown in its attachment note or in the earlier generate_image result.`);
+        return failed(args.prompt, `No readable image with the id "${id.slice(0, 80)}" was found. Use the id exactly as shown in the id attribute of its <image> tag or in the earlier generate_image result.`);
       }
     }
     if (references.length && (await image_input_support(model.id)) === false) {

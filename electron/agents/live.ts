@@ -1,10 +1,12 @@
 import { apply_event, apply_events } from "../../shared/apply-event.ts";
 import type { AgentEvent, TranscriptState } from "../../shared/events.ts";
 import type { AgentApproval, AgentRun } from "../../shared/ipc/work.ts";
+import type { StoredContext } from "../context/calibration.ts";
 import { error_text } from "../storage/coerce.ts";
 import type { Emitter } from "../turn/session.ts";
+import type { InboxEntry } from "./inbox.ts";
 import { append_journal, flush_journal, read_journal } from "./journal.ts";
-import { parse_event, public_run, type AgentRecord, type RunRecord, type StoredEvent } from "./records.ts";
+import { current_run, parse_event, public_run, type AgentRecord, type RunRecord, type StoredEvent } from "./records.ts";
 import { get_agent, run_file } from "./store.ts";
 
 export type StopReason = "cancelled" | "app_closed";
@@ -15,9 +17,12 @@ export type LiveRun = {
   chat_id: string;
   controller: AbortController;
   transcript: TranscriptState;
-  inbox: string[];
-  updates_sent: number;
+  inbox: InboxEntry[];
   heard_at_call: number;
+  roster_seen: Map<string, string>;
+  overlaps_seen: Set<string>;
+  resendable: Set<string>;
+  kept_reports: string[];
   stop_reason: StopReason | null;
   finish_reason: string;
   removed: boolean;
@@ -77,8 +82,11 @@ export const create_live = (agent_id: string, run_id: string, chat_id: string): 
     controller: new AbortController(),
     transcript: fresh_transcript(),
     inbox: [],
-    updates_sent: 0,
     heard_at_call: 0,
+    roster_seen: new Map(),
+    overlaps_seen: new Set(),
+    resendable: new Set(),
+    kept_reports: [],
     stop_reason: null,
     finish_reason: "",
     removed: false,
@@ -105,6 +113,17 @@ export const live_run = (run_id: string): LiveRun | null => lives.get(run_id) ??
 
 export const live_runs = (): LiveRun[] => [...lives.values()];
 
+export const reachable_live = (agent: AgentRecord): LiveRun | null => {
+  const run = current_run(agent);
+  const live = run?.status === "running" ? live_run(run.run_id) : null;
+  return live && !live.stop_reason && !live.removed && live.transcript.status === "streaming" ? live : null;
+};
+
+export const unreachable_state = (agent: AgentRecord): string => {
+  const status = current_run(agent)?.status;
+  return status === "running" ? "is ending its run" : `is not running (${status ?? "never started"})`;
+};
+
 export const forget_live = (run_id: string): void => {
   lives.delete(run_id);
 };
@@ -122,7 +141,7 @@ export const waiting_approvals = (chat_id: string): AgentApproval[] =>
 
 export const app_closed_end = { type: "end", status: "interrupted", error: { kind: "app_closed", message: app_closed_message } } as const;
 
-export const last_text = (transcript: TranscriptState): string => {
+export const last_text = (transcript: Pick<TranscriptState, "steps">): string => {
   for (let index = transcript.steps.length - 1; index >= 0; index -= 1) {
     const step = transcript.steps[index];
     if (step?.kind === "text" && step.text.trim()) {
@@ -146,6 +165,25 @@ export const report_text = (transcript: TranscriptState): string => {
     .map((step) => step.kind === "text" ? step.text : "")
     .join("")
     .trim();
+};
+
+const late_label = "Messages arrived after the report above. The agent's last message after reading them:";
+
+export const keep_report = (live: LiveRun): void => {
+  const { steps } = live.transcript;
+  const at = steps.findLastIndex((step) => step.kind === "text" && step.text.trim());
+  if (at < 0 || steps.slice(at + 1).some((step) => step.kind === "tool")) {
+    return;
+  }
+  const text = report_text(live.transcript);
+  if (text !== live.kept_reports.at(-1)) {
+    live.kept_reports.push(text);
+  }
+};
+
+export const final_report = (live: LiveRun): string => {
+  const parts = [...live.kept_reports, report_text(live.transcript)];
+  return parts.filter((part, index) => part && part !== parts[index - 1]).join(`\n\n${late_label}\n\n`);
 };
 
 const settled = (transcript: TranscriptState, run: RunRecord): TranscriptState => {
@@ -179,4 +217,23 @@ export const read_agent_run = async (agent: AgentRecord, run: RunRecord): Promis
     .filter((event): event is StoredEvent => event !== null)
     .sort((a, b) => a.seq - b.seq);
   return run_view(agent, run, settled(apply_events(fresh_transcript(), events), run));
+};
+
+export const stored_agent_context = async (agent: AgentRecord): Promise<StoredContext> => {
+  let floor: number | null = null;
+  for (const run of agent.runs.toReversed()) {
+    try {
+      const { context } = await read_agent_run(agent, run);
+      if (!context) {
+        continue;
+      }
+      floor ??= context.floor ?? 0;
+      if (context.calibration) {
+        return { calibration: context.calibration, floor };
+      }
+    } catch (error) {
+      console.error(`[agents] reading the context of run ${run.run_id} of agent ${agent.agent_id} failed, it seeds no calibration:`, error);
+    }
+  }
+  return { calibration: null, floor: floor ?? 0 };
 };

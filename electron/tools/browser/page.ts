@@ -21,6 +21,7 @@ const parse_snapshot_args = (raw: Record<string, unknown>): SnapshotArgs => {
     max_chars: read_number(raw, "max_chars"),
     max_nodes: read_number(raw, "max_nodes"),
     scope: scope_ref && snapshot_id ? { snapshot_id, ref: scope_ref } : null,
+    visible: null,
   };
 };
 

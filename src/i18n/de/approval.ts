@@ -19,9 +19,6 @@ export const approval: Record<keyof typeof en, string> = {
   "approval.question_add_mcp": "Darf ich den MCP-Server „{x}“ hinzufügen und verbinden?",
   "approval.question_remember": "Darf ich mir das dauerhaft merken?",
   "approval.question_forget": "Darf ich diese Erinnerung löschen?",
-  "approval.question_browser_vision": "Darf ich die sichtbare Browserseite zur visuellen Analyse an OpenRouter senden?",
-  "approval.browser_vision_target": "Sichtbare Browserseite",
-  "approval.allow_browser_vision_chat": "Ja, und Browser-Vision für diesen Chat erlauben",
   "approval.yes": "Ja",
   "approval.no": "Nein, sag, was anders gemacht werden soll",
   "approval.skip": "Überspringen",
@@ -33,4 +30,8 @@ export const approval: Record<keyof typeof en, string> = {
   "approval.allow_scope": "Ja, und dieses Tool für dasselbe Ziel erlauben",
   "approval.trust_session": "Ja, und gefährlichen Tools von {x} für diese Session vertrauen",
   "approval.background": "Läuft im Hintergrund",
+  "approval.question_agent_message": "Darf ich diese Nachricht an {x} senden?",
+  "approval.question_agent_deploy": "Darf ich den Agenten {x} mit dieser Aufgabe starten?",
+  "approval.question_agent_continue": "Darf ich {x} mit dieser Aufgabe fortsetzen?",
+  "approval.agent_about": "Zu {x}",
 };

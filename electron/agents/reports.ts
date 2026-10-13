@@ -1,5 +1,6 @@
 import { report_file_notice, report_notice_context, report_notice_text, update_notice_text } from "../../shared/agent-notes.ts";
 import type { AgentProfile, AgentRunStatus } from "../../shared/ipc/work.ts";
+import { peer_alert_intro, peer_alert_text, type PeerAlertCause } from "../../shared/peer-notes.ts";
 import { has_steers, is_active, user_stopped } from "../turn/active.ts";
 import type { TurnNote } from "../turn/session.ts";
 import { running_in_chat } from "./store.ts";
@@ -21,11 +22,15 @@ export type AgentReport = {
 
 export type AgentUpdate = { chat_id: string; agent_id: string; run_id: string; name: string; text: string };
 
-export type AgentNotice = { kind: "report"; report: AgentReport } | { kind: "update"; update: AgentUpdate };
+export type AgentAlert = { chat_id: string; agent_id: string; run_id: string; name: string; cause: PeerAlertCause; body: string };
+
+export type AgentNotice = { kind: "report"; report: AgentReport } | { kind: "update"; update: AgentUpdate } | { kind: "alert"; alert: AgentAlert };
 
 export const major_wait_ms = 30 * 60 * 1000;
 
 const pending = new Map<string, AgentNotice[]>();
+
+const digests = new Map<string, string[]>();
 
 const waiters = new Map<string, Set<() => void>>();
 
@@ -52,8 +57,19 @@ export const wake_idle = (chat_id: string): void => {
   }
 };
 
+const notice_source = (notice: AgentNotice): { chat_id: string; run_id: string } => {
+  switch (notice.kind) {
+    case "report":
+      return notice.report;
+    case "update":
+      return notice.update;
+    case "alert":
+      return notice.alert;
+  }
+};
+
 const continue_with = (notice: AgentNotice) => {
-  const { chat_id, run_id } = notice.kind === "report" ? notice.report : notice.update;
+  const { chat_id, run_id } = notice_source(notice);
   if (!continuation) {
     console.error(`[agents] ${notice.kind} of run ${run_id} in chat ${chat_id} has no continuation path and was dropped`);
     return;
@@ -84,6 +100,19 @@ export const deliver_report = (report: AgentReport): void => {
   wake_idle(report.chat_id);
 };
 
+export const deliver_alert = (alert: AgentAlert): void => {
+  if (is_active(alert.chat_id)) {
+    set_pending(alert.chat_id, [...(pending.get(alert.chat_id) ?? []), { kind: "alert", alert }]);
+  } else {
+    continue_with({ kind: "alert", alert });
+  }
+  wake_idle(alert.chat_id);
+};
+
+export const queue_digest = (chat_id: string, line: string): void => {
+  digests.set(chat_id, [...(digests.get(chat_id) ?? []), line]);
+};
+
 export const hold_update = (update: AgentUpdate): void => {
   set_pending(update.chat_id, [...(pending.get(update.chat_id) ?? []), { kind: "update", update }]);
 };
@@ -105,7 +134,18 @@ export const report_note_content = (text: string, agent_tools = true): string =>
 export const update_note_content = (text: string): string =>
   `[Internal app event, not a user message. One of your sub-agents is still running and sent you this update. Use it to avoid duplicating its work or to adjust your plan; do not redo what it says it covers. Routine updates need no visible reply, acknowledgment or fresh summary of the task. You may process several updates silently and wait for the remaining reports. Speak only if a new result, changed action, blocker or user decision makes an update useful. Its final report notification still arrives when it finishes.]\n\n${text}`;
 
+export const alert_text = (alert: AgentAlert): string => peer_alert_text({ cause: alert.cause, name: alert.name, agent_id: alert.agent_id, body: alert.body });
+
+export const alert_note_content = (text: string): string => `${peer_alert_intro}\n\n${text}`;
+
+export const digest_note_content = (text: string): string =>
+  `[Internal app event, not a user message and not a task. A short line about messages between your sub-agents; get_agent_status shows the full texts. It needs no reply and no action unless it changes your plan.]\n\n${text}`;
+
 const turn_note = (note: AgentNotice, agent_tools: boolean): TurnNote => {
+  if (note.kind === "alert") {
+    const text = alert_text(note.alert);
+    return { kind: "notice", notice: "agent_update", text, content: alert_note_content(text) };
+  }
   if (note.kind === "update") {
     const text = update_notice_text(note.update.name, note.update.agent_id, note.update.text);
     return { kind: "notice", notice: "agent_update", text, content: update_note_content(text) };
@@ -115,13 +155,14 @@ const turn_note = (note: AgentNotice, agent_tools: boolean): TurnNote => {
   return { kind: "notice", notice: "agent_report", text, content: report_note_content(text, agent_tools) };
 };
 
+const digest_note = (text: string): TurnNote => ({ kind: "notice", notice: "peer_digest", text, content: digest_note_content(text) });
+
 export const take_agent_notes = (chat_id: string, agent_tools = true): TurnNote[] => {
-  const queue = pending.get(chat_id);
-  if (!queue) {
-    return [];
-  }
+  const queue = pending.get(chat_id) ?? [];
+  const lines = digests.get(chat_id) ?? [];
   pending.delete(chat_id);
-  return queue.map((note) => turn_note(note, agent_tools));
+  digests.delete(chat_id);
+  return [...queue.map((note) => turn_note(note, agent_tools)), ...lines.map(digest_note)];
 };
 
 export const flush_reports = (chat_id: string): void => {
@@ -143,6 +184,7 @@ export const flush_reports = (chat_id: string): void => {
 
 export const drop_agent_notes = (chat_id: string): void => {
   pending.delete(chat_id);
+  digests.delete(chat_id);
   wake_idle(chat_id);
 };
 

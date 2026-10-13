@@ -2,17 +2,18 @@ import { memo, useState } from "react";
 import type { ToolStep } from "../../../shared/chat.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon, CircleAlertIcon, CircleSlashIcon, ShieldTerminalIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon, CircleAlertIcon, ShieldTerminalIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
+import { open_agent_run } from "../../state/agents.ts";
 import { AgentRunMark } from "./AgentRunMark.tsx";
 import { DraftLines } from "./DraftLines.tsx";
 import { live_draft } from "./live-draft.ts";
-import { has_body, tool_icon, ToolBody } from "./registry.tsx";
-import { step_outcome } from "./review-notes.ts";
+import { tool_icon, ToolBody } from "./registry.tsx";
 import { is_reviewing } from "./review-phase.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
+import { has_body } from "./tool-body.ts";
 import { is_active_status, tool_label } from "./tool-meta.ts";
-import { format_duration, step_detail, step_duration } from "./tool-summary.ts";
+import { format_duration, step_detail, step_duration, step_hint } from "./tool-summary.ts";
 import "./tools.css";
 
 const StatusMark = ({ step }: { step: ToolStep }) => {
@@ -24,18 +25,13 @@ const StatusMark = ({ step }: { step: ToolStep }) => {
           <CircleAlertIcon size={13} />
         </span>
       );
-    case "denied":
-      return (
-        <span className="tool-row-status" title={step_outcome(t, step).notice?.title ?? t("tools.status_denied")}>
-          <CircleSlashIcon size={13} />
-        </span>
-      );
     case "cancelled":
       return <span className="tool-row-status">{t("tools.status_cancelled")}</span>;
     case "queued":
       return <span className="tool-row-status">{t("tools.status_queued")}</span>;
     case "awaiting_approval":
       return <span className="tool-row-status">{t("tools.awaiting")}</span>;
+    case "denied":
     case "drafting":
     case "running":
     case "done":
@@ -58,7 +54,8 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
   const drafted = step.status === "drafting" ? (step.progress?.lines ?? 0) : 0;
   const duration = step_duration(step);
   const reviewing = is_reviewing(step);
-  const expandable = has_body(step);
+  const expandable = has_body(t, step);
+  const run = !expandable && step.view?.kind === "agent" ? step.view : null;
   const open = expandable && (chosen ?? (running && !reviewing && live_draft(step) === null));
   if (open && !seen) {
     set_seen(true);
@@ -69,13 +66,14 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
         type="button"
         className="tool-row-head"
         aria-expanded={expandable ? open : undefined}
-        disabled={!expandable}
-        onClick={() => set_chosen(!open)}
+        disabled={!expandable && !run}
+        title={run ? t("agent.view_transcript") : step_hint(step) || undefined}
+        onClick={() => (run ? open_agent_run({ agent_id: run.agent_id, run_id: run.run_id }) : set_chosen(!open))}
       >
         <span className="tool-row-icon">
           <Icon size={14} />
         </span>
-        <span className={class_names("tool-row-label", active && !reviewing && "is-working")}>
+        <span className={class_names("tool-row-label", active && step.status !== "queued" && !reviewing && "is-working")}>
           {reviewing ? <ReviewingLabel step={step} /> : tool_label(t, step)}
         </span>
         {reviewing && <ShieldTerminalIcon size={16} className="tool-row-shield" />}

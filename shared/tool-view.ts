@@ -1,4 +1,5 @@
 import type { Todo } from "./chat.ts";
+import type { PeerType } from "./peer-notes.ts";
 import type { AskQuestion } from "./questions.ts";
 
 export type DiffLine = { kind: "context" | "add" | "remove" | "gap"; text: string; old_line: number | null; new_line: number | null };
@@ -26,6 +27,8 @@ export type ModelPrice = {
   error: string;
 };
 
+export type PeerOutcome = "queued" | "held" | "denied" | "declined" | "not_running" | "duplicate";
+
 export const shell_name = "PowerShell";
 
 export type ToolView =
@@ -46,6 +49,7 @@ export type ToolView =
     }
   | { kind: "background"; shell: string; task_id: string; command: string; status: string; output_tail: string }
   | { kind: "agent"; agent_id: string; run_id: string; name: string; status: string; report: string }
+  | { kind: "peer_message"; message_id: string; to_name: string; to_id: string; type: PeerType; about: string; summary: string; outcome: PeerOutcome }
   | { kind: "todos"; todos: Todo[] }
   | { kind: "plan"; text: string }
   | { kind: "web_search"; query: string; depth: "basic" | "advanced"; answer: string; sources: WebSource[] }

@@ -17,6 +17,10 @@ export type McpServerConfig = {
 
 export type McpToolOverride = { risk: McpTier | null; enabled: boolean };
 
+export type ModelContext = { limit: number | null; compact_percent: number };
+
+export const min_context_limit = 16000;
+
 export const mcp_tool_key = (server: string, tool: string) => `${server}/${tool}`;
 
 export type Settings = {
@@ -33,6 +37,7 @@ export type Settings = {
   mcp_servers: Record<string, McpServerConfig>;
   mcp_tools: Record<string, McpToolOverride>;
   skills: { disabled: string[] };
+  model_context: Record<string, ModelContext>;
 };
 
 export type SecretName = "openrouter" | "tavily";

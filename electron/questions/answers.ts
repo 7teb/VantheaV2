@@ -5,7 +5,7 @@ import { answer_text, open_questions, type OpenQuestion, type QuestionAnswer, ty
 import type { Settings } from "../../shared/settings.ts";
 import { set_question_states, type QuestionPatch } from "../chats/questions.ts";
 import { get_chat } from "../chats/store.ts";
-import { take_steers_active } from "../turn/active.ts";
+import { take_steer_active } from "../turn/active.ts";
 
 type PendingAnswer = { turn_id: string; ids: string[] };
 
@@ -43,10 +43,12 @@ const release = (chat_id: string, steer_ids: string[], state: QuestionState | nu
 
 export const drop_sending = (chat_id: string, steer_id: string): void => release(chat_id, [steer_id], null);
 
-export const take_main_steers = (chat_id: string): SteerMessage[] => {
-  const steers = take_steers_active(chat_id);
-  release(chat_id, steers.map((steer) => steer.id), "answered");
-  return steers;
+export const take_main_steer = (chat_id: string, steer_id: string): SteerMessage | null => {
+  const steer = take_steer_active(chat_id, steer_id);
+  if (steer) {
+    release(chat_id, [steer.id], "answered");
+  }
+  return steer;
 };
 
 export const settle_answers = async (chat_id: string, turn_id: string): Promise<void> => {
@@ -97,7 +99,7 @@ export const dismiss_questions = async (chat_id: string, ids: string[]): Promise
 export const answer_request = (chat: Chat, text: string, settings: Settings): SendRequest => ({
   chat_id: chat.id,
   text,
-  attachments: [],
+  attachment_ids: [],
   model: settings.model,
   effort: settings.effort,
   mode: settings.mode,

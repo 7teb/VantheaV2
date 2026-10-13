@@ -1,7 +1,9 @@
 import type { Sequenced, StreamEventBody } from "../../shared/events.ts";
 import type { AgentProfile, AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
+import { coerce_context_usage } from "../context/calibration.ts";
 import { coerce_review } from "../permissions/review-coerce.ts";
 import { as_array, as_iso, as_record, as_string, is_record, pick } from "../storage/coerce.ts";
+import { parse_held, type HeldEntry } from "./inbox.ts";
 
 export type RunRecord = AgentRunSummary & { parent_message_id: string; parent_call_id?: string };
 
@@ -11,6 +13,8 @@ export type AgentRecord = Omit<AgentSummary, "runs"> & {
   created_at: string;
   updated_at: string;
   runs: RunRecord[];
+  scope: string[];
+  held: HeldEntry[];
 };
 
 export type StoredEvent = Sequenced & StreamEventBody;
@@ -52,6 +56,7 @@ export const public_run = (run: RunRecord): AgentRunSummary => ({
   started_at: run.started_at,
   ended_at: run.ended_at,
   report: run.report,
+  open_questions: run.open_questions,
 });
 
 export const public_summary = (record: AgentRecord): AgentSummary => ({
@@ -59,6 +64,7 @@ export const public_summary = (record: AgentRecord): AgentSummary => ({
   chat_id: record.chat_id,
   name: record.name,
   description: record.description,
+  topic: record.topic,
   model: record.model,
   profile: record.profile,
   runs: record.runs.map(public_run),
@@ -89,6 +95,7 @@ const parse_run = (value: unknown, now: string): RunRecord | null => {
     started_at: as_iso(raw.started_at, now),
     ended_at: status === "running" ? now : ended_at,
     report: as_string(raw.report),
+    open_questions: 0,
     parent_message_id: as_string(raw.parent_message_id),
     ...(typeof raw.parent_call_id === "string" ? { parent_call_id: raw.parent_call_id } : {}),
   };
@@ -109,6 +116,7 @@ const parse_agent = (value: unknown, now: string): AgentRecord | null => {
     chat_id,
     name: as_string(raw.name, "Agent"),
     description: as_string(raw.description),
+    topic: as_string(raw.topic),
     model: as_string(raw.model),
     effort: as_string(raw.effort),
     profile: pick(raw.profile, profiles, "explore"),
@@ -116,6 +124,10 @@ const parse_agent = (value: unknown, now: string): AgentRecord | null => {
     created_at: as_iso(raw.created_at, now),
     updated_at: as_iso(raw.updated_at, now),
     runs: trim_runs(runs),
+    scope: as_array(raw.scope).filter((entry): entry is string => typeof entry === "string"),
+    held: as_array(raw.held)
+      .map(parse_held)
+      .filter((entry): entry is HeldEntry => entry !== null),
   };
 };
 
@@ -142,6 +154,10 @@ export const parse_event = (value: unknown, chat_id: string): StoredEvent | null
   }
   if (value.type === "tool_review") {
     return parse_review_event(value, value.seq, value.at, chat_id);
+  }
+  if (value.type === "context") {
+    const usage = coerce_context_usage(value.usage);
+    return usage ? { type: "context", usage, seq: value.seq, at: value.at } : null;
   }
   return event_types.includes(value.type as StreamEventBody["type"]) ? (value as StoredEvent) : null;
 };

@@ -1,16 +1,17 @@
-import { memo, useMemo } from "react";
-import type { AssistantMessage as AssistantMessageData } from "../../../shared/chat.ts";
+import { memo, useMemo, useState } from "react";
+import { manual_compaction_only, type AssistantMessage as AssistantMessageData } from "../../../shared/chat.ts";
 import type { UndoResult } from "../../../shared/ipc/chats.ts";
+import { IconButton } from "../../components/Button.tsx";
+import { ForkIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { CopyButton } from "../../components/MarkdownCopy.tsx";
 import { use_t } from "../../i18n/index.ts";
-import { find_model, models_store } from "../../state/models.ts";
-import { use_store } from "../../state/use-store.ts";
+import { fork_chat } from "../../state/chat-actions.ts";
 import { ImageBody } from "../tools/bodies-web.tsx";
 import { tool_icon } from "../tools/registry.tsx";
-import { is_active_status, tool_label } from "../tools/tool-meta.ts";
+import { tool_label } from "../tools/tool-meta.ts";
 import { WorkGroup } from "../tools/WorkGroup.tsx";
-import { answer_text, build_blocks, type Block } from "./assistant-blocks.ts";
+import { answer_text, build_blocks, shows_thinking, type Block } from "./assistant-blocks.ts";
 import { FileChanges } from "./FileChanges.tsx";
 import { PlanCard } from "./PlanCard.tsx";
 import { ReasoningRow } from "./ReasoningRow.tsx";
@@ -49,7 +50,7 @@ const BlockView = ({ block, chat_id, message_id, streaming, tail, can_accept, ac
     case "text":
       return <Markdown text={block.step.text} className="assistant-text" />;
     case "tools":
-      return <WorkGroup chat_id={chat_id} steps={block.steps} running={streaming && (tail || block.steps.some((step) => is_active_status(step.status)))} />;
+      return <WorkGroup chat_id={chat_id} steps={block.steps} streaming={streaming} tail={tail} />;
     case "plan":
       return <PlanCard chat_id={chat_id} message_id={message_id} text={block.text} can_accept={can_accept} accepted={accepted} />;
     case "image":
@@ -75,11 +76,14 @@ type AssistantMessageProps = {
 
 export const AssistantMessage = memo(({ chat_id, message, is_last, busy, last_plan, plan_accepted, reverted }: AssistantMessageProps) => {
   const t = use_t();
-  const catalog = use_store(models_store, (state) => state.catalog);
   const blocks = useMemo(() => build_blocks(message.steps), [message.steps]);
   const answer = useMemo(() => answer_text(message), [message]);
   const streaming = message.status === "streaming";
-  const model = find_model(catalog, message.model)?.label ?? message.model;
+  const [fork_error, set_fork_error] = useState("");
+  const fork = async () => {
+    const result = await fork_chat(chat_id, message.id);
+    set_fork_error(result.ok ? "" : result.error);
+  };
   return (
     <div className="assistant-message enter-fade-up" data-last={is_last}>
       {blocks.map((block, index) => (
@@ -94,20 +98,23 @@ export const AssistantMessage = memo(({ chat_id, message, is_last, busy, last_pl
           accepted={plan_accepted}
         />
       ))}
-      {streaming && blocks.length === 0 && !message.retry && (
+      {shows_thinking(streaming, message.retry !== null, blocks) && (
         <div className="assistant-pending">
           <span className="is-working">{t("chat.thinking")}</span>
         </div>
       )}
       {message.retry && <RetryBanner retry={message.retry} />}
-      <TurnOutcome chat_id={chat_id} message={message} has_content={blocks.length > 0} can_continue={is_last && !busy} />
+      {!manual_compaction_only(message) && <TurnOutcome chat_id={chat_id} message={message} has_content={blocks.length > 0} can_continue={is_last && !busy} />}
       {!streaming && <FileChanges chat_id={chat_id} message={message} busy={busy} reverted={reverted} />}
-      {!streaming && (
+      {!streaming && !manual_compaction_only(message) && (
         <div className="message-actions assistant-actions">
           {answer && <CopyButton text={answer} label={t("chat.copy_answer")} className="message-action" />}
-          <span className="assistant-model">{model}</span>
+          <IconButton label={t("chat.fork")} size="sm" className="message-action" onClick={() => void fork()}>
+            <ForkIcon size={15} />
+          </IconButton>
         </div>
       )}
+      {fork_error && <div className="inline-error">{fork_error}</div>}
     </div>
   );
 });

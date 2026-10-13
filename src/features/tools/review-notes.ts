@@ -1,6 +1,6 @@
 import type { ApprovalRequest, HumanDecision } from "../../../shared/approval.ts";
 import type { ToolStep } from "../../../shared/chat.ts";
-import { review_deadline_ms, type ReviewEarlier, type ReviewNote, type ReviewRaise, type ReviewRecord, type RuleSource } from "../../../shared/review.ts";
+import { review_deadline_ms, type ReviewNote, type ReviewRaise, type ReviewRecord, type RuleSource } from "../../../shared/review.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 
 export type NoteTone = "plain" | "waiting" | "reason" | "detail";
@@ -17,25 +17,13 @@ const source_keys: Record<Exclude<RuleSource, "none">, MessageKey> = {
   human_message: "review.source_human_message",
 };
 
-const status_keys: Record<ReviewEarlier["status"], MessageKey> = {
-  user_denied: "review.status_denied_by_you",
-  review_denied: "review.status_denied_by_review",
-  blocked: "review.status_blocked",
-  waiting: "review.status_waiting",
-};
-
-const raise_order: ReviewRaise[] = ["plan", "protected", "script_floor", "script_gap"];
+const raise_order: ReviewRaise[] = ["plan", "protected", "script_floor"];
 
 const line = (text: string, tone: NoteTone = "plain"): NoteLine => ({ text, tone });
 
 const first_of = (entries: string[] | undefined): string => {
   const list = entries ?? [];
   return list.length > 1 ? `${list[0]} (+${list.length - 1})` : (list[0] ?? "");
-};
-
-const clock_time = (at: number): string => {
-  const date = new Date(at);
-  return [date.getHours(), date.getMinutes(), date.getSeconds()].map((value) => String(value).padStart(2, "0")).join(":");
 };
 
 const rule_text = (t: Translate, review: Pick<ReviewRecord, "rule_source" | "rule">): string | null =>
@@ -49,8 +37,6 @@ const raise_text = (t: Translate, raise: ReviewRaise, note: ReviewNote): string 
       return t("review.min_protected");
     case "script_floor":
       return t("review.min_script", { x: first_of(note.script_floor) });
-    case "script_gap":
-      return t("review.min_gap", { x: first_of(note.gaps) });
   }
 };
 
@@ -58,9 +44,6 @@ const failure_text = (t: Translate, note: ReviewNote): string => {
   const failure = note.failure ?? "unreadable";
   if (failure === "timeout") {
     return t("review.failure_timeout", { n: review_deadline_ms / 1000 });
-  }
-  if (failure === "offline_window") {
-    return t("review.failure_offline_window", { time: clock_time(note.offline_until ?? Date.now()) });
   }
   return t(`review.failure_${failure}`);
 };
@@ -91,17 +74,12 @@ export const approval_lines = (t: Translate, request: ApprovalRequest): NoteLine
     }
     case "write":
       return request.instruction_file ? [line(t("review.min_instruction_file"))] : [];
+    case "memory":
     case "mcp_server":
     case "skill_install":
-    case "memory":
-    case "browser_vision":
-      return [];
+    case "agent_message":
+      return note_lines(t, request.review);
   }
-};
-
-const earlier_text = (t: Translate, earlier: ReviewEarlier): string => {
-  const status = t(status_keys[earlier.status]);
-  return earlier.agent ? t("review.earlier_agent", { name: earlier.agent, x: earlier.action, status }) : t("review.earlier", { x: earlier.action, status });
 };
 
 const denied_notice = (t: Translate, current: ReviewRecord | null, decision: HumanDecision | null): OutcomeNote | null => {
@@ -113,14 +91,9 @@ const denied_notice = (t: Translate, current: ReviewRecord | null, decision: Hum
   if (!current || current.verdict !== "deny" || current.source !== "model") {
     return null;
   }
-  const rule = rule_text(t, current);
   return {
     title: t(current.earlier ? "review.workaround" : "review.denied"),
-    lines: [
-      ...(current.earlier ? [line(earlier_text(t, current.earlier), "detail")] : []),
-      line(current.reason || t("review.no_reason"), "reason"),
-      ...(rule ? [line(rule, "detail")] : []),
-    ],
+    lines: [line(current.reason || t("review.no_reason"), "reason")],
   };
 };
 

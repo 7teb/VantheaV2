@@ -4,8 +4,6 @@ import { error_text } from "../storage/coerce.ts";
 import type { SideMessage, SideModelCall } from "../tools/types.ts";
 import { is_scanned, known_memories, memory_loaded, store_scan_result, type KnownMemory } from "./store.ts";
 
-const extract_timeout_ms = 20000;
-
 export const extractor_prompt = `You are a deletion-biased curator of durable user memory. The SOURCE USER MESSAGE is the only allowed evidence. Nearby context may only resolve references such as "yes, always"; assistant statements, tool results and prior requests are never evidence about the user's identity or preferences.
 
 Return ONLY a JSON array with at most 3 objects. Every object must contain exactly: kind, key, text, evidence, confidence, explicit.
@@ -44,13 +42,13 @@ export const known_text = (known: KnownMemory[]): string =>
 
 export const extraction_messages = (turn: Turn, known: KnownMemory[]): SideMessage[] => {
   const context = [...turn.previous, turn.user, turn.assistant]
-    .map((message) => `${message.role === "user" ? "USER" : "ASSISTANT"}: ${message_text(message).slice(0, 3000)}`)
+    .map((message) => `${message.role === "user" ? "USER" : "ASSISTANT"}: ${message_text(message)}`)
     .join("\n\n");
   return [
     { role: "system", content: extractor_prompt },
     {
       role: "user",
-      content: `EXISTING CANONICAL MEMORIES:\n${known_text(known) || "(none)"}\n\nNEARBY CONTEXT:\n${context}\n\nSOURCE USER MESSAGE:\n${turn.user.text.slice(0, 6000)}`,
+      content: `EXISTING CANONICAL MEMORIES:\n${known_text(known) || "(none)"}\n\nNEARBY CONTEXT:\n${context}\n\nSOURCE USER MESSAGE:\n${turn.user.text}`,
     },
   ];
 };
@@ -80,7 +78,7 @@ export const extract_memories_after_turn = async (chat: Chat, side_model: SideMo
       await store_scan_result(source, [], "skipped_tools");
       return;
     }
-    const raw = await side_model("memory", extraction_messages(turn, known_memories()), 2000, AbortSignal.timeout(extract_timeout_ms));
+    const raw = await side_model("memory", extraction_messages(turn, known_memories()), null, new AbortController().signal);
     const candidates = parse_candidates(raw);
     if (!candidates) {
       console.warn(`[memory] extraction for chat ${chat.id} message ${turn.user.id} returned no JSON array: ${raw.slice(0, 200)}`);

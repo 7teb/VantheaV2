@@ -5,29 +5,28 @@ export type DraftUpload = {
   name: string;
   size: number;
   image: boolean;
-  status: "uploading" | "ready" | "failed";
+  status: "uploading" | "ready";
   attachment: Attachment | null;
-  error: string;
+  preview: string | null;
 };
 
 export type Draft = { text: string; uploads: DraftUpload[]; plan: boolean };
 
 export type OutgoingMessage = { text: string; attachments: Attachment[]; plan: boolean };
 
-export type QueuedMessage = OutgoingMessage & { id: string; steering: boolean; steer_id?: string; steer_turn_id?: string; steer_failed?: boolean };
+export type QueuedMessage = OutgoingMessage & { id: string; steering: boolean; steer_id?: string; steer_turn_id?: string; steer_failed?: boolean; after_compaction?: boolean };
 
 export type ComposerState = {
   drafts: Record<string, Draft>;
   queues: Record<string, QueuedMessage[]>;
   sending: Record<string, boolean>;
   errors: Record<string, string>;
+  compacting: Record<string, boolean>;
 };
-
-export const max_uploads = 10;
 
 export const empty_draft: Draft = { text: "", uploads: [], plan: false };
 
-export const empty_composer: ComposerState = { drafts: {}, queues: {}, sending: {}, errors: {} };
+export const empty_composer: ComposerState = { drafts: {}, queues: {}, sending: {}, errors: {}, compacting: {} };
 
 export const draft_key = (chat_id: string | null, project_path: string) => chat_id ?? `new:${project_path}`;
 
@@ -72,7 +71,7 @@ export const restore_draft = (state: ComposerState, key: string, message: Outgoi
     image: attachment.kind === "image",
     status: "ready",
     attachment,
-    error: "",
+    preview: null,
   }));
   const text = draft.text.trim() ? `${message.text}\n${draft.text}` : message.text;
   return patch_draft(state, key, { text, uploads: [...restored, ...draft.uploads] });
@@ -114,6 +113,29 @@ export const remove_queued = (state: ComposerState, chat_id: string, id: string)
     state,
     chat_id,
     queue_of(state, chat_id).filter((entry) => entry.id !== id),
+  );
+
+export const queued_to_draft = (state: ComposerState, chat_id: string, id: string): ComposerState => {
+  const entry = queue_of(state, chat_id).find((item) => item.id === id);
+  if (!entry || entry.steering) {
+    return state;
+  }
+  const restored = restore_draft(remove_queued(state, chat_id, id), chat_id, entry);
+  return entry.plan ? patch_draft(restored, chat_id, { plan: true }) : restored;
+};
+
+export const mark_after_compaction = (state: ComposerState, chat_id: string, id: string): ComposerState =>
+  set_queue(
+    state,
+    chat_id,
+    queue_of(state, chat_id).map((entry) => (entry.id === id ? { ...entry, after_compaction: true, steer_failed: false } : entry)),
+  );
+
+export const clear_after_compaction = (state: ComposerState, chat_id: string): ComposerState =>
+  set_queue(
+    state,
+    chat_id,
+    queue_of(state, chat_id).map((entry) => (entry.after_compaction ? { ...entry, after_compaction: false } : entry)),
   );
 
 export const set_steering = (state: ComposerState, chat_id: string, id: string, steering: boolean, steer_id?: string, steer_turn_id?: string): ComposerState =>

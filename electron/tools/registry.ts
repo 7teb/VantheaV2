@@ -1,7 +1,9 @@
+import type { ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
 import { agent_tools } from "./agents/index.ts";
 import { read_attachment_tool } from "./attachments/index.ts";
 import { browser_tools } from "./browser/index.ts";
+import { check_page_tool } from "./check/index.ts";
 import { fs_tools } from "./fs/index.ts";
 import { generate_image_tool } from "./image/index.ts";
 import { add_mcp_server_tool } from "./mcp/add-server.ts";
@@ -27,13 +29,14 @@ const groups: Tool[][] = [
   [read_attachment_tool],
   memory_tools,
   skill_tools,
+  [check_page_tool],
   agent_tools,
 ];
 
 const all_tools = () => groups.flat();
 
-export const tools_for = (profile: ToolProfile, settings: Settings, dynamic: Tool[] = []): Tool[] =>
-  [...all_tools(), ...dynamic].filter((tool) => tool.profiles.includes(profile) && tool.available(settings));
+export const tools_for = (profile: ToolProfile, settings: Settings, model: ModelEntry, dynamic: Tool[] = []): Tool[] =>
+  [...all_tools(), ...dynamic].filter((tool) => tool.profiles.includes(profile) && tool.available(settings, model));
 
 export const find_tool = (name: string, dynamic: Tool[] = []): Tool | null =>
   [...all_tools(), ...dynamic].find((tool) => tool.spec.name === name) ?? null;

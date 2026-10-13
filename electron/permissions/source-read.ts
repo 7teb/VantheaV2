@@ -3,7 +3,7 @@ import { createReadStream, type Stats } from "node:fs";
 import fs from "node:fs/promises";
 import { error_code, missing_path } from "../storage/coerce.ts";
 import { path_key } from "../storage/paths.ts";
-import { decode_text, looks_binary } from "../storage/text-codec.ts";
+import { decode_text, looks_binary, read_head } from "../storage/text-codec.ts";
 
 export const read_limit_bytes = 1048576;
 
@@ -26,7 +26,8 @@ export const file_sha256 = async (file: string): Promise<string> => {
 export const read_source = async (file: string): Promise<SourceRead> => {
   const stat = await fs.stat(file);
   if (stat.size > read_limit_bytes) {
-    return { sha256: await file_sha256(file), bytes: stat.size, mtime: stat.mtimeMs, text: null, binary: false, over_limit: true };
+    const head = decode_text(await read_head(file)).text;
+    return { sha256: await file_sha256(file), bytes: stat.size, mtime: stat.mtimeMs, text: null, binary: looks_binary(head), over_limit: true };
   }
   const bytes = await fs.readFile(file);
   const { text } = decode_text(bytes);

@@ -41,7 +41,9 @@
       }
     ],
     "asarUnpack": [
-      "node_modules/node-pty/**"
+      "node_modules/node-pty/**",
+      "node_modules/@vscode/ripgrep/**",
+      "node_modules/@vscode/ripgrep-win32-x64/**"
     ],
     "win": {
       "target": [
@@ -53,6 +55,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "@vscode/ripgrep": "1.18.0",
     "node-pty": "1.1.0"
   },
   "devDependencies": {

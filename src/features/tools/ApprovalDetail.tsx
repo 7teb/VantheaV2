@@ -75,12 +75,16 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
       );
     case "memory":
       return <div className="tool-body-quote">{request.text}</div>;
-    case "browser_vision":
+    case "agent_message":
       return (
-        <div className="approval-meta">
-          <span>{t("approval.browser_vision_target")}</span>
-          <span className="tool-body-mono">{request.url}</span>
-        </div>
+        <>
+          {request.about && (
+            <div className="approval-meta">
+              <span className="approval-reason">{t("approval.agent_about", { x: request.about })}</span>
+            </div>
+          )}
+          <pre className="approval-command approval-content inset-surface">{request.text}</pre>
+        </>
       );
   }
 };

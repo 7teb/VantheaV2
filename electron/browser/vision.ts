@@ -1,18 +1,23 @@
 import type { NativeImage } from "electron";
 import { read_ax_node, type AxNode } from "./ax.ts";
 import { cdp, ensure_debugger, frame_session, read_frames } from "./cdp.ts";
-import { click_point, viewport } from "./input.ts";
+import { click_point, viewport, type Viewport } from "./input.ts";
 import { sweep_stores } from "./refs.ts";
-import { error_text, invalidate_tab, random_id, settle_within, tab_url, type BrowserTab, type SnapshotRef, type Visual, type VisualRegion } from "./state.ts";
-import { live_node } from "./target.ts";
+import { error_text, invalidate_tab, random_id, settle_within, tab_url, type Box, type BrowserTab, type SnapshotRef, type Visual, type VisualRegion } from "./state.ts";
+import { describe, live_node } from "./target.ts";
 
-export type VisionAnalyzer = (png: Buffer, question: string, signal: AbortSignal) => Promise<string>;
+export type VisionReply = { text: string; finish_reason: string | null };
+
+export type VisionAnalyzer = (png: Buffer, question: string, signal: AbortSignal) => Promise<VisionReply>;
 
 export type VisionAnalysis = { summary: string; text: string[]; regions: VisualRegion[] };
 
 export type VisionResult = VisionAnalysis & { screenshot_id: string; tab_id: string; url: string };
 
-const analyzer_timeout_ms = 120000;
+export type CapturedView = { image: NativeImage; width: number; height: number; view: Viewport };
+
+export type SemanticClick = { clicked: boolean; target: string };
+
 const capture_timeout_ms = 15000;
 const min_region_confidence = 0.45;
 const max_bitmap_difference = 0.14;
@@ -20,20 +25,8 @@ const clickable_roles = new Set(["button", "checkbox", "combobox", "link", "menu
 
 let analyzer: VisionAnalyzer | null = null;
 
-const vision_grants = new Set<string>();
-
 export const set_vision_analyzer = (fn: VisionAnalyzer) => {
   analyzer = fn;
-};
-
-export const has_vision_grant = (chat_id: string) => vision_grants.has(chat_id);
-
-export const grant_vision = (chat_id: string) => {
-  vision_grants.add(chat_id);
-};
-
-export const clear_browser_chat = (chat_id: string) => {
-  vision_grants.delete(chat_id);
 };
 
 export const vision_instructions = (question: string) =>
@@ -44,7 +37,7 @@ export const vision_instructions = (question: string) =>
     "Every box coordinate is an integer from 0 to 1000 relative to the full screenshot: 0 is the top or left edge, 1000 the bottom or right edge.",
     "Return regions only for visible controls or visual targets relevant to the question.",
     "Do not invent obscured controls. Use lower confidence when a target is ambiguous.",
-    `Question: ${question.slice(0, 1000)}`,
+    `Question: ${question}`,
   ].join("\n");
 
 export const normalized_box = (box: unknown): VisualRegion["box"] | null => {
@@ -79,23 +72,28 @@ const json_object = (raw: string): Record<string, unknown> | null => {
   }
 };
 
-export const parse_analysis = (raw: string): VisionAnalysis => {
+export const analysis_cut_note =
+  "The vision model hit its output length limit, so this analysis was cut off before it was complete; regions and text after the cut are missing.";
+
+export const parse_analysis = (raw: string, cut: boolean): VisionAnalysis => {
   const parsed = json_object(raw);
   if (!parsed) {
-    return { summary: raw.trim().slice(0, 8000), text: [], regions: [] };
+    const partial = raw.trim();
+    return { summary: cut ? `${analysis_cut_note} No regions could be read from the cut answer. Its partial text follows: ${partial}` : partial, text: [], regions: [] };
   }
   const regions: VisualRegion[] = [];
-  for (const source of Array.isArray(parsed.regions) ? parsed.regions.slice(0, 80) : []) {
+  for (const source of Array.isArray(parsed.regions) ? parsed.regions : []) {
     const entry = (source ?? {}) as Record<string, unknown>;
     const box = normalized_box(entry.box);
     if (!box) {
       continue;
     }
     const confidence = Math.max(0, Math.min(1, Number(entry.confidence) || 0));
-    regions.push({ ref: `v${regions.length + 1}`, label: String(entry.label ?? "").slice(0, 200), box, confidence });
+    regions.push({ ref: `v${regions.length + 1}`, label: String(entry.label ?? ""), box, confidence });
   }
-  const text = Array.isArray(parsed.text) ? parsed.text.slice(0, 200).map((value) => String(value).slice(0, 500)) : [];
-  return { summary: String(parsed.summary ?? "").slice(0, 8000), text, regions };
+  const text = Array.isArray(parsed.text) ? parsed.text.map(String) : [];
+  const summary = String(parsed.summary ?? "");
+  return { summary: cut ? `${analysis_cut_note} ${summary}` : summary, text, regions };
 };
 
 export const bitmap_difference = (left: Buffer, right: Buffer) => {
@@ -111,20 +109,24 @@ export const bitmap_difference = (left: Buffer, right: Buffer) => {
 
 const capture = (tab: BrowserTab, signal: AbortSignal) => settle_within(tab.guest.capturePage(), signal, capture_timeout_ms, "Browser screenshot");
 
-export const analyze_page = async (tab: BrowserTab, question: string, signal: AbortSignal): Promise<VisionResult> => {
-  if (!analyzer) {
-    throw new Error("Browser vision analysis is not configured.");
-  }
+export const capture_view = async (tab: BrowserTab, signal: AbortSignal): Promise<CapturedView> => {
   const image = await capture(tab, signal);
   const size = image.getSize();
   if (!size.width || !size.height) {
     throw new Error("Browser screenshot is empty. Is the browser panel visible?");
   }
-  const view = await viewport(tab, signal);
+  return { image, width: size.width, height: size.height, view: await viewport(tab, signal) };
+};
+
+export const analyze_page = async (tab: BrowserTab, question: string, signal: AbortSignal): Promise<VisionResult> => {
+  if (!analyzer) {
+    throw new Error("Browser vision analysis is not configured.");
+  }
+  const { image, view, ...size } = await capture_view(tab, signal);
   const epoch = tab.epoch;
   const url = tab_url(tab);
-  const raw = await settle_within(analyzer(image.toPNG(), vision_instructions(question), signal), signal, analyzer_timeout_ms, "Browser vision analysis");
-  const analysis = parse_analysis(raw);
+  const reply = await analyzer(image.toPNG(), vision_instructions(question), signal);
+  const analysis = parse_analysis(reply.text, reply.finish_reason === "length");
   const visual: Visual = {
     screenshot_id: random_id(`visual-${tab.tab_id}`),
     tab_id: tab.tab_id,
@@ -137,6 +139,9 @@ export const analyze_page = async (tab: BrowserTab, question: string, signal: Ab
     zoom_factor: tab.guest.getZoomFactor(),
     capture_width: size.width,
     capture_height: size.height,
+    image_width: size.width,
+    image_height: size.height,
+    retake_tool: "browser_visual_analyze",
     created_at: Date.now(),
     image,
     regions: new Map(analysis.regions.map((region) => [region.ref, region])),
@@ -147,17 +152,16 @@ export const analyze_page = async (tab: BrowserTab, question: string, signal: Ab
   return { ...analysis, screenshot_id: visual.screenshot_id, tab_id: tab.tab_id, url };
 };
 
-const region_bitmap = (image: NativeImage, visual: Visual, region: VisualRegion) => {
-  const [top, left, bottom, right] = region.box;
-  const x = Math.max(0, Math.floor(left * visual.capture_width));
-  const y = Math.max(0, Math.floor(top * visual.capture_height));
-  const width = Math.min(Math.max(1, Math.ceil((right - left) * visual.capture_width)), visual.capture_width - x);
-  const height = Math.min(Math.max(1, Math.ceil((bottom - top) * visual.capture_height)), visual.capture_height - y);
+const region_bitmap = (image: NativeImage, visual: Visual, crop: Box) => {
+  const x = Math.max(0, Math.floor(crop.left));
+  const y = Math.max(0, Math.floor(crop.top));
+  const width = Math.min(Math.max(1, Math.ceil(crop.right - crop.left)), visual.capture_width - x);
+  const height = Math.min(Math.max(1, Math.ceil(crop.bottom - crop.top)), visual.capture_height - y);
   return image.crop({ x, y, width, height }).resize({ width: 96, height: 96 }).toBitmap();
 };
 
-const verify_region = async (tab: BrowserTab, visual: Visual, region: VisualRegion, signal: AbortSignal) => {
-  const changed = new Error(`Visual target ${region.ref} changed. Call browser_visual_analyze again.`);
+export const verify_region = async (tab: BrowserTab, visual: Visual, crop: Box, changed_text: string, signal: AbortSignal): Promise<void> => {
+  const changed = new Error(`${changed_text} Call ${visual.retake_tool} again.`);
   if (visual.epoch !== tab.epoch || visual.url !== tab_url(tab) || visual.zoom_factor !== tab.guest.getZoomFactor()) {
     throw changed;
   }
@@ -170,14 +174,12 @@ const verify_region = async (tab: BrowserTab, visual: Visual, region: VisualRegi
   if (size.width !== visual.capture_width || size.height !== visual.capture_height) {
     throw changed;
   }
-  if (bitmap_difference(region_bitmap(visual.image, visual, region), region_bitmap(current, visual, region)) > max_bitmap_difference) {
+  if (bitmap_difference(region_bitmap(visual.image, visual, crop), region_bitmap(current, visual, crop)) > max_bitmap_difference) {
     throw changed;
   }
-  const [top, left, bottom, right] = region.box;
-  return { x: ((left + right) / 2) * visual.viewport_width, y: ((top + bottom) / 2) * visual.viewport_height };
 };
 
-const semantic_click = async (tab: BrowserTab, point: { x: number; y: number }, signal: AbortSignal) => {
+const semantic_click = async (tab: BrowserTab, point: { x: number; y: number }, signal: AbortSignal): Promise<SemanticClick> => {
   await ensure_debugger(tab, signal);
   const hit = await cdp<{ backendNodeId?: number; frameId?: string }>(
     tab,
@@ -187,7 +189,7 @@ const semantic_click = async (tab: BrowserTab, point: { x: number; y: number }, 
     signal,
   );
   if (!hit.backendNodeId) {
-    return false;
+    return { clicked: false, target: "" };
   }
   const frames = await read_frames(tab, signal);
   const session_id = frame_session(String(hit.frameId ?? ""), frames, tab.sessions);
@@ -195,12 +197,29 @@ const semantic_click = async (tab: BrowserTab, point: { x: number; y: number }, 
   const node = (partial.nodes ?? []).find((entry) => Number(entry.backendDOMNodeId) === hit.backendNodeId);
   const entry = node ? read_ax_node(node) : null;
   if (!entry || !clickable_roles.has(entry.role)) {
-    return false;
+    return { clicked: false, target: entry?.role ?? "" };
   }
   const ref: SnapshotRef = { ...entry, frame_id: entry.frame_id || String(hit.frameId ?? ""), tab_id: tab.tab_id, session_id, epoch: tab.epoch, created_at: Date.now() };
   const live = await live_node(tab, frames, ref, false, signal);
   await click_point(tab, live.x, live.y, false, live.session_id, signal);
-  return true;
+  return { clicked: true, target: describe(entry) };
+};
+
+export const click_with_fallback = async (tab: BrowserTab, point: { x: number; y: number }, what: string, signal: AbortSignal): Promise<SemanticClick> => {
+  let semantic: SemanticClick = { clicked: false, target: "" };
+  try {
+    semantic = await semantic_click(tab, point, signal);
+  } catch (error) {
+    if (signal.aborted) {
+      throw error;
+    }
+    console.warn(`[browser] semantic click on ${what} in tab ${tab.tab_id} failed, using raw coordinates: ${error_text(error)}`);
+  }
+  if (!semantic.clicked) {
+    await click_point(tab, point.x, point.y, false, "", signal);
+  }
+  invalidate_tab(tab, false);
+  return semantic;
 };
 
 export const visual_click = async (tab: BrowserTab, screenshot_id: string, ref: string, signal: AbortSignal) => {
@@ -210,20 +229,11 @@ export const visual_click = async (tab: BrowserTab, screenshot_id: string, ref: 
   if (!visual || !region || visual.consumed || region.confidence < min_region_confidence) {
     throw new Error(`Visual target ${ref} is stale. Call browser_visual_analyze again.`);
   }
-  const point = await verify_region(tab, visual, region, signal);
+  const [top, left, bottom, right] = region.box;
+  const crop = { left: left * visual.capture_width, top: top * visual.capture_height, right: right * visual.capture_width, bottom: bottom * visual.capture_height };
+  await verify_region(tab, visual, crop, `Visual target ${region.ref} changed.`, signal);
   visual.consumed = true;
-  let semantic = false;
-  try {
-    semantic = await semantic_click(tab, point, signal);
-  } catch (error) {
-    if (signal.aborted) {
-      throw error;
-    }
-    console.warn(`[browser] semantic visual click on ${ref} in tab ${tab.tab_id} failed, using raw coordinates: ${error_text(error)}`);
-  }
-  if (!semantic) {
-    await click_point(tab, point.x, point.y, false, "", signal);
-  }
-  invalidate_tab(tab, false);
-  return { label: region.label, semantic };
+  const point = { x: ((left + right) / 2) * visual.viewport_width, y: ((top + bottom) / 2) * visual.viewport_height };
+  const semantic = await click_with_fallback(tab, point, `visual target ${ref}`, signal);
+  return { label: region.label, semantic: semantic.clicked };
 };

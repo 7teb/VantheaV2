@@ -1,66 +1,39 @@
 import { randomUUID } from "node:crypto";
-import { message_attachments, type AssistantMessage, type Attachment, type Message, type UserMessage } from "../../shared/chat.ts";
-import type { SendRequest, TurnStarted } from "../../shared/ipc/chats.ts";
+import type { AssistantMessage, Attachment, Message, UserMessage } from "../../shared/chat.ts";
+import type { CompactResult, SendRequest, TurnStarted } from "../../shared/ipc/chats.ts";
 import type { UserOrigin } from "../../shared/chat.ts";
-import type { ModelEntry } from "../../shared/models.ts";
-import { major_wait_ms, take_agent_notes, wait_for_input, wake_idle } from "../agents/reports.ts";
-import { compact_chat, needs_compaction } from "../context/compact.ts";
-import { estimate_request } from "../context/usage.ts";
-import { append_message, flush_chat, get_chat, set_streaming, set_summary, truncate_after, update_message } from "../chats/store.ts";
+import { wake_idle } from "../agents/reports.ts";
+import { attachment_ids, hold_ids, release_ids } from "../chats/refs.ts";
+import { append_message, flush_chat, get_chat, set_streaming, truncate_after, update_message } from "../chats/store.ts";
 import { chat_root } from "../chats/workspace.ts";
 import { emit } from "../ipc/handle.ts";
-import { find_model, major_effort, resolve_effort } from "../model/catalog.ts";
+import { find_model, resolve_effort } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
-import { stream_round } from "../model/stream.ts";
-import { cancel_chat, wait_for_decision } from "../permissions/approvals.ts";
-import { human_requests_of, set_authorization } from "../permissions/context.ts";
-import { chat_decisions } from "../permissions/decisions.ts";
-import { instruction_snapshot, refresh_instruction_snapshot } from "../permissions/instruction-files.ts";
-import { main_review } from "../permissions/review-records.ts";
-import { build_system_prompt } from "../prompts/index.ts";
-import { take_main_steers } from "../questions/answers.ts";
+import { cancel_chat } from "../permissions/approvals.ts";
+import { refresh_instruction_snapshot } from "../permissions/instruction-files.ts";
+import { context_model } from "../settings/model-context.ts";
 import { get_settings } from "../settings/store.ts";
-import { error_text } from "../storage/coerce.ts";
-import { mcp_tools } from "../tools/mcp/tools.ts";
-import { tools_for } from "../tools/registry.ts";
-import { side_model } from "../side/model.ts";
-import { review_call } from "../side/review.ts";
-import { describe_attachment_with_timeout } from "../side/vision.ts";
+import { describe_attachment_image } from "../side/vision.ts";
 import { start_title } from "../side/title.ts";
 import {
   abort_turn,
-  active_assistant_reference,
   active_turn,
   active_turns,
   clear_active,
+  drop_untaken_steers,
   is_active,
   mark_user_stop,
   push_steer,
   register_active,
   release_chat,
   reserve_chat,
-  unregister_active,
 } from "./active.ts";
+import { drive, type TurnPlan } from "./drive.ts";
 import { create_emitter, type EmitDeps } from "./emit.ts";
-import { build_api_messages } from "./history.ts";
-import { run_turn_loop } from "./loop.ts";
-import type { TurnSession } from "./session.ts";
+import { uncompacted_work } from "./history.ts";
+import { note_images } from "./vision-notes.ts";
 
 const app_closed_message = "The app was closed while this turn was still running.";
-
-let turn_finished: ((chat_id: string, message_id: string) => void) | null = null;
-
-export const set_turn_finished_hook = (fn: (chat_id: string, message_id: string) => void): void => {
-  turn_finished = fn;
-};
-
-const run_finished_hook = (chat_id: string, message_id: string) => {
-  try {
-    turn_finished?.(chat_id, message_id);
-  } catch (error) {
-    console.error(`[turn] turn-finished hook for chat ${chat_id} failed:`, error);
-  }
-};
 
 const emit_deps: EmitDeps = {
   update_message,
@@ -72,118 +45,7 @@ const emit_deps: EmitDeps = {
 
 const iso = () => new Date().toISOString();
 
-const ensure_vision_notes = async (attachments: Attachment[], model: ModelEntry): Promise<Attachment[]> => {
-  if (model.vision) {
-    return attachments;
-  }
-  const out: Attachment[] = [];
-  for (const attachment of attachments) {
-    if (attachment.kind !== "image" || attachment.vision_note) {
-      out.push(attachment);
-      continue;
-    }
-    try {
-      out.push({ ...attachment, vision_note: await describe_attachment_with_timeout(attachment.id, "") });
-    } catch (error) {
-      console.error(`[turn] computing a vision note for attachment ${attachment.id} failed:`, error);
-      out.push(attachment);
-    }
-  }
-  return out;
-};
-
-type TurnPlan = {
-  chat_id: string;
-  message_id: string;
-  model: ModelEntry;
-  effort: string;
-  mode: SendRequest["mode"];
-  plan: boolean;
-  user_request: string;
-  project_root: string;
-};
-
-const drive = async (plan: TurnPlan, turn: ReturnType<typeof register_active>): Promise<void> => {
-  const signal = turn.controller.signal;
-  try {
-    const loaded = await get_chat(plan.chat_id);
-    if (!loaded) {
-      throw new Error(`chat ${plan.chat_id} is no longer available`);
-    }
-    const settings = get_settings();
-    const history = loaded.messages.filter((message) => message.id !== plan.message_id);
-    set_authorization(plan.chat_id, history, turn.steers);
-    await instruction_snapshot(plan.chat_id, plan.project_root, human_requests_of(plan.chat_id));
-    const profile = plan.plan ? "plan" : "main";
-    const offered = tools_for(profile, settings, mcp_tools());
-    const agent_tools = offered.some((tool) => tool.spec.name === "continue_agent");
-    const has_file_attachments = history.some((message) => message_attachments(message).some((entry) => entry.kind === "file"));
-    const system = await build_system_prompt({
-      model: plan.model,
-      settings,
-      mode: plan.mode,
-      plan: plan.plan,
-      personality: settings.personality,
-      project_root: plan.project_root,
-      chat_id: plan.chat_id,
-      user_text: plan.user_request,
-      tools: offered,
-      has_file_attachments,
-      effort: plan.effort,
-    });
-    const history_input = { system, summary: loaded.summary, messages: history, model: plan.model, agent_tools };
-    let api_messages = await build_api_messages(history_input);
-    if (needs_compaction(estimate_request(api_messages, offered.map((tool) => tool.spec)), plan.model)) {
-      const summary = await compact_chat({
-        chat_id: plan.chat_id,
-        messages: history,
-        summary: loaded.summary,
-        round: 0,
-        emit: turn.emit,
-        side_model,
-        set_summary,
-        signal,
-      });
-      if (summary) {
-        api_messages = await build_api_messages({ ...history_input, summary });
-      }
-    }
-    const session: TurnSession = {
-      chat_id: plan.chat_id,
-      message_id: plan.message_id,
-      user_request: plan.user_request,
-      project_root: plan.project_root,
-      settings,
-      model: plan.model,
-      effort: plan.effort,
-      mode: plan.mode,
-      plan: plan.plan,
-      signal,
-      emit: turn.emit,
-      stream: stream_round,
-      resolve_tools: (p) => tools_for(p, settings, mcp_tools()),
-      side_model,
-      wait_decision: (call_id, request) => wait_for_decision({ key: plan.chat_id, chat_id: plan.chat_id, call_id, request, signal }),
-      review: main_review(plan.chat_id, review_call),
-      human_decisions: () => chat_decisions(plan.chat_id),
-      take_steers: () => take_main_steers(plan.chat_id),
-      take_notes: () => take_agent_notes(plan.chat_id, agent_tools),
-      idle: () => wait_for_input(plan.chat_id, plan.effort === major_effort ? major_wait_ms : 0, signal),
-    };
-    await run_turn_loop(session, api_messages);
-  } catch (error) {
-    console.error(`[turn] turn ${plan.message_id} in chat ${plan.chat_id} failed to run:`, error);
-    turn.emit({ type: "end", status: "failed", error: { kind: "internal", message: error_text(error) } });
-  } finally {
-    set_streaming(plan.chat_id, false);
-    unregister_active(plan.chat_id, plan.message_id);
-    cancel_chat(plan.chat_id);
-    await flush_chat(plan.chat_id);
-    run_finished_hook(plan.chat_id, plan.message_id);
-  }
-};
-
-type Trigger = { kind: "new"; text: string; attachments: Attachment[] } | { kind: "existing"; message_id: string; text: string };
+type Trigger = { kind: "new"; text: string; attachments: Attachment[] } | { kind: "existing"; message_id: string; text: string } | { kind: "compact" };
 
 type BeginInput = { chat_id: string; model_id: string; effort: string; mode: SendRequest["mode"]; plan: boolean; origin: UserOrigin; trigger: Trigger };
 
@@ -198,7 +60,11 @@ const with_reservation = async <T>(chat_id: string, work: () => Promise<T>): Pro
   }
 };
 
-const launch = async (input: BeginInput): Promise<TurnStarted> => {
+type Launched = { started: TurnStarted; finished: Promise<void> };
+
+const last_request = (messages: Message[]): string => messages.findLast((message): message is UserMessage => message.role === "user" && message.origin === "user")?.text ?? "";
+
+const launch = async (input: BeginInput): Promise<Launched> => {
   const chat = await get_chat(input.chat_id);
   if (!chat) {
     throw new Error(`chat ${input.chat_id} not found`);
@@ -207,27 +73,30 @@ const launch = async (input: BeginInput): Promise<TurnStarted> => {
     throw new Error(`chat ${input.chat_id} is already streaming`);
   }
   const catalog = await model_catalog();
-  const model = find_model(catalog, input.model_id);
-  if (!model) {
+  const listed = find_model(catalog, input.model_id);
+  if (!listed) {
     throw new Error(`model ${input.model_id} is not in the catalog`);
   }
+  const model = context_model(listed);
   const effort = resolve_effort(model, input.effort);
   const project_root = await chat_root(chat);
   let user_message_id: string;
   let user_request: string;
   if (input.trigger.kind === "new") {
     const first_user = !chat.messages.some((message) => message.role === "user");
-    const attachments = await ensure_vision_notes(input.trigger.attachments, model);
-    const user: UserMessage = { id: randomUUID(), role: "user", text: input.trigger.text, attachments, origin: input.origin, created_at: iso() };
+    const user: UserMessage = { id: randomUUID(), role: "user", text: input.trigger.text, attachments: input.trigger.attachments, origin: input.origin, created_at: iso() };
     await append_message(input.chat_id, user);
     user_message_id = user.id;
     user_request = input.trigger.text;
     if (first_user) {
       start_title(input.chat_id, input.trigger.text);
     }
-  } else {
+  } else if (input.trigger.kind === "existing") {
     user_message_id = input.trigger.message_id;
     user_request = input.trigger.text;
+  } else {
+    user_message_id = "";
+    user_request = last_request(chat.messages);
   }
   const message_id = randomUUID();
   const placeholder: AssistantMessage = {
@@ -250,16 +119,28 @@ const launch = async (input: BeginInput): Promise<TurnStarted> => {
   await append_message(input.chat_id, placeholder);
   set_streaming(input.chat_id, true);
   const turn = register_active(input.chat_id, message_id, create_emitter(input.chat_id, message_id, emit_deps), model, effort);
-  const turn_plan: TurnPlan = { chat_id: input.chat_id, message_id, model, effort, mode: input.mode, plan: input.plan, user_request, project_root };
-  setImmediate(() => {
-    void drive(turn_plan, turn);
+  const turn_plan: TurnPlan = {
+    chat_id: input.chat_id,
+    message_id,
+    model,
+    effort,
+    mode: input.mode,
+    plan: input.plan,
+    compact_only: input.trigger.kind === "compact",
+    user_request,
+    project_root,
+  };
+  const finished = new Promise<void>((resolve) => {
+    setImmediate(() => {
+      void drive(turn_plan, turn).then(resolve);
+    });
   });
-  return { user_message_id, message_id };
+  return { started: { user_message_id, message_id }, finished };
 };
 
-const begin = (input: BeginInput): Promise<TurnStarted> => with_reservation(input.chat_id, () => launch(input));
+const begin = async (input: BeginInput): Promise<TurnStarted> => (await with_reservation(input.chat_id, () => launch(input))).started;
 
-export const start_turn = (request: SendRequest, origin: UserOrigin): Promise<TurnStarted> =>
+export const start_turn = (request: SendRequest, attachments: Attachment[], origin: UserOrigin): Promise<TurnStarted> =>
   begin({
     chat_id: request.chat_id,
     model_id: request.model,
@@ -267,7 +148,7 @@ export const start_turn = (request: SendRequest, origin: UserOrigin): Promise<Tu
     mode: request.mode,
     plan: request.plan,
     origin,
-    trigger: { kind: "new", text: request.text, attachments: request.attachments },
+    trigger: { kind: "new", text: request.text, attachments },
   });
 
 export const start_internal_turn = async (chat_id: string, origin: UserOrigin, text: string): Promise<TurnStarted | null> => {
@@ -313,14 +194,20 @@ export const edit_turn = (chat_id: string, message_id: string, text: string): Pr
     const { model_id, effort, mode } = settings_request();
     const prior = chat.messages[at - 1];
     if (prior) {
-      await truncate_after(chat_id, prior.id);
-      return launch({ chat_id, model_id, effort, mode, plan: false, origin: "user", trigger: { kind: "new", text, attachments: target.attachments } });
+      const kept = attachment_ids([target]);
+      hold_ids(kept);
+      try {
+        await truncate_after(chat_id, prior.id);
+        return (await launch({ chat_id, model_id, effort, mode, plan: false, origin: "user", trigger: { kind: "new", text, attachments: target.attachments } })).started;
+      } finally {
+        release_ids(kept);
+      }
     }
     await truncate_after(chat_id, message_id);
     const edited: UserMessage = { ...target, text };
     update_message(chat_id, message_id, () => edited);
     emit("chats:message_replaced", { chat_id, message: edited });
-    return launch({ chat_id, model_id, effort, mode, plan: false, origin: "user", trigger: { kind: "existing", message_id, text } });
+    return (await launch({ chat_id, model_id, effort, mode, plan: false, origin: "user", trigger: { kind: "existing", message_id, text } })).started;
   });
 
 export const continue_turn = (chat_id: string): Promise<TurnStarted> => {
@@ -347,6 +234,24 @@ export const accept_plan = async (chat_id: string, message_id: string): Promise<
   return begin({ chat_id, model_id, effort, mode, plan: false, origin: "plan_accept", trigger: { kind: "new", text, attachments: [] } });
 };
 
+export const compact_turn = async (chat_id: string): Promise<CompactResult> => {
+  if (is_active(chat_id)) {
+    return { status: "busy" };
+  }
+  const chat = await get_chat(chat_id);
+  if (!chat) {
+    throw new Error(`chat ${chat_id} not found`);
+  }
+  if (!uncompacted_work(chat.messages, chat.summary)) {
+    return { status: "nothing" };
+  }
+  const { model_id, effort, mode } = settings_request();
+  const launched = await with_reservation(chat_id, () => launch({ chat_id, model_id, effort, mode, plan: false, origin: "user", trigger: { kind: "compact" } }));
+  await launched.finished;
+  const message = (await get_chat(chat_id))?.messages.find((entry) => entry.id === launched.started.message_id);
+  return { status: message?.role === "assistant" && message.status === "done" ? "done" : "failed" };
+};
+
 export const stop_turn = (chat_id: string): void => {
   if (active_turn(chat_id)) {
     mark_user_stop(chat_id);
@@ -360,10 +265,11 @@ export const steer_turn = async (chat_id: string, text: string, attachments: Att
   if (!turn) {
     return null;
   }
-  const assistant_reference = active_assistant_reference(chat_id);
-  const noted = await ensure_vision_notes(attachments, turn.model);
-  if (active_turn(chat_id) !== turn || !push_steer(chat_id, text, steer_id, noted, assistant_reference)) {
+  if (!push_steer(chat_id, text, steer_id, attachments)) {
     return null;
+  }
+  if (!turn.notes.has(steer_id)) {
+    turn.notes.set(steer_id, note_images(attachments, turn.model, turn.controller.signal, describe_attachment_image));
   }
   await refresh_instruction_snapshot(chat_id);
   wake_idle(chat_id);
@@ -374,6 +280,7 @@ export const interrupt_all_turns = (): void => {
   for (const [chat_id, turn] of active_turns()) {
     turn.controller.abort(new Error(app_closed_message));
     turn.emit({ type: "end", status: "interrupted", error: { kind: "app_closed", message: app_closed_message } });
+    drop_untaken_steers(chat_id, turn);
     set_streaming(chat_id, false);
     cancel_chat(chat_id);
   }

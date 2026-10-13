@@ -2,10 +2,10 @@ import { randomBytes } from "node:crypto";
 import type { ReviewCall } from "../tools/types.ts";
 import { current_part, type ActionView } from "./review-action.ts";
 import { review_schema, review_schema_name } from "./review-answer.ts";
-import { estimate_review_tokens, fit_scripts, largest_sent, request_cap_tokens, trim_steps } from "./review-budget.ts";
+import { estimate_review_tokens, fit_scripts, recent_human_messages, request_cap_tokens, section_caps, trim_steps, trimmed } from "./review-budget.ts";
 import { action_lines, decision_feed, type FeedLine, type FeedSource } from "./review-lines.ts";
 import { review_system_prompt } from "./review-prompt.ts";
-import type { AgentView, ChatView } from "./review-sections.ts";
+import { human_line_bytes, type AgentView, type ChatView } from "./review-sections.ts";
 import { review_parts } from "./review-state.ts";
 import { retained_scripts, type RetainedScript } from "./script-retention.ts";
 
@@ -26,7 +26,6 @@ export type AssembledReview = {
   lines: FeedLine[];
   sent: ReadonlySet<string>;
   gaps: string[];
-  script_gaps: string[];
   retained: RetainedScript[];
 };
 
@@ -34,15 +33,15 @@ const random_tag = (): string => randomBytes(6).toString("hex");
 
 const review_session_id = (chat_id: string): string => `vx-review:${chat_id}`.slice(0, 256);
 
-export const assemble_review = (input: ReviewInput, new_tag: () => string = random_tag): AssembledReview => {
+export const assemble_review = (input: ReviewInput, cap_tokens: number = request_cap_tokens, new_tag: () => string = random_tag): AssembledReview => {
   const lines = decision_feed(input.source, input.agent.actor, input.mark);
   const actions = action_lines(input.source.steps, lines, input.call_id);
   const retained = retained_scripts(input.source.records, input.agent.actor);
   const system_tokens = estimate_review_tokens(review_system_prompt);
-  const build = (level: number, dropped: ReadonlySet<string>) => {
-    const { parts, tag } = review_parts({ chat: input.chat, chat_key: input.chat_key, agent: input.agent, feed: lines, actions, retained }, level, new_tag);
-    const placement = fit_scripts(input.action.files, undefined, dropped);
-    const current = current_part(input.action, placement, retained, tag);
+  const build = (level: number, budget: number, dropped_humans: number) => {
+    const { parts, tag } = review_parts({ chat: input.chat, chat_key: input.chat_key, agent: input.agent, feed: lines, actions, retained }, level, dropped_humans, new_tag);
+    const placement = fit_scripts(input.action.files, budget, retained);
+    const current = current_part(input.action, placement, retained, tag, level);
     const all = [...parts, { text: current.text, marker: false }];
     const estimated_tokens = system_tokens + all.reduce((total, part) => total + estimate_review_tokens(part.text), 0);
     const call: ReviewCall = {
@@ -51,25 +50,35 @@ export const assemble_review = (input: ReviewInput, new_tag: () => string = rand
       parts: all,
       schema: { name: review_schema_name, schema: review_schema },
     };
-    return { call, estimated_tokens, sent: placement.sent, gaps: current.gaps, script_gaps: current.script_gaps };
+    return { review: { call, estimated_tokens, sent: placement.sent, gaps: current.gaps }, script_tokens: placement.tokens };
   };
-  const result = (built: ReturnType<typeof build>, too_large: boolean): AssembledReview => ({ ...built, too_large, lines, retained });
+  const result = (built: ReturnType<typeof build>, too_large: boolean): AssembledReview => ({ ...built.review, too_large, lines, retained });
   for (let level = 0; level < trim_steps.length; level += 1) {
-    const built = build(level, new Set());
-    if (built.estimated_tokens <= request_cap_tokens) {
+    const built = build(level, trimmed(level, "scripts_run") ? section_caps.scripts_run : cap_tokens, 0);
+    if (built.review.estimated_tokens <= cap_tokens) {
       return result(built, false);
     }
   }
-  const dropped = new Set<string>();
+  const line_bytes = human_line_bytes(input.chat.humans, trim_steps.length);
+  const droppable = Math.max(0, line_bytes.length - recent_human_messages);
+  let dropped = 0;
+  let fitted = build(trim_steps.length, section_caps.scripts_run, dropped);
+  while (fitted.review.estimated_tokens > cap_tokens && dropped < droppable) {
+    for (let left = (fitted.review.estimated_tokens - cap_tokens) * 2; left > 0 && dropped < droppable; dropped += 1) {
+      left -= line_bytes[dropped] ?? 0;
+    }
+    fitted = build(trim_steps.length, section_caps.scripts_run, dropped);
+  }
+  if (fitted.review.estimated_tokens <= cap_tokens) {
+    return result(fitted, false);
+  }
+  let budget: number = section_caps.scripts_run;
   for (;;) {
-    const built = build(trim_steps.length, dropped);
-    if (built.estimated_tokens <= request_cap_tokens) {
-      return result(built, false);
+    const built = build(trim_steps.length, budget, dropped);
+    const over = built.review.estimated_tokens - cap_tokens;
+    if (over <= 0 || budget === 0) {
+      return result(built, over > 0);
     }
-    const largest = largest_sent(input.action.files, built.sent);
-    if (!largest) {
-      return result(built, true);
-    }
-    dropped.add(largest.id);
+    budget = Math.max(0, built.script_tokens - over);
   }
 };

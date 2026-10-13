@@ -13,6 +13,7 @@
     max-width: 100%;
     padding: 11px var(--space-4);
     border-radius: var(--radius-2xl);
+    box-shadow: none;
     font-size: var(--font-size-prose);
     line-height: var(--leading-prose);
     white-space: pre-wrap;
@@ -21,14 +22,38 @@
 
   .user-attachments {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    flex-direction: row-reverse;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .user-attachments-row {
+    display: flex;
+    align-items: flex-end;
     gap: var(--space-2);
+    min-width: max-content;
   }
 
   .user-attachment-image {
-    width: 132px;
-    height: 132px;
+    width: 80px;
+    height: 80px;
+  }
+
+  .user-attachment-image::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px var(--ring-strong);
+    pointer-events: none;
+  }
+
+  .user-attachment-files {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-2);
   }
 
   .user-attachment-file {

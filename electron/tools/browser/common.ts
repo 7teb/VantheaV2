@@ -70,6 +70,6 @@ export const guarded = async (ctx: ToolContext, action: string, work: () => Prom
     }
     const message = error_text(error);
     console.warn(`[browser] ${action} failed: ${message}`);
-    return { status: "failed", text: message, view: browser_view(action, "", "", message) };
+    return { status: "failed", text: message, view: null };
   }
 };

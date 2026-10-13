@@ -1,13 +1,14 @@
 import { Fragment, useMemo } from "react";
-import type { Chat, CompactionStep } from "../../../shared/chat.ts";
+import type { Chat } from "../../../shared/chat.ts";
 import type { UndoResult } from "../../../shared/ipc/chats.ts";
 import { ArrowDownIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { last_assistant } from "../../state/chat-view-reduce.ts";
 import { AssistantMessage } from "./AssistantMessage.tsx";
 import { last_own_send, plan_state } from "./assistant-blocks.ts";
-import { use_follow_bottom } from "./use-follow-bottom.ts";
+import { stepless_summary_after, summary_line_step } from "./compaction-line.ts";
 import { CompactionRow } from "./StepRows.tsx";
+import { use_follow_bottom } from "./use-follow-bottom.ts";
 import { UserMessage } from "./UserMessage.tsx";
 
 type MessageListProps = { chat_id: string; chat: Chat; reverted: Record<string, UndoResult> };
@@ -19,11 +20,7 @@ export const MessageList = ({ chat_id, chat, reverted }: MessageListProps) => {
   const plans = useMemo(() => plan_state(messages), [messages]);
   const busy = last_assistant(chat)?.status === "streaming";
   const last_index = messages.length - 1;
-  const summary_step = useMemo<CompactionStep | null>(
-    () => (chat.summary ? { id: "chat-summary", round: 0, kind: "compaction", status: "done", summary: chat.summary.text } : null),
-    [chat.summary],
-  );
-  const summary_after = chat.summary?.through_message_id ?? null;
+  const summary_after = useMemo(() => stepless_summary_after(messages, chat.summary), [messages, chat.summary]);
 
   return (
     <div className="chat-slot">
@@ -44,7 +41,7 @@ export const MessageList = ({ chat_id, chat, reverted }: MessageListProps) => {
                   reverted={reverted[message.id] ?? null}
                 />
               )}
-              {summary_step && summary_after === message.id && <CompactionRow step={summary_step} />}
+              {summary_after === message.id && <CompactionRow step={summary_line_step} />}
             </Fragment>
           ))}
         </div>

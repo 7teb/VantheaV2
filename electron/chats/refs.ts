@@ -1,12 +1,22 @@
-import type { Message } from "../../shared/chat.ts";
+import { message_attachments, type Message } from "../../shared/chat.ts";
 import { refs } from "./state.ts";
+
+const held = new Map<string, number>();
+
+const message_image_ids = (message: Message): string[] =>
+  message.role === "assistant" ? message.steps.flatMap((step) => (step.kind === "tool" ? (step.images ?? []).map((image) => image.id) : [])) : [];
 
 export const attachment_ids = (messages: Message[]): Set<string> => {
   const ids = new Set<string>();
   for (const message of messages) {
-    const attachments = message.role === "user" ? message.attachments : message.steps.flatMap((step) => (step.kind === "steer" ? (step.attachments ?? []) : []));
-    for (const attachment of attachments) {
+    for (const attachment of message_attachments(message)) {
       ids.add(attachment.id);
+      if (attachment.model) {
+        ids.add(attachment.model.id);
+      }
+    }
+    for (const id of message_image_ids(message)) {
+      ids.add(id);
     }
   }
   return ids;
@@ -35,3 +45,24 @@ export const change_refs = (before: Set<string>, after: Set<string>): string[] =
 };
 
 export const same_ids = (a: Set<string>, b: Set<string>) => a.size === b.size && [...a].every((id) => b.has(id));
+
+export const is_referenced = (id: string): boolean => refs.has(id);
+
+export const hold_ids = (ids: Iterable<string>): void => {
+  for (const id of ids) {
+    held.set(id, (held.get(id) ?? 0) + 1);
+  }
+};
+
+export const release_ids = (ids: Iterable<string>): void => {
+  for (const id of ids) {
+    const count = (held.get(id) ?? 0) - 1;
+    if (count > 0) {
+      held.set(id, count);
+      continue;
+    }
+    held.delete(id);
+  }
+};
+
+export const is_held = (id: string): boolean => held.has(id);

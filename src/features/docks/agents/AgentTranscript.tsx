@@ -4,12 +4,12 @@ import { Markdown } from "../../../components/Markdown.tsx";
 import { Skeleton, SkeletonLines } from "../../../components/Skeleton.tsx";
 import { use_t } from "../../../i18n/index.ts";
 import type { RunRef, Transcript } from "../../../state/agents-reduce.ts";
-import { build_blocks, type Block } from "../../chat/assistant-blocks.ts";
+import { build_blocks, shows_thinking, type Block } from "../../chat/assistant-blocks.ts";
 import { ReasoningRow } from "../../chat/ReasoningRow.tsx";
 import { CompactionRow, NoticeRow, SteerRow } from "../../chat/StepRows.tsx";
 import { ErrorCard, RetryBanner } from "../../chat/TurnStatus.tsx";
-import { is_active_status } from "../../tools/tool-meta.ts";
 import { WorkGroup } from "../../tools/WorkGroup.tsx";
+import { PeerMessageRow } from "./PeerMessageRow.tsx";
 
 export const TranscriptSkeleton = () => (
   <div className="agent-transcript" aria-busy="true">
@@ -40,16 +40,14 @@ const BlockView = ({ block, chat_id, run, streaming, tail }: BlockViewProps) => 
     case "text":
       return <Markdown text={block.step.text} className="assistant-text" />;
     case "tools":
-      return (
-        <WorkGroup chat_id={chat_id} run={run} steps={block.steps} running={streaming && (tail || block.steps.some((step) => is_active_status(step.status)))} />
-      );
+      return <WorkGroup chat_id={chat_id} run={run} steps={block.steps} streaming={streaming} tail={tail} />;
     case "plan":
     case "image":
-      return <WorkGroup chat_id={chat_id} run={run} steps={[block.step]} running={streaming && tail} />;
+      return <WorkGroup chat_id={chat_id} run={run} steps={[block.step]} streaming={streaming} tail={tail} />;
     case "steer":
       return <SteerRow step={block.step} />;
     case "notice":
-      return <NoticeRow step={block.step} />;
+      return block.step.notice === "peer_message" ? <PeerMessageRow step={block.step} /> : <NoticeRow step={block.step} />;
     case "compaction":
       return <CompactionRow step={block.step} />;
   }
@@ -81,7 +79,7 @@ export const AgentTranscript = memo(({ transcript, chat_id, report }: AgentTrans
       {blocks.map((block, index) => (
         <BlockView key={block.id} block={block} chat_id={chat_id} run={run} streaming={streaming} tail={index === blocks.length - 1} />
       ))}
-      {streaming && blocks.length === 0 && !transcript.retry && (
+      {shows_thinking(streaming, transcript.retry !== null, blocks) && (
         <div className="assistant-pending">
           <span className="is-working">{t("chat.thinking")}</span>
         </div>

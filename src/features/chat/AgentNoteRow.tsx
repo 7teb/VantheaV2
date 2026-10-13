@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import type { AgentNote } from "../../../shared/agent-notes.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { BotIcon, ChevronRightIcon, MessageSquareIcon } from "../../components/icons.tsx";
+import { BotIcon, ChevronRightIcon, MessageSquareIcon, RetryIcon, ShieldAlertIcon, type IconComponent } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
@@ -16,13 +16,34 @@ const status_keys: Partial<Record<string, MessageKey>> = {
   interrupted: "agent.status_interrupted",
 };
 
+const alert_keys: Partial<Record<string, MessageKey>> = {
+  blocked: "chat.peer_alert_blocked",
+  loop: "chat.peer_alert_loop",
+};
+
+const labels: Record<AgentNote["kind"], MessageKey> = {
+  report: "chat.agent_report_from",
+  update: "chat.agent_update_from",
+  alert: "chat.peer_alert_from",
+};
+
+const icon_of = (note: AgentNote): IconComponent => {
+  if (note.kind === "report") {
+    return BotIcon;
+  }
+  if (note.kind === "update") {
+    return MessageSquareIcon;
+  }
+  return note.status === "loop" ? RetryIcon : ShieldAlertIcon;
+};
+
 export const AgentNoteRow = memo(({ note }: { note: AgentNote }) => {
   const t = use_t();
   const [open, set_open] = useState(false);
   const [seen, set_seen] = useState(false);
   const report = note.kind === "report";
-  const Icon = report ? BotIcon : MessageSquareIcon;
-  const status = status_keys[note.status];
+  const Icon = icon_of(note);
+  const status = note.kind === "alert" ? alert_keys[note.status] : status_keys[note.status];
   const expandable = note.body.trim().length > 0;
   if (open && !seen) {
     set_seen(true);
@@ -33,8 +54,8 @@ export const AgentNoteRow = memo(({ note }: { note: AgentNote }) => {
         <span className="tool-row-icon">
           <Icon size={14} />
         </span>
-        <span className="tool-row-label">{t(report ? "chat.agent_report_from" : "chat.agent_update_from", { x: note.name || note.agent_id })}</span>
-        {status && <span className={class_names("tool-row-status", note.status === "failed" && "is-failed")}>{t(status)}</span>}
+        <span className="tool-row-label">{t(labels[note.kind], { x: note.name || note.agent_id })}</span>
+        {status && <span className={class_names("tool-row-status", (note.status === "failed" || note.status === "blocked") && "is-failed")}>{t(status)}</span>}
         {report && note.seconds !== null && <span className="tool-row-duration">{format_duration(note.seconds * 1000)}</span>}
         {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}
       </button>

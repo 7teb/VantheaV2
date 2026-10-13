@@ -1,96 +1,81 @@
-import type { ChatSummary, Message } from "../../shared/chat.ts";
+import { compact_fraction } from "../../shared/chat.ts";
 import type { ModelEntry } from "../../shared/models.ts";
-import type { Emitter } from "../turn/session.ts";
-import type { SideMessage, SideModelCall } from "../tools/types.ts";
+import { reasoning_bound_to_prefix } from "../model/prompt-cache.ts";
+import type { ApiMessage } from "../model/types.ts";
+import { resume_text, type CompactAudience } from "./compact-text.ts";
+import { drop_reasoning_after } from "./images.ts";
+import { estimate_messages } from "./usage.ts";
 
-const compact_fraction = 0.8;
+const regrow_fraction = 0.1;
 
-const keep_recent_turns = 3;
+const recent_rounds = 10;
 
-const summary_max_tokens = 4000;
+const recent_fraction = 0.3;
 
-const summary_timeout_ms = 60000;
+export const compact_threshold = (model: ModelEntry): number => model.compact_at ?? compact_fraction;
 
-const summarizer_system =
-  "You compress the earlier part of an ongoing coding conversation into a compact structured summary, so it can replace the raw earlier messages without losing what matters. Output ONLY the summary, no preamble. Use these sections, each a short terse bullet list, omitting any that would be empty: GOAL, DECISIONS, CHANGED FILES, STATE, OPEN. Keep file paths, function names and key identifiers verbatim. Be specific but brief. Never invent anything not in the input, and do not include raw code blocks or long quotes.";
+export const compaction_due = (tokens: number, floor: number, model: ModelEntry): boolean =>
+  model.context_length > 0 && tokens > model.context_length * compact_threshold(model) && tokens >= floor + model.context_length * regrow_fraction;
 
-const tool_snippet = (text: string) => text.replace(/\s+/g, " ").trim().slice(0, 240);
+export const compaction_floor = (tokens: number, model: ModelEntry): number => (tokens > model.context_length * compact_threshold(model) ? tokens : 0);
 
-export const render_turn = (message: Message): string => {
-  if (message.role === "user") {
-    return `USER: ${message.text.slice(0, 8000)}`;
-  }
-  const lines: string[] = [];
-  for (const step of message.steps) {
-    if (step.kind === "text") {
-      lines.push(step.text);
-    } else if (step.kind === "tool") {
-      lines.push(`[tool ${step.name}: ${tool_snippet(step.result_text)}]`);
+export const is_user_voice = (message: ApiMessage): boolean => message.role === "user" && Boolean(message.instruction || message.steer);
+
+const is_compaction_part = (message: ApiMessage): boolean => message.role === "user" && Boolean(message.compaction);
+
+export type WindowStep = "more" | "round" | "full";
+
+export const window_meter = (model: ModelEntry): ((message: ApiMessage) => WindowStep) => {
+  const budget = model.context_length * recent_fraction;
+  let tokens = 0;
+  let rounds = 0;
+  let full = false;
+  return (message) => {
+    if (full) {
+      return "full";
+    }
+    tokens += is_user_voice(message) ? 0 : estimate_messages([message]);
+    if (message.role !== "assistant") {
+      return "more";
+    }
+    if (rounds > 0 && tokens > budget) {
+      full = true;
+      return "full";
+    }
+    rounds += 1;
+    full = rounds === recent_rounds;
+    return "round";
+  };
+};
+
+const window_start = (history: ApiMessage[], model: ModelEntry): number => {
+  const take = window_meter(model);
+  let start = history.length;
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const step = take(history[index]);
+    if (step === "full") {
+      break;
+    }
+    if (step === "round") {
+      start = index;
     }
   }
-  return `ASSISTANT: ${lines.join("\n").slice(0, 8000)}`;
+  return start;
 };
 
-export const render_turns = (messages: Message[]): string => messages.map(render_turn).join("\n\n");
+export type CompactedInput = { note: string; facts: string; audience: CompactAudience; history: ApiMessage[]; model: ModelEntry };
 
-export type CompactionPlan = { older: Message[]; kept: Message[]; through_message_id: string };
-
-export const needs_compaction = (request_tokens: number, model: ModelEntry): boolean =>
-  model.context_length > 0 && request_tokens > model.context_length * compact_fraction;
-
-export const plan_compaction = (messages: Message[]): CompactionPlan | null => {
-  const user_indices = messages.map((message, index) => (message.role === "user" ? index : -1)).filter((index) => index >= 0);
-  if (user_indices.length <= keep_recent_turns) {
-    return null;
-  }
-  const cutoff = user_indices[user_indices.length - keep_recent_turns] ?? messages.length;
-  const older = messages.slice(0, cutoff);
-  const last = older.at(-1);
-  if (!last) {
-    return null;
-  }
-  return { older, kept: messages.slice(cutoff), through_message_id: last.id };
-};
-
-const summarize = async (older: Message[], summary: ChatSummary | null, side_model: SideModelCall, signal: AbortSignal): Promise<string> => {
-  const prior = summary?.text ? `EXISTING SUMMARY OF EVEN EARLIER MESSAGES (fold its facts in, do not drop them):\n${summary.text}\n\n` : "";
-  const messages: SideMessage[] = [
-    { role: "system", content: summarizer_system },
-    { role: "user", content: `${prior}CONVERSATION MESSAGES TO SUMMARIZE (oldest first):\n${render_turns(older)}` },
+export const compacted_messages = ({ note, facts, audience, history, model }: CompactedInput): ApiMessage[] => {
+  const kept = history.filter((message) => !is_compaction_part(message));
+  const start = window_start(kept, model);
+  const out: ApiMessage[] = [
+    { role: "user", compaction: true, content: `${resume_text(audience)}\n\n${note}` },
+    ...kept.slice(0, start).filter(is_user_voice),
+    ...kept.slice(start),
+    ...(facts ? [{ role: "user", compaction: true, content: facts } as const] : []),
   ];
-  return (await side_model("summarize", messages, summary_max_tokens, signal)).trim();
-};
-
-export type CompactInput = {
-  chat_id: string;
-  messages: Message[];
-  summary: ChatSummary | null;
-  round: number;
-  emit: Emitter;
-  side_model: SideModelCall;
-  set_summary: (chat_id: string, summary: ChatSummary) => Promise<void>;
-  signal: AbortSignal;
-};
-
-export const compact_chat = async (input: CompactInput): Promise<ChatSummary | null> => {
-  const plan = plan_compaction(input.messages);
-  if (!plan) {
-    return null;
+  if (reasoning_bound_to_prefix(model.id)) {
+    drop_reasoning_after(out, 0);
   }
-  input.emit({ type: "compaction", round: input.round, status: "running", summary: "" });
-  try {
-    const signal = AbortSignal.any([input.signal, AbortSignal.timeout(summary_timeout_ms)]);
-    const text = await summarize(plan.older, input.summary, input.side_model, signal);
-    if (!text) {
-      throw new Error("the summarize model returned an empty summary");
-    }
-    const summary: ChatSummary = { text, through_message_id: plan.through_message_id };
-    await input.set_summary(input.chat_id, summary);
-    input.emit({ type: "compaction", round: input.round, status: "done", summary: text });
-    return summary;
-  } catch (error) {
-    console.error(`[context] compacting chat ${input.chat_id} failed:`, error);
-    input.emit({ type: "compaction", round: input.round, status: "failed", summary: "" });
-    return null;
-  }
+  return out;
 };

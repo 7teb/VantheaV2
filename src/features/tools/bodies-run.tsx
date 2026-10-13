@@ -44,7 +44,7 @@ export const CommandBody = ({ view, step }: BodyProps<"command">) => {
     <CommandCard
       shell={view.shell}
       command={view.command}
-      output={view.output}
+      output={view.output || null}
       footer={footer}
       notice={outcome.notice && <ReviewNotice note={outcome.notice} />}
     />
@@ -69,16 +69,10 @@ export const AgentBody = ({ view }: BodyProps<"agent">) => {
   const t = use_t();
   return (
     <div className="tool-body-stack">
-      <div className="tool-body-line">
-        <span>{view.name}</span>
-        <span className="tool-body-muted">{view.status}</span>
-      </div>
-      {view.report ? (
+      {view.report && (
         <div className="tool-body-quote">
           <Markdown text={view.report} className="tool-body-markdown" />
         </div>
-      ) : (
-        <div className="tool-body-muted">{t("tools.no_report")}</div>
       )}
       <div className="tool-body-line">
         <Button variant="secondary" icon={<BotIcon size={14} />} onClick={() => open_agent_run({ agent_id: view.agent_id, run_id: view.run_id })}>

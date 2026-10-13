@@ -74,13 +74,12 @@ export const ListEndIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const ListTreeIcon = (props: IconProps) => (
+export const QueueIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M8 5h13" />
-    <path d="M13 12h8" />
-    <path d="M13 19h8" />
-    <path d="M3 10a2 2 0 0 0 2 2h3" />
-    <path d="M3 5v12a2 2 0 0 0 2 2h3" />
+    <path d="M4 4v9a5 5 0 0 0 5 5h11" />
+    <path d="m17 15 3 3-3 3" />
+    <path d="M9 6h8" />
+    <path d="M9 12h5" />
   </Icon>
 );
 
@@ -110,15 +109,13 @@ export const LayersIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const FoldVerticalIcon = (props: IconProps) => (
+export const TextSelectIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M12 22v-6" />
-    <path d="M12 8V2" />
-    <path d="M4 12H2" />
-    <path d="M10 12H8" />
-    <path d="M16 12h-2" />
-    <path d="M22 12h-2" />
-    <path d="m15 19-3-3-3 3" />
-    <path d="m15 5-3 3-3-3" />
+    <path d="M13.5 3.5H17a3.5 3.5 0 0 1 3.5 3.5v10" />
+    <circle cx="20.5" cy="19.5" r="1" />
+    <circle cx="3.5" cy="4.5" r="1" />
+    <path d="M3.5 7v10A3.5 3.5 0 0 0 7 20.5h3.5" />
+    <path d="M8.5 10h7" />
+    <path d="M8.5 14H13" />
   </Icon>
 );

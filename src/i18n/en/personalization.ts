@@ -33,7 +33,6 @@ export const personalization = {
   "personalization.mem_kind_preference": "Global preference",
   "personalization.mem_kind_environment": "Environment",
   "personalization.mem_kind_project": "Project rule",
-  "personalization.chars": "{n} / {max}",
   "personalization.mem_global": "All projects",
   "personalization.mem_load_failed": "Memories could not be loaded",
   "personalization.mem_remove": "Remove memory",

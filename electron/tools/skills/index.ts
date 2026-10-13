@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { tool_gate } from "../../permissions/tool-gate.ts";
 import { max_skill_bytes } from "../../skills/frontmatter.ts";
 import type { SkillRecord } from "../../skills/scan.ts";
 import { prepare_skill } from "../../skills/source.ts";
@@ -75,7 +76,7 @@ const install_skill_tool = define_tool<{ source: string }>({
   spec: {
     name: "install_skill",
     description:
-      "Install a skill from a GitHub URL, a direct URL to a SKILL.md, or an absolute local path to a skill folder. The user always has to approve the exact content before anything is written, in every permission mode. Use it only when the user asked for a skill to be added. The tool result contains the installed skill's name and description, so you can read_skill it immediately in the same turn.",
+      "Install a skill from a GitHub URL, a direct URL to a SKILL.md, or an absolute local path to a skill folder. The automatic review checks the exact content before anything is written and may ask the user; in ask mode the user always approves it. Use it only when the user asked for a skill to be added. The tool result contains the installed skill's name and description, so you can read_skill it immediately in the same turn.",
     parameters: {
       type: "object",
       properties: { source: { type: "string", description: "GitHub folder or SKILL.md URL, a direct https URL to a SKILL.md, or an absolute local path." } },
@@ -98,18 +99,35 @@ const install_skill_tool = define_tool<{ source: string }>({
       console.warn(`[skills] preparing a skill from ${args.source.slice(0, 200)} failed: ${error_text(error)}`);
       return result("failed", "install", "", `Could not install a skill from ${args.source.slice(0, 200)}: ${error_text(error)}`);
     }
-    const decision = await ctx.approve({
-      kind: "skill_install",
-      name: prepared.name,
-      description: prepared.description,
-      files: ["SKILL.md", ...prepared.extras.map((extra) => extra.name)],
-      source: prepared.source,
-      replaces: existing ? existing.name : null,
-      content: prepared.raw,
-    });
-    if (!decision.approved) {
-      const feedback = decision.feedback ? ` User feedback: ${decision.feedback}` : "";
-      return result("denied", "install", prepared.name, `The user declined installing the skill ${prepared.name}.${feedback}`);
+    const files = ["SKILL.md", ...prepared.extras.map((extra) => extra.name)];
+    const subject = [
+      `name: ${prepared.name}`,
+      `source: ${prepared.source}`,
+      `description: ${prepared.description}`,
+      `replaces installed skill: ${existing ? existing.name : "none"}`,
+      `files: ${files.join(", ")}`,
+      "SKILL.md:",
+      prepared.raw,
+    ].join("\n");
+    const gate = await tool_gate(ctx, "install_skill", subject);
+    if (gate.kind === "denied") {
+      return result("denied", "install", prepared.name, gate.text);
+    }
+    if (gate.kind === "ask") {
+      const decision = await ctx.approve({
+        kind: "skill_install",
+        name: prepared.name,
+        description: prepared.description,
+        files,
+        source: prepared.source,
+        replaces: existing ? existing.name : null,
+        content: prepared.raw,
+        ...(gate.note ? { review: gate.note } : {}),
+      });
+      if (!decision.approved) {
+        const feedback = decision.feedback ? ` User feedback: ${decision.feedback}` : "";
+        return result("denied", "install", prepared.name, `The user declined installing the skill ${prepared.name}.${feedback}`);
+      }
     }
     try {
       const installed = await commit_skill(prepared);

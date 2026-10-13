@@ -32,7 +32,7 @@ To move a skill into a group, move its folder into the group folder, then open S
 
 ## Built-in skills
 
-Built-in skills ship with the app: `vantheax` gives the agent reliable facts about VantheaX, `effects-lab` in the group `design` builds visual effect pages and composed ads (its scaffold and checker run with python and node from the skill folder and write only into an output folder in the project). They are enabled by default, can be disabled in Settings like any skill, cannot be removed (no remove button, and the app refuses a remove request), and win a name clash against a user skill. Settings lists them first with the label "Built-in" ("Integriert").
+Built-in skills ship with the app: `vantheax` gives the agent reliable facts about VantheaX, `effects-lab` in the group `design` builds visual effect pages and composed ads (its scaffold and source lint run with python from the skill folder and write only into an output folder in the project; the check_page tool then checks the page in a hidden browser window inside the app and saves its screenshots in the page's `_shots` folder). They are enabled by default, can be disabled in Settings like any skill, cannot be removed (no remove button, and the app refuses a remove request), and win a name clash against a user skill. Settings lists them first with the label "Built-in" ("Integriert").
 
 ## Settings > Skills
 
@@ -48,7 +48,7 @@ Only the main agent has install_skill (not in plan mode), and it should be used 
 - a direct http or https URL to a `.md` or `.markdown` file. Only that file is installed, no extra files.
 - an absolute local path to a skill folder or to its SKILL.md.
 
-The user always approves the exact content before anything is written, in every permission mode including full. The approval card asks "May I install this skill?" ("Darf ich diesen Skill installieren?") and shows the name, description, file list, source, the skill it replaces if one exists, and the full SKILL.md.
+In ask mode the user approves the exact content before anything is written; in auto and full mode the automatic review checks it first and asks the user unless it allows or denies the install. The approval card asks "May I install this skill?" ("Darf ich diesen Skill installieren?") and shows the name, description, file list, source, the skill it replaces if one exists, and the full SKILL.md.
 
 Where the skill goes:
 

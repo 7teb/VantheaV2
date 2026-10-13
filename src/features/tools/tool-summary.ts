@@ -1,7 +1,7 @@
 import type { ToolStep } from "../../../shared/chat.ts";
 import type { ToolView } from "../../../shared/tool-view.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
-import { is_active_status, tool_meta, type ToolCategory } from "./tool-meta.ts";
+import { base_name, is_active_status, page_detail, tool_meta, view_of, type ToolCategory } from "./tool-meta.ts";
 
 export const format_duration = (ms: number): string => {
   const seconds = Math.max(1, Math.round(ms / 1000));
@@ -42,12 +42,29 @@ export const format_elapsed = (ms: number): string | null => {
 export const step_duration = (step: ToolStep): number | null =>
   step.started_at !== null && step.ended_at !== null ? Math.max(0, step.ended_at - step.started_at) : null;
 
+type CommandView = Extract<ToolView, { kind: "command" }>;
+
+const command_ran = (view: CommandView) => view.exit_code !== null || view.timed_out;
+
+const command_outcome = (t: Translate, view: CommandView): string => {
+  if (view.timed_out) {
+    return t("tools.timed_out");
+  }
+  return view.exit_code !== null && view.exit_code !== 0 ? t("tools.exit_code", { n: view.exit_code }) : "";
+};
+
 const view_detail = (t: Translate, view: ToolView): string => {
   switch (view.kind) {
     case "files":
-      return t("tools.files_count", { n: view.files.length });
+      return [
+        t(view.files.length === 1 ? "tools.file_count_one" : "tools.file_count_other", { n: view.files.length }),
+        t(view.directories === 1 ? "tools.folder_count_one" : "tools.folder_count_other", { n: view.directories }),
+      ].join(", ");
     case "read":
-      return view.end_line > 0 ? `${view.start_line}-${view.end_line}` : "";
+      if (view.end_line <= 0) {
+        return "";
+      }
+      return view.end_line < view.total_lines ? `${view.start_line}-${view.end_line} / ${view.total_lines}` : `${view.start_line}-${view.end_line}`;
     case "grep":
       if (view.truncated) {
         return t("tools.grep_capped", { n: view.total });
@@ -60,13 +77,12 @@ const view_detail = (t: Translate, view: ToolView): string => {
     case "edit":
       return `+${view.added} -${view.removed}`;
     case "command":
-      if (view.timed_out) {
-        return t("tools.timed_out");
-      }
-      return view.exit_code !== null && view.exit_code !== 0 ? t("tools.exit_code", { n: view.exit_code }) : "";
+      return [command_outcome(t, view), command_ran(view) && view.output === "" ? t("tools.no_output") : ""].filter(Boolean).join(" · ");
     case "background":
     case "agent":
       return view.status;
+    case "peer_message":
+      return t(`tools.peer_outcome_${view.outcome}`);
     case "todos":
       return `${view.todos.filter((todo) => todo.status === "done").length}/${view.todos.length}`;
     case "web_search":
@@ -75,21 +91,64 @@ const view_detail = (t: Translate, view: ToolView): string => {
       return t("tools.images_count", { n: view.images.length });
     case "mcp":
       return view.is_error ? t("tools.mcp_error") : "";
+    case "memory":
+      return view.action === "list" && view.text === "" ? t("tools.memory_none") : "";
+    case "browser":
     case "plan":
     case "questions":
-    case "browser":
-    case "memory":
     case "skill":
     case "text":
       return "";
   }
 };
 
+type Detail = (t: Translate, step: ToolStep) => string;
+
+const text_of = (step: ToolStep) => view_of(step, "text")?.text ?? "";
+
+const page_url: Detail = (_t, step) => {
+  const view = view_of(step, "browser");
+  return view?.title && view.title !== view.url ? view.url : "";
+};
+
+const page_state: Detail = (t, step) => [page_url(t, step), page_detail(step) === "loading" ? t("tools.browser_loading") : ""].filter(Boolean).join(" · ");
+
+const image_folder: Detail = (_t, step) => {
+  const text = text_of(step);
+  return text.slice(0, text.length - base_name(text).length).replace(/[\\/]+$/, "");
+};
+
+const no_detail: Detail = () => "";
+
+const named_details: Record<string, Detail> = {
+  datetime: (_t, step) => text_of(step),
+  view_image: image_folder,
+  read_skill: (_t, step) => (typeof step.args.file === "string" ? step.args.file : ""),
+  browser_tab: page_url,
+  browser_navigate: page_state,
+  browser_click: no_detail,
+  browser_type: no_detail,
+  browser_key: no_detail,
+  browser_click_point: no_detail,
+  browser_visual_click: no_detail,
+};
+
 export const step_detail = (t: Translate, step: ToolStep): string => {
   if (is_active_status(step.status)) {
     return step.progress?.label ?? "";
   }
-  return step.view ? view_detail(t, step.view) : "";
+  if (!step.view) {
+    return "";
+  }
+  return named_details[step.name]?.(t, step) ?? (step.view.kind === "browser" ? page_detail(step) : view_detail(t, step.view));
+};
+
+export const step_hint = (step: ToolStep): string => {
+  const view = step.view;
+  if (view?.kind === "browser") {
+    return [...new Set([view.title, view.url].filter(Boolean))].join("\n");
+  }
+  return view?.kind === "web_search" ? view.query : "";
 };
 
 const counted_categories = new Set<ToolCategory>(["reads", "listings", "edits", "agent_checks", "agent_stops", "task_checks", "task_stops"]);
@@ -158,6 +217,12 @@ export const group_label = (t: Translate, steps: ToolStep[]): string => {
   const joined = parts.join(", ");
   return joined.charAt(0).toUpperCase() + joined.slice(1);
 };
+
+export const group_current = (steps: ToolStep[]): ToolStep | null =>
+  steps.find((step) => step.status === "running" || step.status === "awaiting_approval") ??
+  steps.findLast((step) => step.status === "drafting") ??
+  steps.find((step) => step.status === "queued") ??
+  null;
 
 export const group_duration = (steps: ToolStep[]): number | null => {
   const starts = steps.flatMap((step) => (step.started_at === null ? [] : [step.started_at]));

@@ -1,12 +1,14 @@
+import type { ReviewRecord } from "../../shared/review.ts";
 import type { ToolContext } from "../tools/types.ts";
 import { last_human_id } from "./context.ts";
 import { decide_command, type CommandDecision } from "./decide.ts";
 import { command_input } from "./review.ts";
 import { command_sleep_reason, rejected_text } from "./sleep.ts";
 import { changed_pins, type PinChange } from "./source-read.ts";
+import type { Dialect } from "./statements.ts";
 import { scripts_changed_text } from "./verdict-text.ts";
 
-export type CommandSpec = { command: string; cwd: string; background: boolean };
+export type CommandSpec = { command: string; cwd: string; background: boolean; shell: Dialect };
 
 export type Settled = { kind: "run"; note: string | null } | { kind: "block"; reason: string } | { kind: "denied"; text: string; output: string };
 
@@ -35,13 +37,25 @@ export const under_review = async <T>(ctx: Pick<ToolContext, "progress">, run: (
   }
 };
 
+export const review_and_record = async <T extends { record: ReviewRecord; seen: ReadonlySet<string> }>(ctx: ToolContext, review: () => Promise<T>): Promise<T> => {
+  const mark = last_human_id(ctx.chat_id);
+  const result = await under_review(ctx, async (enter) => {
+    enter();
+    const first = await review();
+    const recheck = first.record.verdict === "allow" && first.record.source === "model" && (last_human_id(ctx.chat_id) !== mark || (await peer_block_since(ctx, first.seen)));
+    return recheck ? review() : first;
+  });
+  await ctx.review.record(result.record);
+  return result;
+};
+
 export const command_pass = async (ctx: ToolContext, spec: CommandSpec, changed: PinChange[]): Promise<CommandDecision> => {
-  const input = await command_input(ctx, spec.command, spec.cwd, spec.background, changed);
+  const input = await command_input(ctx, spec.command, spec.cwd, spec.background, spec.shell, changed);
   return under_review(ctx, async (enter) => {
     let decision = await decide_command(input, ctx.review, ctx.signal, enter);
     const model_allow = decision.action === "run" && decision.record?.source === "model";
     if (model_allow && (last_human_id(ctx.chat_id) !== input.last_human_id || (await peer_block_since(ctx, decision.seen)))) {
-      decision = await decide_command(await command_input(ctx, spec.command, spec.cwd, spec.background, changed), ctx.review, ctx.signal, enter);
+      decision = await decide_command(await command_input(ctx, spec.command, spec.cwd, spec.background, spec.shell, changed), ctx.review, ctx.signal, enter);
     }
     if (decision.record) {
       await ctx.review.record(decision.record);

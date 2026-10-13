@@ -35,14 +35,16 @@ const unavailable_types = new Set(["provider_overloaded", "provider_unavailable"
 
 const context_phrase = /maximum context length|context[ _]length[ _]exceeded|prompt is too long|exceeds the context window/i;
 
-const backoff_ms = [2000, 6000];
+export const retry_backoff_ms = [2000, 5000, 10_000, 20_000, 30_000, 60_000, 120_000, 120_000];
 
-export const max_retry_wait_ms = 60000;
+export const max_retry_wait_ms = 120_000;
+
+export const retry_window_ms = 600_000;
 
 export const is_retryable = (error: ModelError) => retryable_kinds.has(error.kind);
 
 export const retry_delay = (failed_attempt: number, error: ModelError, random: () => number): number => {
-  const planned = backoff_ms[Math.min(failed_attempt, backoff_ms.length) - 1] ?? 2000;
+  const planned = retry_backoff_ms[Math.min(failed_attempt, retry_backoff_ms.length) - 1] ?? 2000;
   const wanted = error.retry_after_ms > 0 ? error.retry_after_ms : planned;
   return Math.min(max_retry_wait_ms, wanted) + Math.floor(random() * 250);
 };

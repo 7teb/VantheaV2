@@ -8,7 +8,7 @@ const auto_attach = { autoAttach: true, waitForDebuggerOnStart: false, flatten: 
 
 export type CdpFrameTree = { frame?: { id?: string; parentId?: string; url?: string }; childFrames?: CdpFrameTree[] };
 
-export const cdp = <T>(tab: BrowserTab, method: string, params: Record<string, unknown>, session_id: string, signal: AbortSignal): Promise<T> =>
+export const cdp = <T>(tab: Pick<BrowserTab, "guest">, method: string, params: Record<string, unknown>, session_id: string, signal: AbortSignal): Promise<T> =>
   settle_within<T>(tab.guest.debugger.sendCommand(method, params, session_id || undefined), signal, cdp_timeout_ms, `Browser call ${method}`);
 
 export const evaluate_value = <T>(result: { result?: { value?: unknown } } | undefined): T | undefined => result?.result?.value as T | undefined;

@@ -30,28 +30,27 @@
     margin: 2px 0 14px;
   }
 
+  .chat-column > .compaction-row {
+    margin: 0;
+  }
+
   .chat-column
-    > :is(.assistant-message, .compaction-row, .agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]))
+    > :is(.assistant-message, .agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]))
     + :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])) {
     margin-top: calc(2px - var(--space-8));
   }
 
-  .chat-column > :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])) + :is(.assistant-message, .compaction-row),
-  .chat-column > :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])) + .compaction-row + .assistant-message {
-    margin-top: calc(-1 * var(--space-8));
-  }
-
-  .chat-column > .assistant-message:has(+ .compaction-row + :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]))) + .compaction-row {
+  .chat-column > :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])) + .assistant-message {
     margin-top: calc(-1 * var(--space-8));
   }
 
   .chat-column
-    > .assistant-message:has(+ :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])), + .compaction-row + :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])))
+    > .assistant-message:has(+ :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])))
     > :is(:has(+ .assistant-actions), :last-child:not(.assistant-actions)) {
     margin-bottom: 14px;
   }
 
-  .chat-column > .assistant-message:has(+ :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])), + .compaction-row + :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]))) > .assistant-actions {
+  .chat-column > .assistant-message:has(+ :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]))) > .assistant-actions {
     display: none;
   }
 

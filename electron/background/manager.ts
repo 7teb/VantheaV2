@@ -3,11 +3,12 @@ import { randomUUID } from "node:crypto";
 import type { BackgroundTask } from "../../shared/ipc/work.ts";
 import { invalidate_index } from "../project/index.ts";
 import { resolve_inside } from "../project/scope.ts";
-import { kill_tree, kill_tree_sync, spawn_powershell, strip_ansi } from "../shell/process.ts";
+import { output_collector, type OutputView } from "../shell/output.ts";
+import { kill_tree, kill_tree_sync, spawn_powershell } from "../shell/process.ts";
 import { error_text } from "../storage/coerce.ts";
 import { keep_corrupt, read_json, write_json, write_json_sync } from "../storage/json-file.ts";
 import { storage_paths } from "../storage/paths.ts";
-import { listing_order, parse_stored_file, public_task, stored_file, tail_chars, type TaskRecord } from "./records.ts";
+import { listing_order, parse_stored_file, public_task, stored_file, type TaskRecord } from "./records.ts";
 
 export type BackgroundSpawner = (command: string, cwd: string) => ChildProcess;
 
@@ -20,9 +21,9 @@ export type BackgroundOptions = {
 
 export type BackgroundStart = { chat_id: string; turn_id: string; project_root: string; cwd: string; name: string; command: string };
 
-export type TaskLookup = { task: BackgroundTask } | { task: null; error: string };
+export type TaskLookup = { task: BackgroundTask; output: OutputView } | { task: null; error: string };
 
-type Listener = (task: BackgroundTask) => void;
+type Listener = (task: BackgroundTask, output: OutputView) => void;
 
 export const max_running_tasks = 16;
 
@@ -58,7 +59,7 @@ const notify = (listeners: Set<Listener>, record: TaskRecord) => {
   const task = public_task(record);
   for (const listener of listeners) {
     try {
-      listener(task);
+      listener(task, record.output);
     } catch (error) {
       console.error(`[background] listener for task ${record.id} failed: ${error_text(error)}`);
     }
@@ -87,7 +88,7 @@ const emit_later = (record: TaskRecord) => {
 };
 
 const append_output = (record: TaskRecord, chunk: string) => {
-  record.output_tail = (record.output_tail + strip_ansi(chunk)).slice(-tail_chars);
+  record.output.append(chunk);
   emit_later(record);
 };
 
@@ -164,10 +165,10 @@ export const start_background = async (input: BackgroundStart): Promise<Backgrou
     exit_code: null,
     started_at: new Date().toISOString(),
     ended_at: null,
-    output_tail: "",
     project_root: input.project_root,
     turn_id: input.turn_id,
     pid: child.pid ?? null,
+    output: output_collector(),
   };
   tasks.set(record.id, record);
   watch(record, child);
@@ -184,7 +185,7 @@ export const find_background = (id: string, chat_id: string): TaskLookup => {
   const exact = owned.find((record) => record.id === id);
   const matches = exact ? [exact] : owned.filter((record) => id !== "" && record.id.startsWith(id));
   if (matches.length === 1) {
-    return { task: public_task(matches[0]) };
+    return { task: public_task(matches[0]), output: matches[0].output };
   }
   if (matches.length > 1) {
     return { task: null, error: `${id} matches ${matches.length} background tasks (${matches.slice(0, 5).map((record) => record.id).join(", ")}); pass more of the id.` };

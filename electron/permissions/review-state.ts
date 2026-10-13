@@ -35,8 +35,6 @@ const chats = new Map<string, ChatState>();
 
 const instances = new Map<string, InstanceState>();
 
-const offline = new Map<string, number>();
-
 let generations = 0;
 
 export const instance_key = (chat_id: string, actor_id: string): string => `${chat_id}:${actor_id}`;
@@ -51,31 +49,15 @@ export const stored_profile = (chat_id: string, key: string): ProjectProfile | n
   return state?.key === key ? state.profile : null;
 };
 
-export const offline_until = (key: string): number | null => {
-  const until = offline.get(key) ?? 0;
-  return until > Date.now() ? until : null;
-};
-
-export const open_offline = (key: string, until: number): void => {
-  offline.set(key, until);
-};
-
-export const close_offline = (key: string): void => {
-  offline.delete(key);
-};
-
 export const clear_review_chat = (chat_id: string): void => {
   chats.delete(chat_id);
-  for (const map of [instances, offline]) {
-    for (const key of [...map.keys()]) {
-      if (key.startsWith(`${chat_id}:`)) map.delete(key);
-    }
+  for (const key of [...instances.keys()]) {
+    if (key.startsWith(`${chat_id}:`)) instances.delete(key);
   }
 };
 
 export const clear_review_instance = (chat_id: string, actor_id: string): void => {
   instances.delete(instance_key(chat_id, actor_id));
-  offline.delete(instance_key(chat_id, actor_id));
 };
 
 const chat_state = (input: StateInput, new_tag: () => string): ChatState => {
@@ -85,7 +67,7 @@ const chat_state = (input: StateInput, new_tag: () => string): ChatState => {
   }
   const tag = new_tag();
   generations += 1;
-  const state: ChatState = { key: input.chat_key, tag, text: chat_part(input.chat, tag, 0), profile: input.chat.profile, generation: generations };
+  const state: ChatState = { key: input.chat_key, tag, text: chat_part(input.chat, tag, 0, 0), profile: input.chat.profile, generation: generations };
   chats.set(input.chat.chat_id, state);
   return state;
 };
@@ -98,13 +80,13 @@ const with_markers = (state: InstanceState): ReviewPart[] => [
 
 const fresh_lines = (now: Map<string, string>, shown: Map<string, string>): string[] => [...now].filter(([key, text]) => shown.get(key) !== text).map(([, text]) => text);
 
-export const review_parts = (input: StateInput, level: TrimLevel, new_tag: () => string): { parts: ReviewPart[]; tag: string } => {
+export const review_parts = (input: StateInput, level: TrimLevel, dropped_humans: number, new_tag: () => string): { parts: ReviewPart[]; tag: string } => {
   const chat = chat_state(input, new_tag);
   const key = instance_key(input.chat.chat_id, input.agent.actor.id);
   const previous = instances.get(key);
   const task = input.agent.delegated_task ?? "";
   const decisions = new Map(input.feed.map((line) => [line.key, feed_text(line)]));
-  const actions = new Map(input.actions.map((line) => [line.key, line.text]));
+  const actions = new Map(input.actions.map((line) => [line.key, line.full]));
   const scripts = new Map(input.retained.map((entry) => [entry.key, retained_line(entry)]));
   const status_changed = previous ? [...previous.decisions].some(([id, text]) => decisions.get(id) !== text) : true;
   if (previous && level === 0 && previous.level === 0 && previous.generation === chat.generation && previous.task === task && !status_changed) {
@@ -120,7 +102,8 @@ export const review_parts = (input: StateInput, level: TrimLevel, new_tag: () =>
       return { parts: with_markers(next), tag: chat.tag };
     }
   }
-  const chat_text = trimmed(level, "project") || trimmed(level, "assistant_before") ? chat_part(input.chat, chat.tag, level) : chat.text;
+  const rebuilt = dropped_humans > 0 || trimmed(level, "project") || trimmed(level, "assistant_before");
+  const chat_text = rebuilt ? chat_part(input.chat, chat.tag, level, dropped_humans) : chat.text;
   const agent_text = agent_part(
     input.agent,
     {

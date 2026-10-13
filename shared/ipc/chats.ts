@@ -1,4 +1,4 @@
-import type { Attachment, Chat, ChatMeta, ChatSearchHit, ContextUsage, Message, PermissionMode, UserOrigin } from "../chat.ts";
+import type { Chat, ChatMeta, ChatSearchHit, ContextUsage, Message, PermissionMode, UserOrigin } from "../chat.ts";
 import type { ApprovalDecision } from "../approval.ts";
 import type { TurnEvent } from "../events.ts";
 import { emit, invoke } from "./channel.ts";
@@ -6,7 +6,7 @@ import { emit, invoke } from "./channel.ts";
 export type SendRequest = {
   chat_id: string;
   text: string;
-  attachments: Attachment[];
+  attachment_ids: string[];
   model: string;
   effort: string;
   mode: PermissionMode;
@@ -40,7 +40,7 @@ export const chats_channels = {
   "turn:continue": invoke<[chat_id: string], TurnStarted>(),
   "turn:accept_plan": invoke<[chat_id: string, message_id: string], TurnStarted>(),
   "turn:stop": invoke<[chat_id: string], void>(),
-  "turn:steer": invoke<[chat_id: string, text: string, attachments: Attachment[], steer_id: string], string | null>(),
+  "turn:steer": invoke<[chat_id: string, text: string, attachment_ids: string[], steer_id: string], string | null>(),
   "turn:approve": invoke<[chat_id: string, call_id: string, decision: ApprovalDecision], void>(),
   "turn:full_window": invoke<[chat_id: string], FullWindow>(),
   "turn:open_full_window": invoke<[chat_id: string], void>(),

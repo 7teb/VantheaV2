@@ -7,16 +7,17 @@ import { read_only_command } from "./allowlist.ts";
 import { approved_with_source, prefix_grants } from "./decisions.ts";
 import { floor_reason } from "./floor.ts";
 import { covering_prefixes, suggest_prefix } from "./grants.ts";
-import { instance_key, offline_until } from "./review-state.ts";
 import { review_verdict } from "./review-verdict.ts";
 import type { PinChange, ScriptPin } from "./source-read.ts";
 import { inspect_command_sources, type CommandSources } from "./sources.ts";
+import type { Dialect } from "./statements.ts";
 import { deny_text, workaround_text } from "./verdict-text.ts";
 
 export type CommandInput = {
   command: string;
   background: boolean;
   mode: PermissionMode;
+  app_root: string;
   project_root: string;
   cwd: string;
   plan: boolean;
@@ -29,6 +30,7 @@ export type CommandInput = {
   decisions: HumanDecision[];
   last_human_id: string | null;
   changed: PinChange[];
+  shell: Dialect;
 };
 
 export type CommandDecision = {
@@ -45,27 +47,23 @@ export type CommandDecision = {
 
 const nothing_seen: ReadonlySet<string> = new Set();
 
-export const review_note = (record: ReviewRecord, chat_id: string, detail: Pick<ReviewNote, "gaps" | "script_floor"> = {}): ReviewNote => {
-  const until = record.failure === "offline_window" ? offline_until(instance_key(chat_id, record.actor.id)) : null;
-  return {
-    id: record.id,
-    source: record.source,
-    reason: record.reason,
-    rule_source: record.rule_source,
-    rule: record.rule,
-    ...(record.raised_by ? { raised_by: record.raised_by } : {}),
-    ...(record.granted ? { granted: record.granted } : {}),
-    ...(record.circumvents ? { circumvents: record.circumvents } : {}),
-    ...(record.failure ? { failure: record.failure } : {}),
-    ...detail,
-    ...(until !== null ? { offline_until: until } : {}),
-  };
-};
+export const review_note = (record: ReviewRecord, detail: Pick<ReviewNote, "script_floor"> = {}): ReviewNote => ({
+  id: record.id,
+  source: record.source,
+  reason: record.reason,
+  rule_source: record.rule_source,
+  rule: record.rule,
+  ...(record.raised_by ? { raised_by: record.raised_by } : {}),
+  ...(record.granted ? { granted: record.granted } : {}),
+  ...(record.circumvents ? { circumvents: record.circumvents } : {}),
+  ...(record.failure ? { failure: record.failure } : {}),
+  ...detail,
+});
 
 const tool_name = (background: boolean) => (background ? "start_background_task" : "run_command");
 
 const command_sources = (input: CommandInput): Promise<CommandSources> =>
-  inspect_command_sources(input.project_root, input.cwd, input.command, { chat_id: input.chat_id, chat_started_at: input.chat_started_at });
+  inspect_command_sources(input.project_root, input.cwd, input.command, { chat_id: input.chat_id, chat_started_at: input.chat_started_at, shell: input.shell, app_root: input.app_root });
 
 const floor_block = (input: CommandInput, reviewer: Reviewer, reason: string): CommandDecision => ({
   action: "block",
@@ -110,7 +108,7 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
   if (!command) {
     return floor_block(input, reviewer, "The command is empty.");
   }
-  const floor = floor_reason(command);
+  const floor = floor_reason(command, { app_root: input.app_root, project_root: input.project_root, cwd: input.cwd });
   if (floor) {
     return floor_block(input, reviewer, floor);
   }
@@ -123,11 +121,11 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
   if (input.mode === "ask") {
     return without_model("ask", plan_change, sources);
   }
+  const approved_sources = approved_with_source(input.decisions, command, sources.hash);
   const raised: ReviewRaise[] = [
     ...(sources.protected_read ? (["protected"] as const) : []),
     ...(plan_change ? (["plan"] as const) : []),
-    ...(sources.gaps.length ? (["script_gap"] as const) : []),
-    ...(sources.catastrophic.length && !approved_with_source(input.decisions, command, sources.hash) ? (["script_floor"] as const) : []),
+    ...(sources.catastrophic.length && !approved_sources ? (["script_floor"] as const) : []),
   ];
   const prefixes = covering_prefixes(command, prefix_grants(input.decisions));
   on_review?.();
@@ -145,7 +143,7 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
       delegated_task: input.delegated_task ?? null,
       decisions: input.decisions,
       call_id: input.call_id,
-      action: { tool: tool_name(input.background), cwd: input.cwd, background: input.background, subject: command, mcp: null, files: sources.files, gaps: sources.gaps, changed: input.changed },
+      action: { tool: tool_name(input.background), cwd: input.cwd, background: input.background, subject: command, call: { kind: "command" }, files: sources.files, gaps: sources.gaps, changed: input.changed, programs: sources.programs, notes: sources.notes, shell: input.shell },
     },
   });
   const record = verdict.record.granted ? { ...verdict.record, grant_prefixes: prefixes } : verdict.record;
@@ -156,10 +154,7 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
     action,
     reason,
     record,
-    note: review_note(record, input.chat_id, {
-      ...(record.raised_by?.includes("script_gap") ? { gaps: [...sources.gaps, ...verdict.script_gaps] } : {}),
-      ...(record.raised_by?.includes("script_floor") ? { script_floor: sources.catastrophic } : {}),
-    }),
+    note: review_note(record, record.raised_by?.includes("script_floor") ? { script_floor: sources.catastrophic } : {}),
     grant_prefix: prefix_option ? suggest_prefix(command) : null,
     plan: plan_change,
     pins: sources.pins,

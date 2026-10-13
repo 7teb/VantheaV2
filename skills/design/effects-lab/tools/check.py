@@ -1,21 +1,18 @@
 """
-Design output checker. Works on Windows, macOS and Linux.
+Source lint for effects-lab pages. Works on Windows, macOS and Linux.
 
-Usage:  python <skill folder>/tools/check.py <folder or index.html> [--shots <dir>] [--lint-only]
+Usage:  python <skill folder>/tools/check.py <folder or index.html>
 
 What it does
   1. Lints the source (syntax, id mismatches, banned characters, placeholder words, leftover TODO markers)
   2. If the folder has a brief.md (a composed ad), lints the brief against the compose rules
-  3. Opens the page in a REAL browser (tools/live.mjs): waits, takes screenshots, moves the mouse over the stage,
-     clicks and drags every control, reports runtime errors, plays the scenes, checks sideways overflow at 1440, 800 and 390
-  4. Measures blank, flat, no idle motion
 
-It FAILS when the browser part cannot run (no Edge or Chrome, no node 22 or newer, no Pillow). It never passes silently.
---lint-only skips step 3 on purpose and says so in the result line. Set CHECK_BROWSER to a browser path to override detection.
+The browser check (screenshots, pointer and controls, runtime errors, scenes, sideways overflow, blank and idle motion)
+is the check_page tool of VantheaX. Run it after this lint.
 
 Exit code 0 means no FAIL lines. WARN lines are advice.
 """
-import argparse, json, re, subprocess, sys, pathlib, shutil, warnings
+import argparse, re, subprocess, sys, pathlib, shutil, warnings
 warnings.filterwarnings("ignore")
 
 results = []
@@ -177,118 +174,18 @@ def lint_compose(folder, src):
         if slot not in src["html"]: report("FAIL", f"index.html has no {slot} element")
     return len(scenes)
 
-# ---------- pictures ----------
-def analyze(png):
-    from PIL import Image, ImageFilter, ImageStat
-    from collections import Counter
-    im = Image.open(png).convert("RGB")
-    small = im.resize((240, int(240 * im.height / im.width)))
-    px = list(small.getdata())
-    q = Counter((r >> 4, g >> 4, b >> 4) for r, g, b in px)
-    edges = ImageStat.Stat(small.convert("L").filter(ImageFilter.FIND_EDGES)).mean[0]
-    return dict(modal=q.most_common(1)[0][1] / len(px), colors=len(q), edges=edges, im=im)
-
-def motion(a, b):
-    from PIL import ImageChops
-    d = ImageChops.difference(a, b).convert("L").resize((200, 120))
-    px = list(d.getdata())
-    return sum(1 for v in px if v > 12) / len(px)
-
-# ---------- real browser ----------
-def node_major(node):
-    try:
-        return int(subprocess.run([node, "--version"], capture_output=True, text=True).stdout.strip().lstrip("v").split(".")[0])
-    except Exception:
-        return 0
-
-def live_check(folder, shots, is_ad, n_scenes, js):
-    live = pathlib.Path(__file__).with_name("live.mjs")
-    node = shutil.which("node")
-    nothing = "NOTHING was verified in a browser, so this is not a pass"
-    if not node: return report("FAIL", f"node is not installed or not on PATH. {nothing}")
-    if node_major(node) < 22: return report("FAIL", f"node 22 or newer is needed for the browser check (found {node_major(node)}). {nothing}")
-    if not live.exists(): return report("FAIL", f"tools/live.mjs is missing. {nothing}")
-    try:
-        import PIL  # noqa
-    except ImportError:
-        return report("FAIL", f"Pillow is not installed (pip install pillow), so the pictures cannot be measured. {nothing}")
-    shots.mkdir(parents=True, exist_ok=True)
-    try:
-        r = subprocess.run([node, str(live), str(folder / "index.html"), str(shots)], capture_output=True, text=True, timeout=200)
-        data = json.loads(r.stdout.strip().splitlines()[-1])
-    except Exception as ex:
-        return report("FAIL", f"the real browser check could not run ({ex}). {nothing}")
-    if data.get("fatal"):
-        return report("FAIL", f"{data['fatal']}. Install Edge or Chrome, or set CHECK_BROWSER to a browser path. {nothing}")
-
-    for e in data.get("errors", [])[:6]:
-        report("FAIL", "runtime: " + e)
-    if data.get("interactions", 0) < 2:
-        report("WARN", "fewer than 2 controls or stage interactions were found, are the controls inside .controls?")
-    lay = data.get("layout") or {}
-    if lay.get("zero_size_canvases"): report("FAIL", f"{lay['zero_size_canvases']} canvas has zero size, the stage will be blank")
-    if lay.get("horizontal_overflow"): report("FAIL", "page scrolls sideways at 1440 wide")
-    if (data.get("layout_narrow") or {}).get("horizontal_overflow"): report("FAIL", "page scrolls sideways at 800 wide")
-    if (data.get("layout_phone") or {}).get("horizontal_overflow"): report("WARN", "page scrolls sideways at 390 wide (phone)")
-    st = lay.get("stage")
-    if st and not is_ad and (st[1] < 300 or st[0] < 500): report("WARN", f"stage is only {st[0]}x{st[1]}, too small to show anything")   # ads change shape with the Format control
-
-    sh = data.get("shots", {})
-    if "wide_a" not in sh:
-        return report("FAIL", "the live check produced no screenshots")
-    A = analyze(sh["wide_a"])
-    print(f"      stats modal={A['modal']:.2f} colors={A['colors']} edges={A['edges']:.1f} interactions={data.get('interactions')} stage after the controls were used={st}")
-    if A["modal"] > 0.97: report("FAIL", "screenshot is almost one flat color, the page looks blank")
-    if A["colors"] < 14: report("WARN", f"only {A['colors']} distinct colors, looks flat")
-    if "wide_still" in sh:
-        S = analyze(sh["wide_still"])
-        idle = motion(A["im"], S["im"])
-        print(f"      idle motion changed_pixels={idle:.3f} (no pointer, 1.5s apart)")
-        if idle < 0.0015: report("WARN", "nothing moves on its own when the pointer is away, add idle motion from time")
-        if "wide_b" in sh:
-            print(f"      pointer reaction changed_pixels={motion(S['im'], analyze(sh['wide_b'])['im']):.3f}")
-    if "narrow" in sh and analyze(sh["narrow"])["modal"] > 0.97: report("FAIL", "800px wide screenshot is blank")
-
-    if is_ad:
-        fm = data.get("ad_format")
-        print(f"      the checker clicked every control in page order, the ad ended in format {fm}")
-        if fm != "9:16": report("WARN", f"the last Format button the checker clicked was expected to set 9:16, the ad ended in {fm!r}. Keep the Format buttons in the order 16:9, 1:1, 9:16 and check the data-format handler, otherwise 9:16 was not verified")
-    scenes = data.get("scenes") or []
-    if scenes or is_ad or "timeline(" in js:
-        print(f"      scenes seen over the playback: {scenes}")
-        if len(scenes) < 2:
-            report("FAIL", "the timeline never left scene 0 during about 20 seconds. Check dur values, the total must be 16 seconds or less, and that timeline() is called")
-        elif n_scenes and len(set(scenes)) < n_scenes:
-            report("WARN", f"only scenes {sorted(set(scenes))} played in 20 seconds but the brief has {n_scenes}")
-        keys = [k for k in sorted(sh) if k.startswith("scene_")]
-        pics = [analyze(sh[k])["im"] for k in keys]
-        if len(pics) >= 2:
-            diffs = [motion(pics[i], pics[i + 1]) for i in range(len(pics) - 1)]
-            names = [k.split("_s")[-1] for k in keys]      # the scene number each shot was taken in
-            print("      scene to scene change: " + ", ".join(f"scene {names[i]} to {names[i + 1]} = {d:.2f}" for i, d in enumerate(diffs)))
-            if max(diffs) < 0.01: report("WARN", "the scenes look identical, each scene should change what is on screen (slots, mood, layers)")
-    print(f"      screenshots in {shots}")
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("path")
-    ap.add_argument("--shots", default=None)
-    ap.add_argument("--lint-only", action="store_true")
     a = ap.parse_args()
     p = pathlib.Path(a.path).resolve()
     folder = p if p.is_dir() else p.parent
     print(f"checking {folder}")
     src = lint(folder)
-    is_ad = bool(src and 'class="ad' in src["html"])
-    n_scenes = lint_compose(folder, src) if (src and is_ad) else 0
-    if a.lint_only:
-        fails = [m for l, m in results if l == "FAIL"]
-        print(f"\nresult: LINT ONLY, {'FAIL' if fails else 'no lint problems'}. NOT verified in a browser.  ({len(fails)} fail)")
-        sys.exit(1 if fails else 0)
-    if src:
-        live_check(folder, (pathlib.Path(a.shots) if a.shots else folder / "_shots").resolve(), is_ad, n_scenes, src["js"])
+    if src and 'class="ad' in src["html"]:
+        lint_compose(folder, src)
     fails = [m for l, m in results if l == "FAIL"]
-    print(f"\nresult: {'FAIL' if fails else 'PASS'}  ({len(fails)} fail, {sum(1 for l, _ in results if l == 'WARN')} warn)")
+    print(f"\nresult: {'FAIL' if fails else 'PASS'}  ({len(fails)} fail, {sum(1 for l, _ in results if l == 'WARN')} warn). Source lint only: run the check_page tool next for the browser check.")
     sys.exit(1 if fails else 0)
 
 if __name__ == "__main__":

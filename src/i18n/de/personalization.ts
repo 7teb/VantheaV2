@@ -35,7 +35,6 @@ export const personalization: Record<keyof typeof en, string> = {
   "personalization.mem_kind_preference": "Globale Präferenz",
   "personalization.mem_kind_environment": "Umgebung",
   "personalization.mem_kind_project": "Projektregel",
-  "personalization.chars": "{n} / {max}",
   "personalization.mem_global": "Alle Projekte",
   "personalization.mem_load_failed": "Erinnerungen konnten nicht geladen werden",
   "personalization.mem_remove": "Erinnerung entfernen",
