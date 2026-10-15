@@ -5,20 +5,23 @@ import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import { agent_status_label, background_status_label, row_status_label, unknown_status, type LiveStatus } from "./background-status.ts";
 import { tool_meta, type ToolCategory } from "./tool-meta.ts";
 
-export const format_duration = (ms: number): string => {
-  const seconds = Math.max(1, Math.round(ms / 1000));
-  if (seconds < 60) {
-    return `${seconds}s`;
+export const format_seconds = (total: number): string => {
+  if (total < 60) {
+    return `${total}s`;
   }
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    const rest = seconds % 60;
-    return rest === 0 ? `${minutes}m` : `${minutes}m ${rest}s`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+  const parts: [number, string][] = [
+    [Math.floor(total / 86400), "d"],
+    [Math.floor(total / 3600) % 24, "h"],
+    [Math.floor(total / 60) % 60, "m"],
+    [total % 60, "s"],
+  ];
+  return parts
+    .filter(([count]) => count > 0)
+    .map(([count, unit]) => `${count}${unit}`)
+    .join(" ");
 };
+
+export const format_duration = (ms: number): string => format_seconds(Math.max(1, Math.round(ms / 1000)));
 
 export const format_elapsed = (ms: number): string | null => {
   const total = Math.floor(Math.max(ms, 0) / 1000);

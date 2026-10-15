@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import { manual_compaction_only, type AssistantMessage as AssistantMessageData } from "../../../shared/chat.ts";
 import { IconButton } from "../../components/Button.tsx";
 import { ForkIcon } from "../../components/icons.tsx";
@@ -15,6 +15,9 @@ import { FileChanges } from "./FileChanges.tsx";
 import { PlanCard } from "./PlanCard.tsx";
 import { ReasoningRow } from "./ReasoningRow.tsx";
 import { CompactionRow, NoticeRow, SteerRow } from "./StepRows.tsx";
+import { FoldItem, use_turn_folded } from "./TurnFold.tsx";
+import { TurnHead, use_turn_head } from "./TurnHead.tsx";
+import { foldable_block, turn_shape } from "./turn-shape.ts";
 import { RetryBanner, TurnOutcome } from "./TurnStatus.tsx";
 import "./AssistantMessage.css";
 
@@ -76,27 +79,41 @@ type AssistantMessageProps = {
 export const AssistantMessage = memo(({ chat_id, message, is_last, busy, last_plan, plan_accepted, undoable }: AssistantMessageProps) => {
   const t = use_t();
   const blocks = useMemo(() => build_blocks(message.steps), [message.steps]);
+  const shape = useMemo(() => turn_shape(message, blocks), [message, blocks]);
+  const frame = useRef<HTMLDivElement>(null);
+  const folded = use_turn_folded(chat_id, message.id, shape, frame);
   const answer = useMemo(() => answer_text(message), [message]);
   const streaming = message.status === "streaming";
+  const head = use_turn_head(shape.head, streaming);
   const [fork_error, set_fork_error] = useState("");
   const fork = async () => {
     const result = await fork_chat(chat_id, message.id);
     set_fork_error(result.ok ? "" : result.error);
   };
   return (
-    <div className="assistant-message enter-fade-up" data-last={is_last}>
-      {blocks.map((block, index) => (
-        <BlockView
-          key={block.id}
-          block={block}
-          chat_id={chat_id}
-          message_id={message.id}
-          streaming={streaming}
-          tail={index === blocks.length - 1}
-          can_accept={last_plan && !busy}
-          accepted={plan_accepted}
-        />
-      ))}
+    <div ref={frame} className="assistant-message enter-fade-up" data-last={is_last}>
+      {head && <TurnHead chat_id={chat_id} message_id={message.id} created_at={message.created_at} head={head} foldable={shape.foldable} folded={folded} />}
+      {blocks.map((block, index) => {
+        const view = (
+          <BlockView
+            key={block.id}
+            block={block}
+            chat_id={chat_id}
+            message_id={message.id}
+            streaming={streaming}
+            tail={index === blocks.length - 1}
+            can_accept={last_plan && !busy}
+            accepted={plan_accepted}
+          />
+        );
+        return foldable_block(block) ? (
+          <FoldItem key={block.id} folded={folded && shape.folds.has(block.id)}>
+            {view}
+          </FoldItem>
+        ) : (
+          view
+        );
+      })}
       {shows_thinking(streaming, message.retry !== null, blocks) && (
         <div className="assistant-pending">
           <span className="is-working">{t("chat.thinking")}</span>

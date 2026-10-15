@@ -2,6 +2,7 @@ import type { ToolStep } from "../../../shared/chat.ts";
 import { call_shell, type ShellKind } from "../../../shared/shell.ts";
 import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
+import type { RunRef } from "../../state/agents-reduce.ts";
 
 export type ToolIconName =
   | "terminal"
@@ -106,6 +107,13 @@ export const page_address = (url: string) => url.replace(/^https?:\/\//i, "").re
 
 export const view_of = <K extends ToolViewKind>(step: ToolStep, kind: K): Extract<ToolView, { kind: K }> | null =>
   step.view?.kind === kind ? (step.view as Extract<ToolView, { kind: K }>) : null;
+
+const run_starters = new Set(["deploy_agent", "continue_agent"]);
+
+export const started_run = (step: ToolStep): RunRef | null => {
+  const view = view_of(step, "agent");
+  return view && run_starters.has(step.name) ? { agent_id: view.agent_id, run_id: view.run_id } : null;
+};
 
 const step_path = (step: ToolStep): string => {
   const view = step.view;

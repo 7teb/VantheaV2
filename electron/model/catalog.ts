@@ -143,16 +143,6 @@ export const api_effort = (model: ModelEntry, effort: string): string => {
   return model.efforts.filter((item) => item !== major_effort).at(-1) ?? model.default_effort;
 };
 
-export const compaction_effort = (model: ModelEntry, effort: string): string => {
-  const levels = model.efforts.filter((item) => item !== major_effort);
-  const floor = levels.at(-2) ?? levels.at(-1);
-  if (floor === undefined) {
-    return effort;
-  }
-  const chosen = api_effort(model, effort);
-  return levels.indexOf(chosen) > levels.indexOf(floor) ? chosen : floor;
-};
-
 const routes_to_openai = (model: ModelEntry): boolean => model.provider_order.some((route) => route === "openai" || route.startsWith("openai/"));
 
 export const reasoning_fields = (model: ModelEntry, effort: string): Record<string, string> => ({

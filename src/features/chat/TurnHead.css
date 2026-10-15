@@ -1,0 +1,44 @@
+@layer components {
+  .turn-head {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin: 0 0 14px;
+    font-size: var(--font-size-body);
+    color: var(--text-tertiary);
+  }
+
+  .turn-head-label {
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .turn-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    max-width: 100%;
+    color: var(--text-tertiary);
+    user-select: none;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .turn-toggle:hover {
+    color: var(--text-primary);
+  }
+
+  .turn-toggle-chevron {
+    transition: transform 0.15s var(--ease-out);
+  }
+
+  .turn-toggle[aria-expanded="true"] .turn-toggle-chevron {
+    transform: rotate(90deg);
+  }
+
+  .turn-head-rule {
+    align-self: stretch;
+    height: 1px;
+    background: var(--rule-turn);
+  }
+}

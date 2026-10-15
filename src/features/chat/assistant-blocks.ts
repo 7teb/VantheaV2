@@ -1,4 +1,4 @@
-import type { AssistantMessage, CompactionStep, Message, NoticeStep, ReasoningStep, SteerStep, Step, TextStep, ToolStep } from "../../../shared/chat.ts";
+import { own_send, type AssistantMessage, type CompactionStep, type Message, type NoticeStep, type ReasoningStep, type SteerStep, type Step, type TextStep, type ToolStep } from "../../../shared/chat.ts";
 import type { ToolView } from "../../../shared/tool-view.ts";
 import { is_active_status, is_hidden_step } from "../tools/tool-meta.ts";
 
@@ -103,7 +103,4 @@ export const plan_state = (messages: Message[]): PlanState => {
   return { last_plan_id, accepted };
 };
 
-export const last_own_send = (messages: Message[]): string => {
-  const sent = messages.findLast((message) => message.role === "user" && message.origin !== "background" && message.origin !== "agent_report" && message.origin !== "agent_update");
-  return sent?.id ?? "";
-};
+export const last_own_send = (messages: Message[]): string => messages.findLast(own_send)?.id ?? "";

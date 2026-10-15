@@ -14,5 +14,4 @@ export const status: Record<keyof typeof en, string> = {
   "status.file_too_large": "{name} ist größer als 2 MB",
   "status.max_images": "Du kannst höchstens {n} Dateien anhängen",
   "status.analyzing_image": "Bild wird analysiert...",
-  "status.stopped": "Gestoppt",
 };

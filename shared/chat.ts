@@ -24,6 +24,8 @@ export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "continue" |
 
 export const human_origin = (origin: UserOrigin): boolean => origin === "user" || origin === "plan_accept" || origin === "undo" || origin === "init";
 
+export const instruction_origin = (origin: UserOrigin): boolean => human_origin(origin) || origin === "continue";
+
 export type UserMessage = {
   id: string;
   role: "user";
@@ -171,6 +173,8 @@ export type AssistantMessage = {
 };
 
 export type Message = UserMessage | AssistantMessage;
+
+export const own_send = (message: Message): boolean => message.role === "user" && instruction_origin(message.origin);
 
 export const has_work = (message: Message): boolean => message.role === "assistant" && message.steps.some((step) => step.kind === "text" || step.kind === "tool");
 

@@ -9,7 +9,8 @@
     margin: 0 0 14px;
   }
 
-  .assistant-message > :last-child {
+  .assistant-message > :last-child,
+  .assistant-message > .turn-fold-item:last-child > .turn-fold-clip > :last-child {
     margin-bottom: 0;
   }
 

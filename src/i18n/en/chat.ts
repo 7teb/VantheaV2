@@ -1,8 +1,11 @@
 export const chat = {
   "chat.thinking": "Thinking",
   "chat.extended_thinking": "Extended thinking",
-  "chat.working_since": "Working for {time}",
-  "chat.worked": "Worked {time}",
+  "chat.turn_working": "Working",
+  "chat.turn_working_for": "Working for {time}",
+  "chat.turn_worked_for": "Worked for {time}",
+  "chat.turn_stopped_after": "You stopped after {time}",
+  "chat.turn_activity": "Activity",
   "chat.files_edited_one": "1 file edited",
   "chat.files_edited_other": "{n} files edited",
   "chat.show_more": "Show more",

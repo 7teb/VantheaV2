@@ -16,14 +16,14 @@ The same applies to every sub-agent, read-only explore agents included.
 
 ## How it compacts
 
-The working model writes its own handoff note. It gets exactly the context the model works with, nothing shortened, plus the request to write the note as the last message, with tools turned off for that call. There is no separate summarizing model, no cap on the note's length and no time limit on the call; only the stream's normal stall detection applies.
+The working model writes its own handoff note. It gets exactly the context the model works with, nothing shortened, plus the request to write the note as the last message. The call repeats the last round exactly (same messages, tools, tool choice and effort) and only adds that request at the end, so the provider's prompt cache covers the whole context and the note costs about as much as one cached round. The request itself says not to call tools; if the model calls one anyway, the note is asked for once more with tools turned off. There is no separate summarizing model, no cap on the note's length and no time limit on the call; only the stream's normal stall detection applies.
 
-Only if that request would take more than 90% of the model's context window (for example an old chat replayed in full for the first time), the oldest tool outputs are removed from it until it fits into 90%, so a tenth of the window stays free for the note, and the request names each removed output. The app measures that with an estimate; if the provider still answers "context window exceeded", the next oldest output is removed and the request is sent again at once, one output per rejection, until it fits or no tool output is left. The working context itself keeps every output.
+The request goes out whole as long as it fits into the context window. Only if the note comes back cut off because the window had no more room for it, the oldest tool outputs are removed from the request until it fits into 90% of the window, so a tenth stays free for the note, the request names each removed output, and it is sent again. When the request alone would not fit the window (for example an old chat replayed in full for the first time), the oldest tool outputs are removed up front until it fits. The app measures that with an estimate; if the provider still answers "context window exceeded", the next oldest output is removed and the request is sent again at once, one output per rejection, until it fits or no tool output is left. The working context itself keeps every output.
 
 The request asks for a factual handoff, not a new plan: user instructions and approvals kept apart from the agent's own decisions and proposals, related values (a file and its hash, an agent ID with its run ID and report path) kept together, consequential facts kept even when old, incidents with their exact error, the latest explicit next step unchanged, and no guessed gaps.
 
 - Model: the chat's model, or the sub-agent's own model.
-- Effort: the higher of the selected effort and the model's second-highest effort level, so a low-effort agent still writes the note with a strong effort. Major counts as the model's highest level.
+- Effort: the effort the chat or the sub-agent runs with, the same as its rounds.
 - Sections of the note: TASK, DECISIONS, RULES, STATE, FILES, FAILED, NEXT. A sub-agent's note also has FINDINGS, and its TASK is the task the main agent gave it.
 
 ## What the model sees afterwards

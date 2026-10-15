@@ -85,6 +85,7 @@ export const TurnOutcome = ({ chat_id, message, has_content, can_continue }: Tur
   const t = use_t();
   switch (message.status) {
     case "streaming":
+    case "stopped":
       return null;
     case "interrupted":
       return <InterruptedRow chat_id={chat_id} error={message.error} can_continue={can_continue} />;
@@ -92,8 +93,6 @@ export const TurnOutcome = ({ chat_id, message, has_content, can_continue }: Tur
       return <ErrorCard error={message.error ?? { kind: "internal", message: "" }} />;
     case "blocked":
       return message.error ? <ErrorCard error={message.error} /> : <div className="assistant-note">{t("chat.blocked")}</div>;
-    case "stopped":
-      return <div className="assistant-note">{t("status.stopped")}</div>;
     case "done":
       return has_content ? null : <div className="assistant-note">{t("chat.empty_answer")}</div>;
   }

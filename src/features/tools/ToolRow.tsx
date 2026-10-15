@@ -14,7 +14,7 @@ import { is_reviewing } from "./review-phase.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
 import { CommandTime, RowDetail } from "./RowMeta.tsx";
 import { has_body, opens_by_itself } from "./tool-body.ts";
-import { is_active_status, tool_label, tool_meta } from "./tool-meta.ts";
+import { is_active_status, started_run, tool_label, tool_meta } from "./tool-meta.ts";
 import { step_hint } from "./tool-summary.ts";
 import "./tools.css";
 import "./tool-motion.css";
@@ -42,8 +42,6 @@ const StatusMark = ({ step }: { step: ToolStep }) => {
   }
 };
 
-const run_starters = new Set(["deploy_agent", "continue_agent"]);
-
 type ToolRowProps = { chat_id: string; step: ToolStep; running?: boolean; main_chat?: boolean };
 
 export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false }: ToolRowProps) => {
@@ -57,6 +55,7 @@ export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false
   const reviewing = is_reviewing(step);
   const expandable = has_body(t, step);
   const run = !expandable && step.view?.kind === "agent" ? step.view : null;
+  const started = started_run(step);
   const open = expandable && (chosen ?? (running && opens_by_itself(step, main_chat)));
   if (open && !seen) {
     set_seen(true);
@@ -82,7 +81,7 @@ export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false
         {edit && <span className="tool-stat-remove">-{edit.removed}</span>}
         {drafted > 0 && <DraftLines count={drafted} />}
         {!edit && !drafted && <RowDetail chat_id={chat_id} step={step} />}
-        {step.view?.kind === "agent" && run_starters.has(step.name) && <AgentRunMark run_id={step.view.run_id} />}
+        {started && <AgentRunMark run_id={started.run_id} />}
         <StatusMark step={step} />
         {is_shell_run(step.name) && <CommandTime step={step} />}
         {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}

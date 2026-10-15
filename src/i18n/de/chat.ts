@@ -3,8 +3,11 @@ import type { chat as en } from "../en/chat.ts";
 export const chat: Record<keyof typeof en, string> = {
   "chat.thinking": "Denkt nach",
   "chat.extended_thinking": "Denkt ausführlich nach",
-  "chat.working_since": "In Arbeit seit {time}",
-  "chat.worked": "{time} gearbeitet",
+  "chat.turn_working": "In Bearbeitung",
+  "chat.turn_working_for": "In Bearbeitung seit {time}",
+  "chat.turn_worked_for": "Dauer: {time}",
+  "chat.turn_stopped_after": "Du hast nach {time} gestoppt",
+  "chat.turn_activity": "Aktivität",
   "chat.files_edited_one": "1 Datei bearbeitet",
   "chat.files_edited_other": "{n} Dateien bearbeitet",
   "chat.show_more": "Mehr anzeigen",

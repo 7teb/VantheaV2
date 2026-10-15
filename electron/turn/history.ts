@@ -1,5 +1,5 @@
 import { report_event_context } from "../../shared/agent-notes.ts";
-import { has_work, human_origin, manual_compaction_only, type AssistantMessage, type ChatSummary, type Message, type ReasoningStep, type Step, type StepImage, type TextStep, type ToolStep, type UserMessage, type UserOrigin } from "../../shared/chat.ts";
+import { has_work, instruction_origin, manual_compaction_only, type AssistantMessage, type ChatSummary, type Message, type ReasoningStep, type Step, type StepImage, type TextStep, type ToolStep, type UserMessage } from "../../shared/chat.ts";
 import { native_rules } from "../../shared/image-native.ts";
 import { parse_peer_alerts } from "../../shared/peer-notes.ts";
 import type { ModelEntry } from "../../shared/models.ts";
@@ -53,8 +53,6 @@ const split_region = (messages: Message[], summary: ChatSummary): Region | null 
 
 export const uncompacted_work = (messages: Message[], summary: ChatSummary | null): boolean =>
   (summary ? (split_region(messages, summary)?.rest ?? messages) : messages).some(has_work);
-
-const instruction_origin = (origin: UserOrigin): boolean => human_origin(origin) || origin === "continue";
 
 const build_user = async (message: UserMessage, model: ModelEntry, read_image: ImageReader, agent_tools: boolean): Promise<ApiMessage> => ({
   role: "user",

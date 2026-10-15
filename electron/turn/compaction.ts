@@ -4,7 +4,6 @@ import { compacted_messages } from "../context/compact.ts";
 import { compaction_request, removed_output_line } from "../context/compact-text.ts";
 import { estimate_tokens } from "../context/estimate.ts";
 import { drop_oldest_outputs, fit_window, type RemovedOutput } from "../context/window.ts";
-import { compaction_effort } from "../model/catalog.ts";
 import { ModelError } from "../model/errors.ts";
 import { abortable_sleep } from "../model/transport.ts";
 import type { ApiMessage, ApiUserMessage, RoundCallbacks, RoundRequest } from "../model/types.ts";
@@ -17,7 +16,9 @@ export type CompactOutcome = { status: "done"; tokens: number } | { status: "fai
 
 type NoteOutcome = { status: "written"; note: string } | { status: "failed"; error: CompactionError } | { status: "stopped" };
 
-type NoteRequest = { messages: ApiMessage[]; ask: ApiUserMessage; removed: RemovedOutput[] };
+type NoteRequest = { messages: ApiMessage[]; ask: ApiUserMessage; removed: RemovedOutput[]; tool_choice?: "none"; cut: boolean };
+
+type NoteReply = { text: string; finish_reason: string; called_tools: boolean; room_bound: boolean };
 
 const quick_waits_ms = [2000, 5000, 10_000];
 
@@ -47,14 +48,20 @@ const list_removed = (session: TurnSession, note: NoteRequest, removed: RemovedO
   note.ask.content = compaction_request(session.compaction.audience, note.removed);
 };
 
-const note_request = (session: TurnSession, api_messages: ApiMessage[], tools: ToolSpec[], calibration: ContextCalibration | null): NoteRequest => {
-  const ask: ApiUserMessage = { role: "user", steer: true, content: compaction_request(session.compaction.audience) };
-  const note: NoteRequest = { messages: [...api_messages.map(request_copy), ask], ask, removed: [] };
+const fit_note = (session: TurnSession, note: NoteRequest, tools: ToolSpec[], calibration: ContextCalibration | null, fill: number): number => {
+  const before = note.removed.length;
   const scale = calibration_scale(calibration);
-  const fit = () => fit_window(note.messages, session.model, measure_request(note.messages, tools, session.model, calibration), listed_tokens, note_room_fill, scale);
+  const fit = () => fit_window(note.messages, session.model, measure_request(note.messages, tools, session.model, calibration), listed_tokens, fill, scale);
   for (let removed = fit(); removed.length; removed = fit()) {
     list_removed(session, note, removed);
   }
+  return note.removed.length - before;
+};
+
+const note_request = (session: TurnSession, api_messages: ApiMessage[], tools: ToolSpec[], calibration: ContextCalibration | null): NoteRequest => {
+  const ask: ApiUserMessage = { role: "user", steer: true, content: compaction_request(session.compaction.audience) };
+  const note: NoteRequest = { messages: [...api_messages.map(request_copy), ask], ask, removed: [], cut: false };
+  fit_note(session, note, tools, calibration, 1);
   return note;
 };
 
@@ -67,16 +74,17 @@ const drop_next_output = (session: TurnSession, note: NoteRequest): RemovedOutpu
   return removed;
 };
 
-const write_note = async (session: TurnSession, messages: ApiMessage[], tools: ToolSpec[]): Promise<string> => {
+const write_note = async (session: TurnSession, note: NoteRequest, tools: ToolSpec[]): Promise<NoteReply> => {
   const request: RoundRequest = {
     model: session.model,
-    effort: compaction_effort(session.model, session.effort),
-    messages,
+    effort: session.effort,
+    messages: note.messages,
     tools,
-    tool_choice: "none",
+    ...(note.tool_choice ? { tool_choice: note.tool_choice } : {}),
   };
   await fit_request(request);
   request.max_tokens = output_budget(request.messages, request.tools, session.model);
+  const room_bound = request.max_tokens === undefined || request.max_tokens < session.model.max_output;
   const callbacks: RoundCallbacks = {
     on_text: ignore,
     on_reasoning: ignore,
@@ -84,16 +92,34 @@ const write_note = async (session: TurnSession, messages: ApiMessage[], tools: T
     on_retry: ignore,
   };
   const result = await session.stream(request, callbacks, session.signal, { max_attempts: 1 });
-  return result.status === "completed" ? result.content.trim() : "";
+  if (result.status !== "completed") {
+    return { text: "", finish_reason: result.finish_reason, called_tools: false, room_bound };
+  }
+  return { text: result.content.trim(), finish_reason: result.finish_reason, called_tools: result.tool_calls.length > 0, room_bound };
 };
 
-const attempt_note = async (session: TurnSession, messages: ApiMessage[], tools: ToolSpec[]): Promise<NoteOutcome> => {
+const attempt_note = async (session: TurnSession, round: number, note: NoteRequest, tools: ToolSpec[], calibration: ContextCalibration | null): Promise<NoteOutcome> => {
   try {
-    const note = await write_note(session, messages, tools);
-    if (session.signal.aborted) {
-      return { status: "stopped" };
+    for (;;) {
+      const reply = await write_note(session, note, tools);
+      if (session.signal.aborted) {
+        return { status: "stopped" };
+      }
+      if (reply.called_tools && !note.tool_choice) {
+        console.warn(`[turn] compaction request in round ${round} of ${turn_scope(session)} came back with a tool call instead of the note, sending it again with tools off`);
+        note.tool_choice = "none";
+        continue;
+      }
+      if (reply.finish_reason === "length" && reply.room_bound && !note.cut) {
+        note.cut = true;
+        const removed = fit_note(session, note, tools, calibration, note_room_fill);
+        if (removed > 0) {
+          console.warn(`[turn] compaction note in round ${round} of ${turn_scope(session)} ran out of room, sending it again without the ${removed} oldest tool outputs to leave a tenth of the window for the note`);
+          continue;
+        }
+      }
+      return reply.text ? { status: "written", note: reply.text } : { status: "failed", error: { kind: "empty_note", message: `${session.model.id} returned an empty compaction note` } };
     }
-    return note ? { status: "written", note } : { status: "failed", error: { kind: "empty_note", message: `${session.model.id} returned an empty compaction note` } };
   } catch (error) {
     if (session.signal.aborted) {
       return { status: "stopped" };
@@ -102,9 +128,9 @@ const attempt_note = async (session: TurnSession, messages: ApiMessage[], tools:
   }
 };
 
-const attempt_fitting_note = async (session: TurnSession, round: number, note: NoteRequest, tools: ToolSpec[]): Promise<NoteOutcome> => {
+const attempt_fitting_note = async (session: TurnSession, round: number, note: NoteRequest, tools: ToolSpec[], calibration: ContextCalibration | null): Promise<NoteOutcome> => {
   for (;;) {
-    const outcome = await attempt_note(session, note.messages, tools);
+    const outcome = await attempt_note(session, round, note, tools, calibration);
     if (outcome.status !== "failed" || outcome.error.kind !== "context_limit") {
       return outcome;
     }
@@ -116,11 +142,11 @@ const attempt_fitting_note = async (session: TurnSession, round: number, note: N
   }
 };
 
-const note_with_retries = async (session: TurnSession, round: number, source: CompactionSource, note: NoteRequest, tools: ToolSpec[]): Promise<NoteOutcome> => {
+const note_with_retries = async (session: TurnSession, round: number, source: CompactionSource, note: NoteRequest, tools: ToolSpec[], calibration: ContextCalibration | null): Promise<NoteOutcome> => {
   const sleep = session.compaction.sleep ?? abortable_sleep;
   for (let attempt = 1; ; attempt += 1) {
     session.emit({ type: "compaction", round, status: "running", source, attempt, attempts: compaction_attempts });
-    const outcome = await attempt_fitting_note(session, round, note, tools);
+    const outcome = await attempt_fitting_note(session, round, note, tools, calibration);
     if (outcome.status !== "failed") {
       return outcome;
     }
@@ -147,7 +173,7 @@ export const compact_context = async (
 ): Promise<CompactOutcome> => {
   try {
     const tools = session.resolve_tools(round_profile(session)).map((tool) => tool.spec);
-    const written = await note_with_retries(session, round, source, note_request(session, api_messages, tools, calibration), tools);
+    const written = await note_with_retries(session, round, source, note_request(session, api_messages, tools, calibration), tools, calibration);
     if (written.status === "stopped") {
       return written;
     }

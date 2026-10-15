@@ -19,9 +19,10 @@ export type AgentsState = {
   pending: boolean;
   held: AgentSummary[];
   transcript: TranscriptEntry | null;
+  known_runs: Readonly<Record<string, AgentRunSummary>>;
 };
 
-export const empty_agents: AgentsState = { chat_id: null, status: "idle", agents: [], pending: false, held: [], transcript: null };
+export const empty_agents: AgentsState = { chat_id: null, status: "idle", agents: [], pending: false, held: [], transcript: null, known_runs: {} };
 
 const turn_statuses: Record<AgentRunStatus, TurnStatus> = {
   running: "streaming",
@@ -56,6 +57,18 @@ const merge_runs = (current: AgentRunSummary[], incoming: AgentRunSummary[]): Ag
   return [...merged, ...added];
 };
 
+const know_runs = (known: AgentsState["known_runs"], runs: AgentRunSummary[]): AgentsState["known_runs"] => {
+  if (runs.length === 0) {
+    return known;
+  }
+  const next = { ...known };
+  for (const run of runs) {
+    const current = known[run.run_id];
+    next[run.run_id] = current ? pick_run(current, run) : run;
+  }
+  return next;
+};
+
 const upsert_agent = (agents: AgentSummary[], summary: AgentSummary): AgentSummary[] => {
   const index = agents.findIndex((agent) => agent.agent_id === summary.agent_id);
   if (index === -1) {
@@ -79,7 +92,8 @@ export const finish_list = (state: AgentsState, chat_id: string, agents: AgentSu
   if (state.chat_id !== chat_id || !state.pending) {
     return state;
   }
-  return { ...state, status: "ready", agents: state.held.reduce(upsert_agent, agents), pending: false, held: [] };
+  const listed = state.held.reduce(upsert_agent, agents);
+  return { ...state, status: "ready", agents: listed, pending: false, held: [], known_runs: know_runs(state.known_runs, listed.flatMap((agent) => agent.runs)) };
 };
 
 export const fail_list = (state: AgentsState, chat_id: string): AgentsState => {
@@ -93,12 +107,13 @@ export const fail_list = (state: AgentsState, chat_id: string): AgentsState => {
 };
 
 export const receive_summary = (state: AgentsState, summary: AgentSummary): AgentsState => {
+  const known_runs = know_runs(state.known_runs, summary.runs);
   if (summary.chat_id !== state.chat_id) {
-    return state;
+    return known_runs === state.known_runs ? state : { ...state, known_runs };
   }
   const agents = state.status === "ready" ? upsert_agent(state.agents, summary) : state.agents;
   const held = state.pending ? [...state.held, summary] : state.held;
-  return agents === state.agents && held === state.held ? state : { ...state, agents, held };
+  return agents === state.agents && held === state.held && known_runs === state.known_runs ? state : { ...state, agents, held, known_runs };
 };
 
 const transcript_of = (run: AgentRun): Transcript => ({

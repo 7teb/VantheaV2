@@ -75,6 +75,7 @@
     --rule-subtle: rgba(252, 252, 252, 0.038);
     --rule-strong: rgba(252, 252, 252, 0.144);
     --rule-command: rgba(252, 252, 252, 0.106);
+    --rule-turn: rgba(252, 252, 252, 0.08);
     --ring-well: rgba(252, 252, 252, 0.038);
     --ring-well-focus: rgba(252, 252, 252, 0.106);
     --ring-card: rgba(252, 252, 252, 0.075);
@@ -276,6 +277,7 @@
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-in: cubic-bezier(0.4, 0, 1, 1);
     --ease-expand: cubic-bezier(0.19, 1, 0.22, 1);
+    --ease-collapse: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-linear: linear;
   }
 }

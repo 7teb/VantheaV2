@@ -46,7 +46,12 @@
 
   .chat-column
     > .assistant-message:has(+ :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])))
-    > :is(:has(+ .assistant-actions), :last-child:not(.assistant-actions)) {
+    > :is(:has(+ .assistant-actions), :last-child:not(.assistant-actions)):not(.turn-fold-item),
+  .chat-column
+    > .assistant-message:has(+ :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])))
+    > .turn-fold-item:is(:has(+ .assistant-actions), :last-child)
+    > .turn-fold-clip
+    > :last-child {
     margin-bottom: 14px;
   }
 

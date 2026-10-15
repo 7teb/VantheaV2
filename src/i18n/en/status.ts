@@ -12,5 +12,4 @@ export const status = {
   "status.file_too_large": "{name} is larger than 2 MB",
   "status.max_images": "You can attach up to {n} files",
   "status.analyzing_image": "Analyzing image...",
-  "status.stopped": "Stopped",
 };

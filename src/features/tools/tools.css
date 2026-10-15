@@ -30,6 +30,7 @@
   }
 
   .work-single > .collapsible-body > .collapsible-clip {
+    min-width: 0;
     overflow: visible;
   }
 

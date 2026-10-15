@@ -1,3 +1,4 @@
+import { own_send } from "../../shared/chat.ts";
 import type { FinalStatus } from "../../shared/events.ts";
 import type { CompactResult } from "../../shared/ipc/chats.ts";
 import { api } from "../api/bridge.ts";
@@ -5,6 +6,7 @@ import type { Delivery } from "../api/smoother.ts";
 import { start_stream } from "../api/stream.ts";
 import { begin_load, empty_chat_view, fail_load, finish_load, open_entry, receive, set_context, set_questions, stale_chats, type ChatViewState } from "./chat-view-reduce.ts";
 import { create_store } from "./create-store.ts";
+import { refold_turns } from "./turn-folds.ts";
 
 export const chat_view_store = create_store<ChatViewState>(empty_chat_view);
 
@@ -77,10 +79,20 @@ export const open_chat_view = (chat_id: string) => {
   void refresh_context(chat_id);
 };
 
+const turn_before = (chat_id: string, message_id: string): string | null => {
+  const messages = chat_view_store.get().entries[chat_id]?.chat?.messages ?? [];
+  const at = messages.findIndex((message) => message.id === message_id);
+  return (at < 0 ? messages : messages.slice(0, at)).findLast((message) => message.role === "assistant")?.id ?? null;
+};
+
 const deliver = (batch: Delivery[]) => {
   chat_view_store.update((state) => receive(state, batch));
   reload_stale();
   for (const delivery of batch) {
+    if (delivery.kind === "appended" && own_send(delivery.message)) {
+      refold_turns(delivery.chat_id, turn_before(delivery.chat_id, delivery.message.id));
+      continue;
+    }
     if (delivery.kind !== "event") {
       continue;
     }
