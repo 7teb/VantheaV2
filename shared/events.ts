@@ -23,6 +23,7 @@ export type ToolEndStatus = "done" | "failed" | "denied" | "cancelled";
 export type StreamEventBody =
   | { type: "text"; round: number; delta: string }
   | { type: "reasoning"; round: number; delta: string }
+  | { type: "reasoning_status"; round: number; text: string }
   | { type: "reasoning_details"; round: number; details: unknown[] }
   | { type: "retry"; round: number; attempt: number; max: number; reason: string; wait_ms: number }
   | { type: "tool_draft"; round: number; index: number; name: string; lines: number | null; delta?: string; path?: string; old_text?: string }

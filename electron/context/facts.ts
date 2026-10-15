@@ -1,13 +1,12 @@
 import path from "node:path";
 import type { Step, ToolStep } from "../../shared/chat.ts";
 import { file_changes, type FileChange } from "../../shared/file-changes.ts";
+import { command_tools } from "../../shared/shell.ts";
 import { path_key } from "../storage/paths.ts";
 
 const recent_commands = 10;
 
 const command_chars = 200;
-
-const command_tools = new Set(["run_command", "start_background_task"]);
 
 const change_line = (change: FileChange): string => {
   const counts = `+${change.added} -${change.removed}`;
@@ -45,7 +44,7 @@ export const harness_facts = (steps: Step[], written: string[], project_root: st
   const changed = new Set(changes.map((change) => path_key(path.resolve(project_root, change.path))));
   const elsewhere = written.filter((file) => !changed.has(path_key(file)));
   const commands = steps
-    .filter((step): step is ToolStep => step.kind === "tool" && command_tools.has(step.name) && step.status !== "drafting" && step.status !== "queued")
+    .filter((step): step is ToolStep => step.kind === "tool" && command_tools.includes(step.name) && step.status !== "drafting" && step.status !== "queued")
     .slice(-recent_commands);
   const lines: string[] = [];
   if (changes.length) {

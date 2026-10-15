@@ -1,4 +1,10 @@
 @layer components {
+  @keyframes todo-check {
+    from {
+      stroke-dashoffset: 10;
+    }
+  }
+
   .todo-list {
     display: flex;
     flex-direction: column;
@@ -23,6 +29,7 @@
     width: 16px;
     height: 20px;
     color: var(--text-tertiary);
+    transition: color var(--duration-base) var(--ease-out);
   }
 
   .todo-item[data-status="in_progress"] {
@@ -33,15 +40,28 @@
     color: var(--text-primary);
   }
 
-  .todo-item[data-status="done"] .todo-text {
-    color: var(--text-tertiary);
-    text-decoration: line-through;
-    text-decoration-color: var(--text-quaternary);
+  .todo-item[data-finished] .todo-mark path {
+    stroke-dasharray: 10;
+    animation: todo-check var(--duration-slow) var(--ease-out) backwards;
   }
 
   .todo-text {
     min-width: 0;
     overflow-wrap: anywhere;
+    text-decoration: line-through;
+    text-decoration-color: transparent;
+    transition:
+      color var(--duration-base) var(--ease-out),
+      text-decoration-color var(--duration-base) var(--ease-out);
+  }
+
+  .todo-text.is-working {
+    text-decoration-line: none;
+  }
+
+  .todo-item[data-status="done"] .todo-text {
+    color: var(--text-tertiary);
+    text-decoration-color: var(--text-quaternary);
   }
 
   .todo-empty {

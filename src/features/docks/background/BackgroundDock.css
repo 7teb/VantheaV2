@@ -1,7 +1,45 @@
-.bg-task-list {
+.bg-section + .bg-section {
+  margin-top: var(--space-2);
+}
+
+.bg-section > .collapsible-header {
+  gap: 11px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 var(--space-2) 0 10px;
+}
+
+.bg-section > .collapsible-header:hover .section-label {
+  color: var(--text-secondary);
+}
+
+.bg-section-count {
+  margin-left: 6px;
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.bg-section-skeleton {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding-left: 10px;
+}
+
+.bg-section-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+}
+
+.bg-section-list > * + * {
+  box-shadow: inset 0 1px 0 var(--divider);
+}
+
+.bg-load-failed {
+  padding: 6px 10px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
 }
 
 .bg-task {
@@ -13,15 +51,11 @@
   animation: fade-up var(--duration-enter) var(--ease-out) backwards;
 }
 
-.bg-task + .bg-task {
-  box-shadow: inset 0 1px 0 var(--divider);
-}
-
 .bg-task-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 26px;
+  min-height: 28px;
 }
 
 .bg-task-icon {

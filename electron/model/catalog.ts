@@ -4,7 +4,7 @@ export const major_effort = "major";
 
 const effort_rank = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
 
-const side_roles: SideModelRole[] = ["title", "overseer", "vision", "web_answer", "memory"];
+const side_roles: SideModelRole[] = ["title", "overseer", "vision", "web_answer", "memory", "reasoning_status"];
 
 type Raw = Record<string, unknown>;
 

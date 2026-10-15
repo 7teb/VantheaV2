@@ -1,8 +1,9 @@
 import { tab_title, tab_url } from "../../browser/state.ts";
 import { run_on_tab } from "../../browser/tabs.ts";
-import { analyze_page, visual_click, type VisionResult } from "../../browser/vision.ts";
+import { analyze_page, visual_click, visual_tab_id, type VisionResult } from "../../browser/vision.ts";
 import { define_tool } from "../types.ts";
-import { browser_view, done, guarded, read_string, require_string } from "./common.ts";
+import { read_string, require_string } from "./common.ts";
+import { browser_view, done, guarded } from "./result.ts";
 
 type AnalyzeArgs = { question: string; tab_id: string | null };
 
@@ -45,7 +46,7 @@ export const browser_visual_analyze_tool = define_tool<AnalyzeArgs>({
   parse: (raw) => ({ question: require_string(raw, "question"), tab_id: read_string(raw, "tab_id") }),
   run: (ctx, args) =>
     guarded(ctx, "visual analyze", () =>
-      run_on_tab(args.tab_id, ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, args.tab_id, ctx.signal, async (tab) => {
         const result = await analyze_page(tab, args.question, ctx.signal);
         return done(format_vision(result), browser_view("visual analyze", result.url, tab_title(tab), `${result.regions.length} regions`));
       }),
@@ -71,7 +72,7 @@ export const browser_visual_click_tool = define_tool<VisualClickArgs>({
   parse: (raw) => ({ screenshot_id: require_string(raw, "screenshot_id"), ref: require_string(raw, "ref"), tab_id: read_string(raw, "tab_id") }),
   run: (ctx, args) =>
     guarded(ctx, "visual click", () =>
-      run_on_tab(args.tab_id, ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, args.tab_id ?? visual_tab_id(args.screenshot_id), ctx.signal, async (tab) => {
         const clicked = await visual_click(tab, args.screenshot_id, args.ref, ctx.signal);
         const how = clicked.semantic ? "on its DOM element" : "at its screen position";
         return done(`Clicked ${args.ref} (${JSON.stringify(clicked.label)}) ${how} in tab ${tab.tab_id}. Call browser_snapshot before the next action.`, browser_view("visual click", tab_url(tab), tab_title(tab), clicked.label));

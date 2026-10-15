@@ -1,6 +1,7 @@
 import type { HumanDecision } from "../../shared/approval.ts";
 import type { ToolStep } from "../../shared/chat.ts";
 import type { ReviewActor, ReviewRecord } from "../../shared/review.ts";
+import { bash_env } from "../shell/git-bash.ts";
 import { human_requests_of, last_human_id } from "./context.ts";
 import { agent_edits, instruction_snapshot } from "./instruction-files.ts";
 import type { ProgramFact } from "./launch-targets.ts";
@@ -47,7 +48,7 @@ export const review_input = async (request: InputRequest, git: GitRunner = run_g
   const snapshot = await instruction_snapshot(request.chat_id, request.project_root, humans);
   const edits = await agent_edits(request.chat_id, request.project_root);
   const { action } = request;
-  const targets = action.call.kind !== "command" ? null : await command_targets(action.subject, action.cwd, action.files, process.env, action.shell);
+  const targets = action.call.kind !== "command" ? null : await command_targets(action.subject, action.cwd, action.files, action.shell === "posix" ? bash_env(process.env) : process.env, action.shell);
   const facts = targets ? [...program_lines(action.programs, action.notes, action.files), ...(await target_facts(targets, git))] : [];
   return {
     chat: { chat_id: request.chat_id, project_root: request.project_root, custom_instructions: request.custom_instructions, humans, profile, snapshot },

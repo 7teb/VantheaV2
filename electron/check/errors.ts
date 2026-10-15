@@ -1,4 +1,5 @@
-import { as_record } from "../storage/coerce.ts";
+import { console_args_text, remote_object_text } from "../browser/console-text.ts";
+import { as_array, as_record } from "../storage/coerce.ts";
 
 const noise = /fonts\.g|ERR_NAME_NOT_RESOLVED|ERR_INTERNET|ERR_CONNECTION|Failed to load resource.*(fonts|gstatic)/i;
 
@@ -11,7 +12,7 @@ const exception_error = (params: Record<string, unknown>): string => {
   const url = text_of(details.url);
   const line = typeof details.lineNumber === "number" ? details.lineNumber : Number.NaN;
   const where = url ? `${file_name(url)}:${line + 1}` : "";
-  const description = text_of(as_record(details.exception).description) || text_of(details.text);
+  const description = remote_object_text(details.exception) || text_of(details.text);
   return `exception ${where} ${description.split("\n")[0]}`.slice(0, 240);
 };
 
@@ -19,8 +20,7 @@ const console_error = (params: Record<string, unknown>): string | null => {
   if (params.type !== "error") {
     return null;
   }
-  const args = Array.isArray(params.args) ? params.args : [];
-  const text = args.map((arg) => as_record(arg).value ?? as_record(arg).description ?? "").join(" ");
+  const text = console_args_text(as_array(params.args));
   return noise.test(text) ? null : `console.error ${text.slice(0, 220)}`;
 };
 

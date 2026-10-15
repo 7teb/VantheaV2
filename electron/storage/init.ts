@@ -3,6 +3,7 @@ import path from "node:path";
 import { init_chats } from "../chats/store.ts";
 import { emit } from "../ipc/handle.ts";
 import { init_artifacts } from "../media/artifacts.ts";
+import { init_favicons } from "../media/favicons.ts";
 import { init_media } from "../media/files.ts";
 import { register_media_protocol } from "../media/protocol.ts";
 import { init_settings } from "../settings/store.ts";
@@ -22,6 +23,7 @@ export const init_persistence = async () => {
     }
     step = "media";
     init_media({ attachments: paths.attachments, images: paths.images });
+    init_favicons(paths.favicons);
     step = "settings";
     await init_settings({
       files: { settings: paths.settings, secrets: paths.secrets, legacy_settings: paths.legacy_settings },

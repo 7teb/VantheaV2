@@ -252,6 +252,44 @@ const powershell_words = (source: string, mode: WordMode): Word[] => {
   return words;
 };
 
+const ansi_escapes: Record<string, string> = { n: "\n", t: "\t", r: "\r", b: "\b", f: "\f", v: "\v", a: "\x07", e: "\x1b", "\\": "\\", "'": "'", '"': '"', "?": "?" };
+
+const ansi_c_decode = (body: string): string => {
+  let text = "";
+  let index = 0;
+  while (index < body.length) {
+    const char = body[index] ?? "";
+    if (char !== "\\") {
+      text += char;
+      index += 1;
+      continue;
+    }
+    const next = body[index + 1] ?? "";
+    if (next === "x") {
+      const hex = /^[0-9a-f]{1,2}/i.exec(body.slice(index + 2))?.[0] ?? "";
+      text += hex ? String.fromCharCode(parseInt(hex, 16)) : "x";
+      index += 2 + hex.length;
+      continue;
+    }
+    text += next in ansi_escapes ? ansi_escapes[next] : next;
+    index += 2;
+  }
+  return text;
+};
+
+const ansi_c_end = (source: string, start: number): number => {
+  let index = start + 2;
+  while (index < source.length) {
+    if (source[index] === "\\") {
+      index += 2;
+      continue;
+    }
+    if (source[index] === "'") return index + 1;
+    index += 1;
+  }
+  return source.length;
+};
+
 const cmd_group_end = (source: string, start: number): number => {
   let depth = 0;
   let inside = false;
@@ -308,6 +346,14 @@ const plain_words = (source: string, dialect: "cmd" | "posix"): Word[] => {
       if (current === escape) {
         text += source[index + 1] === "\n" || source[index + 1] === "\r" ? "" : (source[index + 1] ?? "");
         index += source[index + 1] === "\r" && source[index + 2] === "\n" ? 3 : 2;
+        continue;
+      }
+      if (dialect === "posix" && current === "$" && source[index + 1] === "'") {
+        flush("none");
+        const end = ansi_c_end(source, index);
+        text = ansi_c_decode(source.slice(index + 2, Math.max(index + 2, end - 1)));
+        flush("single");
+        index = end;
         continue;
       }
       if (current === '"' || (dialect === "posix" && current === "'")) {

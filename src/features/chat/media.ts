@@ -6,6 +6,8 @@ export const attachment_thumb_src = (attachment: Attachment) => `vx-media://atta
 
 export const image_src = (image_id: string) => `vx-media://image/${image_id}`;
 
+export const favicon_src = (host: string) => `vx-media://favicon/${host}`;
+
 export const format_size = (bytes: number) => {
   if (bytes < 1024) {
     return `${bytes} B`;

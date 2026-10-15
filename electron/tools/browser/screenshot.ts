@@ -1,8 +1,10 @@
+import { snapshot_tab_id } from "../../browser/refs.ts";
 import { point_click, take_screenshot, type Screenshot } from "../../browser/screenshot.ts";
 import { tab_title, tab_url } from "../../browser/state.ts";
 import { run_on_tab } from "../../browser/tabs.ts";
 import { define_tool, ToolArgumentError } from "../types.ts";
-import { browser_view, done, guarded, read_boolean, read_number, read_string, require_string } from "./common.ts";
+import { read_boolean, read_number, read_string, require_string } from "./common.ts";
+import { browser_view, done, guarded } from "./result.ts";
 
 type ScreenshotArgs = { tab_id: string | null; labels: boolean };
 
@@ -52,7 +54,7 @@ export const browser_screenshot_tool = define_tool<ScreenshotArgs>({
   parse: (raw) => ({ tab_id: read_string(raw, "tab_id"), labels: read_boolean(raw, "labels", true) }),
   run: (ctx, args) =>
     guarded(ctx, "screenshot", () =>
-      run_on_tab(args.tab_id, ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, args.tab_id, ctx.signal, async (tab) => {
         const shot = await take_screenshot(tab, args.labels, ctx.image_fit, ctx.signal);
         const view = browser_view("screenshot", shot.url, shot.title, `${shot.image.width} × ${shot.image.height}`);
         return { ...done(screenshot_text(shot, ctx.profile === "plan", args.labels), view), images: [{ bytes: shot.jpeg, mime: "image/jpeg", label: image_label(shot) }] };
@@ -85,7 +87,7 @@ export const browser_click_point_tool = define_tool<PointArgs>({
   parse: (raw) => ({ snapshot_id: require_string(raw, "snapshot_id"), x: require_number(raw, "x"), y: require_number(raw, "y") }),
   run: (ctx, args) =>
     guarded(ctx, "click point", () =>
-      run_on_tab(null, ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, snapshot_tab_id(args.snapshot_id), ctx.signal, async (tab) => {
         const clicked = await point_click(tab, args.snapshot_id, { x: args.x, y: args.y }, ctx.signal);
         const element = clicked.target ? ` (element there: ${clicked.target})` : "";
         const where = clicked.clicked ? `on ${clicked.target} (its DOM element)` : `at that screen position${element}`;

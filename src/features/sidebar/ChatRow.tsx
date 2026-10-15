@@ -2,11 +2,11 @@ import { memo, useState } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
 import { IconButton } from "../../components/Button.tsx";
 import { ConfirmDialog } from "../../components/Dialog.tsx";
-import { LoaderIcon, MoreHorizontalIcon, PencilLineIcon, PinIcon, PinOffIcon, TrashIcon } from "../../components/icons.tsx";
+import { ArchiveIcon, CircleSpinnerIcon, MoreHorizontalIcon, PencilLineIcon, PinIcon, PinOffIcon, TrashIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { relative_time } from "../../i18n/relative-time.ts";
-import { delete_chat, rename_chat, set_chat_pinned } from "../../state/chats.ts";
+import { delete_chat, rename_chat, set_chat_archived, set_chat_pinned } from "../../state/chats.ts";
 import { open_chat } from "../../state/ui.ts";
 import { InlineRename } from "./InlineRename.tsx";
 import { chat_label } from "./sidebar-model.ts";
@@ -40,7 +40,7 @@ export const ChatRow = memo(({ chat, active, now }: ChatRowProps) => {
           <span className="sidebar-row-label">{chat_label(t, chat.title)}</span>
           {chat.streaming ? (
             <span className="chat-row-status" role="status" aria-label={t("sidebar.working")}>
-              <LoaderIcon size={12} className="spin" />
+              <CircleSpinnerIcon size={12} className="spin" />
             </span>
           ) : (
             <span className="chat-row-time">{relative_time(t, chat.updated_at, now)}</span>
@@ -77,6 +77,13 @@ export const ChatRow = memo(({ chat, active, now }: ChatRowProps) => {
                 label: chat.pinned ? t("sidebar.unpin") : t("sidebar.pin"),
                 icon: chat.pinned ? <PinOffIcon size={15} /> : <PinIcon size={15} />,
                 on_select: () => set_chat_pinned(chat.id, !chat.pinned).catch(report("pin", chat.id)),
+              },
+              {
+                id: "archive",
+                label: t("sidebar.archive"),
+                icon: <ArchiveIcon size={15} />,
+                disabled: chat.streaming,
+                on_select: () => set_chat_archived(chat.id, true).catch(report("archive", chat.id)),
               },
               { id: "delete", label: t("sidebar.delete"), icon: <TrashIcon size={15} />, danger: true, on_select: () => set_confirming(true) },
             ],

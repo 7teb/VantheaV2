@@ -10,7 +10,7 @@ type FileData = string | Uint8Array;
 
 type Waiter = { resolve: () => void; reject: (error: unknown) => void };
 
-type FileQueue = { running: boolean; active: FileData | null; pending: { data: FileData; waiters: Waiter[] } | null };
+type FileQueue = { running: boolean; drained: Promise<void>; active: FileData | null; pending: { data: FileData; waiters: Waiter[] } | null };
 
 const retry_codes = new Set(["EPERM", "EBUSY", "EACCES"]);
 
@@ -32,11 +32,14 @@ const sleep_sync = (ms: number) => {
 
 const strip_bom = (text: string): string => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
 
-const rename_with_retry = async (from: string, to: string) => {
+const rename_with_retry = async (from: string, to: string, superseded: () => boolean): Promise<boolean> => {
   for (let attempt = 0; ; attempt += 1) {
+    if (superseded()) {
+      return false;
+    }
     try {
       await fsp.rename(from, to);
-      return;
+      return true;
     } catch (error) {
       if (!retry_codes.has(error_code(error)) || attempt + 1 >= rename_attempts) {
         throw error;
@@ -62,15 +65,15 @@ const rename_with_retry_sync = (from: string, to: string) => {
 
 const write_once = async (file: string, data: FileData) => {
   const generation = generations.get(file) ?? 0;
+  const superseded = () => (generations.get(file) ?? 0) !== generation;
   const temp = temp_path(file);
   await fsp.mkdir(path.dirname(file), { recursive: true });
   try {
     await fsp.writeFile(temp, data);
-    if ((generations.get(file) ?? 0) !== generation) {
+    const renamed = await rename_with_retry(temp, file, superseded);
+    if (!renamed) {
       await fsp.rm(temp, { force: true });
-      return;
     }
-    await rename_with_retry(temp, file);
   } catch (error) {
     await fsp.rm(temp, { force: true });
     throw error;
@@ -101,7 +104,7 @@ const drain = async (file: string, queue: FileQueue) => {
 
 export const write_file_atomic = (file: string, data: FileData): Promise<void> =>
   new Promise((resolve, reject) => {
-    const queue = queues.get(file) ?? { running: false, active: null, pending: null };
+    const queue = queues.get(file) ?? { running: false, drained: Promise.resolve(), active: null, pending: null };
     queues.set(file, queue);
     if (queue.pending) {
       queue.pending.data = data;
@@ -110,9 +113,11 @@ export const write_file_atomic = (file: string, data: FileData): Promise<void> =
       queue.pending = { data, waiters: [{ resolve, reject }] };
     }
     if (!queue.running) {
-      void drain(file, queue);
+      queue.drained = drain(file, queue);
     }
   });
+
+export const writes_settled = (file: string): Promise<void> => queues.get(file)?.drained ?? Promise.resolve();
 
 export const write_json = (file: string, value: unknown): Promise<void> => write_file_atomic(file, JSON.stringify(value, null, 2));
 

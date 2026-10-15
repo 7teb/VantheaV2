@@ -1,10 +1,10 @@
-import { memo } from "react";
+import { memo, useRef } from "react";
 import type { ApprovalDecision, ApprovalRequest } from "../../../shared/approval.ts";
 import { QuestionForm } from "../../components/QuestionForm.tsx";
 import { use_t } from "../../i18n/index.ts";
-import { answer_agent_approval } from "../../state/agents.ts";
+import { answer_agent_approval, hold_agent_approval } from "../../state/agents.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
-import { answer_approval } from "../../state/chat-actions.ts";
+import { answer_approval, hold_approval } from "../../state/chat-actions.ts";
 import { ApprovalDetail, ApprovalHead } from "./ApprovalDetail.tsx";
 import { approval_question, grant_options } from "./approval-options.ts";
 import { approval_lines } from "./review-notes.ts";
@@ -18,7 +18,15 @@ export const ApprovalCard = memo(({ chat_id, call_id, request, run, actor = "" }
   const options = grant_options(request);
   const question = approval_question(request);
   const lines = approval_lines(t, request);
+  const held = useRef(false);
   const answer = (decision: ApprovalDecision) => (run ? answer_agent_approval(run, call_id, decision) : answer_approval(chat_id, call_id, decision));
+  const hold = (text: string) => {
+    if (held.current || request.expires_at === undefined || !text.trim()) {
+      return;
+    }
+    held.current = true;
+    void (run ? hold_agent_approval(run, call_id) : hold_approval(chat_id, call_id));
+  };
   const has_head = actor !== "" || request.kind === "mcp";
   const has_preview = request.kind !== "mcp" || Boolean(request.args_preview || request.scope);
   return (
@@ -30,6 +38,8 @@ export const ApprovalCard = memo(({ chat_id, call_id, request, run, actor = "" }
       options={options.map((option) => t(option.label, option.vars))}
       on_choose={(index) => answer({ approved: true, grant: options[index].grant, feedback: "" })}
       on_other={(feedback) => answer({ approved: false, grant: "once", feedback })}
+      on_edit={hold}
+      skip_at={request.expires_at}
     />
   );
 });

@@ -1,7 +1,6 @@
 import type { status as en } from "../en/status.ts";
 
 export const status: Record<keyof typeof en, string> = {
-  "status.reverted": "Änderungen rückgängig gemacht",
   "status.ready": "Bereit",
   "status.indexing": "Projekt wird indexiert",
   "status.approved": "Freigegeben, arbeite…",

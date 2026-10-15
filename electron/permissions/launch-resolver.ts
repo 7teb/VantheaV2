@@ -7,6 +7,8 @@ import {
   env_value, expand_launch_pattern, launch_extensions, launch_gap, launch_kind, native_extension, network_path, path_dirs, path_lookup, wildcard_path,
   type LaunchKind, type PathMatch, type ProgramFact, type ProgramKind,
 } from "./launch-targets.ts";
+import { msys_mounts, msys_native } from "./msys-paths.ts";
+import { bash_builtins } from "./posix-command.ts";
 import { powershell_command } from "./powershell-commands.ts";
 import { script_dialect, script_extension } from "./script-refs.ts";
 import { file_sha256, stat_optional } from "./source-read.ts";
@@ -113,7 +115,7 @@ export const launch_resolver = (host: LaunchHost) => {
     return step.state;
   };
   const bare_launch = async (name: string, ref: LaunchRef, step: Step, depth: number): Promise<WalkState | null> => {
-    if (ref.search === "none") return step.state;
+    if (ref.search === "none" || (step.dialect === "posix" && bash_builtins.has(name))) return step.state;
     const exts = extensions(step, ref);
     const own = exts.includes(path.extname(name).toLowerCase());
     const names = own ? [name] : [...(path.extname(name) ? [name] : []), ...exts.map((ext) => name + ext)];
@@ -196,7 +198,9 @@ export const launch_resolver = (host: LaunchHost) => {
       if (exit) exits.push(exit);
       else complete = false;
     };
-    for (const candidate of ref.value.values.map((entry) => entry.replace(filesystem_provider, ""))) {
+    const mounts = step.dialect === "posix" ? msys_mounts() : null;
+    for (const written of ref.value.values.map((entry) => entry.replace(filesystem_provider, ""))) {
+      const candidate = mounts ? (msys_native(written, mounts) ?? written) : written;
       if (!candidate || /^[a-z][a-z0-9+.-]+:(?!:)/i.test(candidate)) continue;
       if (candidate.includes("::")) {
         host.gap(launch_gap(ref.written, "provider path"));

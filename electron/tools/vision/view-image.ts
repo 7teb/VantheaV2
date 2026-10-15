@@ -7,6 +7,7 @@ import { get_chat } from "../../chats/store.ts";
 import { sniff_image } from "../../media/files.ts";
 import { require_string } from "../browser/common.ts";
 import { failed, guarded } from "../fs/common.ts";
+import { secret_read_refused } from "../fs/secret-read.ts";
 import { define_tool } from "../types.ts";
 import { view_target } from "./view-target.ts";
 
@@ -32,6 +33,10 @@ export const view_image_tool = define_tool<{ path: string }>({
   run: (ctx, args) =>
     guarded(ctx, "view_image", async () => {
       const target = await view_target(await chat_attachments(ctx.chat_id), ctx.project_root, args.path);
+      const refused = target.relative === null ? null : await secret_read_refused(ctx, { tool: "view_image", path: target.relative, query: null });
+      if (refused) {
+        return refused;
+      }
       if ((await fs.stat(target.file)).size > attachment_limits.image_bytes) {
         return failed(`${target.display} is larger than 20 MB, the most view_image reads.`);
       }

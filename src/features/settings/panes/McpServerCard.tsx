@@ -11,7 +11,7 @@ import { SettingsGroup, SettingsRow } from "../SettingsLayout.tsx";
 import { ipc_error_text } from "./ipc-error.ts";
 import { McpToolList } from "./McpToolList.tsx";
 
-const state_label = (t: Translate, server: McpServerStatus) => {
+export const mcp_state_label = (t: Translate, server: McpServerStatus) => {
   switch (server.state) {
     case "ready":
       return t("mcp.status_ready", { n: server.tools.length });
@@ -50,7 +50,7 @@ export const McpServerCard = ({ server }: { server: McpServerStatus }) => {
     <span className="mcp-title">
       <span>{server.name}</span>
       <span className="mcp-badge" data-state={server.config.enabled ? server.state : "disabled"}>
-        {state_label(t, server)}
+        {mcp_state_label(t, server)}
       </span>
     </span>
   );

@@ -3,31 +3,14 @@ import type { AgentRunSummary, AgentSummary } from "../../../../shared/ipc/work.
 import { IconButton } from "../../../components/Button.tsx";
 import { class_names } from "../../../components/class-names.ts";
 import { BotIcon, ChevronRightIcon, CircleStopIcon } from "../../../components/icons.tsx";
-import { Skeleton } from "../../../components/Skeleton.tsx";
 import { use_t } from "../../../i18n/index.ts";
 import { agent_approvals_store, is_waiting } from "../../../state/agent-approvals.ts";
 import { cancel_agent, select_agent_run } from "../../../state/agents.ts";
 import { find_model, models_store } from "../../../state/models.ts";
 import { use_store } from "../../../state/use-store.ts";
-import { first_line, profile_labels, run_duration, status_icons, status_labels } from "./agent-meta.ts";
-
-export const AgentListSkeleton = () => (
-  <div className="agent-list" aria-busy="true">
-    {[38, 52, 30].map((width, index) => (
-      <div key={index} className="agent-entry">
-        <div className="agent-entry-head">
-          <Skeleton width={15} height={15} radius={8} />
-          <Skeleton width={`${width}%`} height={12} radius={4} />
-          <Skeleton width="22%" height={10} radius={4} />
-        </div>
-        <div className="agent-run-skeleton">
-          <Skeleton width={14} height={14} radius={7} />
-          <Skeleton width={`${width + 34}%`} height={11} radius={4} />
-        </div>
-      </div>
-    ))}
-  </div>
-);
+import { agent_status_keys } from "../../tools/background-status.ts";
+import { first_line, profile_labels, run_duration, status_icons } from "./agent-meta.ts";
+import "./agents.css";
 
 type RunRowProps = { agent_id: string; run: AgentRunSummary; now: number };
 
@@ -50,7 +33,7 @@ const RunRow = ({ agent_id, run, now }: RunRowProps) => {
         </span>
         <span className="agent-run-meta">
           {[
-            t(waiting ? "agent.waiting_approval" : status_labels[run.status]),
+            t(waiting ? "agent.waiting_approval" : agent_status_keys[run.status]),
             ...(run.status === "running" && run.open_questions > 0
               ? [t(run.open_questions === 1 ? "agent.open_questions_one" : "agent.open_questions_other", { n: run.open_questions })]
               : []),
@@ -63,13 +46,15 @@ const RunRow = ({ agent_id, run, now }: RunRowProps) => {
   );
 };
 
-const AgentEntry = ({ agent, now }: { agent: AgentSummary; now: number }) => {
+export const AgentEntry = ({ agent, now }: { agent: AgentSummary; now: number }) => {
   const t = use_t();
   const catalog = use_store(models_store, (state) => state.catalog);
   const [stopping, set_stopping] = useState(false);
   const [error, set_error] = useState("");
   const model = find_model(catalog, agent.model)?.label ?? agent.model;
   const running = agent.runs.some((run) => run.status === "running");
+  const without = agent.without_tools.length ? t("agent.without_tools", { x: agent.without_tools.join(", ") }) : "";
+  const meta = [agent.topic, t(profile_labels[agent.profile]), without, model].filter(Boolean).join(" · ");
 
   const stop = async () => {
     set_stopping(true);
@@ -85,8 +70,8 @@ const AgentEntry = ({ agent, now }: { agent: AgentSummary; now: number }) => {
         <span className="agent-entry-name" title={agent.description || agent.name}>
           {agent.name}
         </span>
-        <span className="agent-entry-meta">
-          {[agent.topic, t(profile_labels[agent.profile]), model].filter(Boolean).join(" · ")}
+        <span className="agent-entry-meta" title={meta}>
+          {meta}
         </span>
         {running && (
           <IconButton size="sm" label={t("agent.cancel")} disabled={stopping} onClick={() => void stop()}>
@@ -103,11 +88,3 @@ const AgentEntry = ({ agent, now }: { agent: AgentSummary; now: number }) => {
     </section>
   );
 };
-
-export const AgentList = ({ agents, now }: { agents: AgentSummary[]; now: number }) => (
-  <div className="agent-list">
-    {[...agents].reverse().map((agent) => (
-      <AgentEntry key={agent.agent_id} agent={agent} now={now} />
-    ))}
-  </div>
-);

@@ -47,6 +47,18 @@
       "max_output": 131072
     },
     {
+      "id": "xiaomi/mimo-v2.6-pro-ultraspeed",
+      "label": "MiMo V2.6 Pro Ultraspeed",
+      "provider": "Xiaomi",
+      "provider_order": ["xiaomi"],
+      "efforts": ["low", "medium", "high"],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 1048576,
+      "max_output": 131072,
+      "note": "MiMo V2.6 Pro on Xiaomi's Ultraspeed route: about 320 to 345 output tokens per second (measured, versus about 62 on the normal route), first token after about 1 s. Ten times the price of the normal Pro: 4.35 USD per million input tokens and 8.70 USD per million output tokens."
+    },
+    {
       "id": "qwen/qwen3.7-plus",
       "label": "Qwen 3.7 Plus",
       "provider": "Qwen",
@@ -133,6 +145,30 @@
       "vision": true,
       "context_length": 1048576,
       "max_output": 65536
+    },
+    {
+      "id": "google/gemini-4-argon",
+      "label": "Gemini 4 Argon",
+      "provider": "Google",
+      "provider_order": ["google-vertex/global", "google-ai-studio"],
+      "efforts": ["low", "medium", "high"],
+      "default_effort": "medium",
+      "vision": true,
+      "context_length": 1048576,
+      "max_output": 65536,
+      "note": "Google's flagship reasoning model for software engineering and long multi-step agent work. Reads images, 1M window. 2 USD per million input tokens and 10 USD per million output tokens while the launch discount lasts (list price 4 and 20). Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
+    },
+    {
+      "id": "google/gemini-4-argon:floor",
+      "label": "Gemini 4 Argon Flex",
+      "provider": "Google",
+      "provider_order": ["google-ai-studio/flex", "google-vertex/global", "google-ai-studio"],
+      "efforts": ["low", "medium", "high"],
+      "default_effort": "medium",
+      "vision": true,
+      "context_length": 1048576,
+      "max_output": 65536,
+      "note": "Gemini 4 Argon on Google AI Studio's Flex tier: half the price of the standard route (1 USD per million input tokens and 5 USD per million output tokens while the launch discount lasts), slower and may queue under load. Falls back to the standard route when Flex is unavailable. Not yet measured in VantheaX."
     },
     {
       "id": "openai/gpt-oss-120b",
@@ -237,6 +273,18 @@
       "context_length": 1048576,
       "max_output": 943718,
       "note": "Meta's frontier reasoning model for agentic work, served only by Meta. Reads images, 1M window. Expensive: 4 USD per million input tokens and 20 USD per million output tokens. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
+    },
+    {
+      "id": "unbiased/pareto-26.9",
+      "label": "Pareto 26.9",
+      "provider": "Unbiased",
+      "provider_order": ["unbiased"],
+      "efforts": [],
+      "default_effort": "",
+      "vision": true,
+      "context_length": 262144,
+      "max_output": 131072,
+      "note": "Unbiased's composite multimodal model for research, coding and agentic work, served only by Unbiased. Reads images, 262k window, no reasoning effort setting. 2.50 USD per million input tokens and 7.50 USD per million output tokens. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
     }
   ],
   "side": {
@@ -244,7 +292,8 @@
     "overseer": "openai/gpt-6-luna",
     "vision": "google/gemini-3.1-flash-lite",
     "web_answer": "google/gemini-3.5-flash-lite",
-    "memory": "deepseek/deepseek-v4-flash"
+    "memory": "deepseek/deepseek-v4-flash",
+    "reasoning_status": "google/gemini-3.5-flash-lite"
   },
   "image_models": [
     {

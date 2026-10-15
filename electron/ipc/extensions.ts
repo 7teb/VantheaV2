@@ -1,6 +1,6 @@
 import { app, shell } from "electron";
 import path from "node:path";
-import { init_memory, memory_loaded, memory_records, remove_memory, reset_memories, resolve_pending, review_items } from "../memory/store.ts";
+import { add_memory, init_memory, memory_loaded, memory_records, remove_memory, reset_memories, resolve_pending, review_items } from "../memory/store.ts";
 import { init_skills, read_skill_raw, refresh_skills, remove_skill, set_skill_enabled, skill_entries, skills_root } from "../skills/store.ts";
 import { error_text, require_string } from "../storage/coerce.ts";
 import { storage_paths } from "../storage/paths.ts";
@@ -69,6 +69,11 @@ export const register_extensions_ipc = () => {
     loaded_memory();
     await resolve_pending(require_string(id, "memory id", 200), resolve_action(action));
     return review_items();
+  });
+  handle("memory:add", async (text) => {
+    loaded_memory();
+    await add_memory(require_string(text, "memory text"));
+    return memory_records();
   });
   handle("memory:remove", async (id) => {
     loaded_memory();

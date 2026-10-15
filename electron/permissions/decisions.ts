@@ -1,20 +1,19 @@
 import { randomUUID } from "node:crypto";
-import type { ApprovalDecision, ApprovalRequest, HumanDecision } from "../../shared/approval.ts";
+import { secret_read_subject, type ApprovalDecision, type ApprovalRequest, type HumanDecision } from "../../shared/approval.ts";
 import type { Message, ToolStep } from "../../shared/chat.ts";
 import type { ReviewActor } from "../../shared/review.ts";
+import { command_tools, shell_run_tools, type ShellKind } from "../../shared/shell.ts";
 import { get_chat, update_message } from "../chats/store.ts";
 import { error_text } from "../storage/coerce.ts";
 
 const max_subject_chars = 2000;
-
-export const command_tools = ["run_command", "start_background_task"];
 
 const clip = (text: string, max: number) => (text.length <= max ? text : `${text.slice(0, max)}…`);
 
 const request_subject = (request: ApprovalRequest): { tool: string; subject: string; cwd: string; reason: string } => {
   switch (request.kind) {
     case "command":
-      return { tool: request.background ? "start_background_task" : "run_command", subject: request.command, cwd: request.cwd, reason: request.review?.reason ?? "" };
+      return { tool: request.background ? "start_background_task" : shell_run_tools[request.shell ?? "powershell"], subject: request.command, cwd: request.cwd, reason: request.review?.reason ?? "" };
     case "mcp":
       return { tool: `mcp:${request.server}/${request.tool}`, subject: request.args_preview, cwd: "", reason: request.review?.reason || request.reason || "" };
     case "write":
@@ -27,6 +26,8 @@ const request_subject = (request: ApprovalRequest): { tool: string; subject: str
       return { tool: `memory_${request.action}`, subject: request.text, cwd: "", reason: request.review?.reason ?? "" };
     case "agent_message":
       return { tool: request.tool, subject: `${request.to_name}: ${request.text}`, cwd: "", reason: request.review?.reason ?? "" };
+    case "secret_read":
+      return { tool: request.tool, subject: secret_read_subject(request), cwd: "", reason: request.review?.reason ?? "" };
   }
 };
 
@@ -50,8 +51,10 @@ export const human_decision = (request: ApprovalRequest, decision: ApprovalDecis
     actor_id: actor.id,
     last_human_id,
     ...(review_id ? { review_id } : {}),
+    ...(decision.expired ? { expired: true } : {}),
     ...(prefix ? { grant_prefix: prefix } : {}),
     ...(request.kind === "command" && request.source_hash && decision.grant !== "full_window" ? { source_hash: request.source_hash } : {}),
+    ...(request.kind === "command" ? { shell: request.shell ?? "powershell" } : {}),
   };
 };
 
@@ -141,7 +144,7 @@ const normalize = (text: string) => text.trim().replace(/\s+/g, " ").toLowerCase
 
 export const same_subject = (a: string, b: string): boolean => normalize(a) === normalize(b);
 
-export const last_decision_for =(decisions: HumanDecision[], tools: string[], subject: string): HumanDecision | null => {
+export const last_decision_for =(decisions: HumanDecision[], tools: readonly string[], subject: string): HumanDecision | null => {
   const wanted = normalize(clip(subject, max_subject_chars));
   for (let index = decisions.length - 1; index >= 0; index -= 1) {
     const entry = decisions[index];
@@ -152,10 +155,14 @@ export const last_decision_for =(decisions: HumanDecision[], tools: string[], su
   return null;
 };
 
-export const approved_with_source = (decisions: HumanDecision[], command: string, source_hash: string): boolean => {
-  const last = last_decision_for(decisions, command_tools, command);
+const decision_shell = (entry: HumanDecision): ShellKind => entry.shell ?? (entry.tool === shell_run_tools.bash ? "bash" : "powershell");
+
+export const approved_with_source = (decisions: HumanDecision[], command: string, source_hash: string, shell: ShellKind): boolean => {
+  const last = last_decision_for(decisions.filter((entry) => decision_shell(entry) === shell), command_tools, command);
   return Boolean(last?.approved && last.source_hash === source_hash);
 };
 
-export const prefix_grants = (decisions: HumanDecision[]): { prefix: string; example: string }[] =>
-  decisions.flatMap((entry) => (entry.approved && entry.grant === "prefix" && entry.grant_prefix && command_tools.includes(entry.tool) ? [{ prefix: entry.grant_prefix, example: entry.subject }] : []));
+export const prefix_grants = (decisions: HumanDecision[], shell: ShellKind): { prefix: string; example: string }[] =>
+  decisions.flatMap((entry) =>
+    entry.approved && entry.grant === "prefix" && entry.grant_prefix && command_tools.includes(entry.tool) && decision_shell(entry) === shell ? [{ prefix: entry.grant_prefix, example: entry.subject }] : [],
+  );

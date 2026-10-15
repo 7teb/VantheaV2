@@ -77,6 +77,11 @@
   opacity: 1;
 }
 
+.sidebar-nav-count {
+  color: var(--text-detail);
+  font-size: var(--font-size-ui);
+}
+
 .sidebar-scroll {
   flex: 1;
   min-height: 0;
@@ -287,6 +292,9 @@
 }
 
 .sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   padding-top: var(--space-2);
 }
 

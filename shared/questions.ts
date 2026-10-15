@@ -1,4 +1,4 @@
-import type { Message } from "./chat.ts";
+import { human_origin, type Message } from "./chat.ts";
 
 export type AskQuestion = { title: string; options: string[] };
 
@@ -12,7 +12,7 @@ export type OpenQuestion = AskQuestion & { id: string; message_id: string; call_
 
 export const question_id = (message_id: string, call_id: string, index: number): string => `${message_id}:${call_id}:${index}`;
 
-const closes_questions = (message: Message): boolean => message.role === "user" && (message.origin === "user" || message.origin === "plan_accept");
+const closes_questions = (message: Message): boolean => message.role === "user" && human_origin(message.origin);
 
 export const open_questions = (messages: Message[], states: QuestionStates): OpenQuestion[] => {
   const open: OpenQuestion[] = [];

@@ -201,4 +201,29 @@
     align-items: center;
     gap: 4px;
   }
+
+  .command-card-problem {
+    min-width: 0;
+    overflow: hidden;
+    font-size: var(--font-size-ui);
+    color: var(--text-danger);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .command-card-footer .command-card-action {
+    height: 24px;
+    padding: 0 8px 0 6px;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+  }
+
+  .command-card-footer .command-card-action:hover:not(:disabled) {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .command-card-footer .command-card-action:disabled {
+    color: var(--text-disabled);
+  }
 }

@@ -1,8 +1,23 @@
 import path from "node:path";
+import {
+  app_reason,
+  cipher_reason,
+  format_reason,
+  hits_app,
+  hklm_reason,
+  in_project,
+  is_system_path,
+  partition_reason,
+  shadow_reason,
+  system_delete_reason,
+  system_variable_reason,
+  type FloorScope,
+} from "./floor-shared.ts";
+import { posix_floor_reason } from "./floor-posix.ts";
 import { shell_words, type Piece, type Word } from "./shell-words.ts";
-import { quote_of, split_pipelines, split_statements, statement_parts, type StatementElement } from "./statements.ts";
+import { quote_of, split_pipelines, split_statements, statement_parts, type Dialect, type StatementElement } from "./statements.ts";
 
-export type FloorScope = { app_root: string; project_root: string; cwd: string };
+export type { FloorScope } from "./floor-shared.ts";
 
 const delete_names = "remove-item|ri|rm|rmdir|rd|del|erase";
 
@@ -26,12 +41,7 @@ const location_verb = /^(?:cd|chdir|set-location|sl|push-location|pushd)$/i;
 
 const app_path = /(?:%appdata%|\$env:appdata|\$\{env:appdata\}|\$\(\s*(?:\$env:appdata|\$\{env:appdata\})\s*\)|appdata[\\/]roaming)[\\/]vantheax/i;
 
-const app_reason = "deleting or moving VantheaX's own chats, media or settings";
-
 const dotnet_delete = /\[(?:system\.)?io\.(?:directory|file)\]::delete\s*\(/i;
-
-const system_path =
-  /(%systemroot%|%windir%|\$env:systemroot|\$env:windir|[a-z]:\\windows\b|\\system32\b|[a-z]:\\program files|[\\/]boot[\\/]|[a-z]:[\\/](?=["'*\s)]|$))/i;
 
 const assignment = /^\s*\$([a-z_][\w:]*)\s*=\s*([\s\S]+)$/i;
 
@@ -41,38 +51,38 @@ const joined_literal = (text: string) => text.replace(/["']\s*\+\s*["']/g, "").r
 
 export const deletes = (statement: string) => delete_verb.test(statement) || dotnet_delete.test(statement);
 
-const touches_system_path = (statement: string) => system_path.test(statement) || system_path.test(joined_literal(statement));
+const touches_system_path = (statement: string) => is_system_path(statement) || is_system_path(joined_literal(statement));
 
 const statement_reason = (statement: string, system_variables: Set<string>): string => {
   if (/(?:^|\s)(diskpart|bcdedit)(?:\.exe)?(?=\s|$)/i.test(statement)) {
-    return "diskpart / bcdedit can wipe partitions or break the boot configuration";
+    return partition_reason;
   }
   if (/\b(clear-disk|format-volume|initialize-disk|reset-physicaldisk)\b/i.test(statement)) {
     return "a disk-wiping cmdlet (Clear-Disk / Format-Volume / Initialize-Disk / Reset-PhysicalDisk)";
   }
   if (/(?:^|\s)format(?:\.com)?\s+(?:\/\S+\s+)*[a-z]:/i.test(statement)) {
-    return "formatting a drive";
+    return format_reason;
   }
   if (/\bvssadmin(?:\.exe)?\s+delete\s+shadows\b/i.test(statement) || /\bwmic(?:\.exe)?\s+shadowcopy\s+delete\b/i.test(statement)) {
-    return "deleting volume shadow copies";
+    return shadow_reason;
   }
   if (/\bcipher(?:\.exe)?\s+\/w\b/i.test(statement)) {
-    return "wiping free disk space with cipher /w";
+    return cipher_reason;
   }
   if (!deletes(statement) && !/\breg(?:\.exe)?\s+delete\b/i.test(statement)) {
     return "";
   }
   if (deletes(statement) && touches_system_path(statement)) {
-    return "deleting Windows / System32 / Program Files / a drive root / boot files";
+    return system_delete_reason;
   }
   if (deletes(statement) && [...statement.matchAll(variable_use)].some((match) => system_variables.has((match[1] ?? "").toLowerCase()))) {
-    return "deleting a system path held in a variable";
+    return system_variable_reason;
   }
   if (/\breg(?:\.exe)?\s+delete\b/i.test(statement) && /\b(hklm|hkey_local_machine)\b/i.test(statement)) {
-    return "deleting HKEY_LOCAL_MACHINE registry keys";
+    return hklm_reason;
   }
   if (deletes(statement) && /\bhklm:/i.test(statement)) {
-    return "deleting HKEY_LOCAL_MACHINE registry keys";
+    return hklm_reason;
   }
   return "";
 };
@@ -93,16 +103,6 @@ type Walk = { scope: FloorScope; location: string | null; variables: Map<string,
 type Command = { text: string; verb: string; words: Word[]; args: Word[] };
 
 const mentions_app = (text: string) => app_path.test(text) || app_path.test(joined_literal(text));
-
-const path_key = (value: string) => path.win32.resolve(value).toLowerCase().replace(/\\+$/, "");
-
-const within = (root: string, target: string) => {
-  const base = path_key(root);
-  const key = path_key(target);
-  return key === base || key.startsWith(`${base}\\`);
-};
-
-const strictly_within = (root: string, target: string) => path_key(target).startsWith(`${path_key(root)}\\`);
 
 const env_value = (name: string): string | null => process.env[name] || null;
 
@@ -154,10 +154,6 @@ const resolve_target = (token: string, walk: Walk): string | null => {
   }
   return path.win32.resolve(walk.location ?? "", expanded);
 };
-
-const in_project = (target: string | null, scope: FloorScope) => target !== null && Boolean(scope.project_root) && strictly_within(scope.project_root, target);
-
-const hits_app = (target: string | null, scope: FloorScope) => target !== null && Boolean(scope.app_root) && within(scope.app_root, target) && !in_project(target, scope);
 
 const unexplained = (text: string, walk: Walk): boolean => {
   if (!mentions_app(text)) {
@@ -278,7 +274,57 @@ const touches_app_data = (command: string, statements: string[], scope: FloorSco
   return split_pipelines(command).some((pipeline) => statement_parts(pipeline).some((part) => feeds_removal(part.elements, walk)));
 };
 
-export const floor_reason = (command: string, scope: FloorScope): string => {
+const bash_head = /(?:^|[\\/])(?:bash|sh|dash)(?:\.exe)?$/i;
+
+const combined_c = /^-[a-z]*c$/i;
+
+const posix_launch_payloads = (statements: string[]): string[] => {
+  const payloads: string[] = [];
+  for (const statement of statements) {
+    const words = shell_words(statement, "powershell");
+    const at = words[0]?.raw === "&" ? 1 : 0;
+    const head = words[at] ? literal(words[at] as Word) : null;
+    if (!head || !bash_head.test(head)) {
+      continue;
+    }
+    const rest = words.slice(at + 1);
+    const flag = rest.findIndex((word) => combined_c.test(word.raw));
+    const payload = flag >= 0 ? rest[flag + 1] : undefined;
+    const text = payload ? literal(payload) : null;
+    if (text) {
+      payloads.push(text);
+    }
+  }
+  return payloads;
+};
+
+const feeder_source = (command: Command): string | null => {
+  if (/^(?:echo|write-output|write-host|printf)$/i.test(command.verb)) {
+    const parts = command.args.filter((word) => !is_flag(word)).map(literal).filter((value): value is string => value !== null);
+    return parts.length ? parts.join(" ") : null;
+  }
+  const only = command.words.length === 1 ? command.words[0] : undefined;
+  return only ? literal(only) : null;
+};
+
+const piped_bash_payloads = (command: string): string[] => {
+  const payloads: string[] = [];
+  for (const pipeline of split_pipelines(String(command || ""))) {
+    for (const part of statement_parts(pipeline)) {
+      for (let sink = 1; sink < part.elements.length; sink += 1) {
+        const target = command_of((part.elements[sink] as StatementElement).text);
+        if (!bash_head.test(target.verb) || target.args.some((word) => combined_c.test(word.raw))) continue;
+        for (let source = 0; source < sink; source += 1) {
+          const text = feeder_source(command_of((part.elements[source] as StatementElement).text));
+          if (text) payloads.push(text);
+        }
+      }
+    }
+  }
+  return payloads;
+};
+
+const powershell_floor_reason = (command: string, scope: FloorScope): string => {
   const statements = split_statements(String(command || ""));
   const system_variables = system_path_variables(statements);
   for (const statement of statements) {
@@ -291,7 +337,17 @@ export const floor_reason = (command: string, scope: FloorScope): string => {
     (pipeline) => pipeline.includes("|") && deletes(pipeline) && touches_system_path(pipeline),
   );
   if (piped_delete) {
-    return "deleting Windows / System32 / Program Files / a drive root / boot files through a pipeline";
+    return `${system_delete_reason} through a pipeline`;
+  }
+  const launched = [...posix_launch_payloads(statements), ...piped_bash_payloads(command)];
+  const nested = launched.map((payload) => posix_floor_reason(payload, scope, powershell_floor_reason)).find(Boolean);
+  if (nested) {
+    return nested;
   }
   return touches_app_data(String(command || ""), statements, scope) ? app_reason : "";
 };
+
+export const floor_reason = (command: string, scope: FloorScope, dialect: Dialect = "powershell"): string =>
+  dialect === "posix"
+    ? posix_floor_reason(String(command || ""), scope, powershell_floor_reason)
+    : powershell_floor_reason(command, scope);

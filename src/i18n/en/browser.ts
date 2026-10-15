@@ -14,5 +14,4 @@ export const browser = {
   "browser.load_failed": "Could not load this page",
   "browser.crashed": "The page crashed",
   "browser.tabs": "Browser tabs",
-  "browser.unavailable": "The browser could not start",
 };

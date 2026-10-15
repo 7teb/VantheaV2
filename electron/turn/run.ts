@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { AssistantMessage, Attachment, Message, UserMessage } from "../../shared/chat.ts";
+import { file_changes, undoable_turn } from "../../shared/file-changes.ts";
 import type { CompactResult, SendRequest, TurnStarted } from "../../shared/ipc/chats.ts";
 import type { UserOrigin } from "../../shared/chat.ts";
 import { wake_idle } from "../agents/reports.ts";
 import { attachment_ids, hold_ids, release_ids } from "../chats/refs.ts";
-import { append_message, flush_chat, get_chat, set_streaming, truncate_after, update_message } from "../chats/store.ts";
+import { append_message, flush_chat, get_chat, set_streaming, truncate_after, unarchive_chat, update_message } from "../chats/store.ts";
 import { chat_root } from "../chats/workspace.ts";
 import { emit } from "../ipc/handle.ts";
+import { forget_scan } from "../memory/store.ts";
 import { find_model, resolve_effort } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { cancel_chat } from "../permissions/approvals.ts";
@@ -31,6 +33,8 @@ import {
 import { drive, type TurnPlan } from "./drive.ts";
 import { create_emitter, type EmitDeps } from "./emit.ts";
 import { uncompacted_work } from "./history.ts";
+import { init_request_text } from "./init-request.ts";
+import { undo_request_text } from "./undo-request.ts";
 import { note_images } from "./vision-notes.ts";
 
 const app_closed_message = "The app was closed while this turn was still running.";
@@ -39,7 +43,7 @@ const emit_deps: EmitDeps = {
   update_message,
   forward: (event) => emit("turn:event", event),
   flush: (chat_id) => {
-    void flush_chat(chat_id);
+    flush_chat(chat_id).catch((error) => console.error(`[turn] saving chat ${chat_id} after its turn ended failed:`, error));
   },
 };
 
@@ -80,6 +84,7 @@ const launch = async (input: BeginInput): Promise<Launched> => {
   const model = context_model(listed);
   const effort = resolve_effort(model, input.effort);
   const project_root = await chat_root(chat);
+  await unarchive_chat(input.chat_id);
   let user_message_id: string;
   let user_request: string;
   if (input.trigger.kind === "new") {
@@ -207,6 +212,7 @@ export const edit_turn = (chat_id: string, message_id: string, text: string): Pr
     const edited: UserMessage = { ...target, text };
     update_message(chat_id, message_id, () => edited);
     emit("chats:message_replaced", { chat_id, message: edited });
+    forget_scan(message_id).catch((error) => console.error(`[memory] forgetting the memory scan of edited message ${message_id} in chat ${chat_id} failed:`, error));
     return (await launch({ chat_id, model_id, effort, mode, plan: false, origin: "user", trigger: { kind: "existing", message_id, text } })).started;
   });
 
@@ -232,6 +238,26 @@ export const accept_plan = async (chat_id: string, message_id: string): Promise<
   const text = plan ? `Here is the plan you presented:\n\n${plan}\n\nImplement this plan now. Write the files and make the changes.` : "Implement the plan you presented now. Write the files and make the changes.";
   const { model_id, effort, mode } = settings_request();
   return begin({ chat_id, model_id, effort, mode, plan: false, origin: "plan_accept", trigger: { kind: "new", text, attachments: [] } });
+};
+
+export const undo_turn = (chat_id: string, message_id: string): Promise<TurnStarted> =>
+  with_reservation(chat_id, async () => {
+    const chat = await get_chat(chat_id);
+    if (!chat) {
+      throw new Error(`chat ${chat_id} not found`);
+    }
+    const turn = undoable_turn(chat.messages);
+    if (!turn || turn.id !== message_id) {
+      throw new Error(`message ${message_id} is not the newest turn with file changes in chat ${chat_id}; only that turn can be undone`);
+    }
+    const { model_id, effort, mode } = settings_request();
+    const text = undo_request_text(file_changes(turn.steps));
+    return (await launch({ chat_id, model_id, effort, mode, plan: false, origin: "undo", trigger: { kind: "new", text, attachments: [] } })).started;
+  });
+
+export const init_turn = (chat_id: string): Promise<TurnStarted> => {
+  const { model_id, effort, mode } = settings_request();
+  return begin({ chat_id, model_id, effort, mode, plan: false, origin: "init", trigger: { kind: "new", text: init_request_text, attachments: [] } });
 };
 
 export const compact_turn = async (chat_id: string): Promise<CompactResult> => {
@@ -271,6 +297,7 @@ export const steer_turn = async (chat_id: string, text: string, attachments: Att
   if (!turn.notes.has(steer_id)) {
     turn.notes.set(steer_id, note_images(attachments, turn.model, turn.controller.signal, describe_attachment_image));
   }
+  await unarchive_chat(chat_id);
   await refresh_instruction_snapshot(chat_id);
   wake_idle(chat_id);
   return turn.message_id;

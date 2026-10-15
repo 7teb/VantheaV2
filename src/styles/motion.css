@@ -94,9 +94,9 @@
     animation: spin 0.9s var(--ease-linear) infinite;
   }
 
-  @keyframes wait-pulse {
+  @keyframes pulse {
     50% {
-      opacity: 0.45;
+      opacity: var(--pulse-dim, 0.35);
     }
   }
 
@@ -107,7 +107,8 @@
     height: 7px;
     border-radius: var(--radius-full);
     background: var(--text-waiting);
-    animation: wait-pulse 1.6s var(--ease-in-out) infinite;
+    --pulse-dim: 0.45;
+    animation: pulse 1.6s var(--ease-in-out) infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {

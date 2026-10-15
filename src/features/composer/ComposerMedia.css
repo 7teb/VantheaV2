@@ -4,7 +4,7 @@
     z-index: 1;
     display: flex;
     gap: var(--space-3);
-    margin: -4px -12px -10px -16px;
+    margin: -6px calc(-1 * var(--space-2)) -2px;
     padding: 4px 12px;
     overflow-x: auto;
   }

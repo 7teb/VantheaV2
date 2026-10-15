@@ -17,6 +17,16 @@ export const fit_session = (tab_id: string) => {
   }
 };
 
+const dispose_session = (tab_id: string) => {
+  const session = sessions.get(tab_id);
+  if (!session) {
+    return;
+  }
+  sessions.delete(tab_id);
+  session.term.dispose();
+  session.host.remove();
+};
+
 const create_session = (tab_id: string, container: HTMLElement) => {
   const look = terminal_look();
   const host = document.createElement("div");
@@ -40,6 +50,7 @@ const create_session = (tab_id: string, container: HTMLElement) => {
   void start_terminal(tab_id, term.cols, term.rows, {
     data: (text) => term.write(text),
     exit: (exit_code) => term.write(exit_line(exit_code)),
+    release: () => dispose_session(tab_id),
   }).then((started) => {
     if (started) {
       resize_terminal(tab_id, term.cols, term.rows);
@@ -64,14 +75,4 @@ export const detach_session = (tab_id: string) => {
 
 export const focus_session = (tab_id: string) => {
   sessions.get(tab_id)?.term.focus();
-};
-
-export const dispose_session = (tab_id: string) => {
-  const session = sessions.get(tab_id);
-  if (!session) {
-    return;
-  }
-  sessions.delete(tab_id);
-  session.term.dispose();
-  session.host.remove();
 };

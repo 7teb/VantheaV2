@@ -223,12 +223,6 @@ export const ShrinkIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const LoaderIcon = (props: IconProps) => (
-  <Icon strokeWidth={2.25} {...props}>
-    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-  </Icon>
-);
-
 export const KeyIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />

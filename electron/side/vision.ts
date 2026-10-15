@@ -15,7 +15,7 @@ const analyze = async (data_url: string, system: string, user_text: string, sign
     { role: "system", content: system },
     { role: "user", content: [{ type: "text", text: user_text }, { type: "image_url", image_url: { url: data_url } }] },
   ];
-  const reply = await side_complete("vision", messages, null, signal, 0);
+  const reply = await side_complete("vision", messages, null, signal, { temperature: 0 });
   return { ...reply, text: reply.text.trim() };
 };
 

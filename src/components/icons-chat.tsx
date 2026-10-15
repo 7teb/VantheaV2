@@ -18,6 +18,19 @@ export const ClipboardListIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const FoldVerticalIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 22v-6" />
+    <path d="M12 8V2" />
+    <path d="M4 12H2" />
+    <path d="M10 12H8" />
+    <path d="M16 12h-2" />
+    <path d="M22 12h-2" />
+    <path d="m15 19-3-3-3 3" />
+    <path d="m15 5-3 3-3-3" />
+  </Icon>
+);
+
 export const InfoIcon = (props: IconProps) => (
   <Icon {...props}>
     <circle cx="12" cy="12" r="10" />
@@ -26,11 +39,38 @@ export const InfoIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const BrainIcon = (props: IconProps) => (
+export const ArchiveIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
-    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
-    <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
-    <path d="M12 18V5" />
+    <rect x="2" y="3" width="20" height="5" rx="1" />
+    <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+    <path d="M10 12h4" />
+  </Icon>
+);
+
+export const ArchiveRestoreIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="2" y="3" width="20" height="5" rx="1" />
+    <path d="M4 8v11a2 2 0 0 0 2 2h2" />
+    <path d="M20 8v11a2 2 0 0 1-2 2h-2" />
+    <path d="m9 15 3-3 3 3" />
+    <path d="M12 12v9" />
+  </Icon>
+);
+
+export const PercentIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M19 5 5 19" />
+    <circle cx="6.5" cy="6.5" r="2.5" />
+    <circle cx="17.5" cy="17.5" r="2.5" />
+  </Icon>
+);
+
+export const RulerIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" />
+    <path d="m14.5 12.5 2-2" />
+    <path d="m11.5 9.5 2-2" />
+    <path d="m8.5 6.5 2-2" />
+    <path d="m17.5 15.5 2-2" />
   </Icon>
 );

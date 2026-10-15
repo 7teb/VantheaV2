@@ -3,12 +3,15 @@ import { approval } from "./approval.ts";
 import { background } from "./background.ts";
 import { browser } from "./browser.ts";
 import { chat } from "./chat.ts";
+import { commands } from "./commands.ts";
 import { common } from "./common.ts";
 import { composer } from "./composer.ts";
 import { context } from "./context.ts";
 import { docks } from "./docks.ts";
+import { files } from "./files.ts";
 import { image } from "./image.ts";
 import { mcp } from "./mcp.ts";
+import { memories } from "./memories.ts";
 import { personalization } from "./personalization.ts";
 import { plan } from "./plan.ts";
 import { projects } from "./projects.ts";
@@ -35,12 +38,15 @@ export const de: Record<MessageKey, string> = {
   ...background,
   ...browser,
   ...chat,
+  ...commands,
   ...common,
   ...composer,
   ...context,
   ...docks,
+  ...files,
   ...image,
   ...mcp,
+  ...memories,
   ...personalization,
   ...plan,
   ...projects,

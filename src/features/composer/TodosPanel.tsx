@@ -1,55 +1,66 @@
 import { useState } from "react";
-import type { Chat, Todo } from "../../../shared/chat.ts";
+import type { Message } from "../../../shared/chat.ts";
+import { latest_todos } from "../../../shared/todos.ts";
+import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon, ListChecksIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon } from "../../components/icons.tsx";
+import { ProgressRing } from "../../components/ProgressRing.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { chat_view_store } from "../../state/chat-view.ts";
+import type { ChatViewState } from "../../state/chat-view-reduce.ts";
 import { use_store } from "../../state/use-store.ts";
 import { TodoList } from "../tools/TodoList.tsx";
+import { use_chat_busy } from "./composer-hooks.ts";
+import { shown_todos, type ShownTodos } from "./todos-shown.ts";
+import "./TodosPanel.css";
 
-const latest_todos = (chat: Chat | null): Todo[] | null => {
-  if (!chat) {
-    return null;
-  }
-  for (let index = chat.messages.length - 1; index >= 0; index -= 1) {
-    const message = chat.messages[index];
-    if (message.role !== "assistant") {
-      continue;
-    }
-    const step = message.steps.findLast((entry) => entry.kind === "tool" && entry.view?.kind === "todos");
-    if (step?.kind === "tool" && step.view?.kind === "todos") {
-      return step.view.todos;
-    }
-  }
-  return null;
-};
+const no_messages: Message[] = [];
+
+const messages_of = (state: ChatViewState, chat_id: string): Message[] => state.entries[chat_id]?.chat?.messages ?? no_messages;
 
 export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
   const t = use_t();
   const [open, set_open] = useState(true);
-  const todos = use_store(chat_view_store, (state) => latest_todos(state.entries[chat_id]?.chat ?? null));
-  if (!todos || todos.length === 0) {
+  const todos = use_store(chat_view_store, (state) => latest_todos(messages_of(state, chat_id))?.todos ?? null);
+  const streaming = use_store(chat_view_store, (state) => latest_todos(messages_of(state, chat_id))?.streaming ?? false);
+  const busy = use_chat_busy(chat_id);
+  const [shown, set_shown] = useState<ShownTodos>(() => shown_todos(todos, null));
+  const next = shown_todos(todos, shown);
+  if (next !== shown) {
+    set_shown(next);
+  }
+  if (!next) {
     return null;
   }
-  const done = todos.filter((todo) => todo.status === "done").length;
-  if (done === todos.length) {
-    return null;
-  }
+  const live = busy && streaming && !next.leaving;
+  const done = next.todos.filter((todo) => todo.status === "done").length;
+  const current = open ? undefined : next.todos.find((todo) => todo.status === "in_progress");
   return (
-    <div className="todos-panel raised-surface enter-fade-up" data-open={open}>
-      <button type="button" className="todos-panel-head" aria-expanded={open} onClick={() => set_open(!open)}>
-        <ListChecksIcon size={14} />
-        <span className="todos-panel-title">{t("tools.todo_tasks")}</span>
-        <span className="todos-panel-count">
-          {done}/{todos.length}
-        </span>
-        <ChevronRightIcon size={12} className="todos-panel-chevron" />
-      </button>
-      <CollapsibleBody open={open}>
-        <div className="todos-panel-body">
-          <TodoList todos={todos} />
-        </div>
-      </CollapsibleBody>
+    <div
+      className="todos-panel composer-dock-card raised-surface enter-fade-up"
+      data-open={open}
+      data-leaving={next.leaving}
+      onAnimationEnd={(event) => {
+        if (event.animationName === "todos-out") {
+          set_shown(null);
+        }
+      }}
+    >
+      <div className="todos-panel-inner">
+        <button type="button" className="todos-panel-head" aria-expanded={open} onClick={() => set_open(!open)}>
+          <ProgressRing ratio={done / next.todos.length} size={16} className="todos-panel-ring" />
+          <span className={class_names("todos-panel-title", current && live && "is-working")}>{current ? current.text : t("tools.todo_tasks")}</span>
+          <span className="todos-panel-count">
+            {done}/{next.todos.length}
+          </span>
+          <ChevronRightIcon size={12} className="todos-panel-chevron" />
+        </button>
+        <CollapsibleBody open={open}>
+          <div className="todos-panel-body">
+            <TodoList todos={next.todos} live={live} />
+          </div>
+        </CollapsibleBody>
+      </div>
     </div>
   );
 };

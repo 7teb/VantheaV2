@@ -5,7 +5,6 @@ import type { Dialect } from "./statements.ts";
 
 export const script_extension = /\.(?:py|pyw|js|mjs|cjs|ts|tsx|jsx|rb|pl|php|lua|r|ps1|psm1|sh|bash|bat|cmd)$/i;
 export const shell_source = /\.(?:ps1|psm1|sh|bash|bat|cmd)$/i;
-const read_head = /(?:^|[;\n|])\s*(?:get-content|gc|cat|type|select-string|sls|get-filehash|get-childitem|gci|dir|ls|get-item|gi)\b/i;
 export const dynamic_path = /[$%\x60*?]|\$\(|\$\{/;
 const runtime_code = /\b(?:iex|invoke-expression)\b|\[scriptblock\]\s*::\s*create\s*\(|\beval\s/i;
 const file_read = String.raw`(?:get-content|gc|cat|type)\s+(?:-(?:literalpath|path)\s+)?(["']?)([^\s"'|);]+)\1`;
@@ -39,11 +38,6 @@ export const executed_reads = (text: string): { files: ExecutedRead[]; opaque: b
     }
   }
   return { files: [...files.values()], opaque: files.size === 0 };
-};
-
-export const protected_command_read = (command: string): boolean => {
-  const target = command.replace(/-pattern\s+("[^"]*"|'[^']*'|\S+)/gi, " ").replace(/\.env\.(?:example|sample)\b/gi, " ");
-  return read_head.test(target) && /(?:\.ssh\b|(?:^|[\\/.'"\s])(?:id_rsa|id_ed25519|\.env(?:\b|[.])|\.npmrc|\.pypirc|secrets[.]|credentials[.])|[.](?:pem|key|p12|pfx)\b)/i.test(target);
 };
 
 export const quote_arg = (arg: string): string => (/[\s;&|()]/.test(arg) ? '"' + arg.replaceAll('"', '""') + '"' : arg);

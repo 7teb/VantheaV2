@@ -70,4 +70,7 @@ export const normalize_memory_key = (value: unknown, kind: MemoryKind, text: str
   return (keyed.endsWith(".") || keyed.length < 4 ? fallback_key(kind, text) : keyed).slice(0, 160);
 };
 
+export const manual_memory_key = (kind: MemoryKind, text: string): string =>
+  `${namespace_for(kind)}.manual_${createHash("sha256").update(redact_secrets(text, memory_text_chars)).digest("hex").slice(0, 16)}`;
+
 export const memory_handle = (id: string): string => id.split("-").pop() ?? "";

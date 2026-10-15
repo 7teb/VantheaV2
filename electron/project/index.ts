@@ -11,13 +11,15 @@ export type ProjectWalk = { files: IndexEntry[]; directories: string[]; truncate
 
 export type ProjectIndex = ProjectWalk & { root: string; built_at: number };
 
+export type IndexAudience = "agent" | "human";
+
 export const ignored_dirs = new Set([".git", "node_modules", "dist", "build", ".vs", ".idea", ".vscode", "bin", "obj", "target", ".cache", "__pycache__", ".venv"]);
 
 export const max_walk_entries = 50_000;
 
 const max_age_ms = 15_000;
 
-const cache = new Map<string, Promise<ProjectIndex>>();
+const caches: Record<IndexAudience, Map<string, Promise<ProjectIndex>>> = { agent: new Map(), human: new Map() };
 
 const read_dir = async (dir: string): Promise<Dirent[]> => {
   try {
@@ -47,10 +49,11 @@ const file_size = async (absolute: string): Promise<number> => {
   }
 };
 
-export const walk_project = async (root: string, start: string, signal?: AbortSignal): Promise<ProjectWalk> => {
+export const walk_project = async (root: string, start: string, signal?: AbortSignal, secret_dirs = false): Promise<ProjectWalk> => {
   const files: IndexEntry[] = [];
   const directories: string[] = [];
   const pending = [start];
+  const descend_secret = secret_dirs || is_secret_path(to_posix(path.relative(root, start)));
   let truncated = false;
   while (pending.length && !truncated) {
     signal?.throwIfAborted();
@@ -59,12 +62,12 @@ export const walk_project = async (root: string, start: string, signal?: AbortSi
     for (const item of await read_dir(dir)) {
       const absolute = path.join(dir, item.name);
       const relative = to_posix(path.relative(root, absolute));
-      if (is_secret_path(relative)) {
-        continue;
-      }
       if (item.isDirectory()) {
-        if (!ignored_dirs.has(item.name)) {
-          directories.push(relative);
+        if (ignored_dirs.has(item.name)) {
+          continue;
+        }
+        directories.push(relative);
+        if (descend_secret || !is_secret_path(relative)) {
           pending.push(absolute);
         }
         continue;
@@ -87,12 +90,13 @@ export const walk_project = async (root: string, start: string, signal?: AbortSi
   return { files, directories, truncated };
 };
 
-const build_index = async (project_root: string): Promise<ProjectIndex> => {
+const build_index = async (project_root: string, audience: IndexAudience): Promise<ProjectIndex> => {
   const root = await project_real_root(project_root);
-  return { root, ...(await walk_project(root, root)), built_at: Date.now() };
+  return { root, ...(await walk_project(root, root, undefined, audience === "human")), built_at: Date.now() };
 };
 
-export const project_index = async (project_root: string): Promise<ProjectIndex> => {
+export const project_index = async (project_root: string, audience: IndexAudience = "agent"): Promise<ProjectIndex> => {
+  const cache = caches[audience];
   const key = path_key(path.resolve(project_root));
   const cached = cache.get(key);
   if (cached) {
@@ -101,7 +105,7 @@ export const project_index = async (project_root: string): Promise<ProjectIndex>
       return index;
     }
   }
-  const building = build_index(project_root);
+  const building = build_index(project_root, audience);
   cache.set(key, building);
   building.catch((error: unknown) => {
     console.warn(`[project] indexing ${project_root} failed: ${error_text(error)}`);
@@ -113,5 +117,7 @@ export const project_index = async (project_root: string): Promise<ProjectIndex>
 };
 
 export const invalidate_index = (project_root: string) => {
-  cache.delete(path_key(path.resolve(project_root)));
+  const key = path_key(path.resolve(project_root));
+  caches.agent.delete(key);
+  caches.human.delete(key);
 };

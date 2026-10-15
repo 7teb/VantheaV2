@@ -1,4 +1,6 @@
-export const browser_partition = "vx-browser";
+export const chat_partition = (chat_id: string) => `vx-browser-chat-${chat_id}`;
+
+export const draft_partition = (seq: number) => `vx-browser-draft-${seq}`;
 
 export const plain_user_agent = (user_agent: string, app_name: string): string => {
   const escaped = app_name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

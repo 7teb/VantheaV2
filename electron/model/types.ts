@@ -31,7 +31,7 @@ export type RoundUsage = { prompt_tokens: number; completion_tokens: number; rea
 
 export type RoundToolCall = { index: number; id: string; name: string; arguments: string };
 
-export type RoundRequest = { model: ModelEntry; effort: string; messages: ApiMessage[]; tools: ToolSpec[]; tool_choice?: "none" };
+export type RoundRequest = { model: ModelEntry; effort: string; messages: ApiMessage[]; tools: ToolSpec[]; tool_choice?: "none"; max_tokens?: number };
 
 export type ToolDraftUpdate = { lines: number | null; delta?: string; path?: string; old_text?: string };
 

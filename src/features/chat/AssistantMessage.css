@@ -18,6 +18,7 @@
     align-items: center;
     min-height: 28px;
     font-size: var(--font-size-body);
+    animation: fade-in var(--duration-base) var(--ease-out) backwards;
   }
 
   .assistant-note {
@@ -27,7 +28,7 @@
   }
 
   .assistant-actions {
-    margin: 6px 0 0 -7px;
+    margin: 6px 0 0 -6px;
   }
 
   .reasoning-row {
@@ -211,6 +212,7 @@
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-xl);
     background: var(--fill-danger);
+    box-shadow: inset 0 0 0 1px var(--ring-danger);
   }
 
   .error-card-head {
@@ -286,6 +288,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    min-height: var(--size-control);
     font-size: var(--font-size-body);
     color: var(--text-secondary);
   }
@@ -302,16 +305,6 @@
     flex: 1;
   }
 
-  .file-changes-reverted {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: var(--size-control);
-    padding: 0 var(--space-2);
-    font-size: var(--font-size-ui);
-    color: var(--text-tertiary);
-  }
-
   .file-changes-list {
     display: flex;
     flex-direction: column;
@@ -321,8 +314,14 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    width: 100%;
     height: 26px;
     padding-left: 23px;
+    text-align: left;
+  }
+
+  .file-changes-row:hover .file-changes-path {
+    color: var(--text-primary);
   }
 
   .file-changes-path {
@@ -334,13 +333,7 @@
     font-family: var(--font-ui);
     font-size: var(--font-size-ui);
     color: var(--text-secondary);
-  }
-
-  .file-changes[data-reverted="true"] .file-changes-path,
-  .file-changes[data-reverted="true"] .file-changes-title {
-    color: var(--text-tertiary);
-    text-decoration: line-through;
-    text-decoration-color: var(--current-opaque);
+    transition: color var(--duration-fast) var(--ease-out);
   }
 
   .file-changes .output-block-more {

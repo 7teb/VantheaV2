@@ -1,6 +1,7 @@
 import { app, Menu, protocol } from "electron";
 import { init_services, report_startup_failure, shutdown_services } from "./app/lifecycle.ts";
 import { create_window, main_window } from "./app/window.ts";
+import { init_dock } from "./browser/dock.ts";
 import { check_scheme } from "./check/session.ts";
 import { emit } from "./ipc/handle.ts";
 import { register_ipc } from "./ipc/index.ts";
@@ -13,7 +14,7 @@ const start = async () => {
   Menu.setApplicationMenu(null);
   await init_services();
   register_ipc();
-  create_window((state) => emit("window:changed", state));
+  init_dock(create_window((state) => emit("window:changed", state)));
 };
 
 if (!app.requestSingleInstanceLock()) {

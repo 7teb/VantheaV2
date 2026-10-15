@@ -1,6 +1,7 @@
-import type { BackgroundTask } from "../../shared/ipc/work.ts";
+import type { BackgroundTask, CommandHandoff } from "../../shared/ipc/work.ts";
 import { api } from "../api/bridge.ts";
 import { create_store } from "./create-store.ts";
+import { on_active_chat } from "./ui.ts";
 
 export type BackgroundState = { chat_id: string | null; status: "idle" | "loading" | "ready" | "failed"; tasks: BackgroundTask[] };
 
@@ -58,6 +59,17 @@ export const cancel_background_task = async (task_id: string) => {
   }
 };
 
+export type CommandMove = CommandHandoff | { status: "failed" };
+
+export const move_command_to_background = async (chat_id: string, call_id: string): Promise<CommandMove> => {
+  try {
+    return await api.invoke("background:adopt_command", chat_id, call_id);
+  } catch (error) {
+    console.error(`[background] background:adopt_command failed for chat ${chat_id} call ${call_id}`, error);
+    return { status: "failed" };
+  }
+};
+
 export const clear_finished_tasks = async (chat_id: string) => {
   try {
     await api.invoke("background:clear", chat_id);
@@ -83,4 +95,11 @@ const receive = (task: BackgroundTask) => {
   }
 };
 
-export const init_background = (): (() => void) => api.on("background:changed", receive);
+export const init_background = (): (() => void) => {
+  const stops = [api.on("background:changed", receive), on_active_chat((chat_id) => void load_background(chat_id))];
+  return () => {
+    for (const stop of stops) {
+      stop();
+    }
+  };
+};

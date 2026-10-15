@@ -39,7 +39,9 @@ export const t: Translate = (key, vars) => translate(language_store.get(), key, 
 
 const select_language = (language: Language) => language;
 
+export const use_language = (): Language => use_store(language_store, select_language);
+
 export const use_t = (): Translate => {
-  const language = use_store(language_store, select_language);
+  const language = use_language();
   return useCallback<Translate>((key, vars) => translate(language, key, vars), [language]);
 };

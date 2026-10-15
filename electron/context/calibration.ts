@@ -12,6 +12,16 @@ export const no_stored_context: StoredContext = { calibration: null, floor: 0 };
 export const sent_estimate = (messages: ApiMessage[], specs: ToolSpec[], model: ModelEntry): number =>
   estimate_request(wire_messages(messages, model.reasoning_passback), specs);
 
+const prompt_margin = 1.05;
+
+const min_output_budget = 1024;
+
+export const output_budget = (messages: ApiMessage[], specs: ToolSpec[], model: ModelEntry): number | undefined => {
+  const room = model.context_length - Math.ceil(sent_estimate(messages, specs, model) * prompt_margin);
+  const budget = Math.min(model.max_output, room);
+  return budget >= min_output_budget ? budget : undefined;
+};
+
 export const calibration_scale = (calibration: ContextCalibration | null): number => (calibration ? calibration.prompt_tokens / calibration.estimate : 1);
 
 export const measure_request = (messages: ApiMessage[], specs: ToolSpec[], model: ModelEntry, calibration: ContextCalibration | null): number =>

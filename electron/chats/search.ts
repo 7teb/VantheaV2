@@ -34,7 +34,7 @@ export const search_chats = async (query: string): Promise<ChatSearchHit[]> => {
     }
     const snippet = snippet_at(meta.title, needle) ?? snippet_at(meta.project_path, needle) ?? snippet_at(await chat_text(meta.id), needle);
     if (snippet !== null) {
-      hits.push({ chat_id: meta.id, title: meta.title, project_path: meta.project_path, snippet, updated_at: meta.updated_at });
+      hits.push({ chat_id: meta.id, title: meta.title, project_path: meta.project_path, snippet, updated_at: meta.updated_at, ...(meta.archived ? { archived: true } : {}) });
     }
   }
   return hits;

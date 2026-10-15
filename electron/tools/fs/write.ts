@@ -37,7 +37,7 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
       return denied(`the edit to ${prepared.target.relative}`, decision);
     }
   }
-  const sha256 = await commit_edit(prepared, ctx.turn_id);
+  const sha256 = await commit_edit(prepared);
   record_write(ctx.chat_id, prepared.target.target, { actor: actor_label(ctx.review.actor), tool, call_id: ctx.call_id, at: Date.now(), sha256 });
   return { status: "done", text: `${summary} (+${prepared.diff.added} -${prepared.diff.removed} lines)`, view };
 };

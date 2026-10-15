@@ -7,6 +7,7 @@ import { init_chat_view } from "./chat-view.ts";
 import { init_chats } from "./chats.ts";
 import { init_composer } from "./composer.ts";
 import { init_extensions } from "./extensions.ts";
+import { init_files } from "./files.ts";
 import { init_full_window } from "./full-window.ts";
 import { load_keep_awake } from "./keep-awake.ts";
 import { init_models } from "./models.ts";
@@ -30,6 +31,7 @@ export const init_state = (): (() => void) => {
     init_full_window(),
     init_artifacts(),
     init_extensions(),
+    init_files(),
     init_models(),
   ];
   return () => {

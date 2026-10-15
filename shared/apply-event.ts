@@ -1,4 +1,4 @@
-import type { Step, ToolProgress, ToolStep } from "./chat.ts";
+import type { ReasoningStep, Step, ToolProgress, ToolStep } from "./chat.ts";
 import type { Sequenced, StreamEventBody, TranscriptState } from "./events.ts";
 import { lines_after } from "./tool-drafts.ts";
 
@@ -8,9 +8,18 @@ type DraftEvent = Extract<Event, { type: "tool_draft" }>;
 
 const open_tool_statuses = new Set<ToolStep["status"]>(["queued", "running", "awaiting_approval"]);
 
+const end_reasoning = ({ status_line, ...step }: ReasoningStep, at: number): ReasoningStep => ({ ...step, ended_at: at });
+
+const open_reasoning = (step: Step): step is ReasoningStep => step.kind === "reasoning" && step.ended_at === null;
+
 const close_reasoning = (steps: Step[], at: number): Step[] =>
-  steps.some((step) => step.kind === "reasoning" && step.ended_at === null)
-    ? steps.map((step) => (step.kind === "reasoning" && step.ended_at === null ? { ...step, ended_at: at } : step))
+  steps.some(open_reasoning)
+    ? steps.flatMap((step): Step[] => {
+        if (!open_reasoning(step)) {
+          return [step];
+        }
+        return step.text.trim() ? [end_reasoning(step, at)] : [];
+      })
     : steps;
 
 const update_tool = (steps: Step[], match: (step: ToolStep) => boolean, patch: (step: ToolStep) => ToolStep): Step[] =>
@@ -71,6 +80,14 @@ const append_reasoning = (steps: Step[], event: Extract<Event, { type: "reasonin
   ];
 };
 
+const set_reasoning_status = (steps: Step[], event: Extract<Event, { type: "reasoning_status" }>): Step[] => {
+  const last = steps.at(-1);
+  if (last?.kind !== "reasoning" || last.round !== event.round || last.ended_at !== null) {
+    return steps;
+  }
+  return [...steps.slice(0, -1), { ...last, status_line: event.text }];
+};
+
 const drop_attempt = (steps: Step[], round: number): Step[] =>
   steps.filter((step) => {
     if (step.round !== round) {
@@ -103,6 +120,8 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
       return event.delta ? { ...state, retry: null, steps: append_text(close_reasoning(state.steps, event.at), event) } : state;
     case "reasoning":
       return event.delta ? { ...state, retry: null, steps: append_reasoning(state.steps, event) } : state;
+    case "reasoning_status":
+      return event.text ? { ...state, steps: set_reasoning_status(state.steps, event) } : state;
     case "reasoning_details":
       return {
         ...state,

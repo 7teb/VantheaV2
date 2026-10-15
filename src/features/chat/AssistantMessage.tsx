@@ -1,6 +1,5 @@
 import { memo, useMemo, useState } from "react";
 import { manual_compaction_only, type AssistantMessage as AssistantMessageData } from "../../../shared/chat.ts";
-import type { UndoResult } from "../../../shared/ipc/chats.ts";
 import { IconButton } from "../../components/Button.tsx";
 import { ForkIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
@@ -71,10 +70,10 @@ type AssistantMessageProps = {
   busy: boolean;
   last_plan: boolean;
   plan_accepted: boolean;
-  reverted: UndoResult | null;
+  undoable: boolean;
 };
 
-export const AssistantMessage = memo(({ chat_id, message, is_last, busy, last_plan, plan_accepted, reverted }: AssistantMessageProps) => {
+export const AssistantMessage = memo(({ chat_id, message, is_last, busy, last_plan, plan_accepted, undoable }: AssistantMessageProps) => {
   const t = use_t();
   const blocks = useMemo(() => build_blocks(message.steps), [message.steps]);
   const answer = useMemo(() => answer_text(message), [message]);
@@ -105,12 +104,12 @@ export const AssistantMessage = memo(({ chat_id, message, is_last, busy, last_pl
       )}
       {message.retry && <RetryBanner retry={message.retry} />}
       {!manual_compaction_only(message) && <TurnOutcome chat_id={chat_id} message={message} has_content={blocks.length > 0} can_continue={is_last && !busy} />}
-      {!streaming && <FileChanges chat_id={chat_id} message={message} busy={busy} reverted={reverted} />}
+      {!streaming && <FileChanges chat_id={chat_id} message={message} busy={busy} undoable={undoable} />}
       {!streaming && !manual_compaction_only(message) && (
         <div className="message-actions assistant-actions">
-          {answer && <CopyButton text={answer} label={t("chat.copy_answer")} className="message-action" />}
-          <IconButton label={t("chat.fork")} size="sm" className="message-action" onClick={() => void fork()}>
-            <ForkIcon size={15} />
+          {answer && <CopyButton text={answer} label={t("chat.copy_answer")} />}
+          <IconButton label={t("chat.fork")} size="sm" onClick={() => void fork()}>
+            <ForkIcon size={14} />
           </IconButton>
         </div>
       )}

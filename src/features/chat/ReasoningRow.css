@@ -1,0 +1,21 @@
+@layer components {
+  .reasoning-head .reasoning-chevron {
+    flex: none;
+  }
+
+  .reasoning-label {
+    display: block;
+    min-width: 0;
+  }
+
+  .reasoning-label.is-status {
+    animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+  }
+
+  .reasoning-label-text {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}

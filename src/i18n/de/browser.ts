@@ -16,5 +16,4 @@ export const browser: Record<keyof typeof en, string> = {
   "browser.load_failed": "Seite konnte nicht geladen werden",
   "browser.crashed": "Die Seite ist abgestürzt",
   "browser.tabs": "Browser-Tabs",
-  "browser.unavailable": "Der Browser konnte nicht starten",
 };

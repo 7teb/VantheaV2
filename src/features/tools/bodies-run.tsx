@@ -3,6 +3,9 @@ import { BotIcon, CheckIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { open_agent_run } from "../../state/agents.ts";
+import { background_store } from "../../state/background.ts";
+import { use_store } from "../../state/use-store.ts";
+import { background_status_label } from "./background-status.ts";
 import type { BodyProps } from "./body-types.ts";
 import { CommandCard } from "./CommandCard.tsx";
 import { step_outcome } from "./review-notes.ts";
@@ -51,19 +54,23 @@ export const CommandBody = ({ view, step }: BodyProps<"command">) => {
   );
 };
 
-export const BackgroundBody = ({ view }: BodyProps<"background">) => (
-  <CommandCard
-    shell={view.shell}
-    command={view.command}
-    output={view.output_tail}
-    footer={
-      <>
-        <span className="command-card-lead">{view.task_id}</span>
-        <span>{view.status}</span>
-      </>
-    }
-  />
-);
+export const BackgroundBody = ({ view }: BodyProps<"background">) => {
+  const t = use_t();
+  const task = use_store(background_store, (state) => state.tasks.find((entry) => entry.id === view.task_id) ?? null);
+  return (
+    <CommandCard
+      shell={view.shell}
+      command={view.command}
+      output={task?.output_tail ?? view.output_tail}
+      footer={
+        <>
+          <span className="command-card-lead">{view.task_id}</span>
+          <span>{background_status_label(t, task?.status ?? view.status)}</span>
+        </>
+      }
+    />
+  );
+};
 
 export const AgentBody = ({ view }: BodyProps<"agent">) => {
   const t = use_t();

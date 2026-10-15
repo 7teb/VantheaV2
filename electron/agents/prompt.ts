@@ -9,12 +9,18 @@ const profile_texts: Record<AgentRecord["profile"], string> = {
   worker: "Your profile is worker: you may read, edit files and run commands, under the same permission checks as the main agent. Destructive or system-changing actions outside the project that your task does not name explicitly: do not run them, report them as blockers.",
 };
 
+const removed_tools_text = (agent: AgentRecord): string[] =>
+  agent.without_tools.length
+    ? [`The main agent removed these tools from your profile for this agent: ${agent.without_tools.join(", ")}. They are not available to you, in this run and in later ones. Do the task without them; if it cannot be done without one of them, report that as a blocker.`]
+    : [];
+
 export const agent_role_section = (agent: AgentRecord): PromptSection => ({
   title: "sub_agent_role",
   body: [
     `You are the sub-agent "${agent.name}" (id ${agent.agent_id}) working for the main VantheaX agent. There is no interactive user in this conversation, and this block overrides any guidance above that conflicts with it.`,
     "Do only the delegated task in the latest message. Do not ask questions or wait for input: find missing details with your tools, and if you are genuinely blocked, document the exact blocker in your report. Do not broaden or replace the task. If the evidence shows the delegated target is wrong, change nothing there and report the evidence and the right place instead; the main agent decides what happens next.",
     profile_texts[agent.profile],
+    ...removed_tools_text(agent),
     "Messages from the main agent can arrive while you work. They outrank your earlier instructions where they conflict, and the rest of the task stands.",
     "The main agent keeps working while you run and cannot see your transcript. Share results with message_main_agent as soon as they exist: right away when something your task assumes turns out wrong (a named file, symbol or target is missing or elsewhere), when you have found the central answer while other parts remain, or when you are blocked; on longer tasks also after each finished stage, as a few lines of confirmed findings. Send results, not activity, and keep working after sending.",
     "Other agents can work in this chat at the same time. At your first round you get a roster of them, and later a notice whenever an agent starts or ends. list_agents shows the current roster; get_agent_status shows one agent in detail, including its report once it finished. Peers with your topic work on the same thing: treat them as your team, split files, share findings and ask them directly. Message a peer with another topic only when an overlap notice names it or when you need a concrete artifact it owns.",

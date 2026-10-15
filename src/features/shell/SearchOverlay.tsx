@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import type { ChatSearchHit } from "../../../shared/chat.ts";
 import { api } from "../../api/bridge.ts";
 import { Dialog } from "../../components/Dialog.tsx";
-import { MessageSquareIcon, SearchIcon } from "../../components/icons.tsx";
+import { ArchiveIcon, MessageSquareIcon, SearchIcon } from "../../components/icons.tsx";
 import { SkeletonRows } from "../../components/Skeleton.tsx";
 import { TextField } from "../../components/TextField.tsx";
 import { use_t } from "../../i18n/index.ts";
@@ -61,7 +61,8 @@ const SearchPanel = () => {
 
   const recent = useMemo<ChatSearchHit[]>(
     () =>
-      [...chats]
+      chats
+        .filter((chat) => !chat.archived)
         .sort((left, right) => right.updated_at.localeCompare(left.updated_at))
         .slice(0, recent_limit)
         .map((chat) => ({ chat_id: chat.id, title: chat.title, project_path: chat.project_path, snippet: "", updated_at: chat.updated_at })),
@@ -130,11 +131,12 @@ const SearchPanel = () => {
               onMouseMove={() => set_cursor(index)}
               onClick={() => choose(hit)}
             >
-              <MessageSquareIcon size={16} className="search-hit-icon" />
+              {hit.archived ? <ArchiveIcon size={16} className="search-hit-icon" /> : <MessageSquareIcon size={16} className="search-hit-icon" />}
               <span className="search-hit-text">
                 <span className="search-hit-title">{chat_label(t, hit.title)}</span>
                 <span className="search-hit-detail">{hit.snippet || hit.project_path || t("search.no_project")}</span>
               </span>
+              {hit.archived && <span className="search-hit-tag">{t("search.archived")}</span>}
               <span className="search-hit-time">{relative_time(t, hit.updated_at, now)}</span>
             </button>
           ))}

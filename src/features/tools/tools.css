@@ -29,6 +29,10 @@
     align-self: flex-start;
   }
 
+  .work-single > .collapsible-body > .collapsible-clip {
+    overflow: visible;
+  }
+
   .tool-row-head {
     width: calc(100% + 6px);
   }
@@ -320,6 +324,13 @@
 
   .web-source svg {
     color: var(--text-tertiary);
+  }
+
+  .web-source-icon {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
   }
 
   .web-source-title {

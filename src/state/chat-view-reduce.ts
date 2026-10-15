@@ -1,6 +1,5 @@
 import { apply_event } from "../../shared/apply-event.ts";
 import type { AssistantMessage, Chat, ContextUsage, Message } from "../../shared/chat.ts";
-import type { UndoResult } from "../../shared/ipc/chats.ts";
 import type { QuestionStates } from "../../shared/questions.ts";
 import type { Delivery } from "../api/smoother.ts";
 
@@ -11,7 +10,6 @@ type EntryBase = {
   waiting: Record<string, EventDelivery[]>;
   stale: boolean;
   context: ContextUsage | null;
-  reverted: Record<string, UndoResult>;
 };
 
 export type ChatEntry = EntryBase &
@@ -60,7 +58,6 @@ export const begin_load = (state: ChatViewState, chat_id: string): ChatViewState
     waiting: {},
     stale: false,
     context: current?.context ?? null,
-    reverted: current?.reverted ?? {},
   };
   return open_entry(with_entry(state, chat_id, entry), chat_id);
 };
@@ -186,11 +183,6 @@ export const set_questions = (state: ChatViewState, chat_id: string, questions: 
     return state;
   }
   return with_entry(state, chat_id, { ...entry, chat: { ...entry.chat, questions } });
-};
-
-export const mark_reverted = (state: ChatViewState, chat_id: string, message_id: string, result: UndoResult): ChatViewState => {
-  const entry = state.entries[chat_id];
-  return entry ? with_entry(state, chat_id, { ...entry, reverted: { ...entry.reverted, [message_id]: result } }) : state;
 };
 
 export const stale_chats = (state: ChatViewState): string[] =>

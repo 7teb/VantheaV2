@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell } from "electron";
 import path from "node:path";
 import type { WindowState } from "../../shared/ipc/app.ts";
+import { init_spellcheck } from "./spellcheck.ts";
 
 let window: BrowserWindow | null = null;
 
@@ -31,12 +32,13 @@ export const create_window = (on_state: (state: WindowState) => void) => {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      webviewTag: true,
-      spellcheck: false,
+      webviewTag: false,
+      spellcheck: true,
     },
   });
 
   const current = window;
+  init_spellcheck(current);
   const push_state = () => on_state(window_state());
   current.on("maximize", push_state);
   current.on("unmaximize", push_state);

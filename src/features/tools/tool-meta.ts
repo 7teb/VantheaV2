@@ -1,9 +1,11 @@
 import type { ToolStep } from "../../../shared/chat.ts";
+import { call_shell, type ShellKind } from "../../../shared/shell.ts";
 import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 
 export type ToolIconName =
   | "terminal"
+  | "bash"
   | "background"
   | "file"
   | "files"
@@ -21,6 +23,8 @@ export type ToolIconName =
   | "browser_tabs"
   | "browser_navigate"
   | "browser_snapshot"
+  | "browser_console"
+  | "browser_eval"
   | "browser_click"
   | "browser_type"
   | "browser_key"
@@ -98,6 +102,8 @@ const text_arg = (step: ToolStep, key: string): string => {
 
 export const base_name = (path: string) => path.split(/[\\/]/).filter(Boolean).at(-1) ?? path;
 
+export const page_address = (url: string) => url.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+
 export const view_of = <K extends ToolViewKind>(step: ToolStep, kind: K): Extract<ToolView, { kind: K }> | null =>
   step.view?.kind === kind ? (step.view as Extract<ToolView, { kind: K }>) : null;
 
@@ -145,15 +151,26 @@ const first_question = (step: ToolStep): string => {
   return first && typeof first === "object" && "title" in first && typeof first.title === "string" ? first.title : "";
 };
 
+type ShellLabelKeys = { ask: MessageKey; running: MessageKey; moved: MessageKey; ran: MessageKey };
+
+const shell_label_keys: Record<ShellKind, ShellLabelKeys> = {
+  powershell: { ask: "tool_label.run_shell_ask", running: "tool_label.run_shell", moved: "tool_label.moved_shell_background", ran: "tool_label.ran_shell" },
+  bash: { ask: "tool_label.run_bash_ask", running: "tool_label.run_bash", moved: "tool_label.moved_bash_background", ran: "tool_label.ran_bash" },
+};
+
 const command_label = (active: boolean): Label => (t, step) => {
   const command = command_of(step);
+  const keys = shell_label_keys[call_shell(step.name, step.args)];
   if (step.status === "awaiting_approval") {
-    return compact_command(command) ? t("tool_label.run_cmd", { x: command }) : t("tool_label.run_shell_ask");
+    return compact_command(command) ? t("tool_label.run_cmd", { x: command }) : t(keys.ask);
   }
   if (active) {
-    return compact_command(command) ? t("tool_label.running", { x: command }) : t("tool_label.run_shell");
+    return compact_command(command) ? t("tool_label.running", { x: command }) : t(keys.running);
   }
-  return compact_command(command) ? t("tool_label.ran", { x: command }) : t("tool_label.ran_shell");
+  if (step.view?.kind === "background") {
+    return compact_command(command) ? t("tool_label.moved_background", { x: command }) : t(keys.moved);
+  }
+  return compact_command(command) ? t("tool_label.ran", { x: command }) : t(keys.ran);
 };
 
 const edit_done: Label = (t, step) => t(view_of(step, "edit")?.created ? "tool_label.created" : "tool_label.edited", { x: file_name(step) });
@@ -166,10 +183,24 @@ const edit_active: Label = (t, step) => {
   return t(step.name === "write_file" ? "tool_label.writing" : "tool_label.editing", { x: name });
 };
 
+const read_urls = (step: ToolStep): string[] => {
+  const urls: unknown = view_of(step, "web_search")?.urls ?? step.args.urls;
+  return Array.isArray(urls) ? urls.filter((url): url is string => typeof url === "string") : [];
+};
+
+const web_label = (search: Label, one_page: MessageKey, pages: MessageKey): Label => (t, step) => {
+  const urls = read_urls(step);
+  if (urls.length > 1) {
+    return t(pages, { n: urls.length });
+  }
+  return urls[0] ? t(one_page, { x: page_address(urls[0]) }) : search(t, step);
+};
+
 const entry = (icon: ToolIconName, category: ToolCategory, active: Label, done: Label = active): ToolMeta => ({ icon, category, active, done });
 
 const named: Record<string, ToolMeta> = {
   run_command: entry("terminal", "commands", command_label(true), command_label(false)),
+  run_bash: entry("bash", "commands", command_label(true), command_label(false)),
   start_background_task: entry("background", "commands", fixed("tool_label.starting_background"), fixed("tool_label.started_background")),
   get_background_task: entry("background", "task_checks", fixed("tool_label.checking_background"), fixed("tool_label.checked_background")),
   cancel_background_task: entry("background", "task_stops", fixed("tool_label.stopping_background"), fixed("tool_label.stopped_background")),
@@ -183,7 +214,12 @@ const named: Record<string, ToolMeta> = {
   update_todos: entry("todos", "todos", fixed("tool_label.update_todos"), fixed("tool_label.todos")),
   present_plan: entry("plan", "other", fixed("tool_label.planning"), fixed("tool_label.planned")),
   ask_user: entry("question", "questions", with_x("tool_label.asking", first_question), with_x("tool_label.asked", first_question)),
-  web_search: entry("web", "web", fixed("tool_label.web_search"), with_x("tool_label.searched_web", (step) => view_of(step, "web_search")?.query || text_arg(step, "query"))),
+  web_search: entry(
+    "web",
+    "web",
+    web_label(fixed("tool_label.web_search"), "tool_label.reading", "tool_label.reading_pages"),
+    web_label(with_x("tool_label.searched_web", (step) => view_of(step, "web_search")?.query || text_arg(step, "query")), "tool_label.read", "tool_label.read_pages"),
+  ),
   generate_image: entry("image", "images", fixed("tool_label.generating_image"), fixed("tool_label.generated_image")),
   analyze_image: entry("image", "other", fixed("tool_label.analyze_image"), fixed("tool_label.analyzed_image")),
   view_image: entry("image", "reads", with_x("tool_label.viewing_image", file_name), with_x("tool_label.viewed_image", viewed_image)),
@@ -245,6 +281,8 @@ const browser: Record<string, ToolMeta> = {
   browser_tab: entry("browser_tabs", "browser", fixed("tool_label.browser_tabs"), tab_done),
   browser_navigate: entry("browser_navigate", "browser", fixed("tool_label.browser_navigate"), navigate_done),
   browser_snapshot: entry("browser_snapshot", "browser", fixed("tool_label.browser_snapshot"), fixed("tool_label.browser_snapshot_done")),
+  browser_console: entry("browser_console", "browser", fixed("tool_label.browser_console"), fixed("tool_label.browser_console_done")),
+  browser_eval: entry("browser_eval", "browser", fixed("tool_label.browser_eval"), fixed("tool_label.browser_eval_done")),
   browser_click: entry("browser_click", "browser", with_x("tool_label.browser_click", browser_target), clicked),
   browser_type: entry("browser_type", "browser", with_x("tool_label.browser_type", browser_target), with_x("tool_label.browser_typed", acted_on(browser_target))),
   browser_key: entry("browser_key", "browser", with_x("tool_label.browser_key", (step) => text_arg(step, "key")), with_x("tool_label.browser_pressed", acted_on((step) => text_arg(step, "key")))),

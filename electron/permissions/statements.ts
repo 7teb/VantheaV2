@@ -1,3 +1,5 @@
+import { split_pipelines_posix, split_statements_posix, statement_parts_posix } from "./statements-posix.ts";
+
 export type Dialect = "powershell" | "cmd" | "posix" | "unknown";
 
 export type StatementElement = { text: string; start: number };
@@ -290,6 +292,7 @@ const split_top_level = (source: string, split_pipes: boolean): string[] => {
 };
 
 export const statement_parts = (text: string, dialect: Dialect = "powershell"): StatementPart[] => {
+  if (dialect === "posix") return statement_parts_posix(text);
   const parts: StatementPart[] = [];
   let elements: StatementElement[] = [];
   let joiner: StatementPart["joiner"] = "";
@@ -324,7 +327,13 @@ const unquote = (text: string) => {
   return quoted ? value.slice(1, -1) : value;
 };
 
+const expression_launch = /^(?:invoke-expression|iex)\s+(?:-command\s+)?([\s\S]+)$/i;
+
 const nested_payloads = (statement: string): string[] => {
+  const expression = expression_launch.exec(statement.trim());
+  if (expression) {
+    return [unquote(expression[1] ?? "")];
+  }
   const match = shell_launch.exec(statement.trim());
   if (!match) {
     return [];
@@ -355,6 +364,6 @@ const split_recursive = (command: string, split_pipes: boolean): string[] => {
   return statements;
 };
 
-export const split_statements = (command: string): string[] => split_recursive(command, true);
+export const split_statements = (command: string, dialect: Dialect = "powershell"): string[] => (dialect === "posix" ? split_statements_posix(command) : split_recursive(command, true));
 
-export const split_pipelines = (command: string): string[] => split_recursive(command, false);
+export const split_pipelines = (command: string, dialect: Dialect = "powershell"): string[] => (dialect === "posix" ? split_pipelines_posix(command) : split_recursive(command, false));

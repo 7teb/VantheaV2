@@ -4,6 +4,7 @@ import { harness_facts } from "../context/facts.ts";
 import { wait_for_decision } from "../permissions/approvals.ts";
 import { chat_decisions, merge_decisions, mirror_decision } from "../permissions/decisions.ts";
 import { agent_review } from "../permissions/review-records.ts";
+import type { Tool } from "../tools/types.ts";
 import type { TurnNote, TurnSession } from "../turn/session.ts";
 import { keep_report, type LiveRun } from "./live.ts";
 import { send_peer } from "./peers.ts";
@@ -17,9 +18,14 @@ export const reminder_interval = 25;
 
 export const agent_approval_key = (run_id: string) => `agent:${run_id}`;
 
+export const allowed_tools = (tools: Tool[], agent: Pick<AgentRecord, "without_tools">): Tool[] => tools.filter((tool) => !agent.without_tools.includes(tool.spec.name));
+
 const tool_calls_of = (live: LiveRun) => live.transcript.steps.filter((step) => step.kind === "tool").length;
 
-const update_reminder = (live: LiveRun): TurnNote[] => {
+const update_reminder = (agent: AgentRecord, live: LiveRun): TurnNote[] => {
+  if (agent.without_tools.includes("message_main_agent")) {
+    return [];
+  }
   const calls = tool_calls_of(live);
   const silent = calls - live.heard_at_call;
   if (silent < reminder_interval) {
@@ -29,7 +35,7 @@ const update_reminder = (live: LiveRun): TurnNote[] => {
   return [reminder_note(silent)];
 };
 
-const take_notes = (live: LiveRun): TurnNote[] => {
+const take_notes = (agent: AgentRecord, live: LiveRun): TurnNote[] => {
   const taken = live.inbox;
   live.inbox = [];
   const entries = roster_entries(live.chat_id);
@@ -40,7 +46,7 @@ const take_notes = (live: LiveRun): TurnNote[] => {
     ...taken.flatMap((entry) => (entry.from === "app" ? [peer_status_note(entry.text)] : [])),
     ...(roster ? [roster_note(roster)] : []),
     ...overlaps(live, entries).map(roster_note),
-    ...update_reminder(live),
+    ...update_reminder(agent, live),
   ];
 };
 
@@ -57,7 +63,7 @@ const agent_facts = (live: LiveRun, project_root: string): string =>
   [harness_facts(live.transcript.steps, [], project_root), roster_facts(live.chat_id, live.agent_id)].filter(Boolean).join("\n\n");
 
 export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecord, live: LiveRun, request: RunContext, model: ModelEntry, stored: StoredContext): TurnSession => {
-  const { stream, resolve_tools, side_model, review_call } = deps;
+  const { stream, resolve_tools, side_model, review_call, reasoning_status } = deps;
   return {
     chat_id: agent.chat_id,
     message_id: request.parent_message_id,
@@ -80,10 +86,11 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
       live.finish_reason = result.finish_reason;
       return result;
     },
-    resolve_tools: (profile) => resolve_tools(profile, request.settings, model),
+    resolve_tools: (profile) => allowed_tools(resolve_tools(profile, request.settings, model), agent),
+    without_tools: agent.without_tools,
     side_model,
-    wait_decision: (call_id, request) =>
-      wait_for_decision({ key: agent_approval_key(run.run_id), chat_id: agent.chat_id, call_id, request, signal: live.controller.signal }),
+    wait_decision: (call_id, request, on_hold) =>
+      wait_for_decision({ key: agent_approval_key(run.run_id), chat_id: agent.chat_id, call_id, request, signal: live.controller.signal, on_hold }),
     review: agent_review(
       {
         chat_id: agent.chat_id,
@@ -100,7 +107,7 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
     mirror_decision: (decision) => mirror_decision(agent.chat_id, request.parent_message_id, request.parent_call_id, decision),
     profile: agent.profile,
     call_scope: run.run_id,
-    take_notes: () => take_notes(live),
+    take_notes: () => take_notes(agent, live),
     idle: async () => {
       if (!live.inbox.length) {
         return false;
@@ -112,5 +119,6 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
     send_peer: (peer_request, gate) => send_peer({ agent, run, live }, peer_request, gate),
     compaction: { audience: "agent", facts: async () => agent_facts(live, request.project_root) },
     stored_context: stored,
+    reasoning_status,
   };
 };

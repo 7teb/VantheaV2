@@ -1,7 +1,9 @@
 import { app_channels } from "./app.ts";
+import { browser_channels } from "./browser.ts";
 import type { Emit, Invoke, Send } from "./channel.ts";
 import { chats_channels } from "./chats.ts";
 import { extensions_channels } from "./extensions.ts";
+import { files_channels } from "./files.ts";
 import { media_channels } from "./media.ts";
 import { panels_channels } from "./panels.ts";
 import { questions_channels } from "./questions.ts";
@@ -16,7 +18,9 @@ export const channels = {
   ...work_channels,
   ...extensions_channels,
   ...panels_channels,
+  ...browser_channels,
   ...questions_channels,
+  ...files_channels,
 } as const;
 
 export type Channels = typeof channels;

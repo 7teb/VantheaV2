@@ -1,8 +1,5 @@
-import { app, session, type WebContents } from "electron";
-import { emit } from "../ipc/handle.ts";
-import { browser_partition, is_guest_url_allowed, plain_user_agent } from "./guest-policy.ts";
-
-const browser_session = () => session.fromPartition(browser_partition);
+import { app, type Session, type WebContents, type WebPreferences } from "electron";
+import { is_guest_url_allowed, plain_user_agent } from "./guest-policy.ts";
 
 const block_unsafe_navigation = (event: { url: string; isMainFrame: boolean; preventDefault: () => void }) => {
   if (event.isMainFrame && !is_guest_url_allowed(event.url, true)) {
@@ -11,15 +8,26 @@ const block_unsafe_navigation = (event: { url: string; isMainFrame: boolean; pre
   }
 };
 
-const secure_guest = (contents: WebContents) => {
-  if (contents.session !== browser_session()) {
-    console.warn("[browser] closed a webview that does not use the browser partition");
-    contents.close();
-    return;
-  }
+export const guest_preferences = (partition: string): WebPreferences => ({
+  partition,
+  sandbox: true,
+  contextIsolation: true,
+  nodeIntegration: false,
+  nodeIntegrationInWorker: false,
+  nodeIntegrationInSubFrames: false,
+  webSecurity: true,
+  allowRunningInsecureContent: false,
+  experimentalFeatures: false,
+  webviewTag: false,
+  backgroundThrottling: false,
+  disableDialogs: true,
+  navigateOnDragDrop: false,
+});
+
+export const secure_guest = (contents: WebContents, on_popup: (url: string) => void) => {
   contents.setWindowOpenHandler((details) => {
     if (!details.postBody && is_guest_url_allowed(details.url, false)) {
-      emit("browser:popup", { url: details.url });
+      on_popup(details.url);
     }
     return { action: "deny" };
   });
@@ -28,28 +36,7 @@ const secure_guest = (contents: WebContents) => {
   contents.on("will-redirect", block_unsafe_navigation);
 };
 
-const secure_host = (contents: WebContents) => {
-  contents.on("will-attach-webview", (event, preferences, params) => {
-    if (params.partition !== browser_partition || !is_guest_url_allowed(params.src ?? "", true)) {
-      console.warn(`[browser] refused a webview with partition ${params.partition} and src ${String(params.src).slice(0, 200)}`);
-      event.preventDefault();
-      return;
-    }
-    delete preferences.preload;
-    preferences.nodeIntegration = false;
-    preferences.nodeIntegrationInWorker = false;
-    preferences.nodeIntegrationInSubFrames = false;
-    preferences.contextIsolation = true;
-    preferences.sandbox = true;
-    preferences.webSecurity = true;
-    preferences.allowRunningInsecureContent = false;
-    preferences.experimentalFeatures = false;
-    preferences.webviewTag = false;
-  });
-};
-
-const configure_session = () => {
-  const guest_session = browser_session();
+export const secure_session = (guest_session: Session) => {
   guest_session.setUserAgent(app.userAgentFallback);
   guest_session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   guest_session.setPermissionCheckHandler(() => false);
@@ -68,15 +55,4 @@ const configure_session = () => {
 
 export const init_browser_guest_security = () => {
   app.userAgentFallback = plain_user_agent(app.userAgentFallback, app.getName());
-  configure_session();
-  app.on("web-contents-created", (_event, contents) => {
-    const type = contents.getType();
-    if (type === "webview") {
-      secure_guest(contents);
-    } else if (type === "window") {
-      secure_host(contents);
-    }
-  });
 };
-
-export const wipe_browser_storage = () => browser_session().clearStorageData();

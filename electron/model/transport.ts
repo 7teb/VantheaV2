@@ -45,7 +45,7 @@ const default_transport: Transport = {
   now: Date.now,
   max_attempts: retry_backoff_ms.length + 1,
   first_byte_ms: 300000,
-  idle_ms: 240000,
+  idle_ms: 360000,
 };
 
 export const transport_with = (overrides: Partial<Transport> = {}): Transport => ({ ...default_transport, ...overrides });

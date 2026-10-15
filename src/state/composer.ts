@@ -2,6 +2,7 @@ import type { CompactResult } from "../../shared/ipc/chats.ts";
 import { attachment_limits } from "../../shared/ipc/media.ts";
 import { api } from "../api/bridge.ts";
 import { t } from "../i18n/index.ts";
+import { init_turn } from "./chat-actions.ts";
 import { chats_store } from "./chats.ts";
 import {
   acknowledge_steer,
@@ -19,6 +20,7 @@ import {
   put_upload,
   queue_of,
   queued_to_draft,
+  remove_chip,
   remove_queued,
   remove_upload,
   release_steers,
@@ -27,15 +29,19 @@ import {
   set_flag,
   set_steering,
   take_draft,
+  toggle_chip,
   type ComposerState,
+  type DraftChip,
   type DraftUpload,
   type OutgoingMessage,
 } from "./chat-drafts.ts";
 import { entry_streaming, last_assistant } from "./chat-view-reduce.ts";
 import { chat_view_store, compact_chat_now, on_steer_taken, on_turn_end } from "./chat-view.ts";
 import { create_store } from "./create-store.ts";
+import { adopt_files } from "./files.ts";
 import { model_source } from "./model-source.ts";
 import { settings_store } from "./settings.ts";
+import { adopt_terminals } from "./terminal.ts";
 import { open_chat } from "./ui.ts";
 
 export const composer_store = create_store<ComposerState>(empty_composer);
@@ -60,6 +66,21 @@ export const set_draft_text = (key: string, text: string) => composer_store.upda
 export const toggle_plan = (key: string) => composer_store.update((state) => patch_draft(state, key, { plan: !draft_of(state, key).plan }));
 
 export const dismiss_error = (key: string) => composer_store.update((state) => set_error(state, key, ""));
+
+export const set_composer_error = (key: string, error: string) => composer_store.update((state) => set_error(state, key, error));
+
+export const toggle_draft_chip = (key: string, chip: DraftChip) => composer_store.update((state) => toggle_chip(state, key, chip));
+
+export const remove_draft_chip = (key: string, chip: DraftChip) => composer_store.update((state) => remove_chip(state, key, chip));
+
+export const carry_new_draft = (from: string, to: string) => {
+  const current = composer_store.get();
+  const target = draft_of(current, to);
+  if (target.text !== "" || target.uploads.length > 0 || target.chips.length > 0) {
+    return;
+  }
+  composer_store.set(move_draft(current, from, to));
+};
 
 const discard_ids = (ids: string[]) => {
   if (ids.length === 0) {
@@ -154,16 +175,18 @@ const send_now = async (chat_id: string, message: OutgoingMessage) => {
   }
 };
 
-const create_chat = async (project_path: string, key: string, message: OutgoingMessage): Promise<string | null> => {
+const create_chat = async (project_path: string, key: string, message: OutgoingMessage | null): Promise<string | null> => {
   set_sending(key, true);
   try {
     const meta = await api.invoke("chats:create", project_path);
     composer_store.update((state) => move_draft(state, key, meta.id));
+    adopt_terminals(key, meta.id);
+    adopt_files(key, meta.id);
     open_chat(meta.id, meta.project_path);
     return meta.id;
   } catch (error) {
     console.error(`[composer] chats:create failed for project ${project_path}`, error);
-    composer_store.update((state) => set_error(restore_draft(state, key, message), key, error_text(error)));
+    composer_store.update((state) => set_error(message ? restore_draft(state, key, message) : state, key, error_text(error)));
     return null;
   } finally {
     set_sending(key, false);
@@ -211,6 +234,23 @@ export const submit = async (chat_id: string | null, project_path: string) => {
   const target = await create_chat(project_path, key, message);
   if (target !== null) {
     await send_now(target, message);
+  }
+};
+
+export const start_init = async (chat_id: string | null, project_path: string) => {
+  const key = draft_key(chat_id, project_path);
+  if (composer_store.get().sending[key]) {
+    return;
+  }
+  const target = chat_id ?? (await create_chat(project_path, key, null));
+  if (target === null) {
+    return;
+  }
+  set_sending(target, true);
+  const result = await init_turn(target);
+  set_sending(target, false);
+  if (!result.ok) {
+    composer_store.update((state) => set_error(state, target, t("commands.failed", { action: t("commands.init"), error: result.error })));
   }
 };
 

@@ -1,336 +1,265 @@
-import { session, webContents, type BrowserWindow, type WebContents } from "electron";
-import type { BrowserCommand, BrowserCommandResult, BrowserTabRegistration } from "../../shared/ipc/panels.ts";
-import { main_window } from "../app/window.ts";
+import { WebContentsView } from "electron";
+import type { BrowserChatTabs, BrowserHistoryAction, BrowserTabInfo } from "../../shared/ipc/browser.ts";
 import { emit } from "../ipc/handle.ts";
-import { handle_debugger_message } from "./cdp.ts";
-import { browser_partition } from "./guest-policy.ts";
-import { error_text, invalidate_tab, notify_tab, pause, random_id, tab_title, tab_url, type BrowserTab } from "./state.ts";
+import { listen_for_dialogs } from "./cdp.ts";
+import { console_buffer } from "./console.ts";
+import { dialog_log } from "./dialogs.ts";
+import { guest_preferences, secure_guest } from "./guest-security.ts";
+import { step_history } from "./navigate.ts";
+import { acquire_partition, adopt_partition, pending_wipe, release_partition } from "./profiles.ts";
+import { error_text, invalidate_tab, pause, random_id, tab_title, tab_url, type BrowserTab } from "./state.ts";
+import { create_surface, default_tab_size, destroy_surface } from "./surface.ts";
+import { watch_tab } from "./watch.ts";
 
-type CommandBody = BrowserCommand extends infer C ? (C extends BrowserCommand ? Omit<C, "command_id"> : never) : never;
-
-type PendingCommand = { resolve: (result: BrowserCommandResult) => void; reject: (error: unknown) => void; release: () => void };
-
-export type TabInfo = { tab_id: string; active: boolean; attached: boolean; loading: boolean; url: string; title: string };
-
-const command_timeout_ms = 20000;
-const activation_timeout_ms = 15000;
+export type TabInfo = BrowserTabInfo & { active: boolean };
 
 const first_load_timeout_ms = 20000;
 
 const tabs = new Map<string, BrowserTab>();
-const guest_tabs = new Map<number, string>();
-const pending = new Map<string, PendingCommand>();
-const registry_waiters = new Set<() => void>();
-let active_tab_id = "";
-let host: BrowserWindow | null = null;
+const active_ids = new Map<string, string>();
+const changed_chats = new Set<string>();
+const change_listeners = new Set<() => void>();
+let flush_pending = false;
 
-const notify_registry = () => {
-  for (const waiter of [...registry_waiters]) {
-    waiter();
+export const chat_tabs = (chat_id: string): BrowserTab[] => [...tabs.values()].filter((tab) => tab.chat_id === chat_id);
+
+export const active_tab = (chat_id: string): BrowserTab | null => tabs.get(active_ids.get(chat_id) ?? "") ?? null;
+
+export const is_open = (tab: BrowserTab) => tabs.get(tab.tab_id) === tab;
+
+const tab_info = (tab: BrowserTab): BrowserTabInfo => {
+  const live = !tab.guest.isDestroyed();
+  return {
+    tab_id: tab.tab_id,
+    url: tab_url(tab),
+    title: tab_title(tab),
+    loading: tab.loading,
+    can_back: live && tab.guest.navigationHistory.canGoBack(),
+    can_forward: live && tab.guest.navigationHistory.canGoForward(),
+    error: tab.error,
+    crashed: tab.crashed,
+  };
+};
+
+export const chat_state = (chat_id: string): BrowserChatTabs => ({ chat_id, tabs: chat_tabs(chat_id).map(tab_info), active_id: active_ids.get(chat_id) ?? "" });
+
+export const list_tabs = (chat_id: string): TabInfo[] => {
+  const active_id = active_ids.get(chat_id) ?? "";
+  return chat_tabs(chat_id).map((tab) => ({ ...tab_info(tab), active: tab.tab_id === active_id }));
+};
+
+const flush = () => {
+  flush_pending = false;
+  const chats = [...changed_chats];
+  changed_chats.clear();
+  for (const chat_id of chats) {
+    emit("browser:changed", chat_state(chat_id));
+  }
+  for (const listener of [...change_listeners]) {
+    listener();
   }
 };
 
-const reject_commands = (reason: string) => {
-  for (const [command_id, entry] of pending) {
-    pending.delete(command_id);
-    entry.release();
-    entry.reject(new Error(reason));
+const publish = (chat_id: string) => {
+  changed_chats.add(chat_id);
+  if (!flush_pending) {
+    flush_pending = true;
+    setImmediate(flush);
   }
 };
 
-const release_guest = (tab: BrowserTab) => {
-  tab.release();
-  if (tab.guest.isDestroyed() || !tab.guest.debugger.isAttached()) {
+export const on_tabs_changed = (listener: () => void): (() => void) => {
+  change_listeners.add(listener);
+  return () => {
+    change_listeners.delete(listener);
+  };
+};
+
+const release_view = (tab: BrowserTab) => {
+  if (!tab.host.isDestroyed()) {
+    tab.host.contentView.removeChildView(tab.view);
+  }
+  if (!tab.guest.isDestroyed()) {
+    if (tab.guest.debugger.isAttached()) {
+      try {
+        tab.guest.debugger.detach();
+      } catch (error) {
+        console.warn(`[browser] detaching the debugger from tab ${tab.tab_id} failed: ${error_text(error)}`);
+      }
+    }
+    tab.guest.close();
+  }
+  destroy_surface(tab.surface);
+};
+
+const dispose = (tab: BrowserTab) => {
+  if (!is_open(tab)) {
     return;
   }
-  try {
-    tab.guest.debugger.detach();
-  } catch (error) {
-    console.warn(`[browser] detaching debugger from tab ${tab.tab_id} failed: ${error_text(error)}`);
-  }
-};
-
-const cleanup_tab = (tab_id: string) => {
-  const tab = tabs.get(tab_id);
-  if (!tab) {
-    return;
+  const siblings = chat_tabs(tab.chat_id);
+  const index = siblings.indexOf(tab);
+  tabs.delete(tab.tab_id);
+  if (active_ids.get(tab.chat_id) === tab.tab_id) {
+    const remaining = siblings.filter((entry) => entry !== tab);
+    const next = remaining[Math.min(index, remaining.length - 1)];
+    if (next) {
+      active_ids.set(tab.chat_id, next.tab_id);
+    } else {
+      active_ids.delete(tab.chat_id);
+    }
   }
   invalidate_tab(tab, true);
-  release_guest(tab);
-  tabs.delete(tab_id);
-  guest_tabs.delete(tab.web_contents_id);
-  notify_registry();
+  tab.release();
+  release_view(tab);
+  if (![...tabs.values()].some((entry) => entry.partition === tab.partition)) {
+    release_partition(tab.partition);
+  }
+  publish(tab.chat_id);
 };
 
-const cleanup_browser = (reason: string) => {
-  reject_commands(reason);
-  for (const tab_id of [...tabs.keys()]) {
-    cleanup_tab(tab_id);
-  }
-};
-
-const attach_host = (window: BrowserWindow) => {
-  if (window === host) {
-    return;
-  }
-  host = window;
-  window.webContents.on("render-process-gone", () => cleanup_browser("Browser renderer crashed."));
-  window.webContents.on("destroyed", () => cleanup_browser("Browser window closed."));
-  window.webContents.on("did-start-navigation", (details) => {
-    if (details.isMainFrame) {
-      reject_commands("Browser renderer reloaded.");
+const load_now = (tab: BrowserTab, url: string) => {
+  tab.guest.loadURL(url).catch((error: unknown) => {
+    if ((error as { code?: string }).code !== "ERR_ABORTED") {
+      console.warn(`[browser] loading ${url.slice(0, 200)} in tab ${tab.tab_id} failed: ${error_text(error)}`);
     }
   });
-  window.on("closed", () => {
-    cleanup_browser("Browser window closed.");
-    host = null;
+};
+
+const start_load = (tab: BrowserTab, url: string) => {
+  const wipe = pending_wipe(tab.partition);
+  if (!wipe) {
+    load_now(tab, url);
+    return;
+  }
+  void wipe.then(() => {
+    if (is_open(tab)) {
+      load_now(tab, url);
+    }
   });
 };
 
-const create_tab = (tab_id: string, guest: WebContents): BrowserTab => {
+const create_tab = (chat_id: string): BrowserTab => {
+  const partition = acquire_partition(chat_id);
+  const surface = create_surface(default_tab_size);
+  let view: WebContentsView;
+  try {
+    view = new WebContentsView({ webPreferences: guest_preferences(partition) });
+    surface.contentView.addChildView(view);
+    view.setBounds({ x: 0, y: 0, ...default_tab_size });
+    surface.showInactive();
+  } catch (error) {
+    destroy_surface(surface);
+    throw new Error(`Could not create a browser tab: ${error_text(error)}`, { cause: error });
+  }
   const tab: BrowserTab = {
-    tab_id,
-    web_contents_id: guest.id,
-    guest,
-    active: false,
-    attached: true,
-    loading: guest.isLoading(),
-    url: guest.getURL() || "about:blank",
-    title: guest.getTitle(),
+    tab_id: random_id("browser"),
+    chat_id,
+    view,
+    surface,
+    host: surface,
+    guest: view.webContents,
+    partition,
+    crashed: false,
+    loading: false,
+    url: "about:blank",
+    title: "",
+    error: "",
     epoch: 1,
-    queue: Promise.resolve(),
+    queue: pending_wipe(partition) ?? Promise.resolve(),
     debugger_attached: false,
     sessions: new Map(),
     snapshots: new Map(),
     snapshot_seq: 0,
     visuals: new Map(),
+    console: console_buffer(),
+    dialogs: dialog_log(),
     waiters: new Set(),
     release: () => undefined,
   };
-  const on_message = (_event: unknown, method: string, params: Record<string, unknown>, session_id: string) =>
-    handle_debugger_message(tab, method, params ?? {}, session_id);
-  const on_detach = () => {
-    tab.debugger_attached = false;
-    tab.sessions.clear();
-    invalidate_tab(tab, true);
-  };
-  const on_start = () => {
-    tab.loading = true;
-    notify_tab(tab);
-  };
-  const on_stop = () => {
-    tab.loading = false;
-    tab.url = guest.getURL() || tab.url;
-    tab.title = guest.getTitle() || tab.title;
-    notify_tab(tab);
-  };
-  const on_navigate = (_event: unknown, url: string) => {
-    tab.url = url || tab.url;
-    invalidate_tab(tab, true);
-  };
-  const on_in_page = (_event: unknown, url: string, is_main_frame: boolean) => {
-    if (is_main_frame) {
-      tab.url = url || tab.url;
-      notify_tab(tab);
-    }
-  };
-  const on_title = (_event: unknown, title: string) => {
-    tab.title = title;
-    notify_tab(tab);
-  };
-  const on_gone = () => {
-    tab.loading = false;
-    tab.attached = false;
-    invalidate_tab(tab, true);
-  };
-  const on_destroyed = () => cleanup_tab(tab_id);
-  const debug = guest.debugger;
-  debug.on("message", on_message);
-  debug.on("detach", on_detach);
-  guest.on("did-start-loading", on_start);
-  guest.on("did-stop-loading", on_stop);
-  guest.on("did-navigate", on_navigate);
-  guest.on("did-navigate-in-page", on_in_page);
-  guest.on("page-title-updated", on_title);
-  guest.on("render-process-gone", on_gone);
-  guest.on("destroyed", on_destroyed);
-  tab.release = () => {
-    debug.off("message", on_message);
-    debug.off("detach", on_detach);
-    guest.off("did-start-loading", on_start);
-    guest.off("did-stop-loading", on_stop);
-    guest.off("did-navigate", on_navigate);
-    guest.off("did-navigate-in-page", on_in_page);
-    guest.off("page-title-updated", on_title);
-    guest.off("render-process-gone", on_gone);
-    guest.off("destroyed", on_destroyed);
-  };
+  secure_guest(tab.guest, (url) => start_load(create_tab(tab.chat_id), url));
+  tab.release = watch_tab(
+    tab,
+    () => publish(tab.chat_id),
+    () => dispose(tab),
+  );
+  listen_for_dialogs(tab);
+  tabs.set(tab.tab_id, tab);
+  active_ids.set(chat_id, tab.tab_id);
+  publish(chat_id);
   return tab;
 };
 
-const refuse = (registration: BrowserTabRegistration, reason: string) => {
-  console.warn(`[browser] refused tab ${registration.tab_id} (web contents ${registration.web_contents_id}): ${reason}`);
-  return false;
+export const owned_tab = (chat_id: string, tab_id: string | null): BrowserTab => {
+  const tab = tabs.get(tab_id || active_ids.get(chat_id) || "");
+  if (tab && tab.chat_id === chat_id) {
+    return tab;
+  }
+  if (tab_id) {
+    throw new Error(`Browser tab ${tab_id} is not open in this chat. Call browser_tabs to list this chat's tabs.`);
+  }
+  throw new Error('This chat has no open browser tab. Call browser_tab with action "new" first.');
 };
 
-export const register_tab = (registration: BrowserTabRegistration): boolean => {
-  const window = main_window();
-  if (!window || window.isDestroyed()) {
-    return refuse(registration, "no host window");
-  }
-  attach_host(window);
-  const guest = webContents.fromId(registration.web_contents_id);
-  if (!guest || guest.isDestroyed() || guest.getType() !== "webview") {
-    return refuse(registration, "not a live webview guest");
-  }
-  if (guest.hostWebContents !== window.webContents) {
-    return refuse(registration, "guest is not hosted by the main window");
-  }
-  if (guest.session !== session.fromPartition(browser_partition)) {
-    return refuse(registration, "guest uses the wrong session");
-  }
-  const existing = tabs.get(registration.tab_id);
-  const existing_owner = guest_tabs.get(guest.id);
-  if ((existing && existing.guest !== guest) || (existing_owner !== undefined && existing_owner !== registration.tab_id)) {
-    return refuse(registration, "guest or tab id is already registered");
-  }
-  if (!existing) {
-    const tab = create_tab(registration.tab_id, guest);
-    tab.active = tab.tab_id === active_tab_id;
-    tabs.set(tab.tab_id, tab);
-    guest_tabs.set(guest.id, tab.tab_id);
-  }
-  notify_registry();
-  return true;
+export const open_user_tab = (chat_id: string, url: string): BrowserTab => {
+  const tab = create_tab(chat_id);
+  start_load(tab, url);
+  return tab;
 };
 
-export const unregister_tab = (tab_id: string) => {
-  cleanup_tab(tab_id);
-};
-
-export const set_active_tab = (tab_id: string | null) => {
-  active_tab_id = tab_id ?? "";
-  for (const tab of tabs.values()) {
-    const active = tab.tab_id === active_tab_id;
-    if (tab.active && !active) {
-      tab.snapshots.clear();
-      tab.visuals.clear();
-    }
-    tab.active = active;
-    notify_tab(tab);
-  }
-  notify_registry();
-};
-
-export const resolve_command = (result: BrowserCommandResult) => {
-  const entry = pending.get(result.command_id);
-  if (!entry) {
-    return;
-  }
-  pending.delete(result.command_id);
-  entry.release();
-  entry.resolve(result);
-};
-
-const send_command = (body: CommandBody, signal: AbortSignal): Promise<BrowserCommandResult> => {
+export const open_tab = async (chat_id: string, url: string, signal: AbortSignal): Promise<BrowserTab> => {
   signal.throwIfAborted();
-  const window = main_window();
-  if (!window || window.isDestroyed()) {
-    throw new Error("Browser window is unavailable.");
-  }
-  attach_host(window);
-  const command_id = random_id("browser-command");
-  return new Promise<BrowserCommandResult>((resolve, reject) => {
-    const fail = (error: unknown) => {
-      if (pending.delete(command_id)) {
-        release();
-        reject(error);
-      }
-    };
-    const on_abort = () => fail(signal.reason);
-    const timer = setTimeout(() => fail(new Error(`Browser panel did not answer "${body.action}" within ${command_timeout_ms} ms.`)), command_timeout_ms);
-    const release = () => {
-      clearTimeout(timer);
-      signal.removeEventListener("abort", on_abort);
-    };
-    pending.set(command_id, {
-      resolve: (result) => (result.ok ? resolve(result) : reject(new Error(result.error || `Browser command "${body.action}" failed.`))),
-      reject,
-      release,
-    });
-    signal.addEventListener("abort", on_abort, { once: true });
-    emit("browser:command", { ...body, command_id } as BrowserCommand);
-  });
-};
-
-const wait_until = (predicate: () => boolean, timeout_ms: number, failure: string, signal: AbortSignal) =>
-  new Promise<void>((resolve, reject) => {
-    const finish = () => {
-      clearTimeout(timer);
-      registry_waiters.delete(check);
-      signal.removeEventListener("abort", on_abort);
-    };
-    const check = () => {
-      if (predicate()) {
-        finish();
-        resolve();
-      }
-    };
-    const on_abort = () => {
-      finish();
-      reject(signal.reason);
-    };
-    const timer = setTimeout(() => {
-      finish();
-      reject(new Error(failure));
-    }, timeout_ms);
-    registry_waiters.add(check);
-    signal.addEventListener("abort", on_abort, { once: true });
-    check();
-  });
-
-const usable = (tab: BrowserTab | undefined): tab is BrowserTab => Boolean(tab && tab.active && tab.attached && !tab.guest.isDestroyed());
-
-export const find_tab = (tab_id: string | null) => tabs.get(tab_id || active_tab_id) ?? null;
-
-export const ensure_active = async (tab_id: string | null, signal: AbortSignal): Promise<BrowserTab> => {
-  const wanted = tab_id || active_tab_id;
-  if (!tabs.has(wanted)) {
-    throw new Error(tab_id ? `Browser tab ${tab_id} is not open. Call browser_tabs to list the open tabs.` : 'No active browser tab. Call browser_tab with action "new" first.');
-  }
-  if (!tabs.get(wanted)?.active) {
-    await send_command({ action: "select", tab_id: wanted }, signal);
-    await wait_until(() => Boolean(tabs.get(wanted)?.active), activation_timeout_ms, `Browser tab ${wanted} could not be activated.`, signal);
-  }
-  const tab = tabs.get(wanted);
-  if (!usable(tab)) {
-    throw new Error(`Browser tab ${wanted} could not be activated.`);
-  }
-  return tab;
-};
-
-export const open_tab = async (url: string, signal: AbortSignal): Promise<BrowserTab> => {
-  const result = await send_command({ action: "new", url }, signal);
-  const tab_id = result.tab_id;
-  if (!tab_id) {
-    throw new Error("Browser panel opened a tab without reporting its id.");
-  }
-  await wait_until(() => usable(tabs.get(tab_id)), activation_timeout_ms, `Browser tab ${tab_id} did not become active.`, signal);
-  const tab = await ensure_active(tab_id, signal);
+  const tab = open_user_tab(chat_id, url);
   const deadline = Date.now() + first_load_timeout_ms;
-  while (url !== "about:blank" && (tab.loading || tab_url(tab) === "about:blank") && Date.now() < deadline) {
+  while (url !== "about:blank" && is_open(tab) && (tab.loading || tab_url(tab) === "about:blank") && Date.now() < deadline) {
     await pause(tab, deadline - Date.now(), signal);
   }
   return tab;
 };
 
-export const close_tab = async (tab_id: string, signal: AbortSignal) => {
-  await send_command({ action: "close", tab_id }, signal);
-  await wait_until(() => !tabs.has(tab_id), activation_timeout_ms, `Browser tab ${tab_id} is still open.`, signal);
+export const select_tab = (chat_id: string, tab_id: string | null): BrowserTab => {
+  const tab = owned_tab(chat_id, tab_id);
+  if (active_ids.get(chat_id) !== tab.tab_id) {
+    active_ids.set(chat_id, tab.tab_id);
+    publish(chat_id);
+  }
+  return tab;
 };
 
-export const list_tabs = (): TabInfo[] =>
-  [...tabs.values()].map((tab) => ({ tab_id: tab.tab_id, active: tab.active, attached: tab.attached, loading: tab.loading, url: tab_url(tab), title: tab_title(tab) }));
+export const close_tab = (chat_id: string, tab_id: string) => dispose(owned_tab(chat_id, tab_id));
+
+export const load_url = (chat_id: string, tab_id: string, url: string) => start_load(owned_tab(chat_id, tab_id), url);
+
+export const step_tab_history = (chat_id: string, tab_id: string, action: BrowserHistoryAction) => step_history(owned_tab(chat_id, tab_id), action);
+
+export const close_chat_tabs = (chat_id: string) => {
+  for (const tab of chat_tabs(chat_id)) {
+    dispose(tab);
+  }
+};
+
+export const close_all_tabs = () => {
+  for (const tab of [...tabs.values()]) {
+    dispose(tab);
+  }
+};
+
+export const adopt_tabs = (from: string, to: string) => {
+  const moved = chat_tabs(from);
+  if (!moved.length || from === to) {
+    return;
+  }
+  for (const tab of moved) {
+    tab.chat_id = to;
+  }
+  adopt_partition(from, to);
+  const active_id = active_ids.get(from);
+  active_ids.delete(from);
+  if (active_id && !active_ids.has(to)) {
+    active_ids.set(to, active_id);
+  }
+  publish(from);
+  publish(to);
+};
 
 const queue_tab = <T>(tab: BrowserTab, signal: AbortSignal, work: () => Promise<T>): Promise<T> => {
   const run = tab.queue.then(() => {
@@ -341,7 +270,7 @@ const queue_tab = <T>(tab: BrowserTab, signal: AbortSignal, work: () => Promise<
   return run;
 };
 
-export const run_on_tab = async <T>(tab_id: string | null, signal: AbortSignal, work: (tab: BrowserTab) => Promise<T>): Promise<T> => {
-  const tab = await ensure_active(tab_id, signal);
+export const run_on_tab = <T>(chat_id: string, tab_id: string | null, signal: AbortSignal, work: (tab: BrowserTab) => Promise<T>): Promise<T> => {
+  const tab = select_tab(chat_id, tab_id);
   return queue_tab(tab, signal, () => work(tab));
 };

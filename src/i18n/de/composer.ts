@@ -30,7 +30,6 @@ export const composer: Record<keyof typeof en, string> = {
   "composer.vision_warning": "Dieses Modell sieht Bilder über die Beschreibung eines separaten Bildmodells.",
   "composer.send": "Senden",
   "composer.queue_send": "Für nach diesem Turn einreihen",
-  "composer.attach": "Dateien anhängen",
   "composer.plan": "Plan",
   "composer.drop": "Dateien zum Anhängen ablegen",
   "composer.context_usage": "{used} von {limit} Tokens ({percent} %)",

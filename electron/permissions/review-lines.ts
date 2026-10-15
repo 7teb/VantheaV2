@@ -1,6 +1,7 @@
 import type { HumanDecision } from "../../shared/approval.ts";
 import type { ToolStep } from "../../shared/chat.ts";
 import type { ReviewActor, ReviewRecord } from "../../shared/review.ts";
+import { call_shell, command_tools } from "../../shared/shell.ts";
 import { head_tail } from "./review-budget.ts";
 import { blocking_statuses, review_statuses, type ReviewStatus } from "./review-prompt.ts";
 import { actor_label, visible_to } from "./script-retention.ts";
@@ -26,8 +27,6 @@ export type TextClip = { action: number; reason: number; feedback: number };
 
 export const short_clip: TextClip = { action: 500, reason: 300, feedback: 300 };
 
-const command_names = new Set(["run_command", "start_background_task"]);
-
 const decision_label = (decision: HumanDecision): string => {
   if (!decision.actor_id || decision.actor_id === "main") {
     return decision.actor || "main";
@@ -37,6 +36,13 @@ const decision_label = (decision: HumanDecision): string => {
 
 const dedupe = <T extends { id: string }>(entries: T[]): T[] => [...new Map(entries.map((entry) => [entry.id, entry])).values()];
 
+const answer_status = (answer: HumanDecision): ReviewStatus => {
+  if (answer.approved) {
+    return review_statuses.approved;
+  }
+  return answer.expired ? review_statuses.unanswered : review_statuses.user_denied;
+};
+
 const record_status = (record: ReviewRecord, answer: HumanDecision | undefined, steps: ToolStep[]): ReviewStatus => {
   if (record.verdict === "allow") {
     return record.granted ? review_statuses.granted : review_statuses.allowed;
@@ -45,7 +51,7 @@ const record_status = (record: ReviewRecord, answer: HumanDecision | undefined, 
     return record.source === "floor" ? review_statuses.blocked : review_statuses.review_denied;
   }
   if (answer) {
-    return answer.approved ? review_statuses.approved : review_statuses.user_denied;
+    return answer_status(answer);
   }
   const waiting = steps.some((step) => step.status === "awaiting_approval" && step.reviews?.some((entry) => entry.id === record.id));
   return waiting ? review_statuses.waiting : review_statuses.unanswered;
@@ -71,7 +77,7 @@ export const decision_feed = (source: FeedSource, self: ReviewActor, mark: strin
     if (!entry.line) continue;
     const { record, decision } = entry;
     if (record && !visible_to(record, self)) continue;
-    const status = record ? record_status(record, decision ?? undefined, source.steps) : decision?.approved ? review_statuses.approved : review_statuses.user_denied;
+    const status = record ? record_status(record, decision ?? undefined, source.steps) : decision ? answer_status(decision) : review_statuses.user_denied;
     const anchor = decision ? decision.id : (record?.last_human_id ?? null);
     const human_spoke_since = spoke_since(mark, anchor);
     const tool = record?.tool ?? decision?.tool ?? "";
@@ -132,13 +138,14 @@ export const action_lines = (steps: ToolStep[], feed: FeedLine[], current_call: 
   const visible = steps.filter((step) => !pending(step) && step.status !== "drafting" && step.status !== "queued");
   const writes = visible.filter((step) => step.name === "write_file" || step.name === "replace_in_file").slice(-10);
   return visible.map((step) => {
-    if (command_names.has(step.name)) {
+    if (command_tools.includes(step.name)) {
       const command = typeof step.args.command === "string" ? step.args.command : "";
       const last = step.reviews?.at(-1);
       const exit = step.view?.kind === "command" ? step.view.exit_code : null;
       const line = (shown: string) =>
         JSON.stringify({
           tool: step.name,
+          ...(step.name === "start_background_task" && call_shell(step.name, step.args) === "bash" ? { shell: "bash" } : {}),
           command: shown,
           ...(last && by_record.has(last.id) ? { decision: by_record.get(last.id) } : {}),
           status: step.status,

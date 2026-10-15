@@ -1,4 +1,5 @@
-import type { ReviewEarlier, RuleSource } from "../../shared/review.ts";
+import type { ApprovalDecision } from "../../shared/approval.ts";
+import type { ReviewEarlier, ReviewNote, RuleSource } from "../../shared/review.ts";
 import { review_statuses, type ReviewStatus } from "./review-prompt.ts";
 
 export type Subject = "command" | "tool call";
@@ -54,6 +55,18 @@ export const user_denied_text = (subject: Subject, feedback: string, review_reas
     `User feedback: ${feedback.trim() || "none."}`,
     "Do not run it again and do not reach its result another way; that counts as deliberately working around the user's decision and is denied. Follow the feedback, or continue without this step and say in your reply if you still need it.",
   );
+
+export const note_reason = (note: ReviewNote | null | undefined): string | null => (note?.source === "model" && note.reason ? note.reason : null);
+
+export const unanswered_text = (subject: Subject, review_reason: string | null): string =>
+  lines(
+    `Denied automatically. The ${subject} did not run.`,
+    reason_line(review_reason ?? ""),
+    `Do not run it again in this turn and do not reach its result another way. Continue with the rest of the task and say in your reply that this ${subject} still needs the user's approval.`,
+  );
+
+export const not_approved_text = (subject: Subject, decision: ApprovalDecision, review_reason: string | null): string =>
+  decision.expired ? unanswered_text(subject, review_reason) : user_denied_text(subject, decision.feedback, review_reason);
 
 export const deny_text = (subject: Subject, review: ReviewedReason): string =>
   lines(

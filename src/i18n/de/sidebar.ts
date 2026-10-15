@@ -21,4 +21,8 @@ export const sidebar: Record<keyof typeof en, string> = {
   "sidebar.working": "Arbeitet",
   "sidebar.delete_title": "Diesen Chat löschen?",
   "sidebar.rename_label": "Chat-Titel",
+  "sidebar.archive": "Archivieren",
+  "sidebar.archived": "Archiviert",
+  "sidebar.archived_title": "Archivierte Chats",
+  "sidebar.restore": "Wiederherstellen",
 };

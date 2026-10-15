@@ -1,17 +1,43 @@
 import { protocol, type CustomScheme } from "electron";
 import fs from "node:fs/promises";
 import { error_code } from "../storage/coerce.ts";
+import { favicon_png, is_favicon_host } from "./favicons.ts";
 import { is_media_id, media_mime, resolve_media_file, type MediaBucket } from "./files.ts";
 
 export const media_scheme: CustomScheme = { scheme: "vx-media", privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } };
 
 const not_found = () => new Response(null, { status: 404 });
 
+const serve_favicon = async (request: Request, host: string): Promise<Response> => {
+  if (!is_favicon_host(host)) {
+    return not_found();
+  }
+  try {
+    const data = await favicon_png(host);
+    if (!data) {
+      return not_found();
+    }
+    const headers = {
+      "Content-Type": "image/png",
+      "Content-Length": String(data.length),
+      "Cache-Control": "private, max-age=604800",
+      "X-Content-Type-Options": "nosniff",
+    };
+    return new Response(request.method === "HEAD" ? null : data, { status: 200, headers });
+  } catch (error) {
+    console.error(`[media] serving the favicon of ${host} failed:`, error);
+    return not_found();
+  }
+};
+
 const serve_media = async (request: Request): Promise<Response> => {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response(null, { status: 405 });
   }
   const url = new URL(request.url);
+  if (url.hostname === "favicon") {
+    return serve_favicon(request, url.pathname.replace(/^\/+/, ""));
+  }
   const bucket: MediaBucket | null = url.hostname === "attachment" || url.hostname === "image" ? url.hostname : null;
   const id = url.pathname.replace(/^\/+/, "");
   if (!bucket || !is_media_id(id)) {

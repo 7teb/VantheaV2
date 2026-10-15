@@ -2,15 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { use_t } from "../i18n/index.ts";
 import { copy_text } from "../state/chat-actions.ts";
 import { IconButton } from "./Button.tsx";
-import { class_names } from "./class-names.ts";
 import { CheckIcon, CopyIcon } from "./icons.tsx";
 import "./MarkdownCopy.css";
 
-type CopyButtonProps = { text: string; label?: string; labelled?: boolean; className?: string };
+type CopyButtonProps = { text: string; label?: string; labelled?: boolean };
 
 const copied_ms = 1400;
 
-export const CopyButton = ({ text, label, labelled = false, className }: CopyButtonProps) => {
+export const CopyButton = ({ text, label, labelled = false }: CopyButtonProps) => {
   const t = use_t();
   const [copied, set_copied] = useState(false);
   const timer = useRef(0);
@@ -27,11 +26,11 @@ export const CopyButton = ({ text, label, labelled = false, className }: CopyBut
   };
 
   const name = label ?? t("chat.copy");
-  const icon = copied ? <CheckIcon size={labelled ? 13 : 15} /> : <CopyIcon size={labelled ? 13 : 15} />;
+  const icon = copied ? <CheckIcon size={labelled ? 13 : 14} /> : <CopyIcon size={labelled ? 13 : 14} />;
 
   if (labelled) {
     return (
-      <button type="button" className={class_names("copy-button", className)} onClick={copy} aria-label={name}>
+      <button type="button" className="copy-button" onClick={copy} aria-label={name}>
         {icon}
         <span>{copied ? t("chat.copied") : t("chat.copy")}</span>
       </button>
@@ -39,7 +38,7 @@ export const CopyButton = ({ text, label, labelled = false, className }: CopyBut
   }
 
   return (
-    <IconButton label={copied ? t("chat.copied") : name} size="sm" className={className} onClick={copy}>
+    <IconButton label={copied ? t("chat.copied") : name} size="sm" onClick={copy}>
       {icon}
     </IconButton>
   );

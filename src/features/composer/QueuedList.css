@@ -15,19 +15,18 @@
   .queued-panel {
     --queued-inset: 13px;
     --queued-tuck: 4px;
-    --queued-shoulder: calc(var(--composer-radius) - var(--queued-inset));
+    --queued-shoulder: calc(var(--radius-composer) - var(--queued-inset));
     position: relative;
     margin: 0 var(--queued-inset) calc(-1 * (var(--queued-tuck) + var(--space-2)));
     padding: 1px 0 var(--queued-tuck);
     border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
     corner-shape: superellipse(1.5);
-    background: var(--surface-dock);
-    backdrop-filter: var(--filter-dock);
+    background: var(--surface-dock-card);
     mask:
       linear-gradient(var(--mask) 0 0) top / 100% calc(100% - var(--queued-tuck)) no-repeat,
-      radial-gradient(var(--composer-radius) at 100% var(--composer-radius), transparent calc(var(--composer-radius) - 1px), var(--mask) var(--composer-radius))
+      radial-gradient(var(--radius-composer) at 100% var(--radius-composer), transparent calc(var(--radius-composer) - 1px), var(--mask) var(--radius-composer))
         left bottom / var(--queued-shoulder) var(--queued-tuck) no-repeat,
-      radial-gradient(var(--composer-radius) at 0 var(--composer-radius), transparent calc(var(--composer-radius) - 1px), var(--mask) var(--composer-radius))
+      radial-gradient(var(--radius-composer) at 0 var(--radius-composer), transparent calc(var(--radius-composer) - 1px), var(--mask) var(--radius-composer))
         right bottom / var(--queued-shoulder) var(--queued-tuck) no-repeat;
   }
 
@@ -50,7 +49,7 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
-    max-height: 30dvh;
+    max-height: min(30dvh, calc(var(--composer-card-cap, 100dvh) - 1px - var(--queued-tuck)));
     overflow-x: hidden;
     overflow-y: auto;
   }

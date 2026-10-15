@@ -44,6 +44,7 @@ export const parse_meta = (value: unknown, fallback_time: string): ChatMeta | nu
     project_path: as_string(raw.project_path),
     workspace: as_string(raw.workspace),
     pinned: as_boolean(raw.pinned, false),
+    ...(as_boolean(raw.archived, false) ? { archived: true } : {}),
     created_at,
     updated_at: as_iso(raw.updated_at, created_at),
     message_count: Math.max(0, Math.floor(as_number(raw.message_count, 0))),

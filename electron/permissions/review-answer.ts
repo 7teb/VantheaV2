@@ -10,11 +10,11 @@ export const review_schema: JsonSchema = {
     rule_source: {
       type: "string",
       enum: [...rule_sources],
-      description: "Where the restriction the verdict relies on comes from. none when it relies on a permission or on no restriction.",
+      description: "Source of the applicable blocking constraint, as defined by YOUR ROLE and BLOCKING CONSTRAINTS. none when relying on a permission, an out-of-scope preference, or no restriction.",
     },
     rule: {
       type: "string",
-      description: "That restriction, a rule that forbids or limits the action, quoted exactly from its source, at most 200 characters. Never the human's request or a permission. Empty when rule_source is none.",
+      description: "Quote only an applicable blocking constraint as defined by YOUR ROLE and BLOCKING CONSTRAINTS, at most 200 characters. Never quote an excluded requirement, the human's request or a permission. Empty when rule_source is none.",
     },
     workaround_of: {
       type: "string",
@@ -31,6 +31,7 @@ export const review_schema: JsonSchema = {
     decision: {
       type: "string",
       enum: [...review_verdicts],
+      description: "Apply YOUR ROLE before selecting a verdict. An excluded requirement alone requires allow. Review requires missing permission or a concrete unresolved effect; deny requires an applicable DENY WHEN case.",
     },
   },
   required: ["rule_source", "rule", "workaround_of", "script_summary", "reason", "decision"],

@@ -15,7 +15,7 @@ export { search_chats } from "./search.ts";
 
 export type ChatsInit = { dirs: ChatDirs; legacy_root: string; events: ChatEvents };
 
-export type MetaPatch = Partial<Pick<ChatMeta, "title" | "pinned" | "workspace" | "project_path">>;
+export type MetaPatch = Partial<Pick<ChatMeta, "title" | "pinned" | "archived" | "workspace" | "project_path">>;
 
 const max_cached_chats = 16;
 
@@ -165,11 +165,13 @@ export const create_chat = async (project_path: string): Promise<ChatMeta> => {
 };
 
 export const update_meta = async (chat_id: string, patch: MetaPatch): Promise<ChatMeta> => {
-  const meta = require_meta(chat_id);
+  const { archived: was_archived = false, ...meta } = require_meta(chat_id);
+  const archived = patch.archived ?? was_archived;
   const next: ChatMeta = {
     ...meta,
     title: patch.title === undefined ? meta.title : patch.title.trim().slice(0, 200),
     pinned: patch.pinned ?? meta.pinned,
+    ...(archived ? { archived } : {}),
     workspace: patch.workspace ?? meta.workspace,
     project_path: patch.project_path ?? meta.project_path,
   };
@@ -180,6 +182,12 @@ export const update_meta = async (chat_id: string, patch: MetaPatch): Promise<Ch
   await persist_index();
   announce(chat_id);
   return { ...next };
+};
+
+export const unarchive_chat = async (chat_id: string): Promise<void> => {
+  if (metas.get(chat_id)?.archived) {
+    await update_meta(chat_id, { archived: false });
+  }
 };
 
 export const delete_chat = async (chat_id: string): Promise<void> => {
@@ -246,7 +254,7 @@ export const project_chat_ids = (project_path: string): string[] => {
 
 export const fork_chat = async (chat_id: string, message_id: string): Promise<ChatMeta> => {
   const body = await require_body(chat_id);
-  const meta = require_meta(chat_id);
+  const { archived, ...meta } = require_meta(chat_id);
   const at = body.messages.findIndex((message) => message.id === message_id);
   if (at < 0) {
     throw new Error(`message ${message_id} not found in chat ${chat_id}`);

@@ -1,6 +1,6 @@
 import type { ApprovalRequest } from "../../../shared/approval.ts";
 import { tool_gate } from "../../permissions/tool-gate.ts";
-import { user_denied_text } from "../../permissions/verdict-text.ts";
+import { not_approved_text } from "../../permissions/verdict-text.ts";
 import type { TextGate, ToolContext } from "../types.ts";
 
 export const agent_text_subject = (header: string[], text: string): string =>
@@ -22,5 +22,5 @@ export const agent_text_gate = async (ctx: ToolContext, card: AgentCard, subject
     return { kind: "pass" };
   }
   const model_reason = gate.note?.source === "model" && gate.note.reason ? gate.note.reason : null;
-  return { kind: "declined", text: user_denied_text("tool call", decision.feedback, model_reason) };
+  return { kind: "declined", text: not_approved_text("tool call", decision, model_reason) };
 };

@@ -1,4 +1,4 @@
-import { LoaderIcon } from "../../components/icons.tsx";
+import { CircleSpinnerIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { agent_approvals_store, is_waiting } from "../../state/agent-approvals.ts";
 import { agents_store } from "../../state/agents.ts";
@@ -19,7 +19,7 @@ export const AgentRunMark = ({ run_id }: { run_id: string }) => {
   if (running) {
     return (
       <span className="tool-row-agent" title={t("agent.status_running")}>
-        <LoaderIcon size={13} className="spin" />
+        <CircleSpinnerIcon size={13} className="spin" />
       </span>
     );
   }

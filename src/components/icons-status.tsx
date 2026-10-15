@@ -13,6 +13,13 @@ export const CircleIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const CircleSpinnerIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="10" strokeOpacity={0.3} />
+    <path d="M12 2a10 10 0 0 1 10 10" />
+  </Icon>
+);
+
 export const CircleCheckIcon = (props: IconProps) => (
   <Icon {...props}>
     <circle cx="12" cy="12" r="10" />

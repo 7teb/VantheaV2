@@ -1,6 +1,4 @@
-import type { ToolView } from "../../../shared/tool-view.ts";
-import { error_text } from "../../browser/state.ts";
-import { ToolArgumentError, type ToolContext, type ToolResult } from "../types.ts";
+import { ToolArgumentError } from "../types.ts";
 
 export const read_string = (raw: Record<string, unknown>, key: string): string | null => {
   const value = raw[key];
@@ -55,21 +53,4 @@ export const read_choice = <T extends string>(raw: Record<string, unknown>, key:
     throw new ToolArgumentError(`${key} must be one of ${choices.join(", ")}`);
   }
   return value as T;
-};
-
-export const browser_view = (action: string, url: string, title: string, detail: string): ToolView => ({ kind: "browser", action, url, title, detail });
-
-export const done = (text: string, view: ToolView): ToolResult => ({ status: "done", text, view });
-
-export const guarded = async (ctx: ToolContext, action: string, work: () => Promise<ToolResult>): Promise<ToolResult> => {
-  try {
-    return await work();
-  } catch (error) {
-    if (ctx.signal.aborted) {
-      throw error;
-    }
-    const message = error_text(error);
-    console.warn(`[browser] ${action} failed: ${message}`);
-    return { status: "failed", text: message, view: null };
-  }
 };

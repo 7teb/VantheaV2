@@ -98,15 +98,6 @@ export const OutlineIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const ScrollTextIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M15 12h-5" />
-    <path d="M15 8h-5" />
-    <path d="M19 17V5a2 2 0 0 0-2-2H4" />
-    <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" />
-  </Icon>
-);
-
 export const PaperclipIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M14.09 8.3v6.7a2.09 2.09 0 0 1-4.18 0V6.58a4.18 4.18 0 0 1 8.36 0v8.17a6.27 6.27 0 0 1-12.54 0V8.4" />

@@ -1,11 +1,11 @@
 import { useState, type ComponentType } from "react";
 import { ui_store, type DockKind } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
-import { AgentsDock } from "./agents/AgentsDock.tsx";
 import { ArtifactsDock } from "./artifacts/ArtifactsDock.tsx";
 import { BackgroundDock } from "./background/BackgroundDock.tsx";
 import { BrowserDock } from "./browser/BrowserDock.tsx";
 import type { DockViewProps } from "./dock-view.ts";
+import { FilesDock } from "./files/FilesDock.tsx";
 import { TerminalDock } from "./terminal/TerminalDock.tsx";
 import "./DockSlot.css";
 
@@ -15,8 +15,8 @@ const dock_views: Record<DockKind, ComponentType<DockViewProps>> = {
   terminal: TerminalDock,
   browser: BrowserDock,
   background: BackgroundDock,
-  agents: AgentsDock,
   artifacts: ArtifactsDock,
+  files: FilesDock,
 };
 
 export const DockSlot = ({ kind, chat_id, project_path }: DockSlotProps) => {

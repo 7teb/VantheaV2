@@ -1,4 +1,5 @@
 import type { ApprovalDecision } from "../../../shared/approval.ts";
+import type { ReviewNote } from "../../../shared/review.ts";
 import { canonicalize_memory } from "../../memory/canonical.ts";
 import { new_memory_id } from "../../memory/records.ts";
 import { confirm_memory, confirmed_memories, find_confirmed, known_memories, memory_loaded, remove_memory } from "../../memory/store.ts";
@@ -6,6 +7,7 @@ import { memory_handle, memory_text_chars, normalize_memory_key, redact_secrets 
 import { path_key } from "../../storage/paths.ts";
 import { require_string } from "../browser/common.ts";
 import { tool_gate } from "../../permissions/tool-gate.ts";
+import { note_reason, unanswered_text } from "../../permissions/verdict-text.ts";
 import { define_tool, ToolArgumentError, type Tool, type ToolContext, type ToolResult } from "../types.ts";
 
 type MemoryAction = "remember" | "forget" | "list";
@@ -19,8 +21,8 @@ const result = (status: ToolResult["status"], action: MemoryAction, text: string
 const unavailable = (action: MemoryAction) =>
   result("failed", action, "The memory store failed to load at startup, so memories cannot be used right now. Tell the user to check the app log.", "");
 
-const declined = (action: MemoryAction, text: string, decision: ApprovalDecision) =>
-  result("denied", action, `The user declined.${decision.feedback ? ` User feedback: ${decision.feedback}` : ""} Do not propose this again.`, text);
+const declined = (action: MemoryAction, text: string, decision: ApprovalDecision, note: ReviewNote | null) =>
+  result("denied", action, decision.expired ? unanswered_text("tool call", note_reason(note)) : `The user declined.${decision.feedback ? ` User feedback: ${decision.feedback}` : ""} Do not propose this again.`, text);
 
 const memory_enabled = (settings: { memory: { enabled: boolean } }) => settings.memory.enabled;
 
@@ -33,7 +35,7 @@ const refused = async (ctx: ToolContext, action: "remember" | "forget", text: st
     return result("denied", action, gate.text, text);
   }
   const decision = await ctx.approve({ kind: "memory", action, text, ...(gate.note ? { review: gate.note } : {}) });
-  return decision.approved ? null : declined(action, text, decision);
+  return decision.approved ? null : declined(action, text, decision, gate.note);
 };
 
 const remember_tool = define_tool<{ text: string }>({

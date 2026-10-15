@@ -7,7 +7,6 @@ import { line_diff, type LineDiff } from "./diff.ts";
 import { invalidate_index } from "./index.ts";
 import { apply_replacement } from "./replace.ts";
 import { resolve_write_target, type WriteTarget } from "./scope.ts";
-import { record_original } from "./snapshots.ts";
 
 export const max_write_bytes = 1024 * 1024;
 
@@ -76,12 +75,11 @@ export const prepare_replace = async (
   };
 };
 
-export const commit_edit = async (prepared: PreparedEdit, turn_id: string): Promise<string> => {
+export const commit_edit = async (prepared: PreparedEdit): Promise<string> => {
   const current = await read_text(prepared.target.target);
   if ((current?.text ?? null) !== prepared.previous) {
     throw new Error(`${prepared.target.relative} changed on disk after this edit was prepared; read it again and redo the edit`);
   }
-  await record_original(turn_id, prepared.project_root, prepared.target.relative, prepared.previous, prepared.encoding);
   const bytes = encode_text(prepared.next, prepared.encoding);
   await write_file_atomic(prepared.target.target, bytes);
   invalidate_index(prepared.project_root);

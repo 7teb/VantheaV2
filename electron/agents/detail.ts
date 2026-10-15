@@ -10,7 +10,7 @@ import { received_messages, sent_messages, view_paths, type PeerView } from "./p
 import { questions_asked_by, questions_asked_to } from "./questions.ts";
 import type { AgentRecord, RunRecord } from "./records.ts";
 import { ensure_report_file } from "./report-file.ts";
-import { label_of, question_line } from "./roster.ts";
+import { label_of, profile_text, question_line } from "./roster.ts";
 import { get_agent } from "./store.ts";
 
 const activity_chars = 500;
@@ -101,7 +101,7 @@ const with_tail = (head: string, sections: string, tail: string): string =>
   [head, fit(sections, result_cap_tokens - estimate_tokens(head) - estimate_tokens(tail) - 2), tail].join("\n");
 
 export const agent_detail = async (agent: AgentRecord, run: RunRecord, caller: ToolProfile, report_from = 0): Promise<string> => {
-  const head = `Agent ${label_of(agent)} (${agent.agent_id}, "${agent.name}"), ${agent.profile}, model ${agent.model}. Run ${run.run_id}: ${run.status} after ${elapsed_seconds(run)}s.`;
+  const head = `Agent ${label_of(agent)} (${agent.agent_id}, "${agent.name}"), ${profile_text(agent)}, model ${agent.model}. Run ${run.run_id}: ${run.status} after ${elapsed_seconds(run)}s.`;
   if (report_from > 0 && run.status !== "running" && caller !== "main") {
     return `${head}\n${await report_page(agent, run, report_from, head)}`;
   }

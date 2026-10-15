@@ -1,6 +1,6 @@
 import { Fragment, useMemo } from "react";
 import type { Chat } from "../../../shared/chat.ts";
-import type { UndoResult } from "../../../shared/ipc/chats.ts";
+import { undoable_turn } from "../../../shared/file-changes.ts";
 import { ArrowDownIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { last_assistant } from "../../state/chat-view-reduce.ts";
@@ -11,13 +11,14 @@ import { CompactionRow } from "./StepRows.tsx";
 import { use_follow_bottom } from "./use-follow-bottom.ts";
 import { UserMessage } from "./UserMessage.tsx";
 
-type MessageListProps = { chat_id: string; chat: Chat; reverted: Record<string, UndoResult> };
+type MessageListProps = { chat_id: string; chat: Chat };
 
-export const MessageList = ({ chat_id, chat, reverted }: MessageListProps) => {
+export const MessageList = ({ chat_id, chat }: MessageListProps) => {
   const t = use_t();
   const messages = chat.messages;
   const { scroller, content, away, jump } = use_follow_bottom(last_own_send(messages));
   const plans = useMemo(() => plan_state(messages), [messages]);
+  const undoable_id = useMemo(() => undoable_turn(messages)?.id ?? null, [messages]);
   const busy = last_assistant(chat)?.status === "streaming";
   const last_index = messages.length - 1;
   const summary_after = useMemo(() => stepless_summary_after(messages, chat.summary), [messages, chat.summary]);
@@ -38,7 +39,7 @@ export const MessageList = ({ chat_id, chat, reverted }: MessageListProps) => {
                   busy={busy}
                   last_plan={plans.last_plan_id === message.id}
                   plan_accepted={plans.accepted.has(message.id)}
-                  reverted={reverted[message.id] ?? null}
+                  undoable={message.id === undoable_id}
                 />
               )}
               {summary_after === message.id && <CompactionRow step={summary_line_step} />}

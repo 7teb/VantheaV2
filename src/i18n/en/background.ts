@@ -1,9 +1,9 @@
 export const background = {
   "background.title": "Background Tasks",
-  "background.running": "Running {n}",
-  "background.finished": "Finished {n}",
   "background.none": "No background tasks in this chat",
-  "background.clear": "Clear",
+  "background.clear_finished": "Clear finished commands",
+  "background.section_running": "Running",
+  "background.section_finished": "Ran",
   "background.cancel": "Cancel task",
   "background.close": "Close background tasks",
   "background.fullscreen": "Fullscreen",

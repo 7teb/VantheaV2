@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { DockSlot } from "../docks/DockSlot.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { clamp_dock_width, dock_min_width, max_dock_width, set_dock_width, ui_store, type DockKind } from "../../state/ui.ts";
@@ -9,10 +9,18 @@ type Drag = { pointer_id: number; start_x: number; start_width: number };
 
 const key_step_px = 24;
 
+const follow_resize = (notify: () => void) => {
+  window.addEventListener("resize", notify);
+  return () => window.removeEventListener("resize", notify);
+};
+
+const ignore_resize = () => () => undefined;
+
 export const DockHost = () => {
   const t = use_t();
   const kind = use_store(ui_store, (state) => state.dock.kind);
-  const width = use_store(ui_store, (state) => state.dock.width);
+  const stored_width = use_store(ui_store, (state) => state.dock.width);
+  const expanded = use_store(ui_store, (state) => state.dock.expanded);
   const chat_id = use_store(ui_store, (state) => state.active_chat_id);
   const project_path = use_store(ui_store, (state) => state.project_path);
   const host = useRef<HTMLElement>(null);
@@ -23,6 +31,9 @@ export const DockHost = () => {
   if (kind !== null && kind !== shown) {
     set_shown(kind);
   }
+
+  const expanded_width = useSyncExternalStore(expanded ? follow_resize : ignore_resize, max_dock_width);
+  const width = expanded ? expanded_width : stored_width;
 
   const on_pointer_down = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) {
@@ -83,7 +94,7 @@ export const DockHost = () => {
         aria-label={t("shell.dock_resize")}
         aria-valuenow={width}
         aria-valuemin={dock_min_width}
-        aria-valuemax={max_dock_width()}
+        aria-valuemax={expanded_width}
         onKeyDown={on_key_down}
         onPointerDown={on_pointer_down}
         onPointerMove={on_pointer_move}

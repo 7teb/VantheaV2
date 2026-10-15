@@ -9,6 +9,12 @@
     min-width: 0;
   }
 
+  .user-message[data-editing="true"] {
+    align-self: stretch;
+    width: 100%;
+    max-width: 100%;
+  }
+
   .user-bubble {
     max-width: 100%;
     padding: 11px var(--space-4);
@@ -85,30 +91,31 @@
   .user-editor {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    width: min(560px, 100%);
-    padding: var(--space-3) var(--space-3) var(--space-2) var(--space-4);
-    border-radius: var(--radius-2xl);
-    background: var(--surface-dock);
-    backdrop-filter: var(--filter-dock);
-    box-shadow: var(--shadow-dock);
+    gap: var(--space-1);
+    width: 100%;
+    padding: 14px var(--space-2) var(--space-2);
+    border-radius: var(--radius-composer);
+    background: var(--surface-composer);
+    box-shadow: var(--shadow-composer);
   }
 
   .user-editor textarea {
     display: block;
     width: 100%;
+    min-height: 44px;
     max-height: 320px;
-    padding: 0;
+    padding: 0 var(--space-1);
     border: 0;
     outline: 0;
     resize: none;
     background: transparent;
     font-size: var(--font-size-prose);
-    line-height: var(--leading-prose);
+    line-height: var(--leading-ui);
     color: var(--text-primary);
   }
 
   .user-editor-bar {
+    --size-control: var(--size-control-composer);
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -128,11 +135,6 @@
   .assistant-message[data-last="true"] .message-actions,
   .message-actions:focus-within {
     opacity: 1;
-  }
-
-  .message-action {
-    width: 30px;
-    height: 30px;
   }
 
   .inline-error {

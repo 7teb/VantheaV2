@@ -1,7 +1,7 @@
 import { useState, type AnimationEvent } from "react";
 import type { Attachment } from "../../../shared/chat.ts";
 import { IconButton } from "../../components/Button.tsx";
-import { CircleAlertIcon, CornerDownRightIcon, LoaderIcon, MoreHorizontalIcon, PaperclipIcon, PencilIcon, QueueIcon, TrashIcon } from "../../components/icons.tsx";
+import { CircleAlertIcon, CornerDownRightIcon, CircleSpinnerIcon, MoreHorizontalIcon, PaperclipIcon, PencilIcon, QueueIcon, TrashIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
 import { Tooltip } from "../../components/Tooltip.tsx";
 import { use_t } from "../../i18n/index.ts";
@@ -22,7 +22,7 @@ const RowIcon = ({ entry }: { entry: QueuedMessage }) => {
   if (entry.steering) {
     return (
       <span className="queued-icon">
-        <LoaderIcon size={14} className="spin" />
+        <CircleSpinnerIcon size={14} className="spin" />
       </span>
     );
   }

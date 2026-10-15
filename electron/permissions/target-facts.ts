@@ -6,6 +6,7 @@ import { to_posix } from "../project/scope.ts";
 import { error_code, error_text, missing_path } from "../storage/coerce.ts";
 import { walk_command, type Step, type StepWord } from "./command-walk.ts";
 import { location_matches, type ProgramFact } from "./launch-targets.ts";
+import { msys_mounts, msys_native } from "./msys-paths.ts";
 import { git_location } from "./project-profile.ts";
 import { change_text } from "./review-action.ts";
 import { dynamic_path, script_dialect, shell_source } from "./script-refs.ts";
@@ -140,6 +141,7 @@ export const command_targets = async (command: string, cwd: string, scripts: Scr
   const unresolved_word = (written: string) => {
     if (/[\\/.]/.test(written) && unresolved.length < max_targets && !unresolved.includes(written)) unresolved.push(written);
   };
+  const mounts = msys_mounts();
   const step_targets = async (step: Step, where: string | null) => {
     const bases = "values" in step.location ? step.location.values : null;
     for (const entry of argument_words(step)) {
@@ -152,7 +154,8 @@ export const command_targets = async (command: string, cwd: string, scripts: Scr
       const quoted = piece?.kind === "text" && piece.quote !== "none" && piece.quote !== "verbatim";
       const variable = /^\$\{?[A-Za-z_]\w*\}?$/.test(raw);
       for (const value of entry.value.values) {
-        const text = option_target(value, quoted, step.dialect);
+        const native = step.dialect === "posix" ? msys_native(value, mounts) : value;
+        const text = native === null ? null : option_target(native, quoted, step.dialect);
         if (!text) continue;
         const remote = remote_path(text);
         if (!remote && !path.win32.isAbsolute(text) && !bases) {

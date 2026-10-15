@@ -1,4 +1,5 @@
 import type { BackgroundTask } from "../../shared/ipc/work.ts";
+import { shell_labels } from "../../shared/shell.ts";
 import { result_cap_tokens } from "../context/estimate.ts";
 import type { OutputView } from "../shell/output.ts";
 
@@ -28,6 +29,7 @@ export const background_event_text = (task: BackgroundTask, output: OutputView):
     "This is an internal app event, not a message written by the user. A long-running task you started earlier in this chat has finished.",
     `ID: ${task.id}`,
     `Name: ${task.name}`,
+    `Shell: ${shell_labels[task.shell]}`,
     `Command: ${task.command}`,
     `Status: ${task.status}`,
     `Exit code: ${task.exit_code ?? "none"}`,

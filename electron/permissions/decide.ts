@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { HumanDecision } from "../../shared/approval.ts";
 import type { PermissionMode } from "../../shared/chat.ts";
 import type { ReviewNote, ReviewRaise, ReviewRecord } from "../../shared/review.ts";
+import { shell_run_tools, type ShellKind } from "../../shared/shell.ts";
+import { bash_env } from "../shell/git-bash.ts";
 import type { Reviewer, ToolProfile } from "../tools/types.ts";
 import { read_only_command } from "./allowlist.ts";
 import { approved_with_source, prefix_grants } from "./decisions.ts";
@@ -60,10 +62,18 @@ export const review_note = (record: ReviewRecord, detail: Pick<ReviewNote, "scri
   ...detail,
 });
 
-const tool_name = (background: boolean) => (background ? "start_background_task" : "run_command");
+const shell_of = (dialect: Dialect): ShellKind => (dialect === "posix" ? "bash" : "powershell");
+
+const tool_name = (input: Pick<CommandInput, "background" | "shell">) => (input.background ? "start_background_task" : shell_run_tools[shell_of(input.shell)]);
 
 const command_sources = (input: CommandInput): Promise<CommandSources> =>
-  inspect_command_sources(input.project_root, input.cwd, input.command, { chat_id: input.chat_id, chat_started_at: input.chat_started_at, shell: input.shell, app_root: input.app_root });
+  inspect_command_sources(input.project_root, input.cwd, input.command, {
+    chat_id: input.chat_id,
+    chat_started_at: input.chat_started_at,
+    shell: input.shell,
+    app_root: input.app_root,
+    ...(input.shell === "posix" ? { env: bash_env(process.env) } : {}),
+  });
 
 const floor_block = (input: CommandInput, reviewer: Reviewer, reason: string): CommandDecision => ({
   action: "block",
@@ -72,7 +82,7 @@ const floor_block = (input: CommandInput, reviewer: Reviewer, reason: string): C
     id: randomUUID(),
     at: Date.now(),
     actor: reviewer.actor,
-    tool: tool_name(input.background),
+    tool: tool_name(input),
     subject: input.command,
     cwd: input.cwd,
     verdict: "deny",
@@ -108,11 +118,11 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
   if (!command) {
     return floor_block(input, reviewer, "The command is empty.");
   }
-  const floor = floor_reason(command, { app_root: input.app_root, project_root: input.project_root, cwd: input.cwd });
+  const floor = floor_reason(command, { app_root: input.app_root, project_root: input.project_root, cwd: input.cwd }, input.shell);
   if (floor) {
     return floor_block(input, reviewer, floor);
   }
-  const plan_change = input.plan && !read_only_command(command);
+  const plan_change = input.plan && !read_only_command(command, input.shell);
   if (input.mode === "full") {
     return without_model(plan_change ? "ask" : "run", plan_change, null);
   }
@@ -121,13 +131,12 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
   if (input.mode === "ask") {
     return without_model("ask", plan_change, sources);
   }
-  const approved_sources = approved_with_source(input.decisions, command, sources.hash);
+  const approved_sources = approved_with_source(input.decisions, command, sources.hash, shell_of(input.shell));
   const raised: ReviewRaise[] = [
-    ...(sources.protected_read ? (["protected"] as const) : []),
     ...(plan_change ? (["plan"] as const) : []),
     ...(sources.catastrophic.length && !approved_sources ? (["script_floor"] as const) : []),
   ];
-  const prefixes = covering_prefixes(command, prefix_grants(input.decisions));
+  const prefixes = covering_prefixes(command, prefix_grants(input.decisions, shell_of(input.shell)), input.shell);
   on_review?.();
   const verdict = await review_verdict({
     reviewer,
@@ -143,7 +152,7 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
       delegated_task: input.delegated_task ?? null,
       decisions: input.decisions,
       call_id: input.call_id,
-      action: { tool: tool_name(input.background), cwd: input.cwd, background: input.background, subject: command, call: { kind: "command" }, files: sources.files, gaps: sources.gaps, changed: input.changed, programs: sources.programs, notes: sources.notes, shell: input.shell },
+      action: { tool: tool_name(input), cwd: input.cwd, background: input.background, subject: command, call: { kind: "command" }, files: sources.files, gaps: sources.gaps, changed: input.changed, programs: sources.programs, notes: sources.notes, shell: input.shell },
     },
   });
   const record = verdict.record.granted ? { ...verdict.record, grant_prefixes: prefixes } : verdict.record;
@@ -155,7 +164,7 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
     reason,
     record,
     note: review_note(record, record.raised_by?.includes("script_floor") ? { script_floor: sources.catastrophic } : {}),
-    grant_prefix: prefix_option ? suggest_prefix(command) : null,
+    grant_prefix: prefix_option ? suggest_prefix(command, input.shell) : null,
     plan: plan_change,
     pins: sources.pins,
     source_hash: sources.hash,

@@ -1,0 +1,39 @@
+@layer components {
+  .web-source-date {
+    flex: none;
+    font-size: var(--font-size-ui);
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+
+  .web-failure {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 30px;
+    min-width: 0;
+    color: var(--text-secondary);
+  }
+
+  .web-failure svg {
+    flex: none;
+    color: var(--text-danger);
+  }
+
+  .web-failure-url {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .web-failure-error {
+    flex: none;
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-danger);
+  }
+}

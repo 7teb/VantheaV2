@@ -10,8 +10,9 @@ import { is_reviewing } from "./review-phase.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
 import { is_active_status, tool_label } from "./tool-meta.ts";
 import { ToolRow } from "./ToolRow.tsx";
-import { format_duration, group_current, group_duration, group_label } from "./tool-summary.ts";
+import { group_current, group_label } from "./tool-summary.ts";
 import "./tools.css";
+import "./tool-motion.css";
 
 type ApprovalsProps = { chat_id: string; steps: ToolStep[]; run?: RunRef };
 
@@ -30,34 +31,41 @@ type WorkGroupProps = { chat_id: string; steps: ToolStep[]; streaming: boolean; 
 const WorkGroupView = ({ chat_id, steps, streaming, tail, run }: WorkGroupProps) => {
   const t = use_t();
   const [chosen, set_chosen] = useState<boolean | null>(null);
-  if (steps.length === 1) {
-    return (
-      <div className="work-single">
-        <ToolRow step={steps[0]} running={streaming && (tail || is_active_status(steps[0].status))} />
-        <Approvals chat_id={chat_id} steps={steps} run={run} />
-      </div>
-    );
-  }
-  const current = streaming ? group_current(steps) : null;
+  const single = steps.length === 1;
+  const current = streaming && !single ? group_current(steps) : null;
   const running = current !== null;
-  const open = chosen ?? (streaming && (tail || running));
-  const duration = group_duration(steps);
+  const open = single || (chosen ?? (streaming && (tail || running)));
   const reviewing = current !== null && is_reviewing(current);
   const label = current ? tool_label(t, current) : group_label(t, steps);
   return (
-    <div className="work-group" data-open={open} data-review={reviewing || undefined}>
-      <button type="button" className="work-group-head" aria-expanded={open} onClick={() => set_chosen(!open)}>
-        <span className="tool-row-icon">
-          <SquareTerminalIcon size={14} />
-        </span>
-        <span className={class_names("tool-row-label", running && !reviewing && "is-working")}>{reviewing ? <ReviewingLabel step={current} /> : label}</span>
-        {!running && duration !== null && <span className="tool-row-duration">{format_duration(duration)}</span>}
-        <ChevronRightIcon size={12} className="tool-row-chevron" />
-      </button>
+    <div
+      className={single ? "work-single" : "work-group"}
+      data-open={single ? undefined : open}
+      data-live={streaming || undefined}
+      data-running={running || undefined}
+      data-review={reviewing || undefined}
+    >
+      {!single && (
+        <button type="button" className="work-group-head" aria-expanded={open} onClick={() => set_chosen(!open)}>
+          <span className="tool-row-icon">
+            <SquareTerminalIcon size={14} />
+          </span>
+          <span className={class_names("tool-row-label", running && !reviewing && "is-working")}>
+            {reviewing ? <ReviewingLabel step={current} /> : label}
+          </span>
+          <ChevronRightIcon size={12} className="tool-row-chevron" />
+        </button>
+      )}
       <CollapsibleBody open={open}>
-        <div className="work-group-body">
+        <div className={single ? undefined : "work-group-body"}>
           {steps.map((step) => (
-            <ToolRow key={step.id} step={step} />
+            <ToolRow
+              key={step.id}
+              chat_id={chat_id}
+              step={step}
+              running={single && streaming && (tail || is_active_status(step.status))}
+              main_chat={run === undefined}
+            />
           ))}
         </div>
       </CollapsibleBody>

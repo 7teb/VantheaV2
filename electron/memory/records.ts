@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { as_array, as_iso, as_number, as_record, as_string, pick } from "../storage/coerce.ts";
+import { as_array, as_iso, as_number, as_record, as_string, clamp_int, pick } from "../storage/coerce.ts";
 import { path_key } from "../storage/paths.ts";
 import { clean_text, contains_secret, memory_kinds, memory_text_chars, normalize_memory_key, redact_secrets, words_for, type MemoryKind } from "./text.ts";
 
@@ -21,13 +21,23 @@ export type MemoryEntry = {
   updated_at: string;
 };
 
-export type MemoryScan = { scanned_at: string; outcome: string };
+export type DropReason = "kind" | "empty" | "not_explicit" | "secret" | "evidence_not_in_message" | "low_confidence" | "no_project";
+
+export type ScanCounts = { returned: number; saved: number; pending: number; dropped: Partial<Record<DropReason, number>> };
+
+export type MemoryScan = { scanned_at: string; outcome: string; counts?: ScanCounts; error?: string };
 
 export type MemoryState = { records: MemoryEntry[]; scans: Record<string, MemoryScan> };
 
 export type MemorySource = { chat_id: string; message_id: string; content: string; project_path: string };
 
+export type CandidateVerdict = { entry: MemoryEntry; drop: null } | { entry: null; drop: DropReason };
+
+export const high_confidence = 0.85;
+
 const statuses: readonly MemoryStatus[] = ["pending", "confirmed", "rejected"];
+
+const drop_reasons: readonly DropReason[] = ["kind", "empty", "not_explicit", "secret", "evidence_not_in_message", "low_confidence", "no_project"];
 
 const kind_scores: Record<MemoryKind, number> = { global_preference: 2, global_environment: 1, project_rule: 0 };
 
@@ -66,13 +76,36 @@ export const normalize_entry = (value: unknown, now: string): MemoryEntry | null
   };
 };
 
+const count_of = (value: unknown) => clamp_int(value, 0, 1000, 0);
+
+const normalize_counts = (value: unknown): ScanCounts | null => {
+  if (value === undefined) {
+    return null;
+  }
+  const raw = as_record(value);
+  const dropped = as_record(raw.dropped);
+  return {
+    returned: count_of(raw.returned),
+    saved: count_of(raw.saved),
+    pending: count_of(raw.pending),
+    dropped: Object.fromEntries(drop_reasons.map((reason) => [reason, count_of(dropped[reason])]).filter(([, count]) => count)),
+  };
+};
+
+const normalize_scan = (scan: unknown, now: string): MemoryScan => {
+  const raw = as_record(scan);
+  const counts = normalize_counts(raw.counts);
+  const error = clean_text(raw.error, 300);
+  return {
+    scanned_at: as_iso(raw.scanned_at, now),
+    outcome: clean_text(raw.outcome, 40) || "scanned",
+    ...(counts ? { counts } : {}),
+    ...(error ? { error } : {}),
+  };
+};
+
 const normalize_scans = (value: unknown, now: string): Record<string, MemoryScan> =>
-  Object.fromEntries(
-    Object.entries(as_record(value)).map(([id, scan]) => {
-      const raw = as_record(scan);
-      return [id.slice(0, 160), { scanned_at: as_iso(raw.scanned_at, now), outcome: clean_text(raw.outcome, 40) || "scanned" }];
-    }),
-  );
+  Object.fromEntries(Object.entries(as_record(value)).map(([id, scan]) => [id.slice(0, 160), normalize_scan(scan, now)]));
 
 export const parse_state = (value: unknown, now: string): MemoryState | null => {
   const raw = as_record(value);
@@ -120,28 +153,39 @@ export const compact_state = (state: MemoryState): MemoryState => {
 export const same_scope = (left: MemoryEntry, right: MemoryEntry) =>
   left.scope === right.scope && (left.scope !== "project" || left.project_path === right.project_path);
 
-export const sanitize_candidate = (candidate: unknown, source: MemorySource, now: string): MemoryEntry | null => {
+const drop_verdict = (drop: DropReason): CandidateVerdict => ({ entry: null, drop });
+
+export const sanitize_candidate = (candidate: unknown, source: MemorySource, now: string): CandidateVerdict => {
   const raw = as_record(candidate);
   const kind = memory_kinds.find((entry) => entry === raw.kind);
   const text = clean_text(raw.text, memory_text_chars);
   const evidence = clean_text(raw.evidence, memory_text_chars);
-  if (!kind || !text || !evidence || raw.explicit !== true || contains_secret(text) || contains_secret(evidence)) {
-    return null;
+  if (!kind) {
+    return drop_verdict("kind");
+  }
+  if (!text || !evidence) {
+    return drop_verdict("empty");
+  }
+  if (raw.explicit !== true) {
+    return drop_verdict("not_explicit");
+  }
+  if (contains_secret(text) || contains_secret(evidence)) {
+    return drop_verdict("secret");
   }
   const source_text = clean_text(source.content, Number.POSITIVE_INFINITY).toLowerCase();
   if (!source_text.includes(evidence.toLowerCase())) {
-    return null;
+    return drop_verdict("evidence_not_in_message");
   }
   const confidence = confidence_of(raw.confidence);
-  if (confidence < 0.85) {
-    return null;
+  if (confidence < high_confidence) {
+    return drop_verdict("low_confidence");
   }
   const scope = kind === "project_rule" ? "project" : "global";
   const project_path = scope === "project" ? path_key(source.project_path) : "";
   if (scope === "project" && !project_path) {
-    return null;
+    return drop_verdict("no_project");
   }
-  return {
+  const entry: MemoryEntry = {
     id: new_memory_id(),
     key: normalize_memory_key(raw.key, kind, text),
     kind,
@@ -156,6 +200,7 @@ export const sanitize_candidate = (candidate: unknown, source: MemorySource, now
     created_at: now,
     updated_at: now,
   };
+  return { entry, drop: null };
 };
 
 export const relevance = (entry: MemoryEntry, query: Set<string>, project: string): number => {

@@ -1,7 +1,9 @@
 import type { ToolStep } from "../../../shared/chat.ts";
-import type { ToolView } from "../../../shared/tool-view.ts";
+import { is_shell_run } from "../../../shared/shell.ts";
+import type { PeerOutcome, ToolView } from "../../../shared/tool-view.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
-import { base_name, is_active_status, page_detail, tool_meta, view_of, type ToolCategory } from "./tool-meta.ts";
+import { agent_status_label, background_status_label, row_status_label, unknown_status, type LiveStatus } from "./background-status.ts";
+import { tool_meta, type ToolCategory } from "./tool-meta.ts";
 
 export const format_duration = (ms: number): string => {
   const seconds = Math.max(1, Math.round(ms / 1000));
@@ -42,105 +44,41 @@ export const format_elapsed = (ms: number): string | null => {
 export const step_duration = (step: ToolStep): number | null =>
   step.started_at !== null && step.ended_at !== null ? Math.max(0, step.ended_at - step.started_at) : null;
 
-type CommandView = Extract<ToolView, { kind: "command" }>;
-
-const command_ran = (view: CommandView) => view.exit_code !== null || view.timed_out;
-
-const command_outcome = (t: Translate, view: CommandView): string => {
-  if (view.timed_out) {
-    return t("tools.timed_out");
-  }
-  return view.exit_code !== null && view.exit_code !== 0 ? t("tools.exit_code", { n: view.exit_code }) : "";
+const kept_peer_outcomes: Partial<Record<PeerOutcome, MessageKey>> = {
+  not_running: "tools.peer_outcome_not_running",
+  duplicate: "tools.peer_outcome_duplicate",
 };
 
-const view_detail = (t: Translate, view: ToolView): string => {
-  switch (view.kind) {
-    case "files":
-      return [
-        t(view.files.length === 1 ? "tools.file_count_one" : "tools.file_count_other", { n: view.files.length }),
-        t(view.directories === 1 ? "tools.folder_count_one" : "tools.folder_count_other", { n: view.directories }),
-      ].join(", ");
-    case "read":
-      if (view.end_line <= 0) {
-        return "";
-      }
-      return view.end_line < view.total_lines ? `${view.start_line}-${view.end_line} / ${view.total_lines}` : `${view.start_line}-${view.end_line}`;
+const grep_detail = (t: Translate, view: Extract<ToolView, { kind: "grep" }>): string => {
+  if (view.incomplete) {
+    return t("tools.grep_incomplete", { n: view.total });
+  }
+  if (view.truncated) {
+    return t("tools.grep_capped", { n: view.total });
+  }
+  return view.total === 0 ? t("tools.grep_no_matches") : "";
+};
+
+export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unknown_status): string => {
+  const view = step.view;
+  switch (view?.kind) {
     case "grep":
-      if (view.truncated) {
-        return t("tools.grep_capped", { n: view.total });
-      }
-      return view.total > 0 ? t("tools.grep_matches", { n: view.total }) : t("tools.grep_no_matches");
-    case "outline":
-      return t("tools.symbols_count", { n: view.symbols.length });
-    case "models":
-      return t("tools.models_count", { n: view.models.length });
-    case "edit":
-      return `+${view.added} -${view.removed}`;
-    case "command":
-      return [command_outcome(t, view), command_ran(view) && view.output === "" ? t("tools.no_output") : ""].filter(Boolean).join(" · ");
-    case "background":
-    case "agent":
-      return view.status;
-    case "peer_message":
-      return t(`tools.peer_outcome_${view.outcome}`);
-    case "todos":
-      return `${view.todos.filter((todo) => todo.status === "done").length}/${view.todos.length}`;
-    case "web_search":
-      return t("tools.sources_count", { n: view.sources.length });
-    case "image":
-      return t("tools.images_count", { n: view.images.length });
+      return grep_detail(t, view);
     case "mcp":
       return view.is_error ? t("tools.mcp_error") : "";
-    case "memory":
-      return view.action === "list" && view.text === "" ? t("tools.memory_none") : "";
-    case "browser":
-    case "plan":
-    case "questions":
-    case "skill":
+    case "peer_message": {
+      const key = kept_peer_outcomes[view.outcome];
+      return key ? t(key) : "";
+    }
+    case "background":
+      return is_shell_run(step.name) ? "" : row_status_label(t, background_status_label, view.status, live);
+    case "agent":
+      return row_status_label(t, agent_status_label, view.status, live);
     case "text":
+      return step.name === "datetime" ? view.text : "";
+    default:
       return "";
   }
-};
-
-type Detail = (t: Translate, step: ToolStep) => string;
-
-const text_of = (step: ToolStep) => view_of(step, "text")?.text ?? "";
-
-const page_url: Detail = (_t, step) => {
-  const view = view_of(step, "browser");
-  return view?.title && view.title !== view.url ? view.url : "";
-};
-
-const page_state: Detail = (t, step) => [page_url(t, step), page_detail(step) === "loading" ? t("tools.browser_loading") : ""].filter(Boolean).join(" · ");
-
-const image_folder: Detail = (_t, step) => {
-  const text = text_of(step);
-  return text.slice(0, text.length - base_name(text).length).replace(/[\\/]+$/, "");
-};
-
-const no_detail: Detail = () => "";
-
-const named_details: Record<string, Detail> = {
-  datetime: (_t, step) => text_of(step),
-  view_image: image_folder,
-  read_skill: (_t, step) => (typeof step.args.file === "string" ? step.args.file : ""),
-  browser_tab: page_url,
-  browser_navigate: page_state,
-  browser_click: no_detail,
-  browser_type: no_detail,
-  browser_key: no_detail,
-  browser_click_point: no_detail,
-  browser_visual_click: no_detail,
-};
-
-export const step_detail = (t: Translate, step: ToolStep): string => {
-  if (is_active_status(step.status)) {
-    return step.progress?.label ?? "";
-  }
-  if (!step.view) {
-    return "";
-  }
-  return named_details[step.name]?.(t, step) ?? (step.view.kind === "browser" ? page_detail(step) : view_detail(t, step.view));
 };
 
 export const step_hint = (step: ToolStep): string => {
@@ -223,12 +161,3 @@ export const group_current = (steps: ToolStep[]): ToolStep | null =>
   steps.findLast((step) => step.status === "drafting") ??
   steps.find((step) => step.status === "queued") ??
   null;
-
-export const group_duration = (steps: ToolStep[]): number | null => {
-  const starts = steps.flatMap((step) => (step.started_at === null ? [] : [step.started_at]));
-  const ends = steps.flatMap((step) => (step.ended_at === null ? [] : [step.ended_at]));
-  if (starts.length === 0 || ends.length === 0) {
-    return null;
-  }
-  return Math.max(0, Math.max(...ends) - Math.min(...starts));
-};

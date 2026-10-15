@@ -7,10 +7,21 @@ import { noted_text, type SideReply } from "./reply.ts";
 
 const to_api = (message: SideMessage): ApiMessage => ({ role: message.role, content: message.content });
 
-export const side_complete = async (role: SideModelRole, messages: ApiMessage[], max_tokens: number | null, signal: AbortSignal, temperature = 0.2): Promise<SideReply> => {
+export type SideOptions = { temperature?: number; reasoning_effort?: string };
+
+export const side_complete = async (
+  role: SideModelRole,
+  messages: ApiMessage[],
+  max_tokens: number | null,
+  signal: AbortSignal,
+  { temperature = 0.2, reasoning_effort }: SideOptions = {},
+): Promise<SideReply> => {
   const catalog = await model_catalog();
   const model_id = catalog.side[role];
-  const result = await complete({ model_id, messages, ...(max_tokens === null ? {} : { max_tokens }), temperature }, signal);
+  const result = await complete(
+    { model_id, messages, ...(max_tokens === null ? {} : { max_tokens }), temperature, ...(reasoning_effort ? { reasoning_effort } : {}) },
+    signal,
+  );
   if (result.meta.finish_reason === "length") {
     console.warn(`[side] ${role} output from ${model_id} ended at the provider's output limit after ${result.text.length} chars`);
   }

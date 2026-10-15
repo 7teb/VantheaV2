@@ -70,7 +70,7 @@ export const reviewed_until_stable = async (
   settle: (decision: CommandDecision, rechecked: boolean) => Promise<Settled>,
 ): Promise<Settled> => {
   ctx.signal.throwIfAborted();
-  const sleep = command_sleep_reason(ctx, spec.command);
+  const sleep = command_sleep_reason(ctx, spec.command, spec.shell);
   if (sleep) {
     const text = rejected_text(sleep);
     return { kind: "denied", text, output: text };

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { create_accumulator, type Accumulator } from "./accumulator.ts";
 import { reasoning_fields } from "./catalog.ts";
 import type { DraftTake } from "./draft-decoder.ts";
-import { classify_provider_error, is_retryable, ModelError } from "./errors.ts";
+import { affordable_tokens, classify_provider_error, is_retryable, min_affordable_tokens, ModelError } from "./errors.ts";
 import { prompt_cache_fields } from "./prompt-cache.ts";
 import { safety_fields } from "./safety.ts";
 import { create_sse_parser } from "./sse.ts";
@@ -32,6 +32,7 @@ export const round_body = (request: RoundRequest): Record<string, unknown> => {
     temperature: 0.2,
     ...(request.tools.length ? { tools: to_api_tools(request.tools), tool_choice: request.tool_choice ?? "auto" } : {}),
     ...(model.efforts.length ? { reasoning: reasoning_fields(model, request.effort) } : {}),
+    ...(request.max_tokens ? { max_tokens: request.max_tokens } : {}),
     ...(model.provider_order.length ? { provider: { order: model.provider_order, allow_fallbacks: false } } : {}),
     ...safety_fields(model.id),
     ...prompt_cache_fields(model.id),
@@ -229,8 +230,8 @@ export const stream_round = async (
   const fallback = request.model.fallback;
   const primary = fallback ? { ...transport, max_attempts: Math.min(transport.max_attempts, fallback_after_attempts) } : transport;
   const total = fallback ? primary.max_attempts + transport.max_attempts : transport.max_attempts;
-  const attempt_route = (model: RoundRequest["model"], offset: number, route: Transport) => {
-    const body = JSON.stringify(round_body({ ...request, model }));
+  const attempt_once = (model: RoundRequest["model"], offset: number, route: Transport, max_tokens: number | undefined) => {
+    const body = JSON.stringify(round_body({ ...request, model, max_tokens }));
     let current: Accumulator | null = null;
     return with_retries({
       transport: route,
@@ -245,6 +246,18 @@ export const stream_round = async (
         callbacks.on_retry(attempt + offset, total, reason, wait_ms);
       },
     });
+  };
+  const attempt_route = async (model: RoundRequest["model"], offset: number, route: Transport) => {
+    try {
+      return await attempt_once(model, offset, route, request.max_tokens);
+    } catch (error) {
+      const affordable = error instanceof ModelError ? affordable_tokens(error) : null;
+      if (signal.aborted || affordable === null || !request.max_tokens || affordable >= request.max_tokens || affordable < min_affordable_tokens) {
+        throw error;
+      }
+      console.warn(`[model] ${model.id}: the credit check allows ${affordable} of ${request.max_tokens} output tokens, sending the round again with ${affordable}`);
+      return attempt_once(model, offset, route, affordable);
+    }
   };
   if (!fallback) {
     return attempt_route(request.model, 0, transport);

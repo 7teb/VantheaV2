@@ -31,7 +31,7 @@ export const ModePicker = ({ chat_id }: { chat_id: string | null }) => {
   const now = use_clock(until !== null);
 
   if (mode === null) {
-    return <Skeleton width={72} height={32} radius={9} />;
+    return <Skeleton width={72} height="var(--size-control)" radius={9} />;
   }
 
   const current = modes.find((entry) => entry.id === mode) ?? modes[0];

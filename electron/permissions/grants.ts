@@ -1,6 +1,6 @@
 import { read_only_command } from "./allowlist.ts";
 import { deletes } from "./floor.ts";
-import { split_statements } from "./statements.ts";
+import { split_statements, type Dialect } from "./statements.ts";
 
 export type PrefixGrant = { prefix: string; example: string };
 
@@ -8,7 +8,9 @@ const command_word = /^[\w.\\/-]+$/;
 
 const argument_word = /^[\w][\w.:\\/-]*$/;
 
-const process_kill = /^(?:stop-process|spps|kill|taskkill)(?:\.exe)?(?=\s|$)/i;
+const process_kill = /^(?:stop-process|spps|kill|taskkill|pkill|killall)(?:\.exe)?(?=\s|$)/i;
+
+const posix_removal = /(?:^|[\s;(&{|])(?:unlink|shred|xargs)(?=\s|$)|(?:^|\s)-(?:delete|exec|execdir|ok|okdir)(?=\s|$)/;
 
 const flag_word = /^(?:--?[a-z?]|\/[a-z?]{1,3}$)/i;
 
@@ -27,18 +29,19 @@ const flags_of = (statement: string): Set<string> =>
       .map((word) => word.split(/[=:]/)[0] ?? word),
   );
 
-const never_granted = (statement: string) => deletes(statement) || process_kill.test(statement.trim());
+const never_granted = (dialect: Dialect) => (statement: string) =>
+  deletes(statement) || process_kill.test(statement.trim()) || (dialect === "posix" && posix_removal.test(statement));
 
-const acting_statements = (command: string): string[] => {
-  const statements = split_statements(command);
-  const acting = statements.filter((statement) => !read_only_command(statement));
+const acting_statements = (command: string, dialect: Dialect): string[] => {
+  const statements = split_statements(command, dialect);
+  const acting = statements.filter((statement) => !read_only_command(statement, dialect));
   return acting.length ? acting : statements;
 };
 
-export const suggest_prefix = (command: string): string | null => {
-  const statements = acting_statements(command);
+export const suggest_prefix = (command: string, dialect: Dialect = "powershell"): string | null => {
+  const statements = acting_statements(command, dialect);
   const first = statements[0];
-  if (!first || statements.some(never_granted)) {
+  if (!first || statements.some(never_granted(dialect))) {
     return null;
   }
   const words = first.trim().split(/\s+/);
@@ -54,24 +57,25 @@ export const suggest_prefix = (command: string): string | null => {
   return statements.every((statement) => statement_matches(statement, normalize(prefix))) ? prefix : null;
 };
 
-const covered_by = (statement: string, grant: PrefixGrant): boolean => {
+const covered_by = (statement: string, grant: PrefixGrant, dialect: Dialect): boolean => {
   const prefix = normalize(grant.prefix);
   if (!prefix || !statement_matches(statement, prefix)) {
     return false;
   }
-  const example = acting_statements(grant.example).find((entry) => statement_matches(entry, prefix)) ?? "";
+  const example = acting_statements(grant.example, dialect).find((entry) => statement_matches(entry, prefix)) ?? "";
   const allowed = flags_of(example);
   return [...flags_of(statement)].every((flag) => allowed.has(flag));
 };
 
-export const covering_prefixes = (command: string, grants: PrefixGrant[]): string[] => {
-  const statements = acting_statements(command);
+export const covering_prefixes = (command: string, grants: PrefixGrant[], dialect: Dialect = "powershell"): string[] => {
+  const statements = acting_statements(command, dialect);
   if (!statements.length || !grants.length) {
     return [];
   }
+  const blocked = never_granted(dialect);
   const used: string[] = [];
   for (const statement of statements) {
-    const grant = never_granted(statement) ? undefined : grants.find((entry) => covered_by(statement, entry));
+    const grant = blocked(statement) ? undefined : grants.find((entry) => covered_by(statement, entry, dialect));
     if (!grant) {
       return [];
     }

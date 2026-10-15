@@ -3,17 +3,19 @@ import { Icon, type IconProps } from "./icons-base.tsx";
 const shield =
   "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z";
 
-export const TerminalIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="m4 17 6-6-6-6" />
-    <path d="M12 19h8" />
-  </Icon>
-);
-
 export const SquareTerminalIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m7 11 2-2-2-2" />
     <path d="M11 13h4" />
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+  </Icon>
+);
+
+export const SquareDollarIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M9 6v12" />
+    <path d="M12 8.5H7.75a1.75 1.75 0 0 0 0 3.5h2.5a1.75 1.75 0 0 1 0 3.5H6" />
+    <path d="M14 17h4" />
     <rect x="3" y="3" width="18" height="18" rx="2" />
   </Icon>
 );
@@ -30,13 +32,6 @@ export const GlobeCheckIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m15 6 2 2 4-4" />
     <path d="M2 12h20A10 10 0 1 1 12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 4-10" />
-  </Icon>
-);
-
-export const AtSignIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <circle cx="12" cy="12" r="4" />
-    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
   </Icon>
 );
 

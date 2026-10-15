@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import type { ToolStep } from "../../../shared/chat.ts";
+import { is_shell_run } from "../../../shared/shell.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon, CircleAlertIcon, ShieldTerminalIcon } from "../../components/icons.tsx";
@@ -7,14 +8,15 @@ import { use_t } from "../../i18n/index.ts";
 import { open_agent_run } from "../../state/agents.ts";
 import { AgentRunMark } from "./AgentRunMark.tsx";
 import { DraftLines } from "./DraftLines.tsx";
-import { live_draft } from "./live-draft.ts";
 import { tool_icon, ToolBody } from "./registry.tsx";
 import { is_reviewing } from "./review-phase.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
-import { has_body } from "./tool-body.ts";
+import { CommandTime, RowDetail } from "./RowMeta.tsx";
+import { has_body, opens_by_itself } from "./tool-body.ts";
 import { is_active_status, tool_label } from "./tool-meta.ts";
-import { format_duration, step_detail, step_duration, step_hint } from "./tool-summary.ts";
+import { step_hint } from "./tool-summary.ts";
 import "./tools.css";
+import "./tool-motion.css";
 
 const StatusMark = ({ step }: { step: ToolStep }) => {
   const t = use_t();
@@ -41,22 +43,20 @@ const StatusMark = ({ step }: { step: ToolStep }) => {
 
 const run_starters = new Set(["deploy_agent", "continue_agent"]);
 
-type ToolRowProps = { step: ToolStep; running?: boolean };
+type ToolRowProps = { chat_id: string; step: ToolStep; running?: boolean; main_chat?: boolean };
 
-export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
+export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false }: ToolRowProps) => {
   const t = use_t();
   const [chosen, set_chosen] = useState<boolean | null>(null);
   const [seen, set_seen] = useState(false);
   const Icon = tool_icon(step);
   const active = is_active_status(step.status);
-  const detail = step_detail(t, step);
   const edit = step.view?.kind === "edit" ? step.view : null;
   const drafted = step.status === "drafting" ? (step.progress?.lines ?? 0) : 0;
-  const duration = step_duration(step);
   const reviewing = is_reviewing(step);
   const expandable = has_body(t, step);
   const run = !expandable && step.view?.kind === "agent" ? step.view : null;
-  const open = expandable && (chosen ?? (running && !reviewing && live_draft(step) === null));
+  const open = expandable && (chosen ?? (running && opens_by_itself(step, main_chat)));
   if (open && !seen) {
     set_seen(true);
   }
@@ -80,15 +80,15 @@ export const ToolRow = memo(({ step, running = false }: ToolRowProps) => {
         {edit && <span className="tool-stat-add">+{edit.added}</span>}
         {edit && <span className="tool-stat-remove">-{edit.removed}</span>}
         {drafted > 0 && <DraftLines count={drafted} />}
-        {!edit && !drafted && detail && <span className="tool-row-detail">{detail}</span>}
+        {!edit && !drafted && <RowDetail chat_id={chat_id} step={step} />}
         {step.view?.kind === "agent" && run_starters.has(step.name) && <AgentRunMark run_id={step.view.run_id} />}
         <StatusMark step={step} />
-        {duration !== null && !active && <span className="tool-row-duration">{format_duration(duration)}</span>}
+        {is_shell_run(step.name) && <CommandTime step={step} />}
         {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}
       </button>
       {expandable && (
         <CollapsibleBody open={open}>
-          <div className="tool-row-body">{seen && <ToolBody step={step} open={open} />}</div>
+          <div className="tool-row-body">{seen && <ToolBody step={step} open={open} chat_id={chat_id} />}</div>
         </CollapsibleBody>
       )}
     </div>

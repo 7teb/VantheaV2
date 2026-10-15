@@ -26,6 +26,9 @@ export const build_sidebar = (chats: ChatMeta[], projects: ProjectEntry[]): Side
   const pinned: ChatMeta[] = [];
   const loose: ChatMeta[] = [];
   for (const chat of [...chats].sort(newest_first)) {
+    if (chat.archived) {
+      continue;
+    }
     if (chat.pinned) {
       pinned.push(chat);
       continue;
@@ -43,6 +46,8 @@ export const build_sidebar = (chats: ChatMeta[], projects: ProjectEntry[]): Side
     loose,
   };
 };
+
+export const archived_chats = (chats: ChatMeta[]): ChatMeta[] => chats.filter((chat) => chat.archived).sort(newest_first);
 
 export const sidebar_order = (model: SidebarModel, collapsed: string[]): ChatMeta[] => [
   ...model.pinned,

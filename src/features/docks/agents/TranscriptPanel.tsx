@@ -8,8 +8,10 @@ import { cancel_agent, close_agent_run } from "../../../state/agents.ts";
 import { find_run, run_status_of, type TranscriptEntry } from "../../../state/agents-reduce.ts";
 import { use_follow_bottom } from "../../chat/use-follow-bottom.ts";
 import { DockEmpty, DockPanel, DockTitle } from "../DockPanel.tsx";
-import { run_duration, status_labels } from "./agent-meta.ts";
+import { agent_status_keys } from "../../tools/background-status.ts";
+import { run_duration } from "./agent-meta.ts";
 import { AgentTranscript, TranscriptSkeleton } from "./AgentTranscript.tsx";
+import "./agents.css";
 
 type TranscriptPanelProps = { entry: TranscriptEntry; agents: AgentSummary[]; now: number };
 
@@ -23,7 +25,7 @@ export const TranscriptPanel = ({ entry, agents, now }: TranscriptPanelProps) =>
   const timing = found?.run ?? transcript;
   const status = found?.run.status ?? (transcript ? run_status_of(transcript.status) : null);
   const name = found?.agent.name || transcript?.name || t("agent.transcript");
-  const meta = status && timing ? `${t(status_labels[status])} · ${run_duration(timing, now)}` : undefined;
+  const meta = status && timing ? `${t(agent_status_keys[status])} · ${run_duration(timing, now)}` : undefined;
 
   const stop = async () => {
     set_stopping(true);
@@ -52,7 +54,7 @@ export const TranscriptPanel = ({ entry, agents, now }: TranscriptPanelProps) =>
           <DockTitle label={name} meta={meta} />
         </div>
       }
-      close_label={t("agent.close")}
+      close_label={t("background.close")}
       actions={
         <>
           {transcript?.context && <ContextRing usage={transcript.context} placement="bottom-end" />}

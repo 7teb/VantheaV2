@@ -6,13 +6,13 @@ import { estimate_messages } from "../context/usage.ts";
 import { uploaded } from "../media/uploads.ts";
 import { find_model } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
-import { open_chat_window, resolve_decision } from "../permissions/approvals.ts";
+import { hold_decision, open_chat_window, resolve_decision } from "../permissions/approvals.ts";
 import { close_full_window, full_window_until, on_full_window } from "../permissions/full-window.ts";
 import { context_model } from "../settings/model-context.ts";
 import { get_settings } from "../settings/store.ts";
 import { as_string, pick, require_record, require_string } from "../storage/coerce.ts";
 import { build_api_messages } from "../turn/history.ts";
-import { accept_plan, compact_turn, continue_turn, edit_turn, start_turn, steer_turn, stop_turn } from "../turn/run.ts";
+import { accept_plan, compact_turn, continue_turn, edit_turn, init_turn, start_turn, steer_turn, stop_turn, undo_turn } from "../turn/run.ts";
 import { counted_image } from "../turn/user-input.ts";
 import { emit, handle } from "./handle.ts";
 import { parse_ids } from "./media.ts";
@@ -75,6 +75,8 @@ export const register_turn_ipc = () => {
   );
   handle("turn:continue", (chat_id) => continue_turn(chat_id_of(chat_id)));
   handle("turn:accept_plan", (chat_id, message_id) => accept_plan(chat_id_of(chat_id), require_string(message_id, "message id", 200)));
+  handle("turn:undo", (chat_id, message_id) => undo_turn(chat_id_of(chat_id), require_string(message_id, "message id", 200)));
+  handle("turn:init", (chat_id) => init_turn(chat_id_of(chat_id)));
   handle("turn:stop", (chat_id) => stop_turn(chat_id_of(chat_id)));
   handle("turn:steer", (chat_id, text, attachment_ids, steer_id) =>
     steer_turn(
@@ -86,6 +88,9 @@ export const register_turn_ipc = () => {
   );
   handle("turn:approve", (chat_id, call_id, decision) => {
     resolve_decision(chat_id_of(chat_id), require_string(call_id, "call id", 200), parse_decision(decision));
+  });
+  handle("turn:hold_approval", (chat_id, call_id) => {
+    hold_decision(chat_id_of(chat_id), require_string(call_id, "call id", 200));
   });
   handle("turn:full_window", (chat_id) => {
     const id = chat_id_of(chat_id);

@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { BookOpenIcon, GlobeIcon, ImageIcon, PlugIcon, SlidersIcon, SmileIcon, type IconComponent } from "../../components/icons.tsx";
+import { BookOpenIcon, GlobeCheckIcon, ImageIcon, PlugIcon, SlidersIcon, SmileIcon, type IconComponent } from "../../components/icons.tsx";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { GeneralPane } from "./GeneralPane.tsx";
 import { pane_search } from "./pane-keywords.ts";
@@ -29,7 +29,7 @@ export const settings_sections: SettingsSection[] = [
     Pane: GeneralPane,
   },
   { id: "personalization", group: "app", icon: SmileIcon, Pane: PersonalizationPane, ...pane_search.personalization },
-  { id: "web_search", group: "integrations", icon: GlobeIcon, Pane: WebSearchPane, ...pane_search.web_search },
+  { id: "web_search", group: "integrations", icon: GlobeCheckIcon, Pane: WebSearchPane, ...pane_search.web_search },
   { id: "image_gen", group: "integrations", icon: ImageIcon, Pane: ImagePane, ...pane_search.image_gen },
   { id: "mcp", group: "integrations", icon: PlugIcon, Pane: McpPane, ...pane_search.mcp },
   { id: "skills", group: "integrations", icon: BookOpenIcon, Pane: SkillsPane, ...pane_search.skills },

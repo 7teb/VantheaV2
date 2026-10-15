@@ -34,7 +34,7 @@
 
 .mcp-badge[data-state="starting"]::before {
   background: var(--text-secondary);
-  animation: mcp-pulse 1.4s var(--ease-in-out) infinite;
+  animation: pulse 1.4s var(--ease-in-out) infinite;
 }
 
 .mcp-badge[data-state="error"] {
@@ -177,10 +177,4 @@
   justify-content: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-3);
-}
-
-@keyframes mcp-pulse {
-  50% {
-    opacity: 0.35;
-  }
 }

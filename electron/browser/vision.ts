@@ -107,13 +107,20 @@ export const bitmap_difference = (left: Buffer, right: Buffer) => {
   return total / ((left.length / 4) * 3 * 255);
 };
 
+export const visual_tab_id = (screenshot_id: string) => {
+  if (!screenshot_id.startsWith("visual-")) {
+    return "";
+  }
+  return screenshot_id.slice("visual-".length).split("-").slice(0, -2).join("-");
+};
+
 const capture = (tab: BrowserTab, signal: AbortSignal) => settle_within(tab.guest.capturePage(), signal, capture_timeout_ms, "Browser screenshot");
 
 export const capture_view = async (tab: BrowserTab, signal: AbortSignal): Promise<CapturedView> => {
   const image = await capture(tab, signal);
   const size = image.getSize();
   if (!size.width || !size.height) {
-    throw new Error("Browser screenshot is empty. Is the browser panel visible?");
+    throw new Error("Browser screenshot is empty: the tab has not painted a frame yet. Wait for the page to load and try again.");
   }
   return { image, width: size.width, height: size.height, view: await viewport(tab, signal) };
 };

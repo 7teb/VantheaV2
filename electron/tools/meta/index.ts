@@ -27,6 +27,12 @@ const parse_todo = (value: unknown, index: number): Todo => {
   return { id: `todo-${index + 1}`, text: text.slice(0, max_todo_chars), status };
 };
 
+const todos_text = (todos: Todo[]): string => {
+  const list = `Todos updated:\n${todos.map((todo) => `${todo_marks[todo.status]} ${todo.text}`).join("\n")}`;
+  const open = todos.filter((todo) => todo.status !== "done").length;
+  return open === 0 ? list : `${list}\n${open} of ${todos.length} still open. Before your final answer, call update_todos again: finished items done, unfinished items pending.`;
+};
+
 const parse_todos = (raw: Record<string, unknown>): Todo[] => {
   if (!Array.isArray(raw.todos)) {
     throw new ToolArgumentError("todos must be a list");
@@ -40,7 +46,7 @@ const parse_todos = (raw: Record<string, unknown>): Todo[] => {
 export const update_todos_tool = define_tool<Todo[]>({
   spec: {
     name: "update_todos",
-    description: `Show the user the step list for the current task. Call it before the first edit with every step pending, then whenever a step starts (in_progress) or finishes (done). Pass the whole list each time, at most ${max_todos} steps.`,
+    description: `Show the user the step list for the current task. It stays visible above the input box until every item is done or the list is cleared. Call it before the first edit with every step pending, then whenever a step starts (in_progress) or finishes (done). Before your final answer, call it once more so finished items are done and unfinished ones are pending; never end a turn with an item in_progress. Pass the whole list each time, at most ${max_todos} steps.`,
     parameters: {
       type: "object",
       properties: {
@@ -62,7 +68,7 @@ export const update_todos_tool = define_tool<Todo[]>({
   parse: parse_todos,
   run: async (...[, todos]) => ({
     status: "done",
-    text: todos.length ? `Todos updated:\n${todos.map((todo) => `${todo_marks[todo.status]} ${todo.text}`).join("\n")}` : "Todo list cleared.",
+    text: todos.length ? todos_text(todos) : "Todo list cleared.",
     view: { kind: "todos", todos },
   }),
 });

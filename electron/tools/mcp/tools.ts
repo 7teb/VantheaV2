@@ -5,7 +5,7 @@ import { target_scope } from "../../mcp/risk.ts";
 import { effective_tier, is_trusted, tool_enabled } from "../../mcp/servers.ts";
 import { build_description, build_parameters, type McpResultText } from "../../mcp/specs.ts";
 import { changed_pins, type PinChange } from "../../permissions/source-read.ts";
-import { approved_note, scripts_changed_text, user_denied_text } from "../../permissions/verdict-text.ts";
+import { approved_note, not_approved_text, scripts_changed_text } from "../../permissions/verdict-text.ts";
 import { define_tool, type Tool, type ToolContext, type ToolResult } from "../types.ts";
 import { decide, record_grant, type McpCall } from "./decide.ts";
 import { mcp_images } from "./images.ts";
@@ -73,7 +73,7 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
       ctx.signal.throwIfAborted();
       if (!decision.approved) {
         const model_reason = verdict.note?.source === "model" && verdict.note.reason ? verdict.note.reason : null;
-        const text = user_denied_text("tool call", decision.feedback, model_reason);
+        const text = not_approved_text("tool call", decision, model_reason);
         return { status: "denied", text, view: mcp_view(server, info.name, text, true) };
       }
       record_grant(ctx.chat_id, call, decision.grant);

@@ -33,11 +33,13 @@
   background: transparent;
 }
 
-.terminal-skeleton {
+.terminal-empty {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 14px 16px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: var(--space-6);
 }
 
 .terminal-failed {

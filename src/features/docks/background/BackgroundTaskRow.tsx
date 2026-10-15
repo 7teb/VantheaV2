@@ -1,22 +1,16 @@
 import { useLayoutEffect, useRef } from "react";
 import type { BackgroundStatus, BackgroundTask } from "../../../../shared/ipc/work.ts";
+import { shell_labels } from "../../../../shared/shell.ts";
 import { IconButton } from "../../../components/Button.tsx";
 import { Collapsible } from "../../../components/Collapsible.tsx";
-import { CircleAlertIcon, CircleCheckIcon, CircleSlashIcon, CircleStopIcon, LoaderIcon, type IconComponent } from "../../../components/icons.tsx";
-import { use_t, type MessageKey } from "../../../i18n/index.ts";
+import { CircleAlertIcon, CircleCheckIcon, CircleSlashIcon, CircleStopIcon, CircleSpinnerIcon, type IconComponent } from "../../../components/icons.tsx";
+import { use_t } from "../../../i18n/index.ts";
 import { cancel_background_task } from "../../../state/background.ts";
+import { background_status_keys } from "../../tools/background-status.ts";
 import { format_duration } from "../../tools/tool-summary.ts";
 
-const status_labels: Record<BackgroundStatus, MessageKey> = {
-  running: "background.running_status",
-  completed: "background.completed",
-  failed: "background.failed",
-  cancelled: "background.canceled",
-  interrupted: "background.interrupted",
-};
-
 const status_icons: Record<BackgroundStatus, IconComponent> = {
-  running: LoaderIcon,
+  running: CircleSpinnerIcon,
   completed: CircleCheckIcon,
   failed: CircleAlertIcon,
   cancelled: CircleSlashIcon,
@@ -45,7 +39,7 @@ export const BackgroundTaskRow = ({ task, now }: BackgroundTaskRowProps) => {
   const StatusIcon = status_icons[task.status];
   const running = task.status === "running";
   const end = task.ended_at ? Date.parse(task.ended_at) : now;
-  const meta = [t(status_labels[task.status]), format_duration(end - Date.parse(task.started_at))];
+  const meta = [shell_labels[task.shell], t(background_status_keys[task.status]), format_duration(end - Date.parse(task.started_at))];
   if (task.exit_code !== null) {
     meta.push(t("background.exit_code", { code: task.exit_code }));
   }

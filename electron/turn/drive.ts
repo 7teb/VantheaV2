@@ -18,15 +18,17 @@ import { build_system_prompt } from "../prompts/index.ts";
 import { take_main_steer } from "../questions/answers.ts";
 import { get_settings } from "../settings/store.ts";
 import { side_model } from "../side/model.ts";
+import { reasoning_status_call } from "../side/reasoning-status.ts";
 import { review_call } from "../side/review.ts";
 import { describe_attachment_image } from "../side/vision.ts";
 import { error_text } from "../storage/coerce.ts";
 import { mcp_tools } from "../tools/mcp/tools.ts";
 import { tools_for } from "../tools/registry.ts";
 import { drop_untaken_steers, unregister_active, type ActiveTurn } from "./active.ts";
+import { carried_todos_note } from "./carried-todos.ts";
 import { build_api_messages } from "./history.ts";
 import { run_compaction_turn, run_turn_loop } from "./loop.ts";
-import type { CompactionHooks, TurnSession } from "./session.ts";
+import type { CompactionHooks, TurnNote, TurnSession } from "./session.ts";
 import { note_newest_user } from "./vision-notes.ts";
 
 export type TurnPlan = {
@@ -99,6 +101,8 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       effort: plan.effort,
     });
     const api_messages = await build_api_messages({ system, summary: loaded.summary, messages: history, model: plan.model, agent_tools });
+    const carried = offered.some((tool) => tool.spec.name === "update_todos") ? carried_todos_note(history) : null;
+    let opening_notes: TurnNote[] = carried ? [carried] : [];
     const session: TurnSession = {
       chat_id: plan.chat_id,
       message_id: plan.message_id,
@@ -114,7 +118,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       stream: stream_round,
       resolve_tools: (p) => tools_for(p, settings, plan.model, mcp_tools()),
       side_model,
-      wait_decision: (call_id, request) => wait_for_decision({ key: plan.chat_id, chat_id: plan.chat_id, call_id, request, signal }),
+      wait_decision: (call_id, request, on_hold) => wait_for_decision({ key: plan.chat_id, chat_id: plan.chat_id, call_id, request, signal, on_hold }),
       review: main_review(plan.chat_id, review_call),
       human_decisions: () => chat_decisions(plan.chat_id),
       steers: {
@@ -124,14 +128,23 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
           take_main_steer(plan.chat_id, steer_id);
         },
       },
-      take_notes: () => take_agent_notes(plan.chat_id, agent_tools),
+      take_notes: () => {
+        const notes = [...opening_notes, ...take_agent_notes(plan.chat_id, agent_tools)];
+        opening_notes = [];
+        return notes;
+      },
       idle: () => wait_for_input(plan.chat_id, plan.effort === major_effort ? major_wait_ms : 0, signal),
       store_images: save_tool_images,
       compaction: chat_compaction(plan),
       stored_context: stored_context(history, plan.model.id),
+      reasoning_status: reasoning_status_call,
     };
     await (plan.compact_only ? run_compaction_turn(session, api_messages) : run_turn_loop(session, api_messages));
   } catch (error) {
+    if (signal.aborted) {
+      turn.emit({ type: "end", status: "stopped", error: null });
+      return;
+    }
     console.error(`[turn] turn ${plan.message_id} in chat ${plan.chat_id} failed to run:`, error);
     turn.emit({ type: "end", status: "failed", error: { kind: "internal", message: error_text(error) } });
   } finally {
@@ -139,7 +152,11 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     set_streaming(plan.chat_id, false);
     unregister_active(plan.chat_id, plan.message_id);
     cancel_chat(plan.chat_id);
-    await flush_chat(plan.chat_id);
+    try {
+      await flush_chat(plan.chat_id);
+    } catch (error) {
+      console.error(`[turn] saving chat ${plan.chat_id} after turn ${plan.message_id} failed:`, error);
+    }
     run_finished_hook(plan.chat_id, plan.message_id);
   }
 };

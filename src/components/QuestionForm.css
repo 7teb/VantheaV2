@@ -254,6 +254,22 @@
     background: var(--surface-button-hover);
   }
 
+  .question-button[data-countdown] {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .question-button[data-countdown]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--fill-selected);
+    transform-origin: left;
+    animation: question-skip-sweep var(--skip-ms) linear forwards;
+  }
+
   .question-button[data-variant="primary"] {
     background: var(--surface-solid);
     color: var(--text-on-primary);
@@ -268,5 +284,14 @@
     font-size: var(--font-size-ui);
     color: var(--text-danger);
     overflow-wrap: anywhere;
+  }
+
+  @keyframes question-skip-sweep {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
   }
 }

@@ -4,8 +4,8 @@ The main agent can start sub-agents that work in the background of the same chat
 
 ## Tools of the main agent
 
-- `deploy_agent`: starts a new agent and returns at once. Arguments: `name` (shown to the user), `description` (one line), `topic` (required, one word or short phrase for the area of work, for example `parser`), optional `scope` (list of project paths the agent owns or works in), `prompt` (complete standalone task, the agent knows nothing else about the chat), `profile` (`explore` or `worker`), optional `model` (exact id from `list_models`, default is the main agent's model) and optional `effort` (default is the main agent's effort). The result names the agents that are already running, with their topics.
-- `continue_agent`: starts another run of an existing agent on its kept context. The agent keeps its name, topic, scope, profile and model. Answers other agents sent it after it finished arrive at the start of this run.
+- `deploy_agent`: starts a new agent and returns at once. Arguments: `name` (shown to the user), `description` (one line), `topic` (required, one word or short phrase for the area of work, for example `parser`), optional `scope` (list of project paths the agent owns or works in), `prompt` (complete standalone task, the agent knows nothing else about the chat), `profile` (`explore` or `worker`), optional `without_tools` (list of tool names taken away from the chosen profile for this agent, for example `["run_command", "run_bash"]` for a worker that may only read and edit files; it can only remove tools the profile has, and an unknown name fails with the list of the profile's tools), optional `model` (exact id from `list_models`, default is the main agent's model) and optional `effort` (default is the main agent's effort). The result names the agents that are already running, with their topics.
+- `continue_agent`: starts another run of an existing agent on its kept context. The agent keeps its name, topic, scope, profile and model. Answers other agents sent it after it finished arrive at the start of this run. Tools removed with `without_tools` stay removed, also after an app restart.
 - `list_agents`: the roster of the chat (see below).
 - `message_agent`: sends an instruction to a running agent. It arrives at the start of the agent's next round. It fails if the agent is not running; use continue_agent then.
 - `get_agent_status`: detail of one agent's latest run (see below). It never waits; do not poll it.
@@ -16,12 +16,13 @@ Agent ids can be given as the full id, as the short form `Name#xxxxxxxx` or `xxx
 
 Limits: at most 20 agents can run at once in one chat. There is no limit on the number or length of messages between agents or to the main agent.
 
-Agents work under the permission mode the main turn had when it deployed them (continue_agent: the mode of the current turn). Switching the mode picker later does not change a running agent; a 10-minute "allow everything" window of the chat does apply to its agents. Their approval requests appear at the composer as "<name> requests permission" ("<name> benötigt eine Freigabe"), and the Agents button in the titlebar shows a dot while an agent waits for approval.
+Agents work under the permission mode the main turn had when it deployed them (continue_agent: the mode of the current turn). Switching the mode picker later does not change a running agent; a 10-minute "allow everything" window of the chat does apply to its agents. Their approval requests appear at the composer as "<name> requests permission" ("<name> benötigt eine Freigabe"), and the More button in the titlebar and its "Background tasks" item show a yellow dot while an agent waits for approval.
 
 ## Profiles
 
 - `explore`: read-only; its file tools stay inside the project.
 - `worker`: can also edit files and run commands, under the same permission checks as the main agent. Anything outside the project folder needs a worker.
+- `without_tools` on deploy_agent removes single tools from either profile for one agent. The main agent uses it only when the user asks for it or the task clearly requires it. The agent's model is not offered those tools in any run, including continue_agent runs and runs after a restart, and its instructions name them. A call to one fails with "<tool> was removed from your tools by the main agent". An agent without message_main_agent gets no update reminder. The roster, list_agents, get_agent_status and the agent's completion report show it as "worker (without run_command, run_bash)", and the automatic review sees it in the header of the deploy_agent and continue_agent task.
 
 ## Agents in one chat
 
@@ -72,11 +73,11 @@ Noise is handled by structure, not by limits: topics, overlap notices, the requi
 
 ## What you see
 
-- In the Agents panel, the recipient's transcript shows each message as a row "From <name>: <summary>" ("Von <name>: <summary>"). Opening it shows the type, the subject, the message id and the full text. The sender's transcript shows the message_peer call with the recipient and the outcome ("In inbox", "Kept for next run", "Blocked by review", "Declined", "Not running", "Already sent").
+- In the Background Tasks panel (More menu), the recipient's transcript shows each message as a row "From <name>: <summary>" ("Von <name>: <summary>"). Opening it shows the type, the subject, the message id and the full text. The sender's transcript shows the message_peer call with the recipient and the outcome ("In inbox", "Kept for next run", "Blocked by review", "Declined", "Not running", "Already sent").
 - The roster notices a sub-agent gets (the agent list at the start of a run, later changes and overlap introductions) are for the model only and are not shown in its transcript.
-- The agent list shows each agent's topic next to its profile and model, and "1 open question" ("1 offene Frage") on a running run that waits for an answer. This is information, not a waiting state.
+- The Background Tasks panel shows each agent's topic next to its profile (with "without run_command, run_bash" ("ohne run_command, run_bash") when tools were removed) and model, and "1 open question" ("1 offene Frage") on a running run that waits for an answer. This is information, not a waiting state.
 - Allowed messages between agents do not appear in the main chat. A blocked message and a detected loop appear there as one row "Agent messages need attention: <name>" ("Agenten-Nachrichten brauchen Aufmerksamkeit: <name>") marked "Blocked" ("Blockiert") or "Loop" ("Schleife").
-- When the review cannot decide about a message or a task, a card appears at the composer like other sub-agent approval cards: "May I send this message to <name>?" ("Darf ich diese Nachricht an <name> senden?"), "May I start the agent <name> with this task?" or "May I continue <name> with this task?".
+- When the review cannot decide about a message or a task, a card appears at the composer like other sub-agent approval cards: "May I send this message to <name>?" ("Darf ich diese Nachricht an <name> senden?"), "May I start the agent <name> with this task?" or "May I continue <name> with this task?". The deploy_agent and continue_agent cards name the tools removed with without_tools in a line like "Without: run_command, run_bash" ("Ohne: run_command, run_bash"); an agent without removed tools shows no such line.
 
 ## Review of agent texts
 
@@ -109,7 +110,7 @@ The main agent receives a notification with the agent id, run id, status, durati
 
 ## Stop
 
-Pressing Stop ends the main turn. It does not stop running sub-agents; stop those in the Agents panel (open an agent, then "Stop" ("Stoppen")) or with cancel_agent.
+Pressing Stop ends the main turn. It does not stop running sub-agents; stop those in the Background Tasks panel (the stop button on the agent row, or open a run, then "Stop" ("Stoppen")) or with cancel_agent.
 
 After the user pressed Stop, updates from still running agents no longer start a new turn; they are held and delivered with the next turn. Finished reports still start a new turn. The hold ends as soon as any new turn starts.
 

@@ -1,16 +1,18 @@
 import type { ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { BackgroundTask } from "../../shared/ipc/work.ts";
+import type { ShellKind } from "../../shared/shell.ts";
 import { invalidate_index } from "../project/index.ts";
 import { resolve_inside } from "../project/scope.ts";
-import { output_collector, type OutputView } from "../shell/output.ts";
-import { kill_tree, kill_tree_sync, spawn_powershell } from "../shell/process.ts";
+import { output_collector, type OutputCollector, type OutputView } from "../shell/output.ts";
+import { exit_grace_ms, kill_tree, kill_tree_sync, shell_exit, shell_spawners, signal_note } from "../shell/process.ts";
+import type { ShellDetach } from "../shell/run.ts";
 import { error_text } from "../storage/coerce.ts";
 import { keep_corrupt, read_json, write_json, write_json_sync } from "../storage/json-file.ts";
 import { storage_paths } from "../storage/paths.ts";
 import { listing_order, parse_stored_file, public_task, stored_file, type TaskRecord } from "./records.ts";
 
-export type BackgroundSpawner = (command: string, cwd: string) => ChildProcess;
+export type BackgroundSpawner = (command: string, cwd: string, shell: ShellKind) => ChildProcess;
 
 export type BackgroundOptions = {
   data_file: string;
@@ -19,7 +21,9 @@ export type BackgroundOptions = {
   kill_sync: (pid: number | null) => void;
 };
 
-export type BackgroundStart = { chat_id: string; turn_id: string; project_root: string; cwd: string; name: string; command: string };
+export type BackgroundStart = { chat_id: string; turn_id: string; project_root: string; cwd: string; name: string; command: string; shell: ShellKind };
+
+export type AdoptOutcome = { status: "moved"; task: BackgroundTask } | { status: "finished" | "full" };
 
 export type TaskLookup = { task: BackgroundTask; output: OutputView } | { task: null; error: string };
 
@@ -117,14 +121,27 @@ const watch = (record: TaskRecord, child: ChildProcess) => {
     console.warn(`[background] task ${record.id} (${record.command.slice(0, 200)}) failed: ${error.message}`);
     finish(record, null, `[failed to run: ${error.message}]`);
   });
-  child.once("close", (code: number | null) => finish(record, code, ""));
+  let grace: ReturnType<typeof setTimeout> | null = null;
+  const finish_exit = (code: number | null, signal: NodeJS.Signals | null) => {
+    const exit = shell_exit(record.shell, code, signal);
+    finish(record, exit.exit_code, exit.signal ? signal_note(exit.signal) : "");
+  };
+  child.once("exit", (code: number | null, signal: NodeJS.Signals | null) => {
+    grace = setTimeout(() => finish_exit(code, signal), exit_grace_ms);
+  });
+  child.once("close", (code: number | null, signal: NodeJS.Signals | null) => {
+    if (grace) {
+      clearTimeout(grace);
+    }
+    finish_exit(code, signal);
+  });
 };
 
 export const init_background = async (overrides: Partial<BackgroundOptions> = {}) => {
   const data_file = overrides.data_file ?? storage_paths().background;
   options = {
     data_file,
-    spawner: overrides.spawner ?? spawn_powershell,
+    spawner: overrides.spawner ?? ((command, cwd, shell) => shell_spawners[shell](command, cwd)),
     kill: overrides.kill ?? kill_tree,
     kill_sync: overrides.kill_sync ?? kill_tree_sync,
   };
@@ -148,33 +165,57 @@ export const init_background = async (overrides: Partial<BackgroundOptions> = {}
 
 const running_count = () => [...tasks.values()].filter((record) => record.status === "running").length;
 
-export const start_background = async (input: BackgroundStart): Promise<BackgroundTask> => {
-  const { spawner } = current_options();
-  const scoped = await resolve_inside(input.project_root, input.cwd || ".");
-  if (running_count() >= max_running_tasks) {
-    throw new Error(`At most ${max_running_tasks} background tasks can run at once; wait for one to finish or cancel one.`);
-  }
-  const child = spawner(input.command, scoped.target);
+const has_room = () => running_count() < max_running_tasks;
+
+type Launched = { id: string; child: ChildProcess; cwd: string; started_at: string; output: OutputCollector };
+
+const track = (input: BackgroundStart, launched: Launched): BackgroundTask => {
   const record: TaskRecord = {
-    id: `bg_${randomUUID()}`,
+    id: launched.id,
     chat_id: input.chat_id,
     name: input.name,
     command: input.command,
-    cwd: scoped.relative,
+    shell: input.shell,
+    cwd: launched.cwd,
     status: "running",
     exit_code: null,
-    started_at: new Date().toISOString(),
+    started_at: launched.started_at,
     ended_at: null,
     project_root: input.project_root,
     turn_id: input.turn_id,
-    pid: child.pid ?? null,
-    output: output_collector(),
+    pid: launched.child.pid ?? null,
+    output: launched.output,
   };
   tasks.set(record.id, record);
-  watch(record, child);
+  watch(record, launched.child);
   save();
   emit_now(record);
   return public_task(record);
+};
+
+const new_task_id = () => `bg_${randomUUID()}`;
+
+export const start_background = async (input: BackgroundStart): Promise<BackgroundTask> => {
+  const { spawner } = current_options();
+  const scoped = await resolve_inside(input.project_root, input.cwd || ".");
+  if (!has_room()) {
+    throw new Error(`At most ${max_running_tasks} background tasks can run at once; wait for one to finish or cancel one.`);
+  }
+  const child = spawner(input.command, scoped.target, input.shell);
+  return track(input, { id: new_task_id(), child, cwd: scoped.relative, started_at: new Date().toISOString(), output: output_collector() });
+};
+
+export const adopt_background = (input: BackgroundStart, detach: ShellDetach): AdoptOutcome => {
+  if (!has_room()) {
+    return { status: "full" };
+  }
+  const id = new_task_id();
+  const taken = detach(id);
+  if (!taken) {
+    return { status: "finished" };
+  }
+  const started_at = new Date(taken.started_at).toISOString();
+  return { status: "moved", task: track(input, { id, child: taken.child, cwd: input.cwd, started_at, output: taken.output }) };
 };
 
 export const list_background = (chat_id: string): BackgroundTask[] =>

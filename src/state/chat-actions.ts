@@ -1,7 +1,5 @@
 import type { ApprovalDecision } from "../../shared/approval.ts";
 import { api } from "../api/bridge.ts";
-import { mark_reverted } from "./chat-view-reduce.ts";
-import { chat_view_store } from "./chat-view.ts";
 import { open_chat } from "./ui.ts";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -53,11 +51,20 @@ export const accept_plan = async (chat_id: string, message_id: string): Promise<
 
 export const undo_turn = async (chat_id: string, message_id: string): Promise<ActionResult> => {
   try {
-    const result = await api.invoke("turn:undo", chat_id, message_id);
-    chat_view_store.update((state) => mark_reverted(state, chat_id, message_id, result));
+    await api.invoke("turn:undo", chat_id, message_id);
     return ok;
   } catch (error) {
     console.error(`[chat] turn:undo failed for chat ${chat_id} message ${message_id}`, error);
+    return failure(error);
+  }
+};
+
+export const init_turn = async (chat_id: string): Promise<ActionResult> => {
+  try {
+    await api.invoke("turn:init", chat_id);
+    return ok;
+  } catch (error) {
+    console.error(`[chat] turn:init failed for chat ${chat_id}`, error);
     return failure(error);
   }
 };
@@ -69,6 +76,14 @@ export const answer_approval = async (chat_id: string, call_id: string, decision
   } catch (error) {
     console.error(`[chat] turn:approve failed for chat ${chat_id} call ${call_id}`, error);
     return failure(error);
+  }
+};
+
+export const hold_approval = async (chat_id: string, call_id: string): Promise<void> => {
+  try {
+    await api.invoke("turn:hold_approval", chat_id, call_id);
+  } catch (error) {
+    console.error(`[chat] turn:hold_approval failed for chat ${chat_id} call ${call_id}`, error);
   }
 };
 

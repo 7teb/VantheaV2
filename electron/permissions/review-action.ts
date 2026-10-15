@@ -1,11 +1,13 @@
 import path from "node:path";
 import type { McpTier } from "../../shared/approval.ts";
+import { shell_labels } from "../../shared/shell.ts";
 import { cap_bytes, head_tail_bytes, section_caps, trimmed, type TrimLevel } from "./review-budget.ts";
 import { review_headers } from "./review-prompt.ts";
 import { file_block, section } from "./review-sections.ts";
 import type { RetainedScript } from "./script-retention.ts";
 import type { PinChange } from "./source-read.ts";
 import type { ScriptFile } from "./sources.ts";
+import type { Dialect } from "./statements.ts";
 import type { ChangeMark } from "./written-files.ts";
 import { path_key } from "../storage/paths.ts";
 
@@ -22,11 +24,14 @@ export type ActionView = {
   changed: PinChange[];
   edits: { text: string; since: number };
   facts: string[];
+  shell?: Dialect;
 };
 
 export type ScriptPlacement = { sent: ReadonlySet<string>; over_budget: ReadonlySet<string>; context: ReadonlySet<string>; earlier: ReadonlyMap<string, RetainedScript>; gaps: string[] };
 
 const gap_chars = 4000;
+
+const shell_lines: Partial<Record<Dialect, string>> = { powershell: `shell: ${shell_labels.powershell}`, posix: `shell: ${shell_labels.bash} (bash -c)` };
 
 const review_time = (at: number): string => new Date(at).toISOString().slice(5, 19).replace("T", " ");
 
@@ -76,10 +81,12 @@ const not_sent_reason = (file: ScriptFile, placement: ScriptPlacement): string =
 const pending_lines = (action: ActionView, tag: string): string[] => {
   const { call } = action;
   const kind = call.kind === "command" ? "COMMAND" : "ARGUMENTS";
+  const shell = call.kind === "command" && action.shell ? shell_lines[action.shell] : undefined;
   return [
     `tool: ${action.tool}`,
     `working directory: ${action.cwd || "(unknown)"}`,
     `runs in background: ${action.background ? "yes" : "no"}`,
+    ...(shell ? [shell] : []),
     ...(call.kind === "mcp" ? [`risk tier: ${call.tier}, ${call.trusted ? "trusted" : "untrusted"} server`] : []),
     call.kind === "command" ? "command:" : "arguments:",
     `----- BEGIN ${kind} [tag ${tag}] -----\n${action.subject}\n----- END ${kind} [tag ${tag}] -----`,

@@ -1,9 +1,10 @@
+import { approval_skip_ms, skips_unanswered } from "../../shared/approval.ts";
 import type { StepImage, ToolProgress } from "../../shared/chat.ts";
 import type { ToolEndStatus } from "../../shared/events.ts";
 import { last_human_id, note_human_answer } from "../permissions/context.ts";
 import { human_decision } from "../permissions/decisions.ts";
 import { error_text } from "../storage/coerce.ts";
-import { sent_estimate } from "../context/calibration.ts";
+import { output_budget, sent_estimate } from "../context/calibration.ts";
 import { cap_text, result_cap_tokens } from "../context/estimate.ts";
 import { fit_images, image_slots, shrink_images } from "../context/images.ts";
 import type { ToolView } from "../../shared/tool-view.ts";
@@ -14,6 +15,7 @@ import { round_body } from "../model/stream.ts";
 import type { ApiAssistantMessage, ApiMessage, ApiToolCall, RoundRequest, RoundResult, RoundToolCall, RoundUsage } from "../model/types.ts";
 import type { Tool, ToolContext, ToolImage, ToolProfile } from "../tools/types.ts";
 import { carrier, image_url, type CarrierImage } from "./carriers.ts";
+import { create_status_driver } from "./reasoning-status.ts";
 import type { Emitter, TurnSession } from "./session.ts";
 
 export type RoundOutcome = {
@@ -47,6 +49,9 @@ const parse_args = (raw: string): Record<string, unknown> | null => {
 
 const invalid_args_text = (name: string) =>
   `The arguments for ${name} were not a valid JSON object, most often because the response hit the output length limit and was cut off. The tool did not run. Call it again with complete arguments, and split very large content across several smaller calls.`;
+
+const removed_tool_text = (name: string) =>
+  `${name} was removed from your tools by the main agent, so the call did not run. Continue without it; if the task cannot be done without it, report that as a blocker.`;
 
 const assistant_api_message = (result: RoundResult): ApiAssistantMessage => {
   const assistant: ApiAssistantMessage = { role: "assistant", content: result.content || null };
@@ -96,8 +101,9 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
   signal: session.signal,
   progress: throttled_progress(session.emit, call_id),
   approve: async (request) => {
-    session.emit({ type: "tool_approval", call_id, request });
-    const decision = await session.wait_decision(call_id, request);
+    const shown = skips_unanswered(request) ? { ...request, expires_at: Date.now() + approval_skip_ms } : request;
+    session.emit({ type: "tool_approval", call_id, request: shown });
+    const decision = await session.wait_decision(call_id, shown, () => session.emit({ type: "tool_approval", call_id, request }));
     session.signal.throwIfAborted();
     const record = human_decision(request, decision, session.review.actor, last_human_id(session.chat_id));
     session.emit({ type: "tool_decision", call_id, decision: record });
@@ -130,7 +136,7 @@ const execute_tool = async (
   image_count: number,
 ): Promise<ToolOutcome> => {
   if (!tool) {
-    const message = `Unknown tool: ${name}`;
+    const message = session.without_tools?.includes(name) ? removed_tool_text(name) : `Unknown tool: ${name}`;
     return { aborted: false, status: "failed", result_text: cap_text(message, result_cap_tokens), view: null, error: message, images: [] };
   }
   if (!args) {
@@ -192,6 +198,36 @@ const aborted_outcome = (result: RoundResult, estimate: number): RoundOutcome =>
 
 export const round_profile = (session: TurnSession): ToolProfile => session.profile ?? (session.plan ? "plan" : "main");
 
+const stream_with_status = async (session: TurnSession, round: number, request: RoundRequest): Promise<RoundResult> => {
+  const status = create_status_driver(session, round);
+  try {
+    return await session.stream(
+      request,
+      {
+        on_text: (delta) => {
+          status?.close();
+          session.emit({ type: "text", round, delta });
+        },
+        on_reasoning: (delta) => {
+          session.emit({ type: "reasoning", round, delta });
+          status?.reasoning(delta);
+        },
+        on_tool_draft: (index, name, draft) => {
+          status?.close();
+          session.emit({ type: "tool_draft", round, index, name, ...draft });
+        },
+        on_retry: (attempt, max, reason, wait_ms) => {
+          status?.close();
+          session.emit({ type: "retry", round, attempt, max, reason, wait_ms });
+        },
+      },
+      session.signal,
+    );
+  } finally {
+    status?.close();
+  }
+};
+
 export const run_round = async (session: TurnSession, round: number, api_messages: ApiMessage[]): Promise<RoundOutcome> => {
   const profile = round_profile(session);
   const tools = session.resolve_tools(profile);
@@ -200,16 +236,8 @@ export const run_round = async (session: TurnSession, round: number, api_message
     session.emit({ type: "notice", round, notice: "context_trimmed", text: images_left_out_note });
   }
   const estimate = sent_estimate(request.messages, request.tools, session.model);
-  const result = await session.stream(
-    request,
-    {
-      on_text: (delta) => session.emit({ type: "text", round, delta }),
-      on_reasoning: (delta) => session.emit({ type: "reasoning", round, delta }),
-      on_tool_draft: (index, name, draft) => session.emit({ type: "tool_draft", round, index, name, ...draft }),
-      on_retry: (attempt, max, reason, wait_ms) => session.emit({ type: "retry", round, attempt, max, reason, wait_ms }),
-    },
-    session.signal,
-  );
+  request.max_tokens = output_budget(request.messages, request.tools, session.model);
+  const result = await stream_with_status(session, round, request);
   const assistant = assistant_api_message(result);
   api_messages.push(assistant);
   if (result.status === "cancelled" || session.signal.aborted) {

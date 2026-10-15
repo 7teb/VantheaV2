@@ -37,6 +37,7 @@ export const extensions_channels = {
   "memory:list": invoke<[], MemoryRecord[]>(),
   "memory:review": invoke<[], MemoryReviewItem[]>(),
   "memory:resolve": invoke<[id: string, action: "keep" | "discard"], MemoryReviewItem[]>(),
+  "memory:add": invoke<[text: string], MemoryRecord[]>(),
   "memory:remove": invoke<[id: string], MemoryRecord[]>(),
   "memory:reset": invoke<[], void>(),
 } as const;

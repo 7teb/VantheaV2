@@ -32,5 +32,5 @@ export const ChatSlot = ({ chat_id }: ChatSlotProps) => {
     return <ChatSkeleton />;
   }
 
-  return <MessageList chat_id={chat_id} chat={entry.chat} reverted={entry.reverted} />;
+  return <MessageList chat_id={chat_id} chat={entry.chat} />;
 };

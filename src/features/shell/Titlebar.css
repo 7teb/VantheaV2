@@ -47,7 +47,7 @@
   gap: 2px;
 }
 
-.titlebar-dock {
+.titlebar-more {
   position: relative;
 }
 
@@ -58,10 +58,24 @@
   background: var(--divider);
 }
 
-.titlebar-dock-wait {
+.titlebar-wait {
   position: absolute;
   top: 5px;
   right: 5px;
+  width: 6px;
+  height: 6px;
+}
+
+.titlebar-menu-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+
+.titlebar-menu-wait {
+  position: absolute;
+  top: -2px;
+  right: -2px;
   width: 6px;
   height: 6px;
 }

@@ -9,6 +9,8 @@ const save_interval_ms = 2000;
 
 const saves = new Map<string, SaveState>();
 
+let closed = false;
+
 const save_state = (chat_id: string): SaveState => {
   const existing = saves.get(chat_id);
   if (existing) {
@@ -38,10 +40,13 @@ const write_chat = async (chat_id: string, state: SaveState) => {
   state.last_write = Date.now();
   try {
     const packed = await encode_chat(meta, body);
-    if (!metas.has(chat_id)) {
+    if (closed || !metas.has(chat_id)) {
       return;
     }
     await write_file_atomic(chat_file(chat_id), packed);
+    if (closed) {
+      return;
+    }
     await write_file_atomic(search_file(chat_id), search_text(body.messages));
   } catch (error) {
     state.dirty = true;
@@ -52,7 +57,7 @@ const write_chat = async (chat_id: string, state: SaveState) => {
 };
 
 const enqueue_write = (chat_id: string, state: SaveState): Promise<void> => {
-  const run = state.chain.then(() => (state.dirty ? write_chat(chat_id, state) : undefined));
+  const run = state.chain.then(() => (state.dirty && !closed ? write_chat(chat_id, state) : undefined));
   state.chain = run.then(
     () => undefined,
     (error) => {
@@ -109,6 +114,7 @@ export const forget_saves = async (chat_id: string) => {
 };
 
 export const reset_saves = () => {
+  closed = false;
   for (const state of saves.values()) {
     clear_timer(state);
   }
@@ -123,6 +129,7 @@ export const write_chat_direct = async (meta: ChatMeta, body: ChatBody) => {
 };
 
 export const flush_all_sync = () => {
+  closed = true;
   for (const [chat_id, state] of saves) {
     if (!state.dirty && !state.writing && !state.timer) {
       continue;

@@ -1,0 +1,16 @@
+@layer components {
+  .progress-ring circle {
+    fill: none;
+    stroke-width: 2.25;
+  }
+
+  .progress-ring-track {
+    stroke: var(--fill-track);
+  }
+
+  .progress-ring-value {
+    stroke: var(--fill-track-active);
+    stroke-linecap: round;
+    transition: stroke-dashoffset var(--duration-slower) var(--ease-out);
+  }
+}

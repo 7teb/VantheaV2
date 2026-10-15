@@ -1,6 +1,7 @@
 import type { ApprovalDecision, ApprovalRequest } from "../approval.ts";
 import type { AssistantMessage } from "../chat.ts";
 import type { AgentEvent } from "../events.ts";
+import type { ShellKind } from "../shell.ts";
 import { emit, invoke } from "./channel.ts";
 
 export type AgentProfile = "explore" | "worker";
@@ -25,6 +26,7 @@ export type AgentSummary = {
   topic: string;
   model: string;
   profile: AgentProfile;
+  without_tools: string[];
   runs: AgentRunSummary[];
 };
 
@@ -42,6 +44,7 @@ export type BackgroundTask = {
   chat_id: string;
   name: string;
   command: string;
+  shell: ShellKind;
   cwd: string;
   status: BackgroundStatus;
   exit_code: number | null;
@@ -50,11 +53,14 @@ export type BackgroundTask = {
   output_tail: string;
 };
 
+export type CommandHandoff = { status: "moved"; task_id: string } | { status: "finished" } | { status: "full" };
+
 export const work_channels = {
   "agents:list": invoke<[chat_id: string], AgentSummary[]>(),
   "agents:run": invoke<[agent_id: string, run_id: string], AgentRun | null>(),
   "agents:cancel": invoke<[agent_id: string], void>(),
   "agents:approve": invoke<[agent_id: string, run_id: string, call_id: string, decision: ApprovalDecision], void>(),
+  "agents:hold_approval": invoke<[agent_id: string, run_id: string, call_id: string], void>(),
   "agents:approvals": invoke<[chat_id: string], AgentApprovals>(),
   "agents:approvals_changed": emit<AgentApprovals>(),
   "agents:changed": emit<AgentSummary>(),
@@ -62,5 +68,6 @@ export const work_channels = {
   "background:list": invoke<[chat_id: string], BackgroundTask[]>(),
   "background:cancel": invoke<[task_id: string], void>(),
   "background:clear": invoke<[chat_id: string], void>(),
+  "background:adopt_command": invoke<[chat_id: string, call_id: string], CommandHandoff>(),
   "background:changed": emit<BackgroundTask>(),
 } as const;

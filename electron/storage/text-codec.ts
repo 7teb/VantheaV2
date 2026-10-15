@@ -8,7 +8,7 @@ export type TextEncoding = { charset: Charset; bom: boolean };
 
 export const plain_utf8: TextEncoding = { charset: "utf8", bom: false };
 
-export const charsets: readonly Charset[] = ["utf8", "utf16le", "utf16be"];
+const charsets: readonly Charset[] = ["utf8", "utf16le", "utf16be"];
 
 const bom_bytes: Record<Charset, Buffer> = {
   utf8: Buffer.from([0xef, 0xbb, 0xbf]),
@@ -88,11 +88,11 @@ export const encode_text = (text: string, encoding: TextEncoding): Buffer => {
 
 export const looks_binary = (text: string): boolean => text.slice(0, 8192).includes("\u0000");
 
-export const read_head = async (file: string): Promise<Buffer> => {
+export const read_head = async (file: string, length = sniff_bytes): Promise<Buffer> => {
   const handle = await fs.open(file, "r");
   try {
-    const buffer = Buffer.alloc(sniff_bytes);
-    const { bytesRead } = await handle.read(buffer, 0, sniff_bytes, 0);
+    const buffer = Buffer.alloc(length);
+    const { bytesRead } = await handle.read(buffer, 0, length, 0);
     return buffer.subarray(0, bytesRead);
   } finally {
     await handle.close();

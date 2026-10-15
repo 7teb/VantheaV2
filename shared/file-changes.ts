@@ -1,4 +1,4 @@
-import type { Step } from "./chat.ts";
+import { manual_compaction_only, type AssistantMessage, type Message, type Step } from "./chat.ts";
 
 export type FileChange = { path: string; added: number; removed: number; created: boolean };
 
@@ -18,4 +18,9 @@ export const file_changes = (steps: Step[]): FileChange[] => {
     });
   }
   return [...changes.values()];
+};
+
+export const undoable_turn = (messages: Message[]): AssistantMessage | null => {
+  const turn = messages.findLast((message): message is AssistantMessage => message.role === "assistant" && !manual_compaction_only(message));
+  return turn && file_changes(turn.steps).length > 0 ? turn : null;
 };

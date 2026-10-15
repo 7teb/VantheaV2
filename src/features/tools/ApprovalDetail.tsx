@@ -1,5 +1,5 @@
-import type { ApprovalRequest } from "../../../shared/approval.ts";
-import { shell_name } from "../../../shared/tool-view.ts";
+import { secret_read_subject, type ApprovalRequest } from "../../../shared/approval.ts";
+import { shell_labels } from "../../../shared/shell.ts";
 import { Collapsible } from "../../components/Collapsible.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { ApprovalEnv } from "./ApprovalEnv.tsx";
@@ -33,7 +33,7 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
     case "command":
       return (
         <div className="command-card">
-          <div className="command-card-shell">{shell_name}</div>
+          <div className="command-card-shell">{shell_labels[request.shell ?? "powershell"]}</div>
           <PreviewText text={request.command} prompt="$ " />
           <div className="command-card-footer">
             <span className="command-card-lead">{request.cwd}</span>
@@ -75,16 +75,28 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
       );
     case "memory":
       return <div className="tool-body-quote">{request.text}</div>;
-    case "agent_message":
+    case "agent_message": {
+      const without = request.without_tools ?? [];
       return (
         <>
-          {request.about && (
+          {(request.about || without.length > 0) && (
             <div className="approval-meta">
-              <span className="approval-reason">{t("approval.agent_about", { x: request.about })}</span>
+              {request.about && <span className="approval-reason">{t("approval.agent_about", { x: request.about })}</span>}
+              {without.length > 0 && <span className="approval-reason">{t("approval.agent_without", { x: without.join(", ") })}</span>}
             </div>
           )}
           <pre className="approval-command approval-content inset-surface">{request.text}</pre>
         </>
+      );
+    }
+    case "secret_read":
+      return (
+        <div className="command-card">
+          <PreviewText text={secret_read_subject(request)} />
+          <div className="command-card-footer">
+            <span className="command-card-lead">{request.tool}</span>
+          </div>
+        </div>
       );
   }
 };

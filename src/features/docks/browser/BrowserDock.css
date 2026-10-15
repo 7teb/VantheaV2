@@ -44,25 +44,26 @@
   box-shadow: var(--shadow-inset);
 }
 
-.browser-view {
+.browser-viewport {
   position: absolute;
   inset: 0;
-}
-
-.browser-view[data-active="false"] {
-  visibility: hidden;
-}
-
-.browser-guest {
-  display: inline-flex;
-  width: 100%;
-  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
 }
 
 .browser-skeleton {
   position: absolute;
   inset: 0;
   display: flex;
+}
+
+.browser-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
 }
 
 .browser-error {

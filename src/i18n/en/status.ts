@@ -1,5 +1,4 @@
 export const status = {
-  "status.reverted": "Reverted changes",
   "status.ready": "Ready",
   "status.indexing": "Indexing project",
   "status.approved": "Approved, working…",

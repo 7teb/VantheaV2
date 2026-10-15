@@ -1,18 +1,10 @@
 import type { AgentProfile, AgentRunStatus, AgentRunSummary } from "../../../../shared/ipc/work.ts";
-import { CircleAlertIcon, CircleCheckIcon, CircleSlashIcon, LoaderIcon, type IconComponent } from "../../../components/icons.tsx";
+import { CircleAlertIcon, CircleCheckIcon, CircleSlashIcon, CircleSpinnerIcon, type IconComponent } from "../../../components/icons.tsx";
 import type { MessageKey } from "../../../i18n/index.ts";
 import { format_duration } from "../../tools/tool-summary.ts";
 
-export const status_labels: Record<AgentRunStatus, MessageKey> = {
-  running: "agent.status_running",
-  completed: "agent.status_completed",
-  failed: "agent.status_failed",
-  cancelled: "agent.status_cancelled",
-  interrupted: "agent.status_interrupted",
-};
-
 export const status_icons: Record<AgentRunStatus, IconComponent> = {
-  running: LoaderIcon,
+  running: CircleSpinnerIcon,
   completed: CircleCheckIcon,
   failed: CircleAlertIcon,
   cancelled: CircleSlashIcon,

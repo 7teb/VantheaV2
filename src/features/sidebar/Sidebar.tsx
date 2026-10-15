@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
-import { ComposeIcon, FolderOpenIcon, FolderPlusIcon, PlusIcon, SearchIcon, SettingsIcon } from "../../components/icons.tsx";
+import { ArchiveIcon, ComposeIcon, FolderOpenIcon, FolderPlusIcon, PlusIcon, SearchIcon, SettingsIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { chats_store, load_chats } from "../../state/chats.ts";
@@ -10,9 +10,10 @@ import { settings_store } from "../../state/settings.ts";
 import { open_search, open_settings, start_new_chat, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
 import { shortcut_hint } from "../shell/shortcuts.ts";
+import { ArchivedDialog } from "./ArchivedDialog.tsx";
 import { ChatRow } from "./ChatRow.tsx";
 import { ProjectGroup } from "./ProjectGroup.tsx";
-import { build_sidebar, normalize_path } from "./sidebar-model.ts";
+import { archived_chats, build_sidebar, normalize_path } from "./sidebar-model.ts";
 import { SidebarSkeleton } from "./SidebarSkeleton.tsx";
 import "./Sidebar.css";
 
@@ -27,13 +28,14 @@ const use_minute_clock = () => {
 
 const report = (action: string) => (error: unknown) => console.error(`[sidebar] ${action} failed`, error);
 
-type NavButtonProps = { icon: ReactNode; label: string; hint?: string; on_click: () => void };
+type NavButtonProps = { icon: ReactNode; label: string; hint?: string; count?: number; on_click: () => void };
 
-const NavButton = ({ icon, label, hint, on_click }: NavButtonProps) => (
+const NavButton = ({ icon, label, hint, count, on_click }: NavButtonProps) => (
   <button type="button" className="sidebar-nav-button" onClick={on_click}>
     {icon}
     <span className="sidebar-nav-label">{label}</span>
     {hint && <kbd className="sidebar-nav-hint">{hint}</kbd>}
+    {count !== undefined && <span className="sidebar-nav-count">{count}</span>}
   </button>
 );
 
@@ -58,7 +60,12 @@ export const Sidebar = () => {
   const projects = use_store(settings_store, (view) => view?.projects ?? null);
   const [add_anchor, set_add_anchor] = useState<HTMLButtonElement | null>(null);
   const [add_open, set_add_open] = useState(false);
+  const [archive_open, set_archive_open] = useState(false);
   const model = useMemo(() => (projects ? build_sidebar(chats.list, projects) : null), [chats.list, projects]);
+  const archived = useMemo(() => archived_chats(chats.list), [chats.list]);
+  if (archive_open && archived.length === 0) {
+    set_archive_open(false);
+  }
 
   const totals = useMemo(() => {
     const counts = new Map<string, number>();
@@ -131,9 +138,13 @@ export const Sidebar = () => {
         </nav>
         <div className="sidebar-scroll">{body()}</div>
         <div className="sidebar-footer">
+          {chats.status === "ready" && archived.length > 0 && (
+            <NavButton icon={<ArchiveIcon size={17} />} label={t("sidebar.archived")} count={archived.length} on_click={() => set_archive_open(true)} />
+          )}
           <NavButton icon={<SettingsIcon size={17} />} label={t("sidebar.settings")} hint={shortcut_hint("settings")} on_click={() => open_settings()} />
         </div>
       </div>
+      <ArchivedDialog open={archive_open} chats={archived} active_chat_id={active_chat_id} now={now} on_close={() => set_archive_open(false)} />
       <Menu
         open={add_open}
         anchor={add_anchor}

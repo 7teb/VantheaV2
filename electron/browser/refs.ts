@@ -5,7 +5,7 @@ export const snapshot_lifetime_ms = 30000;
 
 const visual_lifetime_ms = 30000;
 
-export type RefHolder = Pick<BrowserTab, "tab_id" | "active" | "epoch" | "snapshots" | "visuals">;
+export type RefHolder = Pick<BrowserTab, "tab_id" | "epoch" | "snapshots" | "visuals">;
 
 export type ResolvedRef = { snapshot: Snapshot; ref: SnapshotRef; ref_name: string };
 
@@ -35,7 +35,7 @@ export const resolve_ref = (tab: RefHolder, snapshot_id: string, requested: stri
   }
   sweep_stores(tab, now);
   const snapshot = tab.snapshots.get(snapshot_id);
-  if (!snapshot || snapshot.consumed || !tab.active || snapshot.epoch !== tab.epoch) {
+  if (!snapshot || snapshot.consumed || snapshot.epoch !== tab.epoch) {
     throw stale(requested);
   }
   const ref = snapshot.refs.get(ref_name);

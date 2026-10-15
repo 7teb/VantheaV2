@@ -1,3 +1,4 @@
+import { with_compact_percent, with_context_limit, type ModelEntry } from "../../shared/models.ts";
 import type { ModelContext, ProjectEntry, SecretName, SettingsPatch, SettingsView } from "../../shared/settings.ts";
 import { api } from "../api/bridge.ts";
 import { set_language } from "../i18n/index.ts";
@@ -18,8 +19,14 @@ export const reload_settings = async () => {
   }
 };
 
-export const set_model_context = (model_id: string, next: ModelContext) =>
+const set_model_context = (model_id: string, next: ModelContext) =>
   update_settings({ model_context: { ...(settings_store.get()?.model_context ?? {}), [model_id]: next } });
+
+const model_setting = (model_id: string): ModelContext | undefined => settings_store.get()?.model_context[model_id];
+
+export const set_auto_compact = (model: ModelEntry, percent: number) => set_model_context(model.id, with_compact_percent(model_setting(model.id), percent));
+
+export const set_context_limit = (model: ModelEntry, limit: number | null) => set_model_context(model.id, with_context_limit(model, model_setting(model.id), limit));
 
 export const update_settings = async (patch: SettingsPatch) => {
   const current = settings_store.get();

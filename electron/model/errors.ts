@@ -43,6 +43,18 @@ export const retry_window_ms = 600_000;
 
 export const is_retryable = (error: ModelError) => retryable_kinds.has(error.kind);
 
+const affordable_pattern = /can only afford (\d+)/i;
+
+export const min_affordable_tokens = 2048;
+
+export const affordable_tokens = (error: ModelError): number | null => {
+  if (error.kind !== "credits") {
+    return null;
+  }
+  const match = affordable_pattern.exec(error.message);
+  return match ? Number(match[1]) : null;
+};
+
 export const retry_delay = (failed_attempt: number, error: ModelError, random: () => number): number => {
   const planned = retry_backoff_ms[Math.min(failed_attempt, retry_backoff_ms.length) - 1] ?? 2000;
   const wanted = error.retry_after_ms > 0 ? error.retry_after_ms : planned;

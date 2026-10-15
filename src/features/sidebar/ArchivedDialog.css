@@ -1,0 +1,137 @@
+.archived-backdrop {
+  place-items: start center;
+  padding-top: 14vh;
+}
+
+.archived-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 100%);
+  max-height: min(560px, 70vh);
+  padding: 10px;
+  overflow: hidden;
+}
+
+.archived-head {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+
+.archived-title {
+  font-size: var(--font-size-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.archived-count {
+  color: var(--text-detail);
+  font-size: var(--font-size-ui);
+}
+
+.archived-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.archived-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+  border-radius: var(--radius-item);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.archived-row:hover,
+.archived-row:focus-within {
+  background: var(--fill-hover);
+}
+
+.archived-row[data-active="true"] {
+  background: var(--fill-active);
+}
+
+.archived-open {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-item);
+  text-align: left;
+}
+
+.archived-icon {
+  flex: none;
+  color: var(--text-tertiary);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.archived-row:hover .archived-icon,
+.archived-row:focus-within .archived-icon {
+  color: var(--text-primary);
+}
+
+.archived-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.archived-name,
+.archived-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archived-name {
+  font-size: var(--font-size-ui);
+}
+
+.archived-detail {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+.archived-time {
+  flex: none;
+  min-width: 54px;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
+  text-align: right;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.archived-actions {
+  position: absolute;
+  right: 10px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.archived-row:hover .archived-actions,
+.archived-row:focus-within .archived-actions {
+  opacity: 1;
+}
+
+.archived-row:hover .archived-time,
+.archived-row:focus-within .archived-time {
+  opacity: 0;
+}
+
+.archived-delete:hover {
+  color: var(--text-danger);
+}

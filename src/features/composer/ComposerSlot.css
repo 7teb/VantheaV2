@@ -1,6 +1,5 @@
 @layer components {
   .composer-slot {
-    --composer-radius: 22px;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -18,17 +17,16 @@
   }
 
   .composer-dock-card {
-    max-height: min(420px, 48vh);
+    max-height: min(420px, 48vh, var(--composer-card-cap, 420px));
     overflow: auto;
     border-radius: 25px;
     corner-shape: superellipse(1.5);
-    background: var(--surface-dock);
-    backdrop-filter: var(--filter-dock);
+    background: var(--surface-dock-card);
     box-shadow: var(--shadow-dock);
   }
 
   .composer-slot:has(.composer-dock-card ~ .composer-dock-card) .composer-dock-card {
-    max-height: min(420px, 24vh);
+    max-height: min(420px, 24vh, var(--composer-card-cap, 420px));
   }
 
   .composer-dock-card .question-card {
@@ -40,19 +38,19 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: var(--space-3) var(--space-3) 10px var(--space-4);
-    border-radius: var(--composer-radius);
-    background: var(--surface-dock);
-    backdrop-filter: var(--filter-dock);
-    box-shadow: var(--shadow-dock);
+    gap: var(--space-1);
+    padding: 14px var(--space-2) var(--space-2);
+    border-radius: var(--radius-composer);
+    background: var(--surface-composer);
+    box-shadow: var(--shadow-composer);
   }
 
   .composer-input {
     display: block;
     width: 100%;
+    min-height: 44px;
     max-height: 240px;
-    padding: 6px 4px 4px 2px;
+    padding: 0 var(--space-1);
     border: 0;
     outline: 0;
     resize: none;
@@ -67,7 +65,7 @@
   }
 
   .composer-input::placeholder {
-    color: var(--text-tertiary);
+    color: var(--text-composer-placeholder);
   }
 
   .composer-feedback {
@@ -75,7 +73,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-1) var(--space-3);
-    padding: 0 2px;
+    padding: 0 var(--space-1);
     font-size: var(--font-size-ui);
     color: var(--text-tertiary);
   }
@@ -88,11 +86,12 @@
   }
 
   .composer-bar {
+    --size-control: var(--size-control-composer);
+    --size-primary: var(--size-control);
     display: flex;
     align-items: center;
     gap: 2px;
     min-width: 0;
-    margin-left: -8px;
   }
 
   .composer-spacer {
@@ -154,6 +153,10 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .composer-chip-model {
+    color: var(--text-primary);
   }
 
   .composer-chip-hint {

@@ -2,10 +2,10 @@ import type { background as en } from "../en/background.ts";
 
 export const background: Record<keyof typeof en, string> = {
   "background.title": "Background Tasks",
-  "background.running": "{n} läuft",
-  "background.finished": "{n} abgeschlossen",
   "background.none": "Keine Background Tasks in diesem Chat",
-  "background.clear": "Leeren",
+  "background.clear_finished": "Beendete Befehle entfernen",
+  "background.section_running": "Läuft",
+  "background.section_finished": "Beendet",
   "background.cancel": "Task abbrechen",
   "background.close": "Background Tasks schließen",
   "background.fullscreen": "Vollbild",

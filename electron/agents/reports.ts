@@ -1,5 +1,5 @@
 import { report_file_notice, report_notice_context, report_notice_text, update_notice_text } from "../../shared/agent-notes.ts";
-import type { AgentProfile, AgentRunStatus } from "../../shared/ipc/work.ts";
+import type { AgentRunStatus } from "../../shared/ipc/work.ts";
 import { peer_alert_intro, peer_alert_text, type PeerAlertCause } from "../../shared/peer-notes.ts";
 import { has_steers, is_active, user_stopped } from "../turn/active.ts";
 import type { TurnNote } from "../turn/session.ts";
@@ -10,7 +10,7 @@ export type AgentReport = {
   agent_id: string;
   run_id: string;
   name: string;
-  profile: AgentProfile;
+  profile: string;
   model: string;
   status: AgentRunStatus;
   started_at: string;

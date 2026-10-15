@@ -1,7 +1,6 @@
 import { IconButton } from "../../components/Button.tsx";
 import { PanelLeftIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
-import { agent_approvals_store } from "../../state/agent-approvals.ts";
 import { chats_store } from "../../state/chats.ts";
 import { toggle_dock, toggle_sidebar, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
@@ -19,7 +18,6 @@ export const Titlebar = () => {
   const active_chat_id = use_store(ui_store, (state) => state.active_chat_id);
   const chat_title = use_store(chats_store, (state) => state.list.find((chat) => chat.id === active_chat_id)?.title);
   const title = chat_title === undefined ? "" : chat_label(t, chat_title);
-  const agents_waiting = use_store(agent_approvals_store, (state) => state.chat_id === active_chat_id && state.approvals.length > 0);
 
   return (
     <header className="titlebar">
@@ -39,9 +37,8 @@ export const Titlebar = () => {
           {titlebar_docks.map((kind) => {
             const { label, icon: DockIcon } = dock_toggles[kind];
             return (
-              <IconButton key={kind} label={t(label)} active={open_dock === kind} aria-pressed={open_dock === kind} className="titlebar-dock" onClick={() => toggle_dock(kind)}>
+              <IconButton key={kind} label={t(label)} active={open_dock === kind} aria-pressed={open_dock === kind} onClick={() => toggle_dock(kind)}>
                 <DockIcon size={17} />
-                {kind === "agents" && agents_waiting && <span className="wait-dot titlebar-dock-wait" aria-hidden="true" />}
               </IconButton>
             );
           })}

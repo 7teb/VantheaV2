@@ -7,4 +7,5 @@ export const search: Record<keyof typeof en, string> = {
   "search.recent": "Zuletzt",
   "search.label": "Chats durchsuchen",
   "search.failed": "Suche fehlgeschlagen",
+  "search.archived": "Archiviert",
 };

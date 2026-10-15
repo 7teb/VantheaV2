@@ -1,4 +1,5 @@
 import type { BackgroundStatus, BackgroundTask } from "../../shared/ipc/work.ts";
+import { shell_kinds } from "../../shared/shell.ts";
 import { result_cap_tokens } from "../context/estimate.ts";
 import { output_collector, type OutputCollector } from "../shell/output.ts";
 import { as_array, as_iso, as_number, as_record, as_string, pick } from "../storage/coerce.ts";
@@ -14,6 +15,7 @@ export const public_task = (record: TaskRecord): BackgroundTask => ({
   chat_id: record.chat_id,
   name: record.name,
   command: record.command,
+  shell: record.shell,
   cwd: record.cwd,
   status: record.status,
   exit_code: record.exit_code,
@@ -65,6 +67,7 @@ const parse_record = (value: unknown, now: string): TaskRecord | null => {
     chat_id,
     name: as_string(raw.name, "Background task"),
     command: as_string(raw.command),
+    shell: pick(raw.shell, shell_kinds, "powershell"),
     cwd: as_string(raw.cwd, "."),
     status: status === "running" ? "interrupted" : status,
     exit_code: Number.isInteger(exit_code) ? exit_code : null,

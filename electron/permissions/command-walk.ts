@@ -43,7 +43,7 @@ export function* walk_command(text: string, start: WalkStart): Walk {
 }
 
 function* walk_text(text: string, base: number, state: WalkState, ctx: Context, snapshot: ValueState | null): Walk {
-  const parts = statement_parts(text, ctx.dialect === "cmd" ? "cmd" : "powershell");
+  const parts = statement_parts(text, ctx.dialect);
   let current = state;
   let line = 0;
   let shot = snapshot ?? current.values;
@@ -76,7 +76,9 @@ function* walk_statement(elements: StatementElement[], base: number, state: Walk
     for (const element of elements) {
       const prefix = /^(?:(?:if|then|else|elif|do|while|until|time|!)\s+|\w+=\S*\s+)*/.exec(element.text)?.[0] ?? "";
       const rest = element.text.slice(prefix.length);
-      if (rest && !/^(?:fi|done|esac|then|else|do|[{}])$/.test(rest)) [current] = yield* walk_element(rest, base + element.start + prefix.length, current, ctx, "pipe", null);
+      const group = /^\{\s([\s\S]*)\}$/.exec(rest);
+      if (group) current = yield* walk_text(group[1] ?? "", base + element.start + prefix.length + 2, current, ctx, null);
+      else if (rest && !/^(?:fi|done|esac|then|else|do|[{}])$/.test(rest)) [current] = yield* walk_element(rest, base + element.start + prefix.length, current, ctx, "pipe", null);
     }
     return current;
   }

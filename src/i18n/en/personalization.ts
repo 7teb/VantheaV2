@@ -15,7 +15,7 @@ export const personalization = {
   "personalization.memory": "Memory (experimental)",
   "personalization.memory_sub": "Choose how VantheaX collects, stores and reuses memories",
   "personalization.mem_enable": "Enable memories",
-  "personalization.mem_enable_sub": "Create review candidates from new user messages and reuse only confirmed memories",
+  "personalization.mem_enable_sub": "Save clear, explicit statements from new user messages as memories and reuse saved memories",
   "personalization.mem_exclude": "Skip tool-assisted chats",
   "personalization.mem_exclude_sub": "Do not generate memory candidates from turns that used any tool",
   "personalization.mem_reset": "Reset memories",

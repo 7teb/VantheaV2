@@ -1,8 +1,8 @@
 import path from "node:path";
 import type { AgentProfile } from "../../../shared/ipc/work.ts";
 import type { AgentRecord } from "../../agents/records.ts";
-import { label_of, roster_entries } from "../../agents/roster.ts";
-import { continue_agent, deploy_agent, ensure_capacity, ensure_continuable, find_agent_model } from "../../agents/runner.ts";
+import { label_of, profile_text, roster_entries } from "../../agents/roster.ts";
+import { continue_agent, deploy_agent, ensure_capacity, ensure_continuable, find_agent_model, validate_without_tools } from "../../agents/runner.ts";
 import { resolve_effort } from "../../model/catalog.ts";
 import { active_turn } from "../../turn/active.ts";
 import { read_string } from "../browser/common.ts";
@@ -12,7 +12,7 @@ import { read_string_list } from "../web/args.ts";
 import { agent_id_property, agent_view, read_agent_id, read_text, resolve_agent, run_context } from "./common.ts";
 import { agent_text_gate, agent_text_subject } from "./text-gate.ts";
 
-type DeployArgs = { name: string; description: string; topic: string; scope: string[]; prompt: string; profile: AgentProfile; model: string | null; effort: string | null };
+type DeployArgs = { name: string; description: string; topic: string; scope: string[]; prompt: string; profile: AgentProfile; without_tools: string[]; model: string | null; effort: string | null };
 
 const one_line = (raw: Record<string, unknown>, key: string, max: number) => read_text(raw, key, 10_000).replace(/\s+/g, " ").slice(0, max);
 
@@ -30,6 +30,7 @@ const parse_deploy = (raw: Record<string, unknown>): DeployArgs => ({
   scope: read_string_list(raw, "scope"),
   prompt: read_text(raw, "prompt"),
   profile: read_profile(raw),
+  without_tools: read_string_list(raw, "without_tools"),
   model: read_string(raw, "model")?.trim() || null,
   effort: read_string(raw, "effort")?.trim() || null,
 });
@@ -73,6 +74,12 @@ export const deploy_agent_tool = define_tool<DeployArgs>({
           enum: ["explore", "worker"],
           description: "explore is read-only and its file tools stay inside the project. worker can also edit files and run commands under the same permission checks as you, and is needed for anything outside the project folder. Neither profile has MCP or browser tools; keep that work yourself.",
         },
+        without_tools: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional tool names to remove from the chosen profile for this agent, for example [\"run_command\", \"run_bash\"] for a worker that may only read and edit files. It only removes tools the profile has; an unknown name fails with the profile's tool list. The agent never gets these tools, in this run and in every later run through continue_agent. Leave it out unless the user asks for it or the task clearly requires that the agent must not use a tool.",
+        },
         model: { type: "string", description: "Exact model id from list_models, which also shows each model's price per 1M tokens. Defaults to your own model." },
         effort: { type: "string", description: "Reasoning effort for that model. Defaults to yours." },
       },
@@ -91,17 +98,18 @@ export const deploy_agent_tool = define_tool<DeployArgs>({
       ensure_capacity(ctx.chat_id);
       const model = args.model ? await find_agent_model(args.model) : parent.model;
       const effort = resolve_effort(model, args.effort ?? parent.effort);
+      const without_tools = validate_without_tools(args.profile, args.without_tools, ctx.settings, model);
       const scope = args.scope.map((entry) => scope_entry(ctx.project_root, entry));
-      const subject = task_subject(`deploy_agent, new sub-agent ${args.name}, profile ${args.profile}, model ${model.id}`, { topic: args.topic, scope }, args.prompt);
-      const gate = await agent_text_gate(ctx, { tool: "deploy_agent", to_name: args.name, to_id: null, about: args.topic, text: args.prompt }, subject);
+      const subject = task_subject(`deploy_agent, new sub-agent ${args.name}, profile ${profile_text({ profile: args.profile, without_tools })}, model ${model.id}`, { topic: args.topic, scope }, args.prompt);
+      const gate = await agent_text_gate(ctx, { tool: "deploy_agent", to_name: args.name, to_id: null, about: args.topic, text: args.prompt, without_tools }, subject);
       if (gate.kind !== "pass") {
         return { status: "denied", text: gate.text, view: null };
       }
-      const started = deploy_agent({ ...run_context(ctx, args.prompt), name: args.name, description: args.description, topic: args.topic, scope, profile: args.profile, model, effort });
+      const started = deploy_agent({ ...run_context(ctx, args.prompt), name: args.name, description: args.description, topic: args.topic, scope, profile: args.profile, without_tools, model, effort });
       const id = started.agent.agent_id;
       return {
         status: "done",
-        text: `Deployed agent ${label_of(started.agent)} (id ${id}, ${args.profile}, model ${model.id}${effort ? `, effort ${effort}` : ""}, topic ${args.topic}). It runs in the background; its report arrives automatically when it finishes. ${running_peers(ctx.chat_id, id)}`,
+        text: `Deployed agent ${label_of(started.agent)} (id ${id}, ${profile_text(started.agent)}, model ${model.id}${effort ? `, effort ${effort}` : ""}, topic ${args.topic}). It runs in the background; its report arrives automatically when it finishes. ${running_peers(ctx.chat_id, id)}`,
         view: agent_view(started.agent, started.run),
       };
     }),
@@ -111,7 +119,7 @@ export const continue_agent_tool = define_tool<{ agent_id: string; prompt: strin
   spec: {
     name: "continue_agent",
     description:
-      "Start another background run of an existing agent on its kept context and return at once. Use it when the same agent benefits from what it already found, or to deliver answers other agents sent it after it finished and message_agent instructions it had not read when the app closed: they are kept, list_agents and get_agent_status show them, and they arrive at the start of the new run. It keeps its name, topic, scope, profile and model. The automatic review checks the task before the run starts. Its report arrives automatically when it finishes.",
+      "Start another background run of an existing agent on its kept context and return at once. Use it when the same agent benefits from what it already found, or to deliver answers other agents sent it after it finished and message_agent instructions it had not read when the app closed: they are kept, list_agents and get_agent_status show them, and they arrive at the start of the new run. It keeps its name, topic, scope, profile and model. The automatic review checks the task before the run starts. Its report arrives automatically when it finishes. Tools removed with without_tools stay removed.",
     parameters: {
       type: "object",
       properties: {
@@ -129,8 +137,8 @@ export const continue_agent_tool = define_tool<{ agent_id: string; prompt: strin
       const agent = resolve_agent(ctx, args.agent_id);
       ensure_continuable(agent, ctx.project_root);
       ensure_capacity(agent.chat_id);
-      const subject = task_subject(`continue_agent, sub-agent ${label_of(agent)}, profile ${agent.profile}, model ${agent.model}`, agent, args.prompt);
-      const gate = await agent_text_gate(ctx, { tool: "continue_agent", to_name: label_of(agent), to_id: agent.agent_id, about: agent.topic, text: args.prompt }, subject);
+      const subject = task_subject(`continue_agent, sub-agent ${label_of(agent)}, profile ${profile_text(agent)}, model ${agent.model}`, agent, args.prompt);
+      const gate = await agent_text_gate(ctx, { tool: "continue_agent", to_name: label_of(agent), to_id: agent.agent_id, about: agent.topic, text: args.prompt, without_tools: agent.without_tools }, subject);
       if (gate.kind !== "pass") {
         return { status: "denied", text: gate.text, view: null };
       }

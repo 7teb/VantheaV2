@@ -1,8 +1,10 @@
+import { record_console } from "./console.ts";
+import { record_page_dialog } from "./dialogs.ts";
 import { error_text, invalidate_tab, notify_tab, settle_within, type BrowserTab, type CdpSession, type FrameInfo } from "./state.ts";
 
 const cdp_timeout_ms = 30000;
 
-const target_domains = ["Page.enable", "DOM.enable", "Runtime.enable", "Accessibility.enable"];
+const target_domains = ["Page.enable", "DOM.enable", "Runtime.enable", "Log.enable", "Accessibility.enable"];
 
 const auto_attach = { autoAttach: true, waitForDebuggerOnStart: false, flatten: true };
 
@@ -44,6 +46,18 @@ const enable_session = async (tab: BrowserTab, session_id: string, signal: Abort
     ...target_domains.map((method) => cdp(tab, method, {}, session_id, signal)),
     cdp(tab, "Target.setAutoAttach", auto_attach, session_id, signal),
   ]);
+};
+
+export const listen_for_dialogs = (tab: BrowserTab) => {
+  try {
+    tab.guest.debugger.attach("1.3");
+  } catch (error) {
+    console.warn(`[browser] attaching to tab ${tab.tab_id} for page dialogs failed: ${error_text(error)}`);
+    return;
+  }
+  tab.guest.debugger.sendCommand("Page.enable").catch((error: unknown) => {
+    console.warn(`[browser] enabling page events of tab ${tab.tab_id} failed: ${error_text(error)}`);
+  });
 };
 
 export const ensure_debugger = async (tab: BrowserTab, signal: AbortSignal) => {
@@ -104,9 +118,14 @@ export const handle_debugger_message = (tab: BrowserTab, method: string, params:
     invalidate_tab(tab, !frame.parentId);
     return;
   }
+  if (method === "Page.javascriptDialogOpening") {
+    record_page_dialog(tab.dialogs, params);
+    return;
+  }
   if (method === "Accessibility.loadComplete" || method === "Accessibility.nodesUpdated") {
     notify_tab(tab);
   }
+  record_console(tab.console, method, params, session_id);
   if (session_id && !tab.sessions.has(session_id)) {
     tab.sessions.set(session_id, { session_id, target_id: "", parent_frame_id: "", type: "", url: "" });
   }

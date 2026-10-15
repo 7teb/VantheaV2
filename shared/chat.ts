@@ -20,7 +20,9 @@ export type Attachment = {
   source_path?: string;
 };
 
-export type UserOrigin = "user" | "plan_accept" | "continue" | "background" | "agent_report" | "agent_update";
+export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "continue" | "background" | "agent_report" | "agent_update";
+
+export const human_origin = (origin: UserOrigin): boolean => origin === "user" || origin === "plan_accept" || origin === "undo" || origin === "init";
 
 export type UserMessage = {
   id: string;
@@ -43,6 +45,7 @@ export type ToolProgress = {
   draft_path?: string;
   draft_old?: string;
   phase?: "review";
+  can_background?: boolean;
 };
 
 export type TextStep = { id: string; round: number; kind: "text"; text: string };
@@ -54,6 +57,7 @@ export type ReasoningStep = {
   text: string;
   started_at: number;
   ended_at: number | null;
+  status_line?: string;
 };
 
 export type StepImage = { id: string; label: string };
@@ -173,6 +177,9 @@ export const has_work = (message: Message): boolean => message.role === "assista
 export const manual_compaction_only = (message: AssistantMessage): boolean =>
   message.steps.length > 0 && message.steps.every((step) => step.kind === "compaction" && step.source === "manual");
 
+export const user_steers = (message: AssistantMessage): string[] =>
+  message.steps.flatMap((step) => (step.kind === "steer" && step.steer_id && step.text.trim() ? [step.text] : []));
+
 export const message_attachments = (message: Message): Attachment[] =>
   message.role === "user" ? message.attachments : message.steps.flatMap((step) => (step.kind === "steer" ? (step.attachments ?? []) : []));
 
@@ -184,6 +191,7 @@ export type ChatMeta = {
   project_path: string;
   workspace: string;
   pinned: boolean;
+  archived?: boolean;
   created_at: string;
   updated_at: string;
   message_count: number;
@@ -196,6 +204,6 @@ export type Chat = ChatMeta & {
   questions: QuestionStates;
 };
 
-export type ChatSearchHit = { chat_id: string; title: string; project_path: string; snippet: string; updated_at: string };
+export type ChatSearchHit = { chat_id: string; title: string; project_path: string; snippet: string; updated_at: string; archived?: boolean };
 
 export type Todo = { id: string; text: string; status: "pending" | "in_progress" | "done" };

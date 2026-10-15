@@ -63,8 +63,8 @@ export const open_agent_run = (ref: RunRef) => {
     return;
   }
   void load_run(ref, ui.active_chat_id);
-  if (ui.dock.kind !== "agents") {
-    toggle_dock("agents");
+  if (ui.dock.kind !== "background") {
+    toggle_dock("background");
   }
 };
 
@@ -87,6 +87,14 @@ export const answer_agent_approval = async (ref: RunRef, call_id: string, decisi
   } catch (error) {
     console.error(`[agents] agents:approve failed for agent ${ref.agent_id} run ${ref.run_id} call ${call_id}`, error);
     return failure(error);
+  }
+};
+
+export const hold_agent_approval = async (ref: RunRef, call_id: string): Promise<void> => {
+  try {
+    await api.invoke("agents:hold_approval", ref.agent_id, ref.run_id, call_id);
+  } catch (error) {
+    console.error(`[agents] agents:hold_approval failed for agent ${ref.agent_id} run ${ref.run_id} call ${call_id}`, error);
   }
 };
 

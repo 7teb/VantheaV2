@@ -1,11 +1,12 @@
 import type { ComponentType } from "react";
 import type { ToolStep } from "../../../shared/chat.ts";
-import { shell_name, type ToolView, type ToolViewKind } from "../../../shared/tool-view.ts";
+import { is_shell_run } from "../../../shared/shell.ts";
+import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
 import {
   AppWindowIcon,
-  AtSignIcon,
   BookOpenIcon,
   BotIcon,
+  BracesIcon,
   CameraIcon,
   CircleHelpIcon,
   ClipboardListIcon,
@@ -13,23 +14,26 @@ import {
   CoinsIcon,
   CompassIcon,
   FilePenIcon,
+  FileTextIcon,
   GlobeCheckIcon,
   GlobeIcon,
   HourglassIcon,
   ImageIcon,
   KeyboardIcon,
   LayersIcon,
+  LogsIcon,
   ListChecksIcon,
   MessageSquareIcon,
   MonitorCheckIcon,
   MouseIcon,
   MousePointerClickIcon,
   OutlineIcon,
+  PlugIcon,
   ScanEyeIcon,
   ScanTextIcon,
-  ScrollTextIcon,
   SearchIcon,
   ShieldTerminalIcon,
+  SquareDollarIcon,
   SquareTerminalIcon,
   SummaryIcon,
   TextCursorInputIcon,
@@ -43,20 +47,21 @@ import { ModelsBody } from "./bodies-models.tsx";
 import { ImageBody, WebSearchBody } from "./bodies-web.tsx";
 import { McpBody, MemoryBody, PeerMessageBody, PlanBody, QuestionsBody, TextBody, TodosBody } from "./bodies-work.tsx";
 import type { BodyProps } from "./body-types.ts";
-import { CommandCard } from "./CommandCard.tsx";
 import { DraftCode } from "./DraftCode.tsx";
 import { live_draft } from "./live-draft.ts";
+import { LiveCommand } from "./LiveCommand.tsx";
 import { OutputBlock } from "./OutputBlock.tsx";
 import { is_reviewing } from "./review-phase.ts";
 import { ReviewNotice } from "./ReviewNote.tsx";
 import { ReviewBody } from "./ReviewPending.tsx";
-import { denial_note, shown_error, view_content } from "./tool-body.ts";
+import { denial_note, live_command, shown_error, view_content } from "./tool-body.ts";
 import { tool_meta, type ToolIconName } from "./tool-meta.ts";
 
 export const tool_icons: Record<ToolIconName, IconComponent> = {
   terminal: SquareTerminalIcon,
+  bash: SquareDollarIcon,
   background: LayersIcon,
-  file: BookOpenIcon,
+  file: FileTextIcon,
   files: SummaryIcon,
   search: SearchIcon,
   outline: OutlineIcon,
@@ -67,11 +72,13 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   image: ImageIcon,
   agent: BotIcon,
   memory: WormIcon,
-  skill: ScrollTextIcon,
+  skill: BookOpenIcon,
   browser: GlobeIcon,
   browser_tabs: AppWindowIcon,
   browser_navigate: CompassIcon,
   browser_snapshot: ScanTextIcon,
+  browser_console: LogsIcon,
+  browser_eval: BracesIcon,
   browser_click: MousePointerClickIcon,
   browser_type: TextCursorInputIcon,
   browser_key: KeyboardIcon,
@@ -80,7 +87,7 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   browser_screenshot: CameraIcon,
   browser_look: ScanEyeIcon,
   page_check: MonitorCheckIcon,
-  mcp: AtSignIcon,
+  mcp: PlugIcon,
   clock: ClockIcon,
   models: CoinsIcon,
   question: CircleHelpIcon,
@@ -111,15 +118,17 @@ export const view_bodies: Bodies = {
 
 export const tool_icon = (step: ToolStep): IconComponent => (step.status === "denied" ? ShieldTerminalIcon : tool_icons[tool_meta(step).icon]);
 
-const LiveBody = ({ step, live }: { step: ToolStep; live: string }) =>
-  step.name === "run_command" ? <CommandCard shell={shell_name} command={String(step.args.command ?? "")} output={live} footer={null} /> : <OutputBlock text={live} />;
+type LiveBodyProps = { step: ToolStep; live: string | null; chat_id: string };
+
+const LiveBody = ({ step, live, chat_id }: LiveBodyProps) =>
+  is_shell_run(step.name) ? <LiveCommand step={step} output={live} chat_id={chat_id} /> : live && <OutputBlock text={live} />;
 
 const ViewBody = ({ view, step }: { view: ToolView; step: ToolStep }) => {
   const Body = view_bodies[view.kind] as ComponentType<{ view: ToolView; step: ToolStep }> | undefined;
   return Body ? <Body view={view} step={step} /> : null;
 };
 
-export const ToolBody = ({ step, open }: { step: ToolStep; open: boolean }) => {
+export const ToolBody = ({ step, open, chat_id }: { step: ToolStep; open: boolean; chat_id: string }) => {
   const t = use_t();
   const live = step.progress?.output_tail ?? null;
   const draft = live_draft(step);
@@ -131,7 +140,7 @@ export const ToolBody = ({ step, open }: { step: ToolStep; open: boolean }) => {
       {error && <div className="tool-body-error">{error}</div>}
       {step.status === "cancelled" && <div className="tool-body-muted">{t("tools.cancelled")}</div>}
       {draft && <DraftCode draft={draft} />}
-      {live && <LiveBody step={step} live={live} />}
+      {(live || live_command(step)) && <LiveBody step={step} live={live} chat_id={chat_id} />}
       {step.view && view_content(t, step, step.view) && <ViewBody view={step.view} step={step} />}
       {note && note.lines.length > 0 && <ReviewNotice note={note} />}
       {!step.view && !live && !step.error && step.status !== "denied" && step.result_text && <OutputBlock text={step.result_text} />}

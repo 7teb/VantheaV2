@@ -30,6 +30,7 @@ const profiles: readonly AgentProfile[] = ["explore", "worker"];
 const event_types: readonly StreamEventBody["type"][] = [
   "text",
   "reasoning",
+  "reasoning_status",
   "reasoning_details",
   "retry",
   "tool_draft",
@@ -67,6 +68,7 @@ export const public_summary = (record: AgentRecord): AgentSummary => ({
   topic: record.topic,
   model: record.model,
   profile: record.profile,
+  without_tools: record.without_tools,
   runs: record.runs.map(public_run),
 });
 
@@ -120,6 +122,7 @@ const parse_agent = (value: unknown, now: string): AgentRecord | null => {
     model: as_string(raw.model),
     effort: as_string(raw.effort),
     profile: pick(raw.profile, profiles, "explore"),
+    without_tools: as_array(raw.without_tools).filter((entry): entry is string => typeof entry === "string"),
     project_root: as_string(raw.project_root),
     created_at: as_iso(raw.created_at, now),
     updated_at: as_iso(raw.updated_at, now),

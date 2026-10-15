@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { error_code } from "./coerce.ts";
 
 export type StoragePaths = {
   user_data: string;
@@ -12,8 +13,9 @@ export type StoragePaths = {
   chat_search: string;
   attachments: string;
   images: string;
+  favicons: string;
   artifacts: string;
-  snapshots: string;
+  retired_snapshots: string;
   background: string;
   agents: string;
   memories: string;
@@ -39,8 +41,9 @@ const storage_paths_for = (user_data: string): StoragePaths => {
     chat_search: path.join(chats, "search"),
     attachments: path.join(root, "media", "attachments"),
     images: path.join(root, "media", "images"),
+    favicons: path.join(root, "media", "favicons"),
     artifacts: path.join(root, "artifacts.json"),
-    snapshots: path.join(root, "snapshots"),
+    retired_snapshots: path.join(root, "snapshots"),
     background: path.join(root, "background.json"),
     agents: path.join(root, "agents"),
     memories: path.join(root, "memories.json"),
@@ -60,7 +63,7 @@ export const storage_dirs = (paths: StoragePaths): string[] => [
   paths.chat_search,
   paths.attachments,
   paths.images,
-  paths.snapshots,
+  paths.favicons,
   paths.skills,
   paths.agents,
 ];
@@ -83,6 +86,20 @@ export const ensure_storage_dirs = async (paths: StoragePaths) => {
   for (const dir of storage_dirs(paths)) {
     await fs.mkdir(dir, { recursive: true });
   }
+};
+
+export const remove_retired_snapshots = async (paths: StoragePaths): Promise<boolean> => {
+  try {
+    await fs.stat(paths.retired_snapshots);
+  } catch (error) {
+    if (error_code(error) === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+  await fs.rm(paths.retired_snapshots, { recursive: true, force: true });
+  console.info(`[storage] removed the retired undo snapshot folder ${paths.retired_snapshots}`);
+  return true;
 };
 
 export const path_key = (value: string): string => value.trim().replace(/[\\/]+/g, "/").replace(/\/+$/, "").toLowerCase();

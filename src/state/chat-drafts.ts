@@ -10,7 +10,9 @@ export type DraftUpload = {
   preview: string | null;
 };
 
-export type Draft = { text: string; uploads: DraftUpload[]; plan: boolean };
+export type DraftChip = { kind: "skill" | "mcp"; name: string };
+
+export type Draft = { text: string; uploads: DraftUpload[]; plan: boolean; chips: DraftChip[] };
 
 export type OutgoingMessage = { text: string; attachments: Attachment[]; plan: boolean };
 
@@ -24,7 +26,7 @@ export type ComposerState = {
   compacting: Record<string, boolean>;
 };
 
-export const empty_draft: Draft = { text: "", uploads: [], plan: false };
+export const empty_draft: Draft = { text: "", uploads: [], plan: false, chips: [] };
 
 export const empty_composer: ComposerState = { drafts: {}, queues: {}, sending: {}, errors: {}, compacting: {} };
 
@@ -53,13 +55,33 @@ export const remove_upload = (state: ComposerState, key: string, upload_key: str
 export const ready_attachments = (draft: Draft): Attachment[] =>
   draft.uploads.flatMap((upload) => (upload.status === "ready" && upload.attachment ? [upload.attachment] : []));
 
+const same_chip = (left: DraftChip, right: DraftChip) => left.kind === right.kind && left.name === right.name;
+
+export const has_chip = (draft: Draft, chip: DraftChip): boolean => draft.chips.some((entry) => same_chip(entry, chip));
+
+export const toggle_chip = (state: ComposerState, key: string, chip: DraftChip): ComposerState => {
+  const chips = draft_of(state, key).chips;
+  const present = chips.some((entry) => same_chip(entry, chip));
+  return patch_draft(state, key, { chips: present ? chips.filter((entry) => !same_chip(entry, chip)) : [...chips, chip] });
+};
+
+export const remove_chip = (state: ComposerState, key: string, chip: DraftChip): ComposerState =>
+  patch_draft(state, key, { chips: draft_of(state, key).chips.filter((entry) => !same_chip(entry, chip)) });
+
+export const chip_line = (chip: DraftChip): string =>
+  chip.kind === "skill"
+    ? `Use the skill "${chip.name}" for this request: load it with read_skill first and follow it.`
+    : `Use the tools of the MCP server "${chip.name}" for this request.`;
+
+export const message_text = (draft: Draft): string => [draft.chips.map(chip_line).join("\n"), draft.text.trim()].filter(Boolean).join("\n\n");
+
 export const draft_sendable = (draft: Draft): boolean =>
-  !draft.uploads.some((upload) => upload.status === "uploading") && (draft.text.trim().length > 0 || ready_attachments(draft).length > 0);
+  !draft.uploads.some((upload) => upload.status === "uploading") && (draft.text.trim().length > 0 || draft.chips.length > 0 || ready_attachments(draft).length > 0);
 
 export const take_draft = (state: ComposerState, key: string): { state: ComposerState; message: OutgoingMessage } => {
   const draft = draft_of(state, key);
-  const message = { text: draft.text.trim(), attachments: ready_attachments(draft), plan: draft.plan };
-  return { state: patch_draft(state, key, { text: "", uploads: [] }), message };
+  const message = { text: message_text(draft), attachments: ready_attachments(draft), plan: draft.plan };
+  return { state: patch_draft(state, key, { text: "", uploads: [], chips: [] }), message };
 };
 
 export const restore_draft = (state: ComposerState, key: string, message: OutgoingMessage): ComposerState => {

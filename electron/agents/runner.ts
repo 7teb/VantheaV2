@@ -1,5 +1,5 @@
 import type { PermissionMode } from "../../shared/chat.ts";
-import type { AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
+import type { AgentProfile, AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
 import { no_stored_context, type StoredContext } from "../context/calibration.ts";
@@ -12,17 +12,17 @@ import { error_text } from "../storage/coerce.ts";
 import type { ReviewModelCall, SideModelCall, Tool, ToolProfile } from "../tools/types.ts";
 import { without_images } from "../turn/carriers.ts";
 import { push_notes, run_turn_loop } from "../turn/loop.ts";
-import type { StreamFn } from "../turn/session.ts";
+import type { ReasoningStatusCall, StreamFn } from "../turn/session.ts";
 import { close_journal, flush_journals_sync } from "./journal.ts";
 import { app_closed_end, create_live, final_report, forget_live, last_text, live_run, live_runs, reachable_live, stored_agent_context, type LiveRun, type StopReason } from "./live.ts";
 import { deliver_to, forget_chat_peers, on_peer_ended, return_undelivered } from "./peers.ts";
 import { agent_role_section, kept_instruction_note, peer_note } from "./prompt.ts";
 import { questions_asked_by, sync_open_questions } from "./questions.ts";
 import { current_run, public_run, public_summary, type AgentRecord, type RunRecord } from "./records.ts";
-import { label_of, question_line } from "./roster.ts";
+import { label_of, profile_text, question_line } from "./roster.ts";
 import { write_report_file } from "./report-file.ts";
 import { deliver_report, drop_agent_notes, wake_idle } from "./reports.ts";
-import { agent_approval_key, agent_session } from "./session.ts";
+import { agent_approval_key, agent_session, allowed_tools } from "./session.ts";
 import {
   begin_run,
   chat_agents,
@@ -46,6 +46,7 @@ export type AgentDeps = {
   side_model: SideModelCall;
   review_call: ReviewModelCall;
   models: () => Promise<ModelEntry[]>;
+  reasoning_status?: ReasoningStatusCall;
 };
 
 export type RunContext = {
@@ -59,7 +60,7 @@ export type RunContext = {
   prompt: string;
 };
 
-export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description" | "topic" | "scope" | "profile" | "effort"> & { model: ModelEntry };
+export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description" | "topic" | "scope" | "profile" | "without_tools" | "effort"> & { model: ModelEntry };
 
 export type StartedRun = { agent: AgentSummary; run: AgentRunSummary };
 
@@ -86,6 +87,15 @@ export const find_agent_model = async (id: string): Promise<ModelEntry> => {
     throw new Error(`Unknown model ${id}. Available models: ${models.map((model) => model.id).join(", ")}`);
   }
   return found;
+};
+
+export const validate_without_tools = (profile: AgentProfile, names: string[], settings: Settings, model: ModelEntry): string[] => {
+  const offered = current_deps().resolve_tools(profile, settings, model).map((tool) => tool.spec.name);
+  const unknown = names.filter((name) => !offered.includes(name));
+  if (unknown.length) {
+    throw new Error(`without_tools can only remove tools of the ${profile} profile; ${unknown.join(", ")} ${unknown.length === 1 ? "is" : "are"} not among them. Tools of the ${profile} profile: ${offered.join(", ")}.`);
+  }
+  return [...new Set(names)];
 };
 
 export const ensure_capacity = (chat_id: string): void => {
@@ -196,7 +206,7 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
       agent_id: agent.agent_id,
       run_id: run.run_id,
       name: agent.name,
-      profile: agent.profile,
+      profile: profile_text(agent),
       model: agent.model,
       status: ended.status,
       started_at: ended.started_at,
@@ -213,7 +223,7 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
 const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request: RunContext, model: ModelEntry, context: ApiMessage[], stored: StoredContext): Promise<void> => {
   const api_messages: ApiMessage[] = [];
   try {
-    const tools = current_deps().resolve_tools(agent.profile, request.settings, model);
+    const tools = allowed_tools(current_deps().resolve_tools(agent.profile, request.settings, model), agent);
     const system = await build_system_prompt({
       model,
       settings: request.settings,
@@ -259,6 +269,7 @@ export const deploy_agent = (request: DeployRequest): StartedRun => {
     model: request.model.id,
     effort: request.effort,
     profile: request.profile,
+    without_tools: request.without_tools,
     project_root: request.project_root,
   });
   return launch(agent, request, request.model, [], no_stored_context);

@@ -1,15 +1,23 @@
 import { full_mode_covers, type ApprovalDecision, type ApprovalRequest } from "../../shared/approval.ts";
 import { full_window_until, open_full_window } from "./full-window.ts";
 
-type Pending = { chat_id: string; request: ApprovalRequest; resolve: (decision: ApprovalDecision) => void; detach: () => void };
+type Pending = {
+  chat_id: string;
+  request: ApprovalRequest;
+  resolve: (decision: ApprovalDecision) => void;
+  detach: () => void;
+  hold: () => void;
+};
 
-export type WaitRequest = { key: string; chat_id: string; call_id: string; request: ApprovalRequest; signal: AbortSignal };
+export type WaitRequest = { key: string; chat_id: string; call_id: string; request: ApprovalRequest; signal: AbortSignal; on_hold?: () => void };
 
 const registry = new Map<string, Map<string, Pending>>();
 
 const denied = (feedback = ""): ApprovalDecision => ({ approved: false, grant: "once", feedback });
 
 const window_grant: ApprovalDecision = { approved: true, grant: "full_window", feedback: "" };
+
+const unanswered: ApprovalDecision = { approved: false, grant: "once", feedback: "", expired: true };
 
 const key_map = (key: string): Map<string, Pending> => {
   const existing = registry.get(key);
@@ -46,7 +54,16 @@ const settle_covered = (chat_id: string) => {
   }
 };
 
-export const wait_for_decision = ({ key, chat_id, call_id, request, signal }: WaitRequest): Promise<ApprovalDecision> =>
+export const hold_decision = (key: string, call_id: string): boolean => {
+  const pending = registry.get(key)?.get(call_id);
+  if (!pending) {
+    return false;
+  }
+  pending.hold();
+  return true;
+};
+
+export const wait_for_decision = ({ key, chat_id, call_id, request, signal, on_hold }: WaitRequest): Promise<ApprovalDecision> =>
   new Promise<ApprovalDecision>((resolve) => {
     if (signal.aborted) {
       resolve(denied());
@@ -57,8 +74,25 @@ export const wait_for_decision = ({ key, chat_id, call_id, request, signal }: Wa
       return;
     }
     const on_abort = () => resolve_decision(key, call_id, denied());
-    const detach = () => signal.removeEventListener("abort", on_abort);
-    key_map(key).set(call_id, { chat_id, request, resolve, detach });
+    let timer = request.expires_at === undefined ? null : setTimeout(() => resolve_decision(key, call_id, unanswered), Math.max(0, request.expires_at - Date.now()));
+    const stop_timer = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+    const detach = () => {
+      stop_timer();
+      signal.removeEventListener("abort", on_abort);
+    };
+    const hold = () => {
+      if (!timer) {
+        return;
+      }
+      stop_timer();
+      on_hold?.();
+    };
+    key_map(key).set(call_id, { chat_id, request, resolve, detach, hold });
     signal.addEventListener("abort", on_abort, { once: true });
   });
 

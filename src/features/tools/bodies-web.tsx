@@ -1,12 +1,14 @@
 import { useState, type MouseEvent } from "react";
-import { GlobeIcon } from "../../components/icons.tsx";
+import { CircleAlertIcon, GlobeIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
-import { use_t } from "../../i18n/index.ts";
+import { use_language, use_t } from "../../i18n/index.ts";
 import { open_external } from "../../state/chat-actions.ts";
 import { Lightbox, type LightboxImage } from "../chat/Lightbox.tsx";
-import { image_src } from "../chat/media.ts";
+import { favicon_src, image_src } from "../chat/media.ts";
 import { MediaImage } from "../chat/MediaImage.tsx";
 import type { BodyProps } from "./body-types.ts";
+import { page_address } from "./tool-meta.ts";
+import "./bodies-web.css";
 
 const visible_sources = 4;
 
@@ -24,28 +26,53 @@ const follow = (event: MouseEvent<HTMLAnchorElement>, url: string) => {
   open_external(url);
 };
 
+const published = (raw: string, language: string) => {
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? raw : date.toLocaleDateString(language, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+};
+
+const SourceIcon = ({ host }: { host: string }) => {
+  const [failed, set_failed] = useState(false);
+  if (failed) {
+    return <GlobeIcon size={14} />;
+  }
+  return <img className="web-source-icon" src={favicon_src(host)} alt="" width={14} height={14} onError={() => set_failed(true)} />;
+};
+
 export const WebSearchBody = ({ view }: BodyProps<"web_search">) => {
   const t = use_t();
+  const language = use_language();
   const [all, set_all] = useState(false);
   const shown = all ? view.sources : view.sources.slice(0, visible_sources);
   const hidden = view.sources.length - visible_sources;
+  const failed = view.failed ?? [];
   return (
     <div className="tool-body-stack">
-      <div className="tool-body-muted">{t(view.depth === "advanced" ? "tools.depth_advanced" : "tools.depth_basic")}</div>
-      {view.sources.length > 0 && (
+      {(view.sources.length > 0 || failed.length > 0) && (
         <div className="web-sources">
-          {shown.map((source, index) => (
-            <a key={index} className="web-source" href={source.url} title={source.url} onClick={(event) => follow(event, source.url)}>
-              <GlobeIcon size={14} />
-              <span className="web-source-title">{source.title || host_of(source.url)}</span>
-              <span className="web-source-host">{host_of(source.url)}</span>
-            </a>
-          ))}
+          {shown.map((source, index) => {
+            const host = host_of(source.url);
+            return (
+              <a key={index} className="web-source" href={source.url} title={source.url} onClick={(event) => follow(event, source.url)}>
+                <SourceIcon host={host} />
+                <span className="web-source-title">{source.title || host}</span>
+                <span className="web-source-host">{host}</span>
+                {source.published_date && <span className="web-source-date">{published(source.published_date, language)}</span>}
+              </a>
+            );
+          })}
           {hidden > 0 && (
             <button type="button" className="output-block-more" onClick={() => set_all(!all)}>
               {all ? t("chat.show_less") : t("tools.sources_more", { n: hidden })}
             </button>
           )}
+          {failed.map((entry, index) => (
+            <div key={`failed:${index}`} className="web-failure" title={entry.url}>
+              <CircleAlertIcon size={14} />
+              <span className="web-failure-url">{page_address(entry.url)}</span>
+              <span className="web-failure-error">{entry.error}</span>
+            </div>
+          ))}
         </div>
       )}
       {view.answer && (

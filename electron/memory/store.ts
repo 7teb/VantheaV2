@@ -5,20 +5,25 @@ import {
   compact_state,
   convert_legacy_state,
   empty_state,
+  high_confidence,
   normalize_entry,
   parse_state,
   relevance,
   same_scope,
+  new_memory_id,
   sanitize_candidate,
   type MemoryEntry,
   type MemorySource,
   type MemoryState,
+  type ScanCounts,
 } from "./records.ts";
-import { clean_text, memory_handle, memory_text_chars, similarity, words_for } from "./text.ts";
+import { clean_text, manual_memory_key, memory_handle, memory_text_chars, similarity, words_for } from "./text.ts";
 
 export type MemoryFiles = { file: string; legacy_file: string };
 
 export type KnownMemory = { key: string; scope: MemoryEntry["scope"]; text: string };
+
+export type ScanEpoch = { forgotten: number; resets: number };
 
 const max_candidates = 3;
 
@@ -26,6 +31,9 @@ const similar_threshold = 0.76;
 
 let files: MemoryFiles | null = null;
 let state: MemoryState = empty_state();
+
+const forgotten = new Map<string, number>();
+let resets = 0;
 
 const memory_file = (): string => {
   if (!files) {
@@ -59,6 +67,22 @@ const import_legacy = async (legacy_file: string, now: string): Promise<MemorySt
   return converted;
 };
 
+const confirm_waiting = async (now: string) => {
+  const ready = state.records.filter((entry) => entry.status === "pending" && entry.confidence >= high_confidence && !rejected_before(entry));
+  if (!ready.length) {
+    return;
+  }
+  for (const entry of ready) {
+    confirm_into({ ...entry, status: "confirmed", updated_at: now }, entry.id);
+  }
+  try {
+    await persist();
+    console.info(`[memory] saved ${ready.length} memory candidates with high confidence that were waiting for review`);
+  } catch (error) {
+    console.error(`[memory] saving ${ready.length} confirmed memory candidates to ${memory_file()} failed:`, error);
+  }
+};
+
 export const init_memory = async (options: MemoryFiles) => {
   files = null;
   state = empty_state();
@@ -68,6 +92,7 @@ export const init_memory = async (options: MemoryFiles) => {
   if (parsed) {
     state = parsed;
     files = options;
+    await confirm_waiting(now);
     return;
   }
   if (stored.status === "ok") {
@@ -79,6 +104,7 @@ export const init_memory = async (options: MemoryFiles) => {
   state = stored.status === "missing" ? await import_legacy(options.legacy_file, now) : empty_state();
   await write_state(options.file);
   files = options;
+  await confirm_waiting(now);
 };
 
 export const memory_loaded = (): boolean => files !== null;
@@ -91,41 +117,72 @@ export const known_memories = (): KnownMemory[] =>
 
 export const is_scanned = (message_id: string): boolean => Object.hasOwn(state.scans, clean_text(message_id, 160));
 
-const merge_candidate = (candidate: MemoryEntry): boolean => {
-  const comparable = state.records.filter((entry) => entry.status !== "rejected" && same_scope(entry, candidate));
-  const exact = comparable.some((entry) => entry.key === candidate.key);
-  const similar = comparable
-    .map((entry) => ({ entry, score: similarity(entry.text, candidate.text) }))
-    .sort((a, b) => b.score - a.score)[0];
-  const key = !exact && similar && similar.score >= similar_threshold ? similar.entry.key : candidate.key;
-  const next = { ...candidate, key };
-  const pending = comparable.find((entry) => entry.status === "pending" && entry.key === key);
-  if (pending) {
-    state.records = state.records.map((entry) =>
-      entry === pending ? { ...next, id: pending.id, created_at: pending.created_at } : entry,
-    );
-    return false;
+export const scan_epoch = (message_id: string): ScanEpoch => ({ forgotten: forgotten.get(clean_text(message_id, 160)) ?? 0, resets });
+
+const epoch_changed = (message_id: string, epoch: ScanEpoch): boolean => (forgotten.get(message_id) ?? 0) !== epoch.forgotten || resets !== epoch.resets;
+
+export const forget_scan = async (message_id: string): Promise<void> => {
+  const id = clean_text(message_id, 160);
+  forgotten.set(id, (forgotten.get(id) ?? 0) + 1);
+  if (!Object.hasOwn(state.scans, id)) {
+    return;
   }
-  state.records = [...state.records, next];
-  return true;
+  state.scans = Object.fromEntries(Object.entries(state.scans).filter(([key]) => key !== id));
+  await persist();
 };
 
-export const store_scan_result = async (source: MemorySource, candidates: unknown[], outcome: string): Promise<number> => {
+const matching_key = (active: MemoryEntry[], candidate: MemoryEntry): string => {
+  if (active.some((entry) => entry.key === candidate.key)) {
+    return candidate.key;
+  }
+  const similar = active
+    .map((entry) => ({ entry, score: similarity(entry.text, candidate.text) }))
+    .sort((a, b) => b.score - a.score)[0];
+  return similar && similar.score >= similar_threshold ? similar.entry.key : candidate.key;
+};
+
+const rejected_before = (candidate: MemoryEntry): boolean =>
+  state.records.some((entry) => entry.status === "rejected" && same_scope(entry, candidate) && similarity(entry.text, candidate.text) >= similar_threshold);
+
+const hold_for_review = (candidate: MemoryEntry) => {
+  const pending = state.records.find((entry) => entry.status === "pending" && same_scope(entry, candidate) && entry.key === candidate.key);
+  state.records = pending
+    ? state.records.map((entry) => (entry === pending ? { ...candidate, id: pending.id, created_at: pending.created_at } : entry))
+    : [...state.records, candidate];
+};
+
+const keep_candidate = (candidate: MemoryEntry): "saved" | "pending" => {
+  const active = state.records.filter((entry) => entry.status !== "rejected" && same_scope(entry, candidate));
+  const next = { ...candidate, key: matching_key(active, candidate) };
+  if (rejected_before(next)) {
+    hold_for_review(next);
+    return "pending";
+  }
+  const pending = active.find((entry) => entry.status === "pending" && entry.key === next.key);
+  const saved: MemoryEntry = pending ? { ...next, id: pending.id, created_at: pending.created_at, status: "confirmed" } : { ...next, status: "confirmed" };
+  confirm_into(saved, pending?.id ?? null);
+  return "saved";
+};
+
+export const store_scan_result = async (source: MemorySource, candidates: unknown[], outcome: string, error = "", epoch: ScanEpoch | null = null): Promise<ScanCounts> => {
   const message_id = clean_text(source.message_id, 160);
-  if (!message_id || is_scanned(message_id)) {
-    return 0;
+  if (!message_id || is_scanned(message_id) || (epoch && epoch_changed(message_id, epoch))) {
+    return { returned: 0, saved: 0, pending: 0, dropped: {} };
   }
+  const considered = candidates.slice(0, max_candidates);
+  const counts: ScanCounts = { returned: considered.length, saved: 0, pending: 0, dropped: {} };
   const now = new Date().toISOString();
-  let added = 0;
-  for (const raw of candidates.slice(0, max_candidates)) {
-    const candidate = sanitize_candidate(raw, source, now);
-    if (candidate && merge_candidate(candidate)) {
-      added += 1;
+  for (const raw of considered) {
+    const verdict = sanitize_candidate(raw, source, now);
+    if (verdict.drop) {
+      counts.dropped[verdict.drop] = (counts.dropped[verdict.drop] ?? 0) + 1;
+      continue;
     }
+    counts[keep_candidate(verdict.entry)] += 1;
   }
-  state.scans = { ...state.scans, [message_id]: { scanned_at: now, outcome } };
+  state.scans = { ...state.scans, [message_id]: { scanned_at: now, outcome, counts, ...(error ? { error: clean_text(error, 300) } : {}) } };
   await persist();
-  return added;
+  return counts;
 };
 
 const confirmed = (): MemoryEntry[] =>
@@ -154,6 +211,32 @@ export const confirm_memory = async (draft: MemoryEntry): Promise<MemoryEntry> =
   const saved = confirm_into(candidate, null);
   await persist();
   return saved;
+};
+
+export const add_memory = async (value: string): Promise<MemoryEntry> => {
+  const text = value.trim();
+  if (!text) {
+    throw new Error("memory text is empty");
+  }
+  if (text.length > memory_text_chars) {
+    throw new Error(`memory text is ${text.length} characters, over the ${memory_text_chars}-character limit for one memory`);
+  }
+  const now = new Date().toISOString();
+  return confirm_memory({
+    id: new_memory_id(),
+    key: manual_memory_key("global_preference", text),
+    kind: "global_preference",
+    scope: "global",
+    project_path: "",
+    text,
+    evidence: text,
+    confidence: 1,
+    status: "confirmed",
+    source_chat_id: "",
+    source_message_id: "",
+    created_at: now,
+    updated_at: now,
+  });
 };
 
 export const review_items = (): MemoryReviewItem[] =>
@@ -214,6 +297,7 @@ export const move_project_memories = async (old_path: string, next_path: string)
 };
 
 export const reset_memories = async () => {
+  resets += 1;
   state = empty_state();
   await persist();
 };

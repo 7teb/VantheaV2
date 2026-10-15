@@ -5,4 +5,5 @@ export const search = {
   "search.recent": "Recent",
   "search.label": "Search chats",
   "search.failed": "Search failed",
+  "search.archived": "Archived",
 };

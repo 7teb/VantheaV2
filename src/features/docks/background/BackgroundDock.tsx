@@ -1,83 +1,131 @@
-import { useEffect } from "react";
-import { Button } from "../../../components/Button.tsx";
+import { useEffect, useMemo } from "react";
+import { IconButton } from "../../../components/Button.tsx";
+import { Collapsible } from "../../../components/Collapsible.tsx";
+import { TrashIcon } from "../../../components/icons.tsx";
 import { Skeleton, SkeletonLines } from "../../../components/Skeleton.tsx";
+import { use_clock } from "../../../components/use-clock.ts";
 import { use_t } from "../../../i18n/index.ts";
+import { agents_store, load_agents } from "../../../state/agents.ts";
 import { background_store, clear_finished_tasks, load_background } from "../../../state/background.ts";
+import { toggle_task_section, ui_store, type TaskSection } from "../../../state/ui.ts";
 import { use_store } from "../../../state/use-store.ts";
+import { AgentEntry } from "../agents/AgentEntry.tsx";
+import { TranscriptPanel } from "../agents/TranscriptPanel.tsx";
 import type { DockViewProps } from "../dock-view.ts";
 import { DockEmpty, DockPanel, DockTitle } from "../DockPanel.tsx";
-import { use_clock } from "../../../components/use-clock.ts";
 import { BackgroundTaskRow } from "./BackgroundTaskRow.tsx";
+import { group_tasks, type TaskEntry } from "./task-groups.ts";
 import "./BackgroundDock.css";
 
 const BackgroundSkeleton = () => (
-  <div className="bg-task-list" aria-busy="true">
-    {[64, 82, 48].map((width, index) => (
-      <div key={index} className="bg-task">
-        <div className="bg-task-head">
-          <Skeleton width={15} height={15} radius={8} />
-          <Skeleton width={`${width}%`} height={12} radius={4} />
+  <div className="bg-section" aria-busy="true">
+    <div className="bg-section-skeleton">
+      <Skeleton width={56} height={9} radius={4} />
+    </div>
+    <div className="bg-section-list">
+      {[64, 82, 48].map((width, index) => (
+        <div key={index} className="bg-task">
+          <div className="bg-task-head">
+            <Skeleton width={15} height={15} radius={8} />
+            <Skeleton width={`${width}%`} height={12} radius={4} />
+          </div>
+          <SkeletonLines widths={[36]} height={10} />
         </div>
-        <SkeletonLines widths={[36]} height={10} />
-      </div>
-    ))}
+      ))}
+    </div>
   </div>
 );
 
+type TaskSectionListProps = { section: TaskSection; label: string; entries: TaskEntry[]; now: number };
+
+const TaskSectionList = ({ section, label, entries, now }: TaskSectionListProps) => {
+  const collapsed = use_store(ui_store, (state) => state.collapsed_task_sections.includes(section));
+  if (entries.length === 0) {
+    return null;
+  }
+  return (
+    <Collapsible
+      className="bg-section"
+      open={!collapsed}
+      on_toggle={() => toggle_task_section(section)}
+      header={
+        <>
+          <span className="section-label">{label}</span>
+          <span className="bg-section-count">{entries.length}</span>
+        </>
+      }
+    >
+      <div className="bg-section-list">
+        {entries.map((entry) =>
+          entry.kind === "agent" ? (
+            <AgentEntry key={entry.agent.agent_id} agent={entry.agent} now={now} />
+          ) : (
+            <BackgroundTaskRow key={entry.task.id} task={entry.task} now={now} />
+          ),
+        )}
+      </div>
+    </Collapsible>
+  );
+};
+
 export const BackgroundDock = ({ visible, chat_id }: DockViewProps) => {
   const t = use_t();
-  const status = use_store(background_store, (state) => state.status);
+  const agents_status = use_store(agents_store, (state) => state.status);
+  const agents = use_store(agents_store, (state) => state.agents);
+  const entry = use_store(agents_store, (state) => state.transcript);
+  const tasks_status = use_store(background_store, (state) => state.status);
   const tasks = use_store(background_store, (state) => state.tasks);
-  const running = tasks.filter((task) => task.status === "running").length;
-  const finished = tasks.length - running;
-  const now = use_clock(visible && running > 0);
+  const groups = useMemo(() => group_tasks(agents, tasks), [agents, tasks]);
+  const live = entry?.status === "ready" && entry.transcript.status === "streaming";
+  const now = use_clock(visible && (groups.running.length > 0 || live));
+  const clearable = tasks.some((task) => task.status !== "running");
 
   useEffect(() => {
     if (visible) {
+      void load_agents(chat_id);
       void load_background(chat_id);
     }
   }, [visible, chat_id]);
 
-  const meta = () => {
-    if (running > 0) {
-      return t("background.running", { n: running });
-    }
-    return finished > 0 ? t("background.finished", { n: finished }) : undefined;
-  };
-
-  const clear = () => {
-    if (chat_id !== null) {
-      void clear_finished_tasks(chat_id);
-    }
-  };
+  if (entry !== null) {
+    return <TranscriptPanel entry={entry} agents={agents} now={now} />;
+  }
 
   const body = () => {
-    if (status === "loading") {
+    if (agents_status === "loading" || tasks_status === "loading") {
       return <BackgroundSkeleton />;
     }
-    if (status === "failed") {
-      return <DockEmpty text={t("background.load_failed")} />;
-    }
-    if (tasks.length === 0) {
-      return <DockEmpty text={t("background.none")} />;
+    const failures = [
+      ...(agents_status === "failed" ? [t("agent.load_failed")] : []),
+      ...(tasks_status === "failed" ? [t("background.load_failed")] : []),
+    ];
+    if (groups.running.length === 0 && groups.finished.length === 0) {
+      return failures.length > 0 ? failures.map((text) => <DockEmpty key={text} text={text} />) : <DockEmpty text={t("background.none")} />;
     }
     return (
-      <div className="bg-task-list">
-        {[...tasks].reverse().map((task) => (
-          <BackgroundTaskRow key={task.id} task={task} now={now} />
+      <>
+        {failures.map((text) => (
+          <p key={text} className="bg-load-failed">
+            {text}
+          </p>
         ))}
-      </div>
+        <TaskSectionList section="running" label={t("background.section_running")} entries={groups.running} now={now} />
+        <TaskSectionList section="finished" label={t("background.section_finished")} entries={groups.finished} now={now} />
+      </>
     );
   };
 
   return (
     <DockPanel
-      title={<DockTitle label={t("background.title")} meta={meta()} />}
+      title={<DockTitle label={t("background.title")} />}
       close_label={t("background.close")}
       actions={
-        <Button variant="ghost" disabled={finished === 0 || chat_id === null} onClick={clear}>
-          {t("background.clear")}
-        </Button>
+        clearable &&
+        chat_id !== null && (
+          <IconButton label={t("background.clear_finished")} onClick={() => void clear_finished_tasks(chat_id)}>
+            <TrashIcon size={16} />
+          </IconButton>
+        )
       }
     >
       <div className="dock-scroll">{body()}</div>

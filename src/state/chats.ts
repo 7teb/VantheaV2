@@ -76,6 +76,14 @@ export const set_chat_pinned = async (chat_id: string, pinned: boolean) => {
   receive({ kind: "changed", meta: await api.invoke("chats:update", chat_id, { pinned }) });
 };
 
+export const set_chat_archived = async (chat_id: string, archived: boolean) => {
+  receive({ kind: "changed", meta: await api.invoke("chats:update", chat_id, { archived }) });
+  const ui = ui_store.get();
+  if (archived && ui.active_chat_id === chat_id) {
+    start_new_chat(ui.project_path);
+  }
+};
+
 export const delete_chat = async (chat_id: string) => {
   await api.invoke("chats:delete", chat_id);
   receive({ kind: "removed", chat_id });

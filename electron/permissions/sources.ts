@@ -13,7 +13,7 @@ import { source_language, type SourceLanguage } from "./script-constants.ts";
 import { runner_file, test_sources } from "./script-discovery.ts";
 import { code_imports, local_imports, type Loads } from "./script-loads.ts";
 import { main_reach } from "./script-params.ts";
-import { dynamic_path, executed_reads, process_refs, protected_command_read, runtime_text, script_dialect, script_extension } from "./script-refs.ts";
+import { dynamic_path, executed_reads, process_refs, runtime_text, script_dialect, script_extension } from "./script-refs.ts";
 import { code_mask } from "./script-text.ts";
 import { source_entries } from "./source-entries.ts";
 import { send_candidate, source_files } from "./source-files.ts";
@@ -38,7 +38,7 @@ export type ScriptFile = {
   change: ChangeMark | null;
 };
 
-export type CommandSources = { files: ScriptFile[]; gaps: string[]; catastrophic: string[]; protected_read: boolean; complete: boolean; hash: string; pins: ScriptPin[]; programs: ProgramFact[]; notes: string[] };
+export type CommandSources = { files: ScriptFile[]; gaps: string[]; catastrophic: string[]; complete: boolean; hash: string; pins: ScriptPin[]; programs: ProgramFact[]; notes: string[] };
 
 export type SourceScope = { chat_id: string; chat_started_at: number; env?: Record<string, string | undefined>; shell?: Dialect; app_root?: string };
 
@@ -158,7 +158,7 @@ export const inspect_command_sources = async (project_root: string, cwd: string,
         if (missing_path(error)) pin(file, null);
         else gap("Source is unavailable: " + file + " (" + (error_code(error) || error_text(error)) + ")");
       }
-      if (!command.includes(written)) add_payload(written);
+      if (!command.includes(written)) add_payload(written, dialect ?? "powershell");
       const exit = (await inspect(written, depth + 1, { dialect, origin: file, state, walk_depth: 0, language: language ?? source_language(file), entry: true })) ?? state;
       follows.set(key, exit);
       return exit;
@@ -188,14 +188,14 @@ export const inspect_command_sources = async (project_root: string, cwd: string,
   const installed = (location: Value, depth: number) => discover({ location, language: "js", runner: null, paths: [] }, depth);
   const launches = launch_resolver({ scope, inside, gap, note, pin, follow, installed });
   const entries = source_entries({ inside, gap, pin, touch, follow, load, discover, locations, add_fact: launches.add_fact, scan: (text, depth, origin, location) => inspect(text, depth, { dialect: script_dialect(origin), origin, state: opening(location, "cmd"), walk_depth: 0 }) });
-  const add_payload = (text: string) => {
+  const add_payload = (text: string, dialect: Dialect) => {
     if (files.some((file) => file.role === "payload" && file.text === text)) return;
     files.push({ id: `s${files.length + 1}`, path: "", abs: "", outside: false, role: "payload", sha256: null, bytes: Buffer.byteLength(text), chars: text.length, text, binary: false, over_limit: false, change: null });
-    const hit = floor_reason(text, floor_scope);
+    const hit = floor_reason(text, floor_scope, dialect);
     if (hit) add(catastrophic, "payload: " + hit);
   };
-  const runtime_scan = async (text: string, depth: number, state: WalkState) => {
-    for (const pipeline of split_pipelines(text)) {
+  const runtime_scan = async (text: string, depth: number, state: WalkState, dialect: Dialect) => {
+    for (const pipeline of split_pipelines(text, dialect)) {
       const executed = executed_reads(pipeline);
       if (executed.opaque) opaque.push(pipeline);
       for (const read of executed.files) {
@@ -218,8 +218,8 @@ export const inspect_command_sources = async (project_root: string, cwd: string,
     }
     if (runtime) resolved_iex.add(step.text);
     for (const text of found.value.values.filter((entry) => !step.text.includes(entry))) {
-      add_payload(text);
-      await runtime_scan(text, depth, step.state);
+      add_payload(text, found.dialect);
+      await runtime_scan(text, depth, step.state, found.dialect);
     }
   };
   const run_code = async (code: CodeRef, step: Step, depth: number) => {
@@ -232,7 +232,7 @@ export const inspect_command_sources = async (project_root: string, cwd: string,
       return;
     }
     for (const text of code.value.values) {
-      if (!step.text.includes(text)) add_payload(text);
+      if (!step.text.includes(text)) add_payload(text, code.dialect ?? "powershell");
       await inspect(text, depth, { dialect: code.dialect, language: code.language, origin: "", state: placed_state(step.state, code.location), walk_depth: step.depth + 1, entry: true });
       if (!code.language || !/\b(?:import|require)\b|__import__/.test(text)) continue;
       for (const location of locations(code.written, code.location)) await take_loaded(await code_imports(text, code.language, location), depth, location, true, true);
@@ -280,9 +280,9 @@ export const inspect_command_sources = async (project_root: string, cwd: string,
       for (const line of found.commands) await inspect(line, depth, { ...start, dialect: "cmd", origin: "" });
       return null;
     }
-    const hit = start.origin ? floor_reason(text, floor_scope) : null;
+    const hit = start.origin ? floor_reason(text, floor_scope, start.dialect) : null;
     if (hit) add(catastrophic, start.origin + ": " + hit);
-    await runtime_scan(text, depth, start.state);
+    await runtime_scan(text, depth, start.state, start.dialect);
     const walk = walk_command(text, { location: "", dialect: start.dialect, env, script_path: start.origin, state: start.state, matches: location_matches, depth: start.walk_depth });
     let next = walk.next();
     while (!next.done) next = walk.next(await on_step(next.value, depth));
@@ -299,5 +299,5 @@ export const inspect_command_sources = async (project_root: string, cwd: string,
   if (callers_resolved && reaching_main.length) gap("A loaded module reaches into the started script, so arguments taken from its own call sites are not proven: " + reaching_main.join(", "));
   if (sources.unlisted()) note(`loaded files over the limit of ${sources.listed_limit}, not read: ${sources.unlisted()}`);
   const pin_list = [...sources.pins.values()];
-  return { files, gaps, catastrophic, protected_read: protected_command_read(command), complete: gaps.length === 0, hash: pins_digest(pin_list), pins: pin_list, programs: launches.programs, notes };
+  return { files, gaps, catastrophic, complete: gaps.length === 0, hash: pins_digest(pin_list), pins: pin_list, programs: launches.programs, notes };
 };

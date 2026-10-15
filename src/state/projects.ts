@@ -11,8 +11,10 @@ const adopt = async (entry: ProjectEntry | null) => {
   await reload_settings();
 };
 
-export const choose_project = async () => {
-  await adopt(await api.invoke("projects:choose"));
+export const choose_project = async (): Promise<ProjectEntry | null> => {
+  const entry = await api.invoke("projects:choose");
+  await adopt(entry);
+  return entry;
 };
 
 export const create_project = async () => {

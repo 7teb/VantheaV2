@@ -1,8 +1,10 @@
+import fs from "node:fs/promises";
+import { move_project_agents } from "../agents/store.ts";
 import { project_chat_ids, update_meta } from "../chats/store.ts";
 import { move_project_artifacts } from "../media/artifacts.ts";
 import { memory_loaded, move_project_memories } from "../memory/store.ts";
 import { find_project, get_settings, set_project_folder } from "../settings/store.ts";
-import { error_code, error_text } from "../storage/coerce.ts";
+import { error_code, error_text, require_string } from "../storage/coerce.ts";
 import { find_renamed, read_folder_id } from "./folder.ts";
 
 let chain: Promise<unknown> = Promise.resolve();
@@ -21,8 +23,9 @@ const relocate = async (old_path: string, next_path: string, folder_id: string) 
   if (memory_loaded()) {
     await move_project_memories(old_path, next_path);
   }
+  move_project_agents(old_path, next_path);
   await move_project_artifacts(old_path, next_path);
-  console.info(`[projects] ${old_path} was renamed to ${next_path}, its chats, memories and images moved along`);
+  console.info(`[projects] ${old_path} was renamed to ${next_path}, its chats, memories, sub-agents and images moved along`);
 };
 
 const locate = async (project_path: string): Promise<string> => {
@@ -62,6 +65,20 @@ export const follow_project = (project_path: string): Promise<string> =>
       return project_path;
     }
   });
+
+export const known_project_dir = async (value: unknown): Promise<string> => {
+  const project_path = require_string(value, "project path", 2000);
+  const entry = find_project(project_path);
+  if (!entry) {
+    throw new Error(`refusing to open ${project_path}: it is not in the project list`);
+  }
+  const dir = await follow_project(entry.path);
+  const stat = await fs.stat(dir);
+  if (!stat.isDirectory()) {
+    throw new Error(`project path ${dir} is not a directory`);
+  }
+  return dir;
+};
 
 export const check_project_folders = async (): Promise<void> => {
   for (const entry of get_settings().projects) {

@@ -4,6 +4,7 @@ import { tool_gate } from "../../permissions/tool-gate.ts";
 import { max_skill_bytes } from "../../skills/frontmatter.ts";
 import type { SkillRecord } from "../../skills/scan.ts";
 import { prepare_skill } from "../../skills/source.ts";
+import { note_reason, unanswered_text } from "../../permissions/verdict-text.ts";
 import { commit_skill, find_skill, install_target, usable_skills } from "../../skills/store.ts";
 import { error_text } from "../../storage/coerce.ts";
 import { read_string, require_string } from "../browser/common.ts";
@@ -124,6 +125,9 @@ const install_skill_tool = define_tool<{ source: string }>({
         content: prepared.raw,
         ...(gate.note ? { review: gate.note } : {}),
       });
+      if (decision.expired) {
+        return result("denied", "install", prepared.name, unanswered_text("tool call", note_reason(gate.note)));
+      }
       if (!decision.approved) {
         const feedback = decision.feedback ? ` User feedback: ${decision.feedback}` : "";
         return result("denied", "install", prepared.name, `The user declined installing the skill ${prepared.name}.${feedback}`);

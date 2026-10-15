@@ -3,11 +3,13 @@ import { flush_reports, set_agent_continuation } from "../agents/reports.ts";
 import { clear_chat_agents, init_agents, shutdown_agents_sync } from "../agents/runner.ts";
 import { init_background, on_background_finished, remove_chat_background, shutdown_background_sync } from "../background/manager.ts";
 import { set_vision_analyzer } from "../browser/vision.ts";
-import { init_browser_guest_security } from "../browser/guest-security.ts";
+import { init_browser, shutdown_browser } from "../browser/service.ts";
+import { close_chat_tabs } from "../browser/tabs.ts";
 import { flush_all_sync, get_chat, on_chat_removed } from "../chats/store.ts";
 import { forget_chat_approvals } from "../ipc/agents.ts";
 import { init_extensions } from "../ipc/extensions.ts";
-import { kill_all_terminals } from "../ipc/terminal.ts";
+import { stop_chat_files_watch, stop_files_watch } from "../ipc/files.ts";
+import { close_chat_terminals, kill_all_terminals } from "../ipc/terminal.ts";
 import { init_mcp, set_settings_access, shutdown_mcp } from "../mcp/servers.ts";
 import { sweep_attachments } from "../media/sweep.ts";
 import { extract_memories_after_turn } from "../memory/extract.ts";
@@ -17,12 +19,12 @@ import { set_key_source } from "../model/key.ts";
 import { stream_round } from "../model/stream.ts";
 import { mcp_command_gate } from "../permissions/mcp-gate.ts";
 import { check_project_folders } from "../project/follow.ts";
-import { init_snapshots } from "../project/snapshots.ts";
 import { set_prompt_sections } from "../prompts/index.ts";
 import { forget_answers, settle_answers } from "../questions/answers.ts";
 import { get_secret, get_settings, update_settings } from "../settings/store.ts";
 import { side_model } from "../side/model.ts";
 import { context_model } from "../settings/model-context.ts";
+import { reasoning_status_call } from "../side/reasoning-status.ts";
 import { review_call } from "../side/review.ts";
 import { vision_analyzer } from "../side/vision.ts";
 import { skills_prompt_section } from "../skills/store.ts";
@@ -32,15 +34,19 @@ import { forget_instruction_files } from "../permissions/instruction-files.ts";
 import { clear_review_chat } from "../permissions/review-state.ts";
 import { forget_chat_writes } from "../permissions/written-files.ts";
 import { set_keep_awake } from "../power/keep-awake.ts";
+import { init_git_bash } from "../shell/git-bash.ts";
+import { system_probe } from "../shell/git-bash-probe.ts";
 import { init_persistence } from "../storage/init.ts";
 import { flush_pending_sync } from "../storage/json-file.ts";
-import { storage_paths } from "../storage/paths.ts";
+import { remove_retired_snapshots, storage_paths } from "../storage/paths.ts";
 import { clear_mcp_chat, set_command_gate } from "../tools/mcp/decide.ts";
 import { tools_for } from "../tools/registry.ts";
 import { forget_user_stop } from "../turn/active.ts";
 import { set_turn_finished_hook } from "../turn/drive.ts";
 import { interrupt_all_turns, stop_turn } from "../turn/run.ts";
 import { deliver_pending_events, drop_pending_events, notify_agent, notify_background_finished } from "./notifications.ts";
+
+let shutting_down = false;
 
 const run_step = async (step: string, action: () => unknown) => {
   try {
@@ -50,10 +56,10 @@ const run_step = async (step: string, action: () => unknown) => {
   }
 };
 
-const extract_memories = async (chat_id: string) => {
+const extract_memories = async (chat_id: string, message_id: string) => {
   const chat = await get_chat(chat_id);
   if (chat) {
-    await extract_memories_after_turn(chat, side_model);
+    await extract_memories_after_turn(chat, message_id, side_model);
   }
 };
 
@@ -68,10 +74,13 @@ const wire_hooks = () => {
   });
   set_agent_continuation(notify_agent);
   set_turn_finished_hook((chat_id, message_id) => {
+    if (shutting_down) {
+      return;
+    }
     settle_answers(chat_id, message_id).catch((error) => console.error(`[questions] settling the answers of chat ${chat_id} failed:`, error));
     flush_reports(chat_id);
     deliver_pending_events(chat_id);
-    extract_memories(chat_id).catch((error) => console.error(`[memory] extraction for chat ${chat_id} failed:`, error));
+    extract_memories(chat_id, message_id).catch((error) => console.error(`[memory] extraction for message ${message_id} in chat ${chat_id} failed:`, error));
   });
   on_background_finished(notify_background_finished);
   on_chat_removed((chat_id) => {
@@ -88,6 +97,9 @@ const wire_hooks = () => {
     clear_mcp_chat(chat_id);
     remove_chat_background(chat_id);
     forget_answers(chat_id);
+    close_chat_tabs(chat_id);
+    close_chat_terminals(chat_id);
+    stop_chat_files_watch(chat_id);
   });
 };
 
@@ -95,7 +107,8 @@ export const init_services = async (): Promise<void> => {
   wire_hooks();
   await run_step("storage", init_persistence);
   sweep_attachments().catch((error) => console.error("[media] attachment sweep failed:", error));
-  await run_step("snapshots", () => init_snapshots(storage_paths().snapshots));
+  remove_retired_snapshots(storage_paths()).catch((error) => console.error("[storage] removing the retired undo snapshot folder failed:", error));
+  await run_step("git bash", () => init_git_bash(system_probe));
   await run_step("background tasks", () => init_background());
   await run_step("agents", () =>
     init_agents({
@@ -105,18 +118,22 @@ export const init_services = async (): Promise<void> => {
       side_model,
       review_call,
       models: async () => (await model_catalog()).models.map(context_model),
+      reasoning_status: reasoning_status_call,
     }),
   );
   await run_step("memory and skills", init_extensions);
   await run_step("project folders", check_project_folders);
-  await run_step("browser guest security", init_browser_guest_security);
+  await run_step("browser", init_browser);
   init_mcp().catch((error) => console.error("[mcp] starting configured servers failed:", error));
 };
 
 export const shutdown_services = (): void => {
+  shutting_down = true;
   interrupt_all_turns();
   shutdown_agents_sync();
   kill_all_terminals();
+  shutdown_browser();
+  stop_files_watch();
   shutdown_background_sync();
   flush_all_sync();
   flush_pending_sync();

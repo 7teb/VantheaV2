@@ -6,7 +6,6 @@ import { BotIcon, ChevronRightIcon, MessageSquareIcon, RetryIcon, ShieldAlertIco
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
-import { format_duration } from "../tools/tool-summary.ts";
 import "../tools/tools.css";
 import "./AgentNoteRow.css";
 
@@ -41,7 +40,6 @@ export const AgentNoteRow = memo(({ note }: { note: AgentNote }) => {
   const t = use_t();
   const [open, set_open] = useState(false);
   const [seen, set_seen] = useState(false);
-  const report = note.kind === "report";
   const Icon = icon_of(note);
   const status = note.kind === "alert" ? alert_keys[note.status] : status_keys[note.status];
   const expandable = note.body.trim().length > 0;
@@ -56,7 +54,6 @@ export const AgentNoteRow = memo(({ note }: { note: AgentNote }) => {
         </span>
         <span className="tool-row-label">{t(labels[note.kind], { x: note.name || note.agent_id })}</span>
         {status && <span className={class_names("tool-row-status", (note.status === "failed" || note.status === "blocked") && "is-failed")}>{t(status)}</span>}
-        {report && note.seconds !== null && <span className="tool-row-duration">{format_duration(note.seconds * 1000)}</span>}
         {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}
       </button>
       {expandable && (

@@ -1,0 +1,61 @@
+@layer components {
+  @keyframes tool-tick-even {
+    from {
+      filter: blur(0.8px);
+      opacity: 0.55;
+    }
+  }
+
+  @keyframes tool-tick-odd {
+    from {
+      filter: blur(0.8px);
+      opacity: 0.55;
+    }
+  }
+
+  .work-single[data-live],
+  .work-group[data-live],
+  .work-group[data-live] .work-group-body > .tool-row:not(:first-child) {
+    animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+  }
+
+  .tool-row-icon {
+    transition: color var(--duration-base) var(--ease-out);
+  }
+
+  .tool-row:is([data-status="running"], [data-status="drafting"]) .tool-row-icon,
+  .work-group[data-running] > .work-group-head .tool-row-icon {
+    color: var(--text-secondary);
+  }
+
+  .chat-column .work-single .tool-row:not([data-status="failed"], [data-status="denied"]) .tool-row-icon,
+  .chat-column .work-group > .work-group-head .tool-row-icon {
+    color: var(--text-primary);
+  }
+
+  :is(.work-single, .work-group)[data-live] :is(.tool-row-detail, .tool-row-duration, .tool-row-status) {
+    animation: fade-in var(--duration-base) var(--ease-out) backwards;
+  }
+
+  :is(.work-single, .work-group)[data-live] .tool-row-status.is-failed {
+    --pop-shift: 0px;
+    animation: pop-in var(--duration-base) var(--ease-out) backwards;
+  }
+
+  .tool-row .tool-row-elapsed[data-tick="0"] {
+    animation: tool-tick-even var(--duration-slow) var(--ease-out);
+  }
+
+  .tool-row .tool-row-elapsed[data-tick="1"] {
+    animation: tool-tick-odd var(--duration-slow) var(--ease-out);
+  }
+
+  .work-group-body .tool-row-head,
+  .work-group-body :is(.tool-row-detail, .tool-row-duration, .tool-row-status) {
+    color: var(--text-tertiary);
+  }
+
+  .work-group-body .tool-row-status.is-failed {
+    color: var(--text-danger);
+  }
+}

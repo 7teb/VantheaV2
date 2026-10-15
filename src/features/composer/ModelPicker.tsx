@@ -19,7 +19,7 @@ export const ModelPicker = () => {
     return <span className="composer-note">{t("composer.models_failed")}</span>;
   }
   if (!models.catalog || !settings) {
-    return <Skeleton width={128} height={32} radius={9} />;
+    return <Skeleton width={128} height="var(--size-control)" radius={9} />;
   }
 
   const catalog = models.catalog;
@@ -64,7 +64,7 @@ export const ModelPicker = () => {
         data-open={open}
         onClick={() => set_open(!open)}
       >
-        <span className="composer-chip-label">{model?.label ?? t("composer.model_fallback")}</span>
+        <span className="composer-chip-label composer-chip-model">{model?.label ?? t("composer.model_fallback")}</span>
         {model && model.efforts.length > 0 && <span className="composer-chip-hint">{effort_label(t, effort)}</span>}
         <ChevronDownIcon size={14} className="composer-chip-chevron" />
       </button>

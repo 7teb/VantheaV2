@@ -12,22 +12,7 @@
     background: var(--fill-hover);
   }
 
-  .context-ring circle {
-    fill: none;
-    stroke-width: 2.25;
-  }
-
-  .context-ring-track {
-    stroke: var(--fill-track);
-  }
-
-  .context-ring-value {
-    stroke: var(--fill-track-active);
-    stroke-linecap: round;
-    transition: stroke-dashoffset var(--duration-slower) var(--ease-out);
-  }
-
-  .context-ring[data-level="high"] .context-ring-value {
+  .context-ring[data-level="high"] .progress-ring-value {
     stroke: var(--text-danger);
   }
 }

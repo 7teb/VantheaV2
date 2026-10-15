@@ -1,4 +1,6 @@
-import type { NativeImage, WebContents } from "electron";
+import type { BaseWindow, NativeImage, WebContents, WebContentsView } from "electron";
+import type { ConsoleBuffer } from "./console.ts";
+import type { DialogLog } from "./dialogs.ts";
 
 export type FrameInfo = { frame_id: string; parent_id: string; url: string; session_id: string };
 
@@ -61,15 +63,21 @@ export type Visual = {
   consumed: boolean;
 };
 
+export type TabSize = { width: number; height: number };
+
 export type BrowserTab = {
   tab_id: string;
-  web_contents_id: number;
+  chat_id: string;
+  view: WebContentsView;
+  surface: BaseWindow;
+  host: BaseWindow;
   guest: WebContents;
-  active: boolean;
-  attached: boolean;
+  partition: string;
+  crashed: boolean;
   loading: boolean;
   url: string;
   title: string;
+  error: string;
   epoch: number;
   queue: Promise<unknown>;
   debugger_attached: boolean;
@@ -77,6 +85,8 @@ export type BrowserTab = {
   snapshots: Map<string, Snapshot>;
   snapshot_seq: number;
   visuals: Map<string, Visual>;
+  console: ConsoleBuffer;
+  dialogs: DialogLog;
   waiters: Set<() => void>;
   release: () => void;
 };

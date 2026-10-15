@@ -1,5 +1,5 @@
 import { report_event_context } from "../../shared/agent-notes.ts";
-import { has_work, manual_compaction_only, type AssistantMessage, type ChatSummary, type Message, type ReasoningStep, type Step, type StepImage, type TextStep, type ToolStep, type UserMessage, type UserOrigin } from "../../shared/chat.ts";
+import { has_work, human_origin, manual_compaction_only, type AssistantMessage, type ChatSummary, type Message, type ReasoningStep, type Step, type StepImage, type TextStep, type ToolStep, type UserMessage, type UserOrigin } from "../../shared/chat.ts";
 import { native_rules } from "../../shared/image-native.ts";
 import { parse_peer_alerts } from "../../shared/peer-notes.ts";
 import type { ModelEntry } from "../../shared/models.ts";
@@ -9,6 +9,7 @@ import type { ApiAssistantMessage, ApiMessage } from "../model/types.ts";
 import { stopped_text } from "../permissions/verdict-text.ts";
 import { media_mime } from "../media/files.ts";
 import { fitted_image_url } from "../media/fitted-image.ts";
+import { carried_todos_content } from "./carried-todos.ts";
 import { carrier, not_shown_note, unreadable_note, type CarrierImage } from "./carriers.ts";
 import { api_call_id } from "./round.ts";
 import { counted_image, steer_message, user_content, type ImageReader } from "./user-input.ts";
@@ -53,11 +54,11 @@ const split_region = (messages: Message[], summary: ChatSummary): Region | null 
 export const uncompacted_work = (messages: Message[], summary: ChatSummary | null): boolean =>
   (summary ? (split_region(messages, summary)?.rest ?? messages) : messages).some(has_work);
 
-const user_origins = new Set<UserOrigin>(["user", "plan_accept", "continue"]);
+const instruction_origin = (origin: UserOrigin): boolean => human_origin(origin) || origin === "continue";
 
 const build_user = async (message: UserMessage, model: ModelEntry, read_image: ImageReader, agent_tools: boolean): Promise<ApiMessage> => ({
   role: "user",
-  ...(user_origins.has(message.origin) ? { instruction: true as const } : {}),
+  ...(instruction_origin(message.origin) ? { instruction: true as const } : {}),
   content: await user_content(message.origin === "agent_report" ? report_event_context(message.text, agent_tools) : message.text, message.attachments, model, read_image),
 });
 
@@ -130,6 +131,8 @@ const lead_messages = async (steps: Step[], { model, read_image, agent_tools }: 
       out.push({ role: "user", content: parse_peer_alerts(step.text).length ? alert_note_content(step.text) : update_note_content(step.text) });
     } else if (step.notice === "peer_digest") {
       out.push({ role: "user", content: digest_note_content(step.text) });
+    } else if (step.notice === "todos_carried") {
+      out.push({ role: "user", content: carried_todos_content(step.text) });
     }
   }
   return out;
@@ -190,7 +193,7 @@ type ReplayContext = { input: HistoryInput; read_image: ImageReader };
 
 const replay_message = async (message: Message, { input, read_image }: ReplayContext, from_round: number): Promise<MessageReplay> => {
   if (message.role === "user") {
-    const skipped = from_round === no_rounds && !user_origins.has(message.origin);
+    const skipped = from_round === no_rounds && !instruction_origin(message.origin);
     return { rounds: [], tail: skipped ? [] : [await build_user(message, input.model, read_image, input.agent_tools)] };
   }
   const with_reasoning = input.model.reasoning_passback && message.model === input.model.id;

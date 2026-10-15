@@ -5,6 +5,7 @@ import type { AgentRunStatus, AgentSummary } from "../../shared/ipc/work.ts";
 import type { ApiMessage } from "../model/types.ts";
 import { as_array, error_text, is_record } from "../storage/coerce.ts";
 import { keep_corrupt, read_json, write_json, write_json_sync } from "../storage/json-file.ts";
+import { path_key } from "../storage/paths.ts";
 import type { HeldEntry } from "./inbox.ts";
 import { drop_journal } from "./journal.ts";
 import { mark_task_prompts } from "./legacy-context.ts";
@@ -21,7 +22,7 @@ import {
   type RunRecord,
 } from "./records.ts";
 
-export type NewAgent = Pick<AgentRecord, "chat_id" | "name" | "description" | "topic" | "scope" | "model" | "effort" | "profile" | "project_root">;
+export type NewAgent = Pick<AgentRecord, "chat_id" | "name" | "description" | "topic" | "scope" | "model" | "effort" | "profile" | "without_tools" | "project_root">;
 
 export type AgentLookup = { agent: AgentRecord } | { agent: null; error: string };
 
@@ -166,6 +167,18 @@ export const create_agent = (fields: NewAgent): AgentRecord => {
   agents.set(record.agent_id, record);
   prune();
   return record;
+};
+
+export const move_project_agents = (old_path: string, next_path: string): void => {
+  const key = path_key(old_path);
+  const moved = [...agents.values()].filter((record) => path_key(record.project_root) === key);
+  if (!moved.length) {
+    return;
+  }
+  for (const record of moved) {
+    record.project_root = next_path;
+  }
+  save_index();
 };
 
 export const begin_run = (record: AgentRecord, prompt: string, parent_message_id: string, parent_call_id?: string): RunRecord => {

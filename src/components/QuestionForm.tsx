@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { use_t } from "../i18n/index.ts";
 import type { ActionResult } from "../state/chat-actions.ts";
 import { ArrowLeftIcon, CloseIcon, PencilIcon } from "./icons.tsx";
@@ -22,6 +22,7 @@ type QuestionFormProps = {
   submit_label?: string;
   auto_focus?: boolean;
   initial_answer?: string;
+  skip_at?: number;
 };
 
 type PendingChoice = { timer: number; send: () => void };
@@ -48,6 +49,7 @@ export const QuestionForm = ({
   submit_label,
   auto_focus = true,
   initial_answer,
+  skip_at,
 }: QuestionFormProps) => {
   const t = use_t();
   const title_id = useId();
@@ -62,6 +64,8 @@ export const QuestionForm = ({
   const [feedback, set_feedback] = useState(() => (initial_answer && !options.includes(initial_answer) ? initial_answer : ""));
   const [error, set_error] = useState("");
   const has_text = feedback.trim() !== "";
+  const skip_ms = useMemo(() => (skip_at === undefined ? null : Math.max(0, skip_at - Date.now())), [skip_at]);
+  const counting = skip_ms !== null && !has_text;
   const tab_stop = Math.max(selected, 0);
 
   useEffect(() => {
@@ -291,7 +295,6 @@ export const QuestionForm = ({
               value={feedback}
               placeholder={other_placeholder}
               aria-label={other_placeholder}
-              spellCheck={false}
               onFocus={() => set_selected(-1)}
               onChange={(event) => {
                 set_feedback(event.target.value);
@@ -299,7 +302,14 @@ export const QuestionForm = ({
               }}
             />
             <div className="question-actions">
-              <button type="button" className="question-button" data-variant={has_text ? "primary" : "outline"} onClick={() => answer_other(feedback.trim())}>
+              <button
+                type="button"
+                className="question-button"
+                data-variant={has_text ? "primary" : "outline"}
+                data-countdown={counting || undefined}
+                style={counting ? ({ "--skip-ms": `${skip_ms}ms` } as CSSProperties) : undefined}
+                onClick={() => answer_other(feedback.trim())}
+              >
                 <span>{has_text ? (submit_label ?? t("approval.submit")) : t("approval.skip")}</span>
               </button>
             </div>

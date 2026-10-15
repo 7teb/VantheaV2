@@ -1,5 +1,6 @@
 import path from "node:path";
 import { join_value, resolved, unresolved, type Value } from "./command-values.ts";
+import { msys_mounts, msys_native } from "./msys-paths.ts";
 import type { Word } from "./shell-words.ts";
 import type { Dialect } from "./statements.ts";
 
@@ -124,6 +125,16 @@ const powershell_target = (args: LocationArg[]): Target => {
   return found;
 };
 
+const posix_target = (args: LocationArg[]): Target => {
+  const mounts = msys_mounts();
+  if (!args.length) return mounts.home ? { value: resolved([mounts.home]), literal: true } : { unknown: true };
+  const value = args.length === 1 ? (args[0] as LocationArg).value : null;
+  if (!value || "unresolved" in value) return value ? { value, literal: true } : { unknown: true };
+  const native = value.values.map((entry) => (entry === "-" ? null : msys_native(entry, mounts)));
+  const known = native.filter((entry): entry is string => entry !== null);
+  return known.length === native.length ? { value: resolved(known, value.maybe_unset), literal: true } : { unknown: true };
+};
+
 const target_paths = (target: Value, literal: boolean, location: Value, dialect: Dialect, matches: Matcher | undefined): Value => {
   if ("unresolved" in target) return target;
   const found: string[] = [];
@@ -174,7 +185,7 @@ export const location_change = (name: string, args: LocationArg[], state: Locati
     target = cmd_target(args, state.current, push || args.some((arg) => /^\/d$/i.test(arg.word.raw)));
     if (!target) return state;
   } else {
-    const found = dialect === "powershell" ? powershell_target(args) : args.length === 1 ? { value: (args[0] as LocationArg).value, literal: true } : { unknown: true as const };
+    const found = dialect === "powershell" ? powershell_target(args) : dialect === "posix" ? posix_target(args) : args.length === 1 ? { value: (args[0] as LocationArg).value, literal: true } : { unknown: true as const };
     if (!found && push && dialect === "powershell") return moved(state, (entry) => ({ current: entry.current, stack: [...entry.stack, entry.current] }), state.current);
     if (!found || "unknown" in found) return lost();
     target = found.value;

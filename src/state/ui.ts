@@ -1,8 +1,10 @@
 import { create_store } from "./create-store.ts";
 
-export type DockKind = "terminal" | "browser" | "background" | "agents" | "artifacts";
+export type DockKind = "terminal" | "browser" | "background" | "artifacts" | "files";
 
-export type DockState = { kind: DockKind | null; width: number };
+export type TaskSection = "running" | "finished";
+
+export type DockState = { kind: DockKind | null; width: number; expanded: boolean };
 
 export type UiState = {
   sidebar_collapsed: boolean;
@@ -13,12 +15,16 @@ export type UiState = {
   settings_section: string;
   search_open: boolean;
   collapsed_projects: string[];
+  collapsed_task_sections: TaskSection[];
 };
 
 export const dock_min_width = 320;
 
 const active_chat_key = "vx:active-chat";
 const collapsed_projects_key = "vx:collapsed-projects";
+const collapsed_task_sections_key = "vx:collapsed-task-sections";
+
+const is_task_section = (entry: string): entry is TaskSection => entry === "running" || entry === "finished";
 
 const read_storage = (key: string): string | null => {
   try {
@@ -41,8 +47,8 @@ const write_storage = (key: string, value: string | null) => {
   }
 };
 
-const remembered_collapsed_projects = (): string[] => {
-  const raw = read_storage(collapsed_projects_key);
+const remembered_strings = (key: string): string[] => {
+  const raw = read_storage(key);
   if (!raw) {
     return [];
   }
@@ -50,7 +56,7 @@ const remembered_collapsed_projects = (): string[] => {
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === "string") : [];
   } catch (error) {
-    console.error(`[ui] parsing ${collapsed_projects_key} failed for value`, raw, error);
+    console.error(`[ui] parsing ${key} failed for value`, raw, error);
     return [];
   }
 };
@@ -63,11 +69,12 @@ export const ui_store = create_store<UiState>({
   sidebar_collapsed: false,
   active_chat_id: read_storage(active_chat_key),
   project_path: "",
-  dock: { kind: null, width: clamp_dock_width(window.innerWidth * 0.42) },
+  dock: { kind: null, width: clamp_dock_width(window.innerWidth * 0.42), expanded: false },
   settings_open: false,
   settings_section: "general",
   search_open: false,
-  collapsed_projects: remembered_collapsed_projects(),
+  collapsed_projects: remembered_strings(collapsed_projects_key),
+  collapsed_task_sections: remembered_strings(collapsed_task_sections_key).filter(is_task_section),
 });
 
 export const set_sidebar_collapsed = (collapsed: boolean) => ui_store.update((state) => ({ ...state, sidebar_collapsed: collapsed }));
@@ -97,12 +104,14 @@ export const start_new_chat = (project_path: string) => {
 };
 
 export const toggle_dock = (kind: DockKind) =>
-  ui_store.update((state) => ({ ...state, dock: { ...state.dock, kind: state.dock.kind === kind ? null : kind } }));
+  ui_store.update((state) => ({ ...state, dock: { ...state.dock, kind: state.dock.kind === kind ? null : kind, expanded: false } }));
 
-export const close_dock = () => ui_store.update((state) => ({ ...state, dock: { ...state.dock, kind: null } }));
+export const close_dock = () => ui_store.update((state) => ({ ...state, dock: { ...state.dock, kind: null, expanded: false } }));
 
 export const set_dock_width = (width: number) =>
-  ui_store.update((state) => ({ ...state, dock: { ...state.dock, width: clamp_dock_width(width) } }));
+  ui_store.update((state) => ({ ...state, dock: { ...state.dock, width: clamp_dock_width(width), expanded: false } }));
+
+export const toggle_dock_expanded = () => ui_store.update((state) => ({ ...state, dock: { ...state.dock, expanded: !state.dock.expanded } }));
 
 export const open_settings = (section?: string) =>
   ui_store.update((state) => ({ ...state, settings_open: true, search_open: false, settings_section: section ?? state.settings_section }));
@@ -120,4 +129,11 @@ export const toggle_project_collapsed = (path: string) => {
   const next = current.includes(path) ? current.filter((entry) => entry !== path) : [...current, path];
   write_storage(collapsed_projects_key, JSON.stringify(next));
   ui_store.update((state) => ({ ...state, collapsed_projects: next }));
+};
+
+export const toggle_task_section = (section: TaskSection) => {
+  const current = ui_store.get().collapsed_task_sections;
+  const next = current.includes(section) ? current.filter((entry) => entry !== section) : [...current, section];
+  write_storage(collapsed_task_sections_key, JSON.stringify(next));
+  ui_store.update((state) => ({ ...state, collapsed_task_sections: next }));
 };

@@ -4,10 +4,9 @@ import type { SecretName } from "../../shared/settings.ts";
 import { main_window } from "../app/window.ts";
 import { delete_chat, project_chat_ids } from "../chats/store.ts";
 import { read_folder_id } from "../project/folder.ts";
-import { follow_project } from "../project/follow.ts";
+import { known_project_dir } from "../project/follow.ts";
 import {
   add_project,
-  find_project,
   get_settings,
   remove_project,
   secret_names,
@@ -49,19 +48,6 @@ const open_dialog = (options: OpenDialogOptions) => {
 const save_dialog = (options: SaveDialogOptions) => {
   const window = main_window();
   return window ? dialog.showSaveDialog(window, options) : dialog.showSaveDialog(options);
-};
-
-const known_project_dir = async (value: unknown): Promise<string> => {
-  const entry = find_project(project_path(value));
-  if (!entry) {
-    throw new Error(`refusing to open ${String(value)}: it is not in the project list`);
-  }
-  const dir = await follow_project(entry.path);
-  const stat = await fs.stat(dir);
-  if (!stat.isDirectory()) {
-    throw new Error(`project path ${dir} is not a directory`);
-  }
-  return dir;
 };
 
 export const register_settings_ipc = () => {

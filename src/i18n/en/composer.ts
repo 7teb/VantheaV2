@@ -28,7 +28,6 @@ export const composer = {
   "composer.vision_warning": "This model sees images through a description from a separate vision model.",
   "composer.send": "Send",
   "composer.queue_send": "Queue for after this turn",
-  "composer.attach": "Attach files",
   "composer.plan": "Plan",
   "composer.drop": "Drop files to attach",
   "composer.context_usage": "{used} of {limit} tokens ({percent}%)",

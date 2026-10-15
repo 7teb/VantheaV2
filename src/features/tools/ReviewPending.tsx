@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ToolStep } from "../../../shared/chat.ts";
-import { shell_name } from "../../../shared/tool-view.ts";
+import { call_shell, shell_labels } from "../../../shared/shell.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon } from "../../components/icons.tsx";
 import { use_clock } from "../../components/use-clock.ts";
@@ -37,6 +37,6 @@ const ReviewLine = ({ row_open }: { row_open: boolean }) => {
 export const ReviewBody = ({ step, row_open }: { step: ToolStep; row_open: boolean }) => (
   <>
     <ReviewLine row_open={row_open} />
-    {is_command_step(step) && <CommandCard shell={shell_name} command={String(step.args.command ?? "")} output={null} footer={null} />}
+    {is_command_step(step) && <CommandCard shell={shell_labels[call_shell(step.name, step.args)]} command={String(step.args.command ?? "")} output={null} footer={null} />}
   </>
 );

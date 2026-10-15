@@ -26,6 +26,7 @@ export const review = {
   "review.denied": "Denied by the automatic review",
   "review.workaround": "Denied: workaround attempt",
   "review.denied_by_you": "Denied by you",
+  "review.skipped_unanswered": "Skipped, no answer within {n} s",
   "review.feedback": "Your feedback: {x}",
   "review.blocked": "Blocked: VantheaX never runs this command",
   "review.pending_title": "Automatic review",

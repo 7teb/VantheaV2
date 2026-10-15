@@ -1,8 +1,9 @@
 import type { Message, ToolStep } from "../../shared/chat.ts";
 import type { ReviewActor, ReviewRecord } from "../../shared/review.ts";
+import { command_tools } from "../../shared/shell.ts";
 import { get_chat } from "../chats/store.ts";
 import type { ActorReview, ReviewModelCall } from "../tools/types.ts";
-import { command_tools, update_tool_step } from "./decisions.ts";
+import { update_tool_step } from "./decisions.ts";
 
 export const main_actor: ReviewActor = { id: "main", name: "main", kind: "main" };
 

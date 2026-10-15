@@ -17,7 +17,7 @@ export const personalization: Record<keyof typeof en, string> = {
   "personalization.memory": "Erinnerung (experimentell)",
   "personalization.memory_sub": "Lege fest, wie VantheaX Erinnerungen sammelt, speichert und einbringt",
   "personalization.mem_enable": "Erinnerungen aktivieren",
-  "personalization.mem_enable_sub": "Aus neuen Nutzernachrichten Prüfvorschläge erstellen und nur bestätigte Erinnerungen verwenden",
+  "personalization.mem_enable_sub": "Klare, ausdrückliche Aussagen aus neuen Nutzernachrichten als Erinnerungen speichern und gespeicherte Erinnerungen verwenden",
   "personalization.mem_exclude": "Toolgestützte Chats nicht berücksichtigen",
   "personalization.mem_exclude_sub": "Keine Erinnerungsvorschläge aus Turns erstellen, in denen irgendein Tool verwendet wurde",
   "personalization.mem_reset": "Erinnerungen zurücksetzen",

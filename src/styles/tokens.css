@@ -12,6 +12,8 @@
     --surface-card: rgba(252, 252, 252, 0.06);
     --surface-on-raised: rgba(252, 252, 252, 0.06);
     --surface-dock: rgba(72, 72, 72, 0.34);
+    --surface-composer: #262626;
+    --surface-dock-card: #1a1a1a;
     --surface-popover: rgba(72, 72, 72, 0.34);
     --surface-tooltip: rgba(72, 72, 72, 0.62);
     --surface-modal: rgba(60, 60, 60, 0.55);
@@ -55,6 +57,7 @@
     --text-warning: #ff8549;
     --text-on-primary: #0a0a0a;
     --text-placeholder: rgba(252, 252, 252, 0.235);
+    --text-composer-placeholder: var(--text-placeholder);
     --text-on-caption-close: #ffffff;
     --text-menu-item: rgba(252, 252, 252, 0.75);
     --raised-text-tertiary: rgba(252, 252, 252, 0.56);
@@ -79,6 +82,7 @@
     --ring-rail: rgba(252, 252, 252, 0.06);
     --ring-strong: rgba(252, 252, 252, 0.2);
     --ring-accent: #a67df2;
+    --ring-danger: rgba(240, 101, 106, 0.16);
     --raised-divider: rgba(252, 252, 252, 0.075);
     --highlight: rgba(255, 255, 255, 0.06);
     --glow: rgba(255, 255, 255, 0.045);
@@ -139,6 +143,7 @@
       0 0 0 0.5px rgba(252, 252, 252, 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 0.07),
       0 8px 16px -4px rgba(0, 0, 0, 0.35);
+    --shadow-composer: inset 0 0 1px 0 rgba(255, 255, 255, 0.2);
     --shadow-popover:
       0 0 0 1px rgba(252, 252, 252, 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 0.07),
@@ -231,9 +236,11 @@
     --radius-xl: 14px;
     --radius-2xl: 20px;
     --radius-item: 15px;
+    --radius-composer: 22px;
     --radius-full: 999px;
 
     --size-control: 32px;
+    --size-control-composer: 28px;
     --size-row: 34px;
     --size-field: 36px;
     --size-primary: 34px;

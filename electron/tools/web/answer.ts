@@ -8,7 +8,10 @@ export const answer_system_prompt = [
   "Output only the answer text. No JSON, no headings.",
 ].join(" ");
 
-export const source_blocks = (sources: SourceText[]): string[] => sources.map((source, index) => `[${index + 1}] ${source.title}\n${source.url}\n${source.content}`);
+export const source_heading = (source: SourceText, index: number): string =>
+  `[${index + 1}] ${source.title}\n${source.url}${source.published_date ? `\npublished ${source.published_date}` : ""}`;
+
+export const source_blocks = (sources: SourceText[]): string[] => sources.map((source, index) => `${source_heading(source, index)}\n${source.content}`);
 
 export const answer_messages = (query: string, sources: SourceText[]): SideMessage[] => [
   { role: "system", content: answer_system_prompt },

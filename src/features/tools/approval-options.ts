@@ -40,6 +40,7 @@ export const grant_options = (request: ApprovalRequest): GrantOption[] => {
     case "skill_install":
     case "memory":
     case "agent_message":
+    case "secret_read":
       return [once];
   }
 };
@@ -60,5 +61,7 @@ export const approval_question = (request: ApprovalRequest): { key: MessageKey; 
       return { key: request.action === "forget" ? "approval.question_forget" : "approval.question_remember", vars: {} };
     case "agent_message":
       return { key: agent_questions[request.tool], vars: { x: request.to_name } };
+    case "secret_read":
+      return { key: "approval.question_secret_read", vars: { x: request.path } };
   }
 };

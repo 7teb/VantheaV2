@@ -67,11 +67,13 @@ export const skill_body = (slug: string) => api.invoke("skills:body", slug);
 
 export const open_skills_folder = () => api.invoke("skills:open_folder");
 
-export const load_memory = () =>
-  Promise.all([
-    load_into(memory_store, "memory:list", () => api.invoke("memory:list")),
-    load_into(memory_review_store, "memory:review", () => api.invoke("memory:review")),
-  ]);
+export const load_saved_memories = () => load_into(memory_store, "memory:list", () => api.invoke("memory:list"));
+
+export const load_memory = () => Promise.all([load_saved_memories(), load_into(memory_review_store, "memory:review", () => api.invoke("memory:review"))]);
+
+export const add_memory = async (text: string) => {
+  memory_store.set(ready(await api.invoke("memory:add", text)));
+};
 
 export const remove_memory = async (id: string) => {
   memory_store.set(ready(await api.invoke("memory:remove", id)));
@@ -80,7 +82,7 @@ export const remove_memory = async (id: string) => {
 export const resolve_memory_review = async (id: string, action: "keep" | "discard") => {
   memory_review_store.set(ready(await api.invoke("memory:resolve", id, action)));
   if (action === "keep") {
-    await load_into(memory_store, "memory:list", () => api.invoke("memory:list"));
+    await load_saved_memories();
   }
 };
 

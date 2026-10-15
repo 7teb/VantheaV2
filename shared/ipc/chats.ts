@@ -16,8 +16,6 @@ export type SendRequest = {
 
 export type TurnStarted = { user_message_id: string; message_id: string };
 
-export type UndoResult = { restored: string[]; failed: string[] };
-
 export type CompactResult = { status: "done" | "nothing" | "busy" | "failed" };
 
 export type FullWindow = { chat_id: string; until: number | null };
@@ -26,7 +24,7 @@ export const chats_channels = {
   "chats:list": invoke<[], ChatMeta[]>(),
   "chats:get": invoke<[chat_id: string], Chat | null>(),
   "chats:create": invoke<[project_path: string], ChatMeta>(),
-  "chats:update": invoke<[chat_id: string, patch: Partial<Pick<ChatMeta, "title" | "pinned">>], ChatMeta>(),
+  "chats:update": invoke<[chat_id: string, patch: Partial<Pick<ChatMeta, "title" | "pinned" | "archived">>], ChatMeta>(),
   "chats:delete": invoke<[chat_id: string], void>(),
   "chats:fork": invoke<[chat_id: string, message_id: string], ChatMeta>(),
   "chats:search": invoke<[query: string], ChatSearchHit[]>(),
@@ -39,14 +37,16 @@ export const chats_channels = {
   "turn:edit": invoke<[chat_id: string, message_id: string, text: string], TurnStarted>(),
   "turn:continue": invoke<[chat_id: string], TurnStarted>(),
   "turn:accept_plan": invoke<[chat_id: string, message_id: string], TurnStarted>(),
+  "turn:undo": invoke<[chat_id: string, message_id: string], TurnStarted>(),
+  "turn:init": invoke<[chat_id: string], TurnStarted>(),
   "turn:stop": invoke<[chat_id: string], void>(),
   "turn:steer": invoke<[chat_id: string, text: string, attachment_ids: string[], steer_id: string], string | null>(),
   "turn:approve": invoke<[chat_id: string, call_id: string, decision: ApprovalDecision], void>(),
+  "turn:hold_approval": invoke<[chat_id: string, call_id: string], void>(),
   "turn:full_window": invoke<[chat_id: string], FullWindow>(),
   "turn:open_full_window": invoke<[chat_id: string], void>(),
   "turn:end_full_window": invoke<[chat_id: string], void>(),
   "turn:full_window_changed": emit<FullWindow>(),
-  "turn:undo": invoke<[chat_id: string, message_id: string], UndoResult>(),
   "turn:context": invoke<[chat_id: string], ContextUsage>(),
   "turn:compact": invoke<[chat_id: string], CompactResult>(),
   "turn:event": emit<TurnEvent>(),

@@ -5,7 +5,8 @@ import { tab_title, tab_url } from "../../browser/state.ts";
 import { run_on_tab } from "../../browser/tabs.ts";
 import { wait_for, type WaitCondition } from "../../browser/wait.ts";
 import { define_tool, ToolArgumentError } from "../types.ts";
-import { browser_view, done, guarded, read_boolean, read_choice, read_number, read_string, require_string } from "./common.ts";
+import { read_boolean, read_choice, read_number, read_string, require_string } from "./common.ts";
+import { browser_view, done, guarded } from "./result.ts";
 
 type SnapshotArgs = SnapshotOptions & { tab_id: string | null };
 
@@ -47,7 +48,7 @@ export const browser_snapshot_tool = define_tool<SnapshotArgs>({
   parse: parse_snapshot_args,
   run: (ctx, args) =>
     guarded(ctx, "snapshot", () =>
-      run_on_tab(args.tab_id ?? (args.scope ? snapshot_tab_id(args.scope.snapshot_id) : null), ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, args.tab_id ?? (args.scope ? snapshot_tab_id(args.scope.snapshot_id) : null), ctx.signal, async (tab) => {
         const result = await take_snapshot(tab, args, ctx.signal);
         const header = [`snapshot_id: ${result.snapshot_id}`, `tab_id: ${result.tab_id}`, `loading: ${result.loading}`, `refs: ${result.node_count}${result.truncated ? " (truncated)" : ""}`];
         const detail = `${result.node_count} refs${result.truncated ? ", truncated" : ""}${result.loading ? ", loading" : ""}`;
@@ -73,7 +74,7 @@ export const browser_click_tool = define_tool<ClickArgs>({
   parse: (raw) => ({ snapshot_id: require_string(raw, "snapshot_id"), ref: require_string(raw, "ref"), double: read_boolean(raw, "double", false) }),
   run: (ctx, args) =>
     guarded(ctx, "click", () =>
-      run_on_tab(null, ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, snapshot_tab_id(args.snapshot_id), ctx.signal, async (tab) => {
         const clicked = await click_ref(tab, args.snapshot_id, args.ref, args.double, ctx.signal);
         const verb = args.double ? "Double-clicked" : "Clicked";
         const through = clicked.via_label ? " through its visible label, because the control itself is hidden or covered" : "";
@@ -113,7 +114,7 @@ export const browser_type_tool = define_tool<TypeRequest>({
   },
   run: (ctx, args) =>
     guarded(ctx, "type", () =>
-      run_on_tab(null, ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, snapshot_tab_id(args.snapshot_id), ctx.signal, async (tab) => {
         const typed = await type_ref(tab, args, ctx.signal);
         const shown = typed_text(args.text, typed.protected);
         const submitted = args.submit ? " and pressed Enter" : "";
@@ -139,7 +140,7 @@ const parse_key_args = (raw: Record<string, unknown>): KeyArgs => {
 export const browser_key_tool = define_tool<KeyArgs>({
   spec: {
     name: "browser_key",
-    description: "Send one navigation or editing key to the active browser tab. Printable text must use browser_type.",
+    description: "Send one navigation or editing key to the active browser tab of this chat, or to tab_id. Printable text must use browser_type.",
     parameters: {
       type: "object",
       properties: {
@@ -155,7 +156,7 @@ export const browser_key_tool = define_tool<KeyArgs>({
   parse: parse_key_args,
   run: (ctx, args) =>
     guarded(ctx, "key", () =>
-      run_on_tab(args.tab_id, ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, args.tab_id, ctx.signal, async (tab) => {
         await press_key(tab, args.key, args.modifiers, ctx.signal);
         const chord = [...args.modifiers, args.key].join("+");
         return done(`Pressed ${chord} in tab ${tab.tab_id}.`, browser_view("key", tab_url(tab), tab_title(tab), chord));
@@ -200,7 +201,7 @@ export const browser_scroll_tool = define_tool<ScrollArgs>({
   parse: parse_scroll_args,
   run: (ctx, args) =>
     guarded(ctx, "scroll", () =>
-      run_on_tab(args.target ? null : args.tab_id, ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, args.target ? snapshot_tab_id(args.target.snapshot_id) : args.tab_id, ctx.signal, async (tab) => {
         await scroll_page(tab, args, ctx.signal);
         const detail = `${args.direction}${args.direction === "up" || args.direction === "down" ? `, ${args.amount}` : ""}`;
         return done(`Scrolled ${detail} in tab ${tab.tab_id}.`, browser_view("scroll", tab_url(tab), tab_title(tab), detail));
@@ -239,7 +240,7 @@ export const browser_wait_tool = define_tool<WaitArgs>({
   parse: parse_wait_args,
   run: (ctx, args) =>
     guarded(ctx, "wait", () =>
-      run_on_tab(args.tab_id, ctx.signal, async (tab) => {
+      run_on_tab(ctx.chat_id, args.tab_id, ctx.signal, async (tab) => {
         const elapsed = await wait_for(tab, args.condition, args.value, args.timeout_ms, ctx.signal);
         const detail = args.condition === "load" ? "load" : `${args.condition} ${JSON.stringify(args.value)}`;
         return done(`Matched ${detail} after ${elapsed} ms in tab ${tab.tab_id}.`, browser_view("wait", tab_url(tab), tab_title(tab), detail));

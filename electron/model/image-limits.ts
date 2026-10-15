@@ -28,7 +28,7 @@ const no_limit: ImageLimit = { max_images: null, max_request_bytes: null, max_en
 const rows: LimitRow[] = [
   { ...no_limit, family: "anthropic", provider: "anthropic", max_images: 600, max_request_bytes: 32_000_000, max_encoded_bytes: 10_000_000, edges: claude_edges, sources: [claude_vision, claude_overview] },
   { ...no_limit, family: "anthropic", provider: "google-vertex", max_images: 600, max_request_bytes: 30_000_000, max_encoded_bytes: 5_000_000, edges: claude_edges, sources: [claude_vision, claude_overview] },
-  { ...no_limit, family: "google", provider: "google-vertex", max_images: 3000, max_decoded_bytes: 7_000_000, sources: ["https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-8-flash"] },
+  { ...no_limit, family: "google", provider: "google-vertex", max_images: 3000, max_decoded_bytes: 7_000_000, sources: ["https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-8-flash", "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/4-argon"] },
   {
     ...no_limit,
     family: "google",

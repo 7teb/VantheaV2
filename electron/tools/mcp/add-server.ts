@@ -3,6 +3,7 @@ import { detect_server } from "../../mcp/detect.ts";
 import { mcp_status, server_exists, upsert_server } from "../../mcp/servers.ts";
 import { sanitize_server_name } from "../../mcp/specs.ts";
 import { tool_gate } from "../../permissions/tool-gate.ts";
+import { note_reason, unanswered_text } from "../../permissions/verdict-text.ts";
 import { define_tool, ToolArgumentError, type ToolResult } from "../types.ts";
 
 type AddArgs = { folder: string | null; name: string | null; command: string | null; args: string[] | null; env: Record<string, string> | null };
@@ -100,6 +101,9 @@ export const add_mcp_server_tool = define_tool<AddArgs>({
         replaces,
         ...(gate.note ? { review: gate.note } : {}),
       });
+      if (decision.expired) {
+        return result("denied", name, unanswered_text("tool call", note_reason(gate.note)));
+      }
       if (!decision.approved) {
         const feedback = decision.feedback ? ` User feedback: ${decision.feedback}` : "";
         return result("denied", name, `The user declined adding MCP server ${name}.${feedback}`);

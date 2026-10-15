@@ -30,22 +30,28 @@ const goto = async (tab: BrowserTab, url: string, signal: AbortSignal): Promise<
   }
 };
 
-export const navigate = async (tab: BrowserTab, action: NavigateAction, url: string, signal: AbortSignal): Promise<NavigateOutcome> => {
-  if (action === "goto") {
-    return goto(tab, url, signal);
-  }
+export const step_history = (tab: BrowserTab, action: Exclude<NavigateAction, "goto">) => {
   if (action === "back") {
     if (!tab.guest.navigationHistory.canGoBack()) {
       throw new Error("Browser tab cannot go back.");
     }
     tab.guest.navigationHistory.goBack();
-  } else if (action === "forward") {
+    return;
+  }
+  if (action === "forward") {
     if (!tab.guest.navigationHistory.canGoForward()) {
       throw new Error("Browser tab cannot go forward.");
     }
     tab.guest.navigationHistory.goForward();
-  } else {
-    tab.guest.reload();
+    return;
   }
+  tab.guest.reload();
+};
+
+export const navigate = async (tab: BrowserTab, action: NavigateAction, url: string, signal: AbortSignal): Promise<NavigateOutcome> => {
+  if (action === "goto") {
+    return goto(tab, url, signal);
+  }
+  step_history(tab, action);
   return { url: tab_url(tab), loading: true };
 };

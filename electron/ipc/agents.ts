@@ -4,7 +4,7 @@ import type { AgentRecord } from "../agents/records.ts";
 import { cancel_agent } from "../agents/runner.ts";
 import { agent_approval_key } from "../agents/session.ts";
 import { get_agent, list_agents, on_agents_changed } from "../agents/store.ts";
-import { resolve_decision } from "../permissions/approvals.ts";
+import { hold_decision, resolve_decision } from "../permissions/approvals.ts";
 import { require_string } from "../storage/coerce.ts";
 import { emit, handle } from "./handle.ts";
 import { parse_decision } from "./turn.ts";
@@ -26,7 +26,7 @@ const published = new Map<string, string>();
 
 const publish_approvals = (chat_id: string) => {
   const approvals = waiting_approvals(chat_id);
-  const signature = approvals.map((entry) => `${entry.run_id}/${entry.call_id}`).join("|");
+  const signature = approvals.map((entry) => `${entry.run_id}/${entry.call_id}/${entry.request.expires_at ?? ""}`).join("|");
   if ((published.get(chat_id) ?? "") === signature) {
     return;
   }
@@ -40,6 +40,15 @@ const publish_approvals = (chat_id: string) => {
 
 export const forget_chat_approvals = (chat_id: string): void => {
   published.delete(chat_id);
+};
+
+const run_approval_key = (agent_id: unknown, run_id: unknown): string => {
+  const agent = agent_of(agent_id);
+  const wanted = id_of(run_id, "run id");
+  if (!agent.runs.some((entry) => entry.run_id === wanted)) {
+    throw new Error(`run ${wanted} does not belong to agent ${agent.agent_id}`);
+  }
+  return agent_approval_key(wanted);
 };
 
 export const register_agents_ipc = () => {
@@ -66,11 +75,9 @@ export const register_agents_ipc = () => {
     cancel_agent(agent_of(agent_id));
   });
   handle("agents:approve", (agent_id, run_id, call_id, decision) => {
-    const agent = agent_of(agent_id);
-    const wanted = id_of(run_id, "run id");
-    if (!agent.runs.some((entry) => entry.run_id === wanted)) {
-      throw new Error(`run ${wanted} does not belong to agent ${agent.agent_id}`);
-    }
-    resolve_decision(agent_approval_key(wanted), id_of(call_id, "call id"), parse_decision(decision));
+    resolve_decision(run_approval_key(agent_id, run_id), id_of(call_id, "call id"), parse_decision(decision));
+  });
+  handle("agents:hold_approval", (agent_id, run_id, call_id) => {
+    hold_decision(run_approval_key(agent_id, run_id), id_of(call_id, "call id"));
   });
 };

@@ -1,5 +1,5 @@
 import type { CompactionError, CompactionSource, ContextCalibration, TurnError } from "../../shared/chat.ts";
-import { calibration_scale, measure_request } from "../context/calibration.ts";
+import { calibration_scale, measure_request, output_budget } from "../context/calibration.ts";
 import { compacted_messages } from "../context/compact.ts";
 import { compaction_request, removed_output_line } from "../context/compact-text.ts";
 import { estimate_tokens } from "../context/estimate.ts";
@@ -76,6 +76,7 @@ const write_note = async (session: TurnSession, messages: ApiMessage[], tools: T
     tool_choice: "none",
   };
   await fit_request(request);
+  request.max_tokens = output_budget(request.messages, request.tools, session.model);
   const callbacks: RoundCallbacks = {
     on_text: ignore,
     on_reasoning: ignore,

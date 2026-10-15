@@ -2,7 +2,7 @@ import type { ApprovalDecision, ApprovalRequest, HumanDecision } from "../../sha
 import type { Attachment, NoticeKind, PermissionMode, SteerMessage } from "../../shared/chat.ts";
 import type { StreamEventBody } from "../../shared/events.ts";
 import type { ModelEntry } from "../../shared/models.ts";
-import type { Settings } from "../../shared/settings.ts";
+import type { Language, Settings } from "../../shared/settings.ts";
 import type { StoredContext } from "../context/calibration.ts";
 import type { CompactAudience } from "../context/compact-text.ts";
 import type { Transport } from "../model/transport.ts";
@@ -30,6 +30,10 @@ export type CompactionHooks = {
   sleep?: (ms: number, signal: AbortSignal) => Promise<void>;
 };
 
+export type StatusRequest = { chat_id: string; language: Language; task: string; reasoning: string; previous: string };
+
+export type ReasoningStatusCall = (request: StatusRequest, signal: AbortSignal) => Promise<string>;
+
 export type TurnSession = {
   chat_id: string;
   message_id: string;
@@ -45,8 +49,9 @@ export type TurnSession = {
   emit: Emitter;
   stream: StreamFn;
   resolve_tools: (profile: ToolProfile) => Tool[];
+  without_tools?: string[];
   side_model: SideModelCall;
-  wait_decision: (call_id: string, request: ApprovalRequest) => Promise<ApprovalDecision>;
+  wait_decision: (call_id: string, request: ApprovalRequest, on_hold: () => void) => Promise<ApprovalDecision>;
   review: ActorReview;
   human_decisions?: () => Promise<HumanDecision[]>;
   mirror_decision?: (decision: HumanDecision) => Promise<void>;
@@ -60,4 +65,5 @@ export type TurnSession = {
   store_images?: (images: ToolImage[]) => Promise<string[]>;
   compaction: CompactionHooks;
   stored_context?: StoredContext;
+  reasoning_status?: ReasoningStatusCall;
 };

@@ -44,9 +44,6 @@ export const register_app_ipc = () => {
     }
     await shell.openExternal(url);
   });
-  handle("shell:reveal", (target) => {
-    shell.showItemInFolder(target);
-  });
   handle("power:keep_awake", () => keep_awake_active());
   handle("power:set_keep_awake", (enabled) => set_keep_awake(require_boolean(enabled, "keep awake")));
 };

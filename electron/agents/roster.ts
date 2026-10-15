@@ -35,6 +35,9 @@ export const same_topic = (a: AgentRecord, b: AgentRecord): boolean => topic_key
 
 export const label_of = (agent: Pick<AgentRecord, "name" | "agent_id">): string => agent_label(agent.name, agent.agent_id);
 
+export const profile_text = (agent: Pick<AgentRecord, "profile" | "without_tools">): string =>
+  agent.without_tools.length ? `${agent.profile} (without ${agent.without_tools.join(", ")})` : agent.profile;
+
 const steps_of = (run: RunRecord | null): Step[] => (run?.status === "running" ? (live_run(run.run_id)?.transcript.steps ?? []) : []);
 
 export const roster_entries = (chat_id: string): RosterEntry[] =>
@@ -67,7 +70,7 @@ const running_line = (entry: RosterEntry, self: AgentRecord | null, now: number)
     `${label_of(agent)}${own ? " (you)" : ""}`,
     `topic ${agent.topic || "none"}${self && !own && same_topic(self, agent) ? " (same topic as you)" : ""}`,
     agent.scope.length ? `scope ${agent.scope.join(", ")}` : "no scope",
-    `${agent.profile}, model ${agent.model}`,
+    `${profile_text(agent)}, model ${agent.model}`,
     `running since ${clock(started)} (${minutes_since(started, now)} min)`,
   ];
   const written = entry.written.length ? ` Wrote: ${entry.written.join(", ")}.` : "";
@@ -80,7 +83,8 @@ const ended_line = (entry: RosterEntry): string => {
   const ended = Date.parse(entry.run?.ended_at ?? "");
   const status = entry.run?.status ?? "not started";
   const held = held_text(entry.agent);
-  return `${label_of(entry.agent)}, topic ${entry.agent.topic || "none"}, ${status}${Number.isFinite(ended) ? ` at ${clock(ended)}` : ""}${held ? `, ${held}` : ""}`;
+  const limited = entry.agent.without_tools.length ? `, ${profile_text(entry.agent)}` : "";
+  return `${label_of(entry.agent)}, topic ${entry.agent.topic || "none"}${limited}, ${status}${Number.isFinite(ended) ? ` at ${clock(ended)}` : ""}${held ? `, ${held}` : ""}`;
 };
 
 const entry_line = (entry: RosterEntry, self: AgentRecord | null, now: number) => (entry.running ? running_line(entry, self, now) : ended_line(entry));

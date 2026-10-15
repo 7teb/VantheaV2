@@ -19,4 +19,8 @@ export const sidebar = {
   "sidebar.working": "Working",
   "sidebar.delete_title": "Delete this chat?",
   "sidebar.rename_label": "Chat title",
+  "sidebar.archive": "Archive",
+  "sidebar.archived": "Archived",
+  "sidebar.archived_title": "Archived chats",
+  "sidebar.restore": "Restore",
 };
