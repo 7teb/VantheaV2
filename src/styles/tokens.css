@@ -128,6 +128,14 @@
     --diff-remove-text: #d9989c;
     --diff-card-add-fill: rgba(143, 181, 115, 0.1);
     --diff-card-remove-fill: rgba(208, 104, 111, 0.1);
+    --critter-crawler: #e5b454;
+    --critter-hopper: #e5876c;
+    --critter-imp: #e58fb0;
+    --critter-walker: #bf9dea;
+    --critter-chonk: #66c7a8;
+    --critter-bug: #9cc56a;
+    --critter-shroom: #cdb894;
+    --critter-sprout: #b9b5ad;
 
     --shadow-inset:
       inset 0 2px 5px rgba(0, 0, 0, 0.75),

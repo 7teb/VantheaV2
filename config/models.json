@@ -13,18 +13,6 @@
       "reasoning_passback": true
     },
     {
-      "id": "deepseek/deepseek-v4-pro-0813",
-      "label": "DeepSeek V4 Pro 0813",
-      "provider": "DeepSeek",
-      "provider_order": ["deepseek"],
-      "efforts": ["low", "high", "max"],
-      "default_effort": "max",
-      "vision": false,
-      "context_length": 1048576,
-      "max_output": 393216,
-      "reasoning_passback": true
-    },
-    {
       "id": "moonshotai/kimi-k3",
       "label": "Kimi K3",
       "provider": "Moonshot",
@@ -57,28 +45,6 @@
       "context_length": 1048576,
       "max_output": 131072,
       "note": "MiMo V2.6 Pro on Xiaomi's Ultraspeed route: about 320 to 345 output tokens per second (measured, versus about 62 on the normal route), first token after about 1 s. Ten times the price of the normal Pro: 4.35 USD per million input tokens and 8.70 USD per million output tokens."
-    },
-    {
-      "id": "qwen/qwen3.7-plus",
-      "label": "Qwen 3.7 Plus",
-      "provider": "Qwen",
-      "provider_order": ["alibaba"],
-      "efforts": ["low", "medium", "high", "xhigh"],
-      "default_effort": "high",
-      "vision": true,
-      "context_length": 1000000,
-      "max_output": 65536
-    },
-    {
-      "id": "qwen/qwen3.7-max",
-      "label": "Qwen 3.7 Max",
-      "provider": "Qwen",
-      "provider_order": ["alibaba"],
-      "efforts": ["low", "medium", "high", "xhigh"],
-      "default_effort": "high",
-      "vision": false,
-      "context_length": 1000000,
-      "max_output": 65536
     },
     {
       "id": "qwen/qwen3.8-max",

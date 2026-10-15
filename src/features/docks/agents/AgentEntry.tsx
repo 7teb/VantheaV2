@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { AgentRunSummary, AgentSummary } from "../../../../shared/ipc/work.ts";
 import { IconButton } from "../../../components/Button.tsx";
 import { class_names } from "../../../components/class-names.ts";
-import { BotIcon, ChevronRightIcon, CircleStopIcon } from "../../../components/icons.tsx";
+import { ChevronRightIcon, CircleStopIcon, CritterIcon } from "../../../components/icons.tsx";
 import { use_t } from "../../../i18n/index.ts";
 import { agent_approvals_store, is_waiting } from "../../../state/agent-approvals.ts";
 import { cancel_agent, select_agent_run } from "../../../state/agents.ts";
@@ -66,7 +66,7 @@ export const AgentEntry = ({ agent, now }: { agent: AgentSummary; now: number })
   return (
     <section className="agent-entry" data-running={running}>
       <header className="agent-entry-head">
-        <BotIcon size={15} className="agent-entry-icon" />
+        <CritterIcon name={agent.name} running={running} />
         <span className="agent-entry-name" title={agent.description || agent.name}>
           {agent.name}
         </span>

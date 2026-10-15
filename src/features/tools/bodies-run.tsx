@@ -1,5 +1,5 @@
 import { Button } from "../../components/Button.tsx";
-import { BotIcon, CheckIcon } from "../../components/icons.tsx";
+import { CheckIcon, CritterIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { open_agent_run } from "../../state/agents.ts";
@@ -82,7 +82,7 @@ export const AgentBody = ({ view }: BodyProps<"agent">) => {
         </div>
       )}
       <div className="tool-body-line">
-        <Button variant="secondary" icon={<BotIcon size={14} />} onClick={() => open_agent_run({ agent_id: view.agent_id, run_id: view.run_id })}>
+        <Button variant="secondary" icon={<CritterIcon name={view.name} />} onClick={() => open_agent_run({ agent_id: view.agent_id, run_id: view.run_id })}>
           {t("agent.view_transcript")}
         </Button>
       </div>

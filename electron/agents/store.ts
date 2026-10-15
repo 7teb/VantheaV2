@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fsp from "node:fs/promises";
 import path from "node:path";
+import { match_agents } from "../../shared/agent-match.ts";
 import type { AgentRunStatus, AgentSummary } from "../../shared/ipc/work.ts";
 import type { ApiMessage } from "../model/types.ts";
 import { as_array, error_text, is_record } from "../storage/coerce.ts";
@@ -115,13 +116,8 @@ export const list_agents = (chat_id: string): AgentSummary[] => chat_agents(chat
 
 export const running_in_chat = (chat_id: string): number => chat_agents(chat_id).filter(is_running).length;
 
-const id_part = (id: string): string => id.slice(id.lastIndexOf("#") + 1).trim();
-
 export const find_agent = (id: string, chat_id: string): AgentLookup => {
-  const owned = chat_agents(chat_id);
-  const key = id_part(id);
-  const exact = owned.find((record) => record.agent_id === key);
-  const matches = exact ? [exact] : owned.filter((record) => key !== "" && (record.agent_id.startsWith(key) || record.agent_id.startsWith(`agent_${key}`)));
+  const matches = match_agents(chat_agents(chat_id), id);
   const [only] = matches;
   if (only && matches.length === 1) {
     return { agent: only };

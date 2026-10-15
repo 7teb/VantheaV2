@@ -6,6 +6,7 @@ import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon, CircleAlertIcon, ShieldTerminalIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { open_agent_run } from "../../state/agents.ts";
+import { AgentCritter } from "./AgentCritter.tsx";
 import { AgentRunMark } from "./AgentRunMark.tsx";
 import { DraftLines } from "./DraftLines.tsx";
 import { tool_icon, ToolBody } from "./registry.tsx";
@@ -13,7 +14,7 @@ import { is_reviewing } from "./review-phase.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
 import { CommandTime, RowDetail } from "./RowMeta.tsx";
 import { has_body, opens_by_itself } from "./tool-body.ts";
-import { is_active_status, tool_label } from "./tool-meta.ts";
+import { is_active_status, tool_label, tool_meta } from "./tool-meta.ts";
 import { step_hint } from "./tool-summary.ts";
 import "./tools.css";
 import "./tool-motion.css";
@@ -71,7 +72,7 @@ export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false
         onClick={() => (run ? open_agent_run({ agent_id: run.agent_id, run_id: run.run_id }) : set_chosen(!open))}
       >
         <span className="tool-row-icon">
-          <Icon size={14} />
+          {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter step={step} /> : <Icon size={14} />}
         </span>
         <span className={class_names("tool-row-label", active && step.status !== "queued" && !reviewing && "is-working")}>
           {reviewing ? <ReviewingLabel step={step} /> : tool_label(t, step)}

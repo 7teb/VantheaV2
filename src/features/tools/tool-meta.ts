@@ -95,7 +95,7 @@ type MissingKind = Exclude<ToolViewKind, (typeof view_kinds)[number]>;
 
 export const view_kinds_complete: [MissingKind] extends [never] ? true : false = true;
 
-const text_arg = (step: ToolStep, key: string): string => {
+export const text_arg = (step: ToolStep, key: string): string => {
   const value = step.args[key];
   return typeof value === "string" ? value : "";
 };

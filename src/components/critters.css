@@ -1,0 +1,48 @@
+@layer components {
+  .critter {
+    flex: none;
+    display: block;
+  }
+
+  .critter[data-critter="crawler"] {
+    color: var(--critter-crawler);
+  }
+
+  .critter[data-critter="hopper"] {
+    color: var(--critter-hopper);
+  }
+
+  .critter[data-critter="imp"] {
+    color: var(--critter-imp);
+  }
+
+  .critter[data-critter="walker"] {
+    color: var(--critter-walker);
+  }
+
+  .critter[data-critter="chonk"] {
+    color: var(--critter-chonk);
+  }
+
+  .critter[data-critter="bug"] {
+    color: var(--critter-bug);
+  }
+
+  .critter[data-critter="shroom"] {
+    color: var(--critter-shroom);
+  }
+
+  .critter[data-critter="sprout"] {
+    color: var(--critter-sprout);
+  }
+
+  .critter.is-running {
+    animation: critter-hop 0.8s var(--ease-in-out) infinite;
+  }
+
+  @keyframes critter-hop {
+    50% {
+      transform: translateY(-1.5px);
+    }
+  }
+}

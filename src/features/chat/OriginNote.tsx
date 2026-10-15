@@ -2,7 +2,7 @@ import { useState } from "react";
 import { parse_report_events, parse_update_batch, type AgentNote } from "../../../shared/agent-notes.ts";
 import type { UserMessage, UserOrigin } from "../../../shared/chat.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { BotIcon, ChevronRightIcon, ClipboardListIcon, LayersIcon, MessageSquareIcon, RetryIcon, UndoIcon, type IconComponent } from "../../components/icons.tsx";
+import { ChevronRightIcon, ClipboardListIcon, CritterMark, LayersIcon, MessageSquareIcon, RetryIcon, UndoIcon, type IconComponent } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { AgentNoteRow } from "./AgentNoteRow.tsx";
@@ -12,7 +12,7 @@ const notes: Record<Exclude<UserOrigin, "user" | "init">, { icon: IconComponent;
   undo: { icon: UndoIcon, label: "chat.origin_undo" },
   continue: { icon: RetryIcon, label: "chat.origin_continue" },
   background: { icon: LayersIcon, label: "chat.origin_background" },
-  agent_report: { icon: BotIcon, label: "chat.origin_agent_report" },
+  agent_report: { icon: CritterMark, label: "chat.origin_agent_report" },
   agent_update: { icon: MessageSquareIcon, label: "chat.origin_agent_update" },
 };
 

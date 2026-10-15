@@ -14,15 +14,6 @@
   padding: 0 var(--space-2) 0 10px;
 }
 
-.agent-entry-icon {
-  flex: none;
-  color: var(--text-tertiary);
-}
-
-.agent-entry[data-running="true"] .agent-entry-icon {
-  color: var(--text-primary);
-}
-
 .agent-entry-name {
   flex: 0 1 auto;
   min-width: 0;

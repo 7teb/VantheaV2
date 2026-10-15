@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import type { AgentNote } from "../../../shared/agent-notes.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { BotIcon, ChevronRightIcon, MessageSquareIcon, RetryIcon, ShieldAlertIcon, type IconComponent } from "../../components/icons.tsx";
+import { ChevronRightIcon, CritterIcon, MessageSquareIcon, RetryIcon, ShieldAlertIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
@@ -26,21 +26,20 @@ const labels: Record<AgentNote["kind"], MessageKey> = {
   alert: "chat.peer_alert_from",
 };
 
-const icon_of = (note: AgentNote): IconComponent => {
+const NoteIcon = ({ note }: { note: AgentNote }) => {
   if (note.kind === "report") {
-    return BotIcon;
+    return <CritterIcon name={note.name || note.agent_id} />;
   }
   if (note.kind === "update") {
-    return MessageSquareIcon;
+    return <MessageSquareIcon size={14} />;
   }
-  return note.status === "loop" ? RetryIcon : ShieldAlertIcon;
+  return note.status === "loop" ? <RetryIcon size={14} /> : <ShieldAlertIcon size={14} />;
 };
 
 export const AgentNoteRow = memo(({ note }: { note: AgentNote }) => {
   const t = use_t();
   const [open, set_open] = useState(false);
   const [seen, set_seen] = useState(false);
-  const Icon = icon_of(note);
   const status = note.kind === "alert" ? alert_keys[note.status] : status_keys[note.status];
   const expandable = note.body.trim().length > 0;
   if (open && !seen) {
@@ -50,7 +49,7 @@ export const AgentNoteRow = memo(({ note }: { note: AgentNote }) => {
     <div className="agent-note tool-row enter-fade-up" data-status={note.status} data-open={expandable && open}>
       <button type="button" className="tool-row-head" aria-expanded={expandable ? open : undefined} disabled={!expandable} onClick={() => set_open(!open)}>
         <span className="tool-row-icon">
-          <Icon size={14} />
+          <NoteIcon note={note} />
         </span>
         <span className="tool-row-label">{t(labels[note.kind], { x: note.name || note.agent_id })}</span>
         {status && <span className={class_names("tool-row-status", (note.status === "failed" || note.status === "blocked") && "is-failed")}>{t(status)}</span>}

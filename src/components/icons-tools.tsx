@@ -63,17 +63,6 @@ export const GitBranchPlusIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const BotIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M12 8V4H8" />
-    <rect x="4" y="8" width="16" height="12" rx="2" />
-    <path d="M2 14h2" />
-    <path d="M20 14h2" />
-    <path d="M15 13v2" />
-    <path d="M9 13v2" />
-  </Icon>
-);
-
 export const WormIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m19 12-1.5 3" />

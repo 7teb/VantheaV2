@@ -1,6 +1,7 @@
 export { Icon, type IconComponent, type IconProps } from "./icons-base.tsx";
 export * from "./icons-browser.tsx";
 export * from "./icons-chat.tsx";
+export * from "./icons-critters.tsx";
 export * from "./icons-files.tsx";
 export * from "./icons-panels.tsx";
 export * from "./icons-status.tsx";
