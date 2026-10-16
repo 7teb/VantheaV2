@@ -2,21 +2,19 @@ import { memo, useState, type CSSProperties } from "react";
 import { parse_agent_notice } from "../../../shared/agent-notes.ts";
 import { parse_peer_alerts } from "../../../shared/peer-notes.ts";
 import type { CompactionStep, NoticeKind, NoticeStep, SteerStep } from "../../../shared/chat.ts";
-import { CornerDownRightIcon, InfoIcon, TextSelectIcon } from "../../components/icons.tsx";
+import { InfoIcon, TextSelectIcon } from "../../components/icons.tsx";
 import { use_clock } from "../../components/use-clock.ts";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { AgentNoteRow } from "./AgentNoteRow.tsx";
 import { compaction_text, compaction_wait_text, slow_notice_delay } from "./compaction-line.ts";
 import { UserAttachments } from "./UserAttachments.tsx";
+import "./UserMessage.css";
 
 export const SteerRow = memo(({ step }: { step: SteerStep }) => (
-  <div className="steer-row enter-fade-up">
-    <CornerDownRightIcon size={14} />
-    <div className="steer-row-body">
-      {step.text && <span>{step.text}</span>}
-      {step.attachments?.length ? <UserAttachments attachments={step.attachments} /> : null}
-    </div>
+  <div className="user-message steer-message enter-fade-up">
+    {step.attachments?.length ? <UserAttachments attachments={step.attachments} /> : null}
+    {step.text && <div className="user-bubble inset-surface">{step.text}</div>}
   </div>
 ));
 

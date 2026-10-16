@@ -6,9 +6,10 @@ import { use_t } from "../../../i18n/index.ts";
 import type { RunRef, Transcript } from "../../../state/agents-reduce.ts";
 import { build_blocks, shows_thinking, type Block } from "../../chat/assistant-blocks.ts";
 import { ReasoningRow } from "../../chat/ReasoningRow.tsx";
-import { CompactionRow, NoticeRow, SteerRow } from "../../chat/StepRows.tsx";
+import { CompactionRow, NoticeRow } from "../../chat/StepRows.tsx";
 import { ErrorCard, RetryBanner } from "../../chat/TurnStatus.tsx";
 import { WorkGroup } from "../../tools/WorkGroup.tsx";
+import { MainMessageRow } from "./MainMessageRow.tsx";
 import { PeerMessageRow } from "./PeerMessageRow.tsx";
 
 export const TranscriptSkeleton = () => (
@@ -45,7 +46,7 @@ const BlockView = ({ block, chat_id, run, streaming, tail }: BlockViewProps) => 
     case "image":
       return <WorkGroup chat_id={chat_id} run={run} steps={[block.step]} streaming={streaming} tail={tail} />;
     case "steer":
-      return <SteerRow step={block.step} />;
+      return <MainMessageRow chat_id={chat_id} step={block.step} />;
     case "notice":
       return block.step.notice === "peer_message" ? <PeerMessageRow step={block.step} /> : <NoticeRow step={block.step} />;
     case "compaction":

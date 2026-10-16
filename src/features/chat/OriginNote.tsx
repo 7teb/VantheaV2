@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { parse_report_events, parse_update_batch, type AgentNote } from "../../../shared/agent-notes.ts";
-import type { UserMessage, UserOrigin } from "../../../shared/chat.ts";
+import type { CommandOrigin, UserMessage, UserOrigin } from "../../../shared/chat.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon, ClipboardListIcon, CritterMark, LayersIcon, MessageSquareIcon, RetryIcon, UndoIcon, type IconComponent } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { AgentNoteRow } from "./AgentNoteRow.tsx";
 
-const notes: Record<Exclude<UserOrigin, "user" | "init">, { icon: IconComponent; label: MessageKey }> = {
+const notes: Record<Exclude<UserOrigin, "user" | CommandOrigin>, { icon: IconComponent; label: MessageKey }> = {
   plan_accept: { icon: ClipboardListIcon, label: "chat.origin_plan_accept" },
   undo: { icon: UndoIcon, label: "chat.origin_undo" },
   continue: { icon: RetryIcon, label: "chat.origin_continue" },
@@ -29,7 +29,7 @@ const agent_notes_of = (message: UserMessage): AgentNote[] => {
 export const OriginNote = ({ message }: { message: UserMessage }) => {
   const t = use_t();
   const [open, set_open] = useState(false);
-  if (message.origin === "user" || message.origin === "init") {
+  if (message.origin === "user" || message.origin === "init" || message.origin === "git_init") {
     return null;
   }
   const agent_notes = agent_notes_of(message);

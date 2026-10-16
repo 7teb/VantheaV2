@@ -15,19 +15,21 @@ const keep_answer_in_view = (frame: Element) => {
   }
 };
 
-export const use_turn_folded = (chat_id: string, message_id: string, shape: TurnShape, frame: RefObject<HTMLDivElement | null>): boolean => {
-  const chosen = use_store(turn_folds_store, (state) => state[chat_id]?.[message_id]);
+export type TurnFoldState = { folded: boolean; foldable: boolean; holding: boolean };
+
+export const use_turn_folded = (chat_id: string, leader_id: string, shape: TurnShape, frame: RefObject<HTMLDivElement | null>): TurnFoldState => {
+  const chosen = use_store(turn_folds_store, (state) => state[chat_id]?.[leader_id]);
   const holding = use_store(agents_store, (state) => shape.runs.some((ref) => state.known_runs[ref.run_id]?.status === "running"));
-  const by_default = shape.foldable && !holding;
-  const folded_before = useRef(by_default);
+  const foldable = shape.foldable && !holding;
+  const folded_before = useRef(foldable);
   useLayoutEffect(() => {
-    const folding = by_default && !folded_before.current && chosen === undefined;
-    folded_before.current = by_default;
+    const folding = foldable && !folded_before.current && chosen === undefined;
+    folded_before.current = foldable;
     if (folding && frame.current) {
       keep_answer_in_view(frame.current);
     }
-  }, [by_default, chosen, frame]);
-  return shape.foldable && (chosen ?? !holding);
+  }, [foldable, chosen, frame]);
+  return { folded: foldable && (chosen ?? true), foldable, holding };
 };
 
 type FoldItemProps = { folded: boolean; children: ReactNode };

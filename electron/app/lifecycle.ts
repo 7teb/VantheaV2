@@ -1,11 +1,15 @@
 import { dialog } from "electron";
 import { flush_reports, set_agent_continuation } from "../agents/reports.ts";
-import { clear_chat_agents, init_agents, shutdown_agents_sync } from "../agents/runner.ts";
-import { init_background, on_background_finished, remove_chat_background, shutdown_background_sync } from "../background/manager.ts";
+import { clear_chat_agents, init_agents, running_agent_roots, shutdown_agents_sync } from "../agents/runner.ts";
+import { on_agents_changed } from "../agents/store.ts";
+import { init_background, on_background_changed, on_background_finished, remove_chat_background, running_background_roots, shutdown_background_sync } from "../background/manager.ts";
 import { set_vision_analyzer } from "../browser/vision.ts";
 import { init_browser, shutdown_browser } from "../browser/service.ts";
 import { close_chat_tabs } from "../browser/tabs.ts";
-import { flush_all_sync, get_chat, on_chat_removed } from "../chats/store.ts";
+import { chat_meta, flush_all_sync, get_chat, on_chat_removed } from "../chats/store.ts";
+import { chat_root } from "../chats/workspace.ts";
+import { git_service, init_git, shutdown_git } from "../git/index.ts";
+import { init_github, shutdown_github } from "../github/index.ts";
 import { forget_chat_approvals } from "../ipc/agents.ts";
 import { init_extensions } from "../ipc/extensions.ts";
 import { stop_chat_files_watch, stop_files_watch } from "../ipc/files.ts";
@@ -41,7 +45,7 @@ import { flush_pending_sync } from "../storage/json-file.ts";
 import { remove_retired_snapshots, storage_paths } from "../storage/paths.ts";
 import { clear_mcp_chat, set_command_gate } from "../tools/mcp/decide.ts";
 import { tools_for } from "../tools/registry.ts";
-import { forget_user_stop } from "../turn/active.ts";
+import { active_turns, forget_user_stop, on_active_turns_changed } from "../turn/active.ts";
 import { set_turn_finished_hook } from "../turn/drive.ts";
 import { interrupt_all_turns, stop_turn } from "../turn/run.ts";
 import { deliver_pending_events, drop_pending_events, notify_agent, notify_background_finished } from "./notifications.ts";
@@ -60,6 +64,17 @@ const extract_memories = async (chat_id: string, message_id: string) => {
   const chat = await get_chat(chat_id);
   if (chat) {
     await extract_memories_after_turn(chat, message_id, side_model);
+  }
+};
+
+const turn_root = async (chat_id: string): Promise<string | null> => {
+  const chat = chat_meta(chat_id);
+  if (!chat) return null;
+  try {
+    return await chat_root(chat);
+  } catch (error) {
+    console.error(`[git] resolving the folder of chat ${chat_id} with a running turn failed:`, error);
+    return null;
   }
 };
 
@@ -83,9 +98,14 @@ const wire_hooks = () => {
     extract_memories(chat_id, message_id).catch((error) => console.error(`[memory] extraction for message ${message_id} in chat ${chat_id} failed:`, error));
   });
   on_background_finished(notify_background_finished);
+  on_active_turns_changed(() => git_service.work_changed());
+  on_background_changed(() => git_service.work_changed());
+  on_agents_changed(() => git_service.work_changed());
   on_chat_removed((chat_id) => {
     stop_turn(chat_id);
-    clear_chat_agents(chat_id).catch((error) => console.error(`[agents] removing the agents of chat ${chat_id} failed:`, error));
+    clear_chat_agents(chat_id)
+      .then(() => git_service.work_changed())
+      .catch((error) => console.error(`[agents] removing the agents of chat ${chat_id} failed:`, error));
     forget_user_stop(chat_id);
     drop_pending_events(chat_id);
     clear_authorization(chat_id);
@@ -109,6 +129,10 @@ export const init_services = async (): Promise<void> => {
   sweep_attachments().catch((error) => console.error("[media] attachment sweep failed:", error));
   remove_retired_snapshots(storage_paths()).catch((error) => console.error("[storage] removing the retired undo snapshot folder failed:", error));
   await run_step("git bash", () => init_git_bash(system_probe));
+  await run_step("git", () =>
+    init_git({ turn_chats: () => active_turns().map(([chat_id]) => chat_id), chat_root: turn_root, agent_roots: running_agent_roots, background_roots: running_background_roots }),
+  );
+  await run_step("github", init_github);
   await run_step("background tasks", () => init_background());
   await run_step("agents", () =>
     init_agents({
@@ -134,6 +158,8 @@ export const shutdown_services = (): void => {
   kill_all_terminals();
   shutdown_browser();
   stop_files_watch();
+  shutdown_github();
+  shutdown_git();
   shutdown_background_sync();
   flush_all_sync();
   flush_pending_sync();

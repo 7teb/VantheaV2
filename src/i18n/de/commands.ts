@@ -34,6 +34,8 @@ export const commands: Record<keyof typeof en, string> = {
   "commands.memories_hint": "Ansehen, hinzufügen und löschen",
   "commands.init": "Initialisieren",
   "commands.init_hint": "AGENTS.md anlegen oder aktualisieren",
+  "commands.git_init": "GitHub-Repository erstellen",
+  "commands.git_init_hint": "Fragt Name, Sichtbarkeit und Mitwirkende ab und pusht dann",
   "commands.plan_hint": "Nur lesen, legt einen Plan zur Freigabe vor",
   "commands.fork": "Chat verzweigen",
   "commands.fork_hint": "Ab der letzten Nachricht",

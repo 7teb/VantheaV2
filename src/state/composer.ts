@@ -1,7 +1,8 @@
+import type { CommandOrigin } from "../../shared/chat.ts";
 import type { CompactResult } from "../../shared/ipc/chats.ts";
 import { attachment_limits } from "../../shared/ipc/media.ts";
 import { api } from "../api/bridge.ts";
-import { t } from "../i18n/index.ts";
+import { t, type MessageKey } from "../i18n/index.ts";
 import { init_turn } from "./chat-actions.ts";
 import { chats_store } from "./chats.ts";
 import {
@@ -39,6 +40,7 @@ import { entry_streaming, last_assistant } from "./chat-view-reduce.ts";
 import { chat_view_store, compact_chat_now, on_steer_taken, on_turn_end } from "./chat-view.ts";
 import { create_store } from "./create-store.ts";
 import { adopt_files } from "./files.ts";
+import { adopt_git } from "./git.ts";
 import { model_source } from "./model-source.ts";
 import { settings_store } from "./settings.ts";
 import { adopt_terminals } from "./terminal.ts";
@@ -182,6 +184,7 @@ const create_chat = async (project_path: string, key: string, message: OutgoingM
     composer_store.update((state) => move_draft(state, key, meta.id));
     adopt_terminals(key, meta.id);
     adopt_files(key, meta.id);
+    adopt_git(key, meta.id);
     open_chat(meta.id, meta.project_path);
     return meta.id;
   } catch (error) {
@@ -237,7 +240,9 @@ export const submit = async (chat_id: string | null, project_path: string) => {
   }
 };
 
-export const start_init = async (chat_id: string | null, project_path: string) => {
+const command_labels: Record<CommandOrigin, MessageKey> = { init: "commands.init", git_init: "commands.git_init" };
+
+export const start_init = async (chat_id: string | null, project_path: string, command: CommandOrigin) => {
   const key = draft_key(chat_id, project_path);
   if (composer_store.get().sending[key]) {
     return;
@@ -247,10 +252,10 @@ export const start_init = async (chat_id: string | null, project_path: string) =
     return;
   }
   set_sending(target, true);
-  const result = await init_turn(target);
+  const result = await init_turn(target, command);
   set_sending(target, false);
   if (!result.ok) {
-    composer_store.update((state) => set_error(state, target, t("commands.failed", { action: t("commands.init"), error: result.error })));
+    composer_store.update((state) => set_error(state, target, t("commands.failed", { action: t(command_labels[command]), error: result.error })));
   }
 };
 

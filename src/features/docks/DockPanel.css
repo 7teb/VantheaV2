@@ -7,6 +7,7 @@
   border-top-left-radius: var(--radius-xl);
   background: var(--surface-main);
   box-shadow: var(--shadow-edge-left);
+  container: dock / inline-size;
 }
 
 .dock-header {

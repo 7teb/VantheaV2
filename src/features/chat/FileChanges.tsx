@@ -1,5 +1,5 @@
 import { memo, useMemo, useState } from "react";
-import type { AssistantMessage } from "../../../shared/chat.ts";
+import type { Step } from "../../../shared/chat.ts";
 import { file_changes } from "../../../shared/file-changes.ts";
 import { Button } from "../../components/Button.tsx";
 import { FileDiffIcon, UndoIcon } from "../../components/icons.tsx";
@@ -9,11 +9,11 @@ import { show_file } from "../../state/files.ts";
 
 const collapsed_count = 3;
 
-type FileChangesProps = { chat_id: string; message: AssistantMessage; busy: boolean; undoable: boolean };
+type FileChangesProps = { chat_id: string; steps: Step[]; undo_id: string | null; busy: boolean };
 
-export const FileChanges = memo(({ chat_id, message, busy, undoable }: FileChangesProps) => {
+export const FileChanges = memo(({ chat_id, steps, undo_id, busy }: FileChangesProps) => {
   const t = use_t();
-  const changes = useMemo(() => file_changes(message.steps), [message.steps]);
+  const changes = useMemo(() => file_changes(steps), [steps]);
   const [expanded, set_expanded] = useState(false);
   const [pending, set_pending] = useState(false);
   const [error, set_error] = useState("");
@@ -21,9 +21,9 @@ export const FileChanges = memo(({ chat_id, message, busy, undoable }: FileChang
     return null;
   }
 
-  const undo = async () => {
+  const undo = async (message_id: string) => {
     set_pending(true);
-    const result = await undo_turn(chat_id, message.id);
+    const result = await undo_turn(chat_id, message_id);
     set_error(result.ok ? "" : result.error);
     set_pending(false);
   };
@@ -41,8 +41,8 @@ export const FileChanges = memo(({ chat_id, message, busy, undoable }: FileChang
         <span className="tool-stat-add">+{added}</span>
         <span className="tool-stat-remove">-{removed}</span>
         <span className="file-changes-spacer" />
-        {undoable && (
-          <Button variant="ghost" icon={<UndoIcon size={14} />} disabled={busy || pending} onClick={() => void undo()}>
+        {undo_id !== null && (
+          <Button variant="ghost" icon={<UndoIcon size={14} />} disabled={busy || pending} onClick={() => void undo(undo_id)}>
             {t("chat.changes_undo")}
           </Button>
         )}

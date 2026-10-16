@@ -22,6 +22,23 @@ const reserved = new Set<string>();
 
 const stopped_by_user = new Set<string>();
 
+const change_listeners = new Set<() => void>();
+
+const announce_change = () => {
+  for (const listener of change_listeners) {
+    try {
+      listener();
+    } catch (error) {
+      console.error("[turn] a listener for the set of active turns failed:", error);
+    }
+  }
+};
+
+export const on_active_turns_changed = (listener: () => void): (() => void) => {
+  change_listeners.add(listener);
+  return () => change_listeners.delete(listener);
+};
+
 export const is_active = (chat_id: string): boolean => active.has(chat_id) || reserved.has(chat_id);
 
 export const reserve_chat = (chat_id: string): boolean => {
@@ -84,12 +101,14 @@ export const register_active = (chat_id: string, message_id: string, emit: Emitt
   };
   stopped_by_user.delete(chat_id);
   active.set(chat_id, turn);
+  announce_change();
   return turn;
 };
 
 export const unregister_active = (chat_id: string, message_id: string): void => {
   if (active.get(chat_id)?.message_id === message_id) {
     active.delete(chat_id);
+    announce_change();
   }
 };
 

@@ -12,7 +12,7 @@ import "./UserMessage.css";
 
 type UserMessageProps = { chat_id: string; message: UserMessageData; busy: boolean };
 
-const command_text: Partial<Record<UserOrigin, string>> = { init: "/init" };
+const command_text: Partial<Record<UserOrigin, string>> = { init: "/init", git_init: "/gitinit" };
 
 export const UserMessage = memo(({ chat_id, message, busy }: UserMessageProps) => {
   const t = use_t();

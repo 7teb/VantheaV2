@@ -35,4 +35,5 @@ export const agent = {
   "agent.peer_type_answer": "Answer",
   "agent.peer_about": "About {x}",
   "agent.peer_reply_to": "Reply to {x}",
+  "agent.main_message": "Received a message from the main agent",
 };

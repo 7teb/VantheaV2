@@ -1,15 +1,22 @@
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode, type TransitionEvent } from "react";
 import { class_names } from "./class-names.ts";
 import { ChevronRightIcon } from "./icons.tsx";
 import "./Collapsible.css";
 
-type CollapsibleBodyProps = { open: boolean; id?: string; className?: string; children: ReactNode };
+type CollapsibleBodyProps = { open: boolean; id?: string; className?: string; on_closed?: () => void; children: ReactNode };
 
-export const CollapsibleBody = ({ open, id, className, children }: CollapsibleBodyProps) => (
-  <div id={id} className={class_names("collapsible-body", className)} data-open={open} inert={!open}>
-    <div className="collapsible-clip">{children}</div>
-  </div>
-);
+export const CollapsibleBody = ({ open, id, className, on_closed, children }: CollapsibleBodyProps) => {
+  const settle = (event: TransitionEvent<HTMLDivElement>) => {
+    if (!open && event.target === event.currentTarget && event.propertyName === "grid-template-rows") {
+      on_closed?.();
+    }
+  };
+  return (
+    <div id={id} className={class_names("collapsible-body", className)} data-open={open} inert={!open} onTransitionEnd={settle}>
+      <div className="collapsible-clip">{children}</div>
+    </div>
+  );
+};
 
 type CollapsibleProps = {
   header: ReactNode;

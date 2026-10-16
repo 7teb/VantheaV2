@@ -54,7 +54,7 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.error_context_limit": "Dieser Chat passt nicht mehr in das Kontextfenster des Modells. Komprimiere ihn oder starte einen neuen Chat.",
   "chat.error_policy": "Der Anbieter hat die Anfrage wegen seiner Richtlinien abgelehnt. Es wurde nichts ausgeführt oder geändert.",
   "chat.error_auth": "OpenRouter hat den API-Schlüssel abgelehnt. Prüfe ihn in den Einstellungen.",
-  "chat.error_credits": "Dein OpenRouter-Guthaben reicht für diese Anfrage nicht.",
+  "chat.error_credits": "Dein OpenRouter-Guthaben oder das Limit dieses API-Keys reicht für diese Anfrage nicht.",
   "chat.error_bad_request": "Der Anbieter hat die Anfrage abgelehnt.",
   "chat.error_app_closed": "Die App wurde geschlossen, während dieser Turn lief.",
   "chat.error_internal": "In VantheaX ist etwas schiefgelaufen.",

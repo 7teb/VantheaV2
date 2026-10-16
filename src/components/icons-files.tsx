@@ -38,6 +38,15 @@ export const FolderSearchIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const FolderGitIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d={folder} />
+    <circle cx="12" cy="13" r="2" />
+    <path d="M14 13h3" />
+    <path d="M7 13h3" />
+  </Icon>
+);
+
 export const FoldersIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M20 17a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.9a2 2 0 0 1-1.69-.9l-.81-1.2a2 2 0 0 0-1.67-.9H8a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2Z" />

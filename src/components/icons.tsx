@@ -3,6 +3,7 @@ export * from "./icons-browser.tsx";
 export * from "./icons-chat.tsx";
 export * from "./icons-critters.tsx";
 export * from "./icons-files.tsx";
+export * from "./icons-git.tsx";
 export * from "./icons-panels.tsx";
 export * from "./icons-status.tsx";
 export * from "./icons-tools.tsx";

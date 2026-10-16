@@ -14,7 +14,7 @@ import { deliver_update } from "./reports.ts";
 import { overlaps, roster_delta, roster_entries, roster_facts } from "./roster.ts";
 import type { AgentDeps, RunContext } from "./runner.ts";
 
-export const reminder_interval = 25;
+export const reminder_interval = 15;
 
 export const agent_approval_key = (run_id: string) => `agent:${run_id}`;
 

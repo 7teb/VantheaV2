@@ -6,9 +6,13 @@ import { init_browser } from "./browser.ts";
 import { init_chat_view } from "./chat-view.ts";
 import { init_chats } from "./chats.ts";
 import { init_composer } from "./composer.ts";
+import { init_event_hold } from "./event-hold.ts";
 import { init_extensions } from "./extensions.ts";
 import { init_files } from "./files.ts";
 import { init_full_window } from "./full-window.ts";
+import { init_git_diff } from "./git-diff.ts";
+import { init_git } from "./git.ts";
+import { init_github } from "./github.ts";
 import { load_keep_awake } from "./keep-awake.ts";
 import { init_models } from "./models.ts";
 import { init_settings } from "./settings.ts";
@@ -23,6 +27,7 @@ export const init_state = (): (() => void) => {
     init_window(),
     init_chat_view(),
     init_composer(),
+    init_event_hold(),
     init_terminal(),
     init_browser(),
     init_background(),
@@ -32,6 +37,9 @@ export const init_state = (): (() => void) => {
     init_artifacts(),
     init_extensions(),
     init_files(),
+    init_git(),
+    init_git_diff(),
+    init_github(),
     init_models(),
   ];
   return () => {

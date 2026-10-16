@@ -7,6 +7,7 @@ import { start_stream } from "../api/stream.ts";
 import { begin_load, empty_chat_view, fail_load, finish_load, open_entry, receive, set_context, set_questions, stale_chats, type ChatViewState } from "./chat-view-reduce.ts";
 import { create_store } from "./create-store.ts";
 import { refold_turns } from "./turn-folds.ts";
+import { turn_leader } from "./turn-groups.ts";
 
 export const chat_view_store = create_store<ChatViewState>(empty_chat_view);
 
@@ -82,7 +83,9 @@ export const open_chat_view = (chat_id: string) => {
 const turn_before = (chat_id: string, message_id: string): string | null => {
   const messages = chat_view_store.get().entries[chat_id]?.chat?.messages ?? [];
   const at = messages.findIndex((message) => message.id === message_id);
-  return (at < 0 ? messages : messages.slice(0, at)).findLast((message) => message.role === "assistant")?.id ?? null;
+  const before = at < 0 ? messages : messages.slice(0, at);
+  const last = before.findLast((message) => message.role === "assistant")?.id ?? null;
+  return last === null ? null : turn_leader(before, last);
 };
 
 const deliver = (batch: Delivery[]) => {

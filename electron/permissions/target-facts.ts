@@ -1,13 +1,14 @@
-import { execFile } from "node:child_process";
 import type { BigIntStats, Dirent, Stats } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { require_git_tool } from "../git/locate.ts";
+import { git_location } from "../git/repo.ts";
+import { exec_git, git_ok } from "../git/run.ts";
 import { to_posix } from "../project/scope.ts";
 import { error_code, error_text, missing_path } from "../storage/coerce.ts";
 import { walk_command, type Step, type StepWord } from "./command-walk.ts";
 import { location_matches, type ProgramFact } from "./launch-targets.ts";
 import { msys_mounts, msys_native } from "./msys-paths.ts";
-import { git_location } from "./project-profile.ts";
 import { change_text } from "./review-action.ts";
 import { dynamic_path, script_dialect, shell_source } from "./script-refs.ts";
 import { shell_words, type Word } from "./shell-words.ts";
@@ -46,13 +47,10 @@ const program_kinds: Record<ProgramFact["kind"], string> = {
   unreadable: "could not be read",
 };
 
-export const run_git: GitRunner = (args, cwd) =>
-  new Promise((resolve, reject) => {
-    execFile("git", args, { cwd, timeout: git_timeout_ms, windowsHide: true, maxBuffer: 4 * 1024 * 1024 }, (error, stdout) => {
-      if (error) reject(error);
-      else resolve(stdout);
-    });
-  });
+export const run_git: GitRunner = async (args, cwd) => {
+  const output = await exec_git(await require_git_tool(), { cwd, args, signal: AbortSignal.timeout(git_timeout_ms) });
+  return git_ok(output, `git ${args.join(" ")}`).toString("utf8");
+};
 
 const path_like = (token: string): boolean => /[\\/]/.test(token) || /\.[A-Za-z0-9]{1,8}$/.test(token);
 

@@ -37,4 +37,5 @@ export const agent: Record<keyof typeof en, string> = {
   "agent.peer_type_answer": "Antwort",
   "agent.peer_about": "Zu {x}",
   "agent.peer_reply_to": "Antwort auf {x}",
+  "agent.main_message": "Nachricht vom Haupt-Agenten erhalten",
 };

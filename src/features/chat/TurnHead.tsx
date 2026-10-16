@@ -10,10 +10,13 @@ import "./TurnHead.css";
 
 const whole_seconds = (ms: number) => format_seconds(Math.floor(ms / 1000));
 
-export const use_turn_head = (head: HeadState | null, streaming: boolean): HeadState | null => {
+export const use_turn_head = (head: HeadState | null, streaming: boolean, holding: boolean): HeadState | null => {
   const [working, set_working] = useState(false);
   if (streaming && head !== null && !working) {
     set_working(true);
+  }
+  if (holding && (head === null || head.kind === "worked")) {
+    return { kind: "working" };
   }
   return head ?? (streaming && working ? { kind: "working" } : null);
 };

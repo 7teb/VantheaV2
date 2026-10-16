@@ -1,0 +1,72 @@
+[data-git="modified"],
+[data-git="type_changed"] {
+  --git-color: var(--git-modified);
+}
+
+[data-git="added"] {
+  --git-color: var(--git-added);
+}
+
+[data-git="untracked"] {
+  --git-color: var(--git-untracked);
+}
+
+[data-git="renamed"],
+[data-git="copied"] {
+  --git-color: var(--git-renamed);
+}
+
+[data-git="deleted"] {
+  --git-color: var(--git-deleted);
+}
+
+[data-git="conflicted"] {
+  --git-color: var(--git-conflicted);
+}
+
+[data-git="submodule"] {
+  --git-color: var(--git-submodule);
+}
+
+.git-badge {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--git-color);
+  font-size: var(--font-size-caption);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.git-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.files-row[data-git] .files-row-label,
+.files-row[data-git] .files-match-name {
+  color: var(--git-color);
+}
+
+.files-row[data-git="ignored"] {
+  color: var(--git-ignored);
+}
+
+.files-row[data-git="ignored"] .files-row-label,
+.files-row[data-git="ignored"] .files-match-name {
+  color: inherit;
+}
+
+.files-row[data-git="ignored"] .files-row-icon {
+  opacity: 0.5;
+}
+
+.files-row[data-git="ignored"]:hover,
+.files-row[data-git="ignored"][data-active="true"] {
+  color: var(--text-secondary);
+}

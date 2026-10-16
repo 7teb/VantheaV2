@@ -44,7 +44,7 @@ import { AgentBody, BackgroundBody, CommandBody } from "./bodies-run.tsx";
 import { EditBody, FilesBody, GrepBody, OutlineBody } from "./bodies-files.tsx";
 import { ModelsBody } from "./bodies-models.tsx";
 import { ImageBody, WebSearchBody } from "./bodies-web.tsx";
-import { McpBody, MemoryBody, PeerMessageBody, PlanBody, QuestionsBody, TextBody, TodosBody } from "./bodies-work.tsx";
+import { McpBody, MemoryBody, PeerMessageBody, PlanBody, QuestionsBody, TextBody } from "./bodies-work.tsx";
 import type { BodyProps } from "./body-types.ts";
 import { DraftCode } from "./DraftCode.tsx";
 import { live_draft } from "./live-draft.ts";
@@ -104,7 +104,6 @@ export const view_bodies: Bodies = {
   background: BackgroundBody,
   agent: AgentBody,
   peer_message: PeerMessageBody,
-  todos: TodosBody,
   plan: PlanBody,
   web_search: WebSearchBody,
   image: ImageBody,

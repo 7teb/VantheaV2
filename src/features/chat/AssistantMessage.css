@@ -116,37 +116,8 @@
     color: var(--text-secondary);
   }
 
-  .steer-row {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-2);
-    margin: 2px 0 14px;
-    padding-left: 2px;
-    font-size: var(--font-size-body);
-    color: var(--text-secondary);
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-
-  .steer-row > svg {
-    flex: none;
-    margin-top: 3px;
-    color: var(--text-tertiary);
-  }
-
-  .steer-row-body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    min-width: 0;
-  }
-
-  .steer-row .user-attachments {
-    flex-direction: row;
-  }
-
-  .steer-row .user-attachment-files {
-    justify-content: flex-start;
+  .steer-message {
+    margin: var(--space-2) 0 14px;
   }
 
   .notice-row {

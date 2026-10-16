@@ -129,14 +129,35 @@
     --diff-remove-text: #d9989c;
     --diff-card-add-fill: rgba(143, 181, 115, 0.1);
     --diff-card-remove-fill: rgba(208, 104, 111, 0.1);
-    --critter-crawler: #e5b454;
-    --critter-hopper: #e5876c;
-    --critter-imp: #e58fb0;
-    --critter-walker: #bf9dea;
-    --critter-chonk: #66c7a8;
-    --critter-bug: #9cc56a;
-    --critter-shroom: #cdb894;
-    --critter-sprout: #b9b5ad;
+    --agent-amber: #e5b454;
+    --agent-coral: #e5876c;
+    --agent-pink: #e58fb0;
+    --agent-violet: #bf9dea;
+    --agent-teal: #66c7a8;
+    --agent-green: #9cc56a;
+    --agent-sand: #cdb894;
+    --agent-stone: #b9b5ad;
+    --git-added: var(--terminal-green);
+    --git-modified: var(--terminal-yellow);
+    --git-deleted: var(--terminal-red);
+    --git-renamed: var(--terminal-green);
+    --git-untracked: var(--terminal-green);
+    --git-conflicted: var(--text-warning);
+    --git-ignored: var(--text-tertiary);
+    --git-submodule: var(--terminal-blue);
+    --graph-lane-1: var(--terminal-blue);
+    --graph-lane-2: var(--terminal-magenta);
+    --graph-lane-3: var(--terminal-yellow);
+    --graph-lane-4: var(--terminal-cyan);
+    --graph-lane-5: var(--terminal-green);
+    --graph-lane-6: var(--terminal-bright-red);
+    --pr-open: var(--terminal-green);
+    --pr-merged: var(--terminal-magenta);
+    --pr-closed: var(--terminal-red);
+    --pr-draft: var(--text-tertiary);
+    --check-passed: var(--terminal-green);
+    --check-failed: var(--text-danger);
+    --check-pending: var(--text-waiting);
 
     --shadow-inset:
       inset 0 2px 5px rgba(0, 0, 0, 0.75),

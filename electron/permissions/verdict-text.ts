@@ -73,7 +73,7 @@ export const deny_text = (subject: Subject, review: ReviewedReason): string =>
     `Denied by the automatic review. The ${subject} did not run.`,
     reason_line(review.reason),
     rule_line(review),
-    "Do not run it again and do not get around this denial with another command, script, tool or agent; that counts as deliberately working around the review and is denied. If the reason or the rule names an allowed way, use that way. Otherwise stop and say in your reply what you need and why, so the user can decide.",
+    "Do not run it again and do not get around this denial with another command, script, tool or agent; that counts as deliberately working around the review and is denied. If the reason or the rule names an allowed way, use that way. Otherwise leave this step out, continue with the rest of the task, and say in your reply what you need and why, so the user can decide. This covers this action only: it does not end your turn and does not stop sub-agents or other work.",
   );
 
 export const workaround_text = (subject: Subject, review: ReviewedReason, earlier: ReviewEarlier): string =>
@@ -82,7 +82,7 @@ export const workaround_text = (subject: Subject, review: ReviewedReason, earlie
     `It reaches the result of an earlier action that ${earlier_phrases[earlier.status]}: ${earlier.action}${earlier.agent ? ` (by ${earlier.agent})` : ""}`,
     reason_line(review.reason),
     rule_line(review),
-    "The user has not said anything since, so this counts as deliberately working around that decision. Stop this approach and do not try it again in any form. Say in your reply what you were trying to do and why, so the user can decide.",
+    "The user has not said anything since, so this counts as deliberately working around that decision. Drop this approach and do not try it again in any form. Continue with the rest of the task and say in your reply what you were trying to do and why, so the user can decide. This covers this approach only: it does not end your turn and does not stop sub-agents or other work.",
   );
 
 export const stopped_text = (subject: Subject): string =>

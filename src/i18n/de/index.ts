@@ -9,6 +9,8 @@ import { composer } from "./composer.ts";
 import { context } from "./context.ts";
 import { docks } from "./docks.ts";
 import { files } from "./files.ts";
+import { git } from "./git.ts";
+import { github } from "./github.ts";
 import { image } from "./image.ts";
 import { mcp } from "./mcp.ts";
 import { memories } from "./memories.ts";
@@ -44,6 +46,8 @@ export const de: Record<MessageKey, string> = {
   ...context,
   ...docks,
   ...files,
+  ...git,
+  ...github,
   ...image,
   ...mcp,
   ...memories,

@@ -38,8 +38,61 @@
     transition: color var(--duration-fast) var(--ease-out);
   }
 
-  .segment:hover,
+  .segment:hover:not(:disabled),
   .segment[aria-checked="true"] {
     color: var(--text-primary);
+  }
+
+  .segment:disabled {
+    color: var(--text-disabled);
+  }
+
+  .segment-icon {
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .segment-count {
+    color: var(--text-detail);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .segmented[data-fit="true"] {
+    display: flex;
+    flex: none;
+  }
+
+  .segmented[data-fit="true"]::before {
+    left: 0;
+    width: var(--thumb-w, 0px);
+    transform: translateX(var(--thumb-x, 0px));
+    transition:
+      transform var(--duration-slow) var(--ease-out),
+      width var(--duration-slow) var(--ease-out);
+  }
+
+  .segmented[data-fit="true"] .segment {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+  }
+
+  .segmented[data-size="sm"] {
+    padding: 2px;
+    border-radius: 8px;
+  }
+
+  .segmented[data-size="sm"]::before {
+    top: 2px;
+    bottom: 2px;
+    border-radius: 6px;
+  }
+
+  .segmented[data-size="sm"] .segment {
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 6px;
+    font-size: var(--font-size-caption);
   }
 }

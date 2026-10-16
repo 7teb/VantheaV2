@@ -30,6 +30,16 @@
     text-overflow: ellipsis;
   }
 
+  .button-sm {
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 7px;
+  }
+
+  .button-sm.button-ghost {
+    padding: 0 8px;
+  }
+
   .button-secondary {
     background: var(--surface-button);
     box-shadow: var(--shadow-button);

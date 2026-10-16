@@ -7,14 +7,17 @@ export type ButtonVariant = "secondary" | "ghost" | "danger";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
+  size?: "sm" | "md";
   icon?: ReactNode;
+  icon_end?: ReactNode;
   ref?: Ref<HTMLButtonElement>;
 };
 
-export const Button = ({ variant = "secondary", icon, className, children, type = "button", ...rest }: ButtonProps) => (
-  <button type={type} className={class_names("button", `button-${variant}`, className)} {...rest}>
+export const Button = ({ variant = "secondary", size = "md", icon, icon_end, className, children, type = "button", ...rest }: ButtonProps) => (
+  <button type={type} className={class_names("button", `button-${variant}`, size === "sm" && "button-sm", className)} {...rest}>
     {icon}
     {children !== undefined && <span className="button-label">{children}</span>}
+    {icon_end}
   </button>
 );
 

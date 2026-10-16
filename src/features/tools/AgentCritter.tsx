@@ -1,7 +1,7 @@
 import { match_agents } from "../../../shared/agent-match.ts";
 import type { ToolStep } from "../../../shared/chat.ts";
 import type { AgentSummary } from "../../../shared/ipc/work.ts";
-import { CritterIcon } from "../../components/icons.tsx";
+import { CritterIcon, MainAgentIcon } from "../../components/icons.tsx";
 import { agents_store } from "../../state/agents.ts";
 import { use_store } from "../../state/use-store.ts";
 import { text_arg, view_of } from "./tool-meta.ts";
@@ -21,8 +21,11 @@ const step_agent = (agents: AgentSummary[], step: ToolStep): AgentSummary | null
   return matches.length === 1 ? matches[0] : null;
 };
 
-export const AgentCritter = ({ step }: { step: ToolStep }) => {
+export const AgentCritter = ({ chat_id, step }: { chat_id: string; step: ToolStep }) => {
   const agent = use_store(agents_store, (state) => step_agent(state.agents, step));
+  if (step.name === "message_main_agent") {
+    return <MainAgentIcon chat_id={chat_id} />;
+  }
   const running = agent?.runs.some((run) => run.status === "running") ?? false;
   return <CritterIcon name={agent?.name ?? target_name(step)} running={running} />;
 };

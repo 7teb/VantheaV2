@@ -1,0 +1,66 @@
+.files-viewer > .files-bar .git-mode {
+  margin-left: auto;
+}
+
+.git-mode .segment-icon {
+  display: none;
+}
+
+.git-diff {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 2px 0 var(--space-4);
+}
+
+.git-diff:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.files-change-bar {
+  position: absolute;
+  top: calc(var(--bar-line) * var(--leading-code));
+  right: 3px;
+  width: 3px;
+  height: calc(var(--bar-span) * var(--leading-code));
+  border-radius: 1px;
+}
+
+.files-change-bar[data-bar="added"] {
+  background: var(--git-added);
+}
+
+.files-change-bar[data-bar="modified"] {
+  background: var(--git-modified);
+}
+
+.files-change-bar[data-bar="deleted"] {
+  top: calc(var(--bar-line) * var(--leading-code) - 3px);
+  height: 6px;
+  background: var(--git-deleted);
+}
+
+.files-text .conflict-marker {
+  color: var(--git-conflicted);
+}
+
+@container dock (max-width: 419px) {
+  .git-mode .segment-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .git-mode .segment-icon {
+    display: inline-grid;
+  }
+
+  .segmented.git-mode .segment {
+    padding: 0 7px;
+  }
+}

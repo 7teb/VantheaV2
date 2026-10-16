@@ -18,7 +18,7 @@ import { app_closed_end, create_live, final_report, forget_live, last_text, live
 import { deliver_to, forget_chat_peers, on_peer_ended, return_undelivered } from "./peers.ts";
 import { agent_role_section, kept_instruction_note, peer_note } from "./prompt.ts";
 import { questions_asked_by, sync_open_questions } from "./questions.ts";
-import { current_run, public_run, public_summary, type AgentRecord, type RunRecord } from "./records.ts";
+import { current_run, is_running, public_run, public_summary, type AgentRecord, type RunRecord } from "./records.ts";
 import { label_of, profile_text, question_line } from "./roster.ts";
 import { write_report_file } from "./report-file.ts";
 import { deliver_report, drop_agent_notes, wake_idle } from "./reports.ts";
@@ -97,6 +97,12 @@ export const validate_without_tools = (profile: AgentProfile, names: string[], s
   }
   return [...new Set(names)];
 };
+
+export const running_agent_roots = (): string[] =>
+  live_runs().flatMap((live) => {
+    const agent = get_agent(live.agent_id);
+    return agent && is_running(agent) ? [agent.project_root] : [];
+  });
 
 export const ensure_capacity = (chat_id: string): void => {
   if (running_in_chat(chat_id) >= max_running_agents) {

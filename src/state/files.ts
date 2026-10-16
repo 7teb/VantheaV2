@@ -315,6 +315,8 @@ export const close_file = (path: string) =>
 
 export const toggle_tree = () => update_view(shown_key(), (view) => ({ ...view, tree_open: !view.tree_open }));
 
+export const set_tree_open = (open: boolean) => update_view(shown_key(), (view) => (view.tree_open === open ? view : { ...view, tree_open: open }));
+
 export const set_query = (query: string) => {
   const { key, view: current } = shown();
   update_view(key, (view) => ({ ...view, query }));

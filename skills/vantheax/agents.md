@@ -74,6 +74,7 @@ Noise is handled by structure, not by limits: topics, overlap notices, the requi
 ## What you see
 
 - In the Background Tasks panel (More menu), the recipient's transcript shows each message as a row "From <name>: <summary>" ("Von <name>: <summary>"). Opening it shows the type, the subject, the message id and the full text. The sender's transcript shows the message_peer call with the recipient and the outcome ("In inbox", "Kept for next run", "Blocked by review", "Declined", "Not running", "Already sent").
+- An instruction from the main agent (message_agent, or one kept for the next run) shows in the sub-agent's transcript as a closed row "Received a message from the main agent" ("Nachricht vom Haupt-Agenten erhalten"); opening it shows the full text. The main agent has one critter icon per chat, used on these rows and on the sub-agent's message_main_agent rows, so it looks the same wherever it appears in that chat.
 - The roster notices a sub-agent gets (the agent list at the start of a run, later changes and overlap introductions) are for the model only and are not shown in its transcript.
 - The Background Tasks panel shows each agent's topic next to its profile (with "without run_command, run_bash" ("ohne run_command, run_bash") when tools were removed) and model, and "1 open question" ("1 offene Frage") on a running run that waits for an answer. This is information, not a waiting state.
 - Allowed messages between agents do not appear in the main chat. A blocked message and a detected loop appear there as one row "Agent messages need attention: <name>" ("Agenten-Nachrichten brauchen Aufmerksamkeit: <name>") marked "Blocked" ("Blockiert") or "Loop" ("Schleife").
@@ -93,7 +94,7 @@ What goes up to the main agent (message_main_agent, reports) is not reviewed.
 
 A running agent has `message_main_agent`. It sends a self-contained message with confirmed results, a wrong assumption in its task, or a blocker. There is no limit on the number or length of these messages. The agent gets no answer and keeps working.
 
-If an agent makes 25 tool calls without sending a message, the app reminds it to send its confirmed results with message_main_agent, for as long as the run lasts.
+If an agent makes 15 tool calls without sending a message, the app reminds it to send its confirmed results with message_main_agent, for as long as the run lasts. The reminder is for the model only and does not show in the agent's transcript.
 
 ## Reports
 
@@ -106,7 +107,7 @@ The main agent receives a notification with the agent id, run id, status, durati
 ## How updates and reports reach the main agent
 
 - While the main turn is running: updates and reports are added at the start of its next model round. A report replaces pending updates of the same run.
-- After the main turn has ended: an update or a finished report starts a new turn in the chat by itself, using the current model, effort and permission mode from the settings. These turns are marked in the chat as coming from an agent, not from the user.
+- After the main turn has ended: an update or a finished report starts a new turn in the chat by itself, using the current model, effort and permission mode from the settings. These turns are marked in the chat as coming from an agent, not from the user. While you have a message waiting in the queue above the message box, reports, updates and finished background tasks wait: your message is sent first, and they follow when its turn ends.
 
 ## Stop
 

@@ -35,6 +35,8 @@ const chats = new Map<string, ChatState>();
 
 const instances = new Map<string, InstanceState>();
 
+const feed_numbers = new Map<string, Map<string, number>>();
+
 let generations = 0;
 
 export const instance_key = (chat_id: string, actor_id: string): string => `${chat_id}:${actor_id}`;
@@ -49,8 +51,21 @@ export const stored_profile = (chat_id: string, key: string): ProjectProfile | n
   return state?.key === key ? state.profile : null;
 };
 
+export const feed_id = (chat_id: string, key: string): string => {
+  const numbers = feed_numbers.get(chat_id) ?? new Map<string, number>();
+  feed_numbers.set(chat_id, numbers);
+  const known = numbers.get(key);
+  if (known !== undefined) {
+    return `d${known}`;
+  }
+  const next = numbers.size + 1;
+  numbers.set(key, next);
+  return `d${next}`;
+};
+
 export const clear_review_chat = (chat_id: string): void => {
   chats.delete(chat_id);
+  feed_numbers.delete(chat_id);
   for (const key of [...instances.keys()]) {
     if (key.startsWith(`${chat_id}:`)) instances.delete(key);
   }
@@ -88,8 +103,7 @@ export const review_parts = (input: StateInput, level: TrimLevel, dropped_humans
   const decisions = new Map(input.feed.map((line) => [line.key, feed_text(line)]));
   const actions = new Map(input.actions.map((line) => [line.key, line.full]));
   const scripts = new Map(input.retained.map((entry) => [entry.key, retained_line(entry)]));
-  const status_changed = previous ? [...previous.decisions].some(([id, text]) => decisions.get(id) !== text) : true;
-  if (previous && level === 0 && previous.level === 0 && previous.generation === chat.generation && previous.task === task && !status_changed) {
+  if (previous && level === 0 && previous.level === 0 && previous.generation === chat.generation && previous.task === task) {
     const block = later_block({
       decisions: fresh_lines(decisions, previous.decisions),
       actions: fresh_lines(actions, previous.actions),

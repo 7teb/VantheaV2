@@ -1,4 +1,5 @@
 import type { ApprovalDecision } from "../../shared/approval.ts";
+import type { CommandOrigin } from "../../shared/chat.ts";
 import { api } from "../api/bridge.ts";
 import { open_chat } from "./ui.ts";
 
@@ -59,12 +60,12 @@ export const undo_turn = async (chat_id: string, message_id: string): Promise<Ac
   }
 };
 
-export const init_turn = async (chat_id: string): Promise<ActionResult> => {
+export const init_turn = async (chat_id: string, command: CommandOrigin): Promise<ActionResult> => {
   try {
-    await api.invoke("turn:init", chat_id);
+    await api.invoke("turn:init", chat_id, command);
     return ok;
   } catch (error) {
-    console.error(`[chat] turn:init failed for chat ${chat_id}`, error);
+    console.error(`[chat] turn:init failed for chat ${chat_id} (${command})`, error);
     return failure(error);
   }
 };

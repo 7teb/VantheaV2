@@ -32,6 +32,8 @@ export const commands = {
   "commands.memories_hint": "View, add and delete",
   "commands.init": "Initialize",
   "commands.init_hint": "Create or update AGENTS.md",
+  "commands.git_init": "Create GitHub repository",
+  "commands.git_init_hint": "Asks for name, visibility and collaborators, then pushes",
   "commands.plan_hint": "Read-only, presents a plan to accept",
   "commands.fork": "Fork chat",
   "commands.fork_hint": "From the latest message",

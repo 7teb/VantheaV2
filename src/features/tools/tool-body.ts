@@ -37,8 +37,6 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
     }
     case "agent":
       return view.report !== "";
-    case "todos":
-      return view.todos.length > 0;
     case "web_search":
       return view.sources.length > 0 || view.answer !== "" || (view.failed?.length ?? 0) > 0;
     case "image":
@@ -58,6 +56,7 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
     case "read":
     case "browser":
     case "skill":
+    case "todos":
       return false;
   }
 };

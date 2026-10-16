@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { AssistantMessage, Attachment, Message, UserMessage } from "../../shared/chat.ts";
 import { file_changes, undoable_turn } from "../../shared/file-changes.ts";
 import type { CompactResult, SendRequest, TurnStarted } from "../../shared/ipc/chats.ts";
-import type { UserOrigin } from "../../shared/chat.ts";
+import type { CommandOrigin, UserOrigin } from "../../shared/chat.ts";
 import { wake_idle } from "../agents/reports.ts";
 import { attachment_ids, hold_ids, release_ids } from "../chats/refs.ts";
 import { append_message, flush_chat, get_chat, set_streaming, truncate_after, unarchive_chat, update_message } from "../chats/store.ts";
@@ -33,6 +33,7 @@ import {
 import { drive, type TurnPlan } from "./drive.ts";
 import { create_emitter, type EmitDeps } from "./emit.ts";
 import { uncompacted_work } from "./history.ts";
+import { git_init_request_text } from "./git-init-request.ts";
 import { init_request_text } from "./init-request.ts";
 import { undo_request_text } from "./undo-request.ts";
 import { note_images } from "./vision-notes.ts";
@@ -255,9 +256,11 @@ export const undo_turn = (chat_id: string, message_id: string): Promise<TurnStar
     return (await launch({ chat_id, model_id, effort, mode, plan: false, origin: "undo", trigger: { kind: "new", text, attachments: [] } })).started;
   });
 
-export const init_turn = (chat_id: string): Promise<TurnStarted> => {
+const command_texts: Record<CommandOrigin, string> = { init: init_request_text, git_init: git_init_request_text };
+
+export const init_turn = (chat_id: string, command: CommandOrigin): Promise<TurnStarted> => {
   const { model_id, effort, mode } = settings_request();
-  return begin({ chat_id, model_id, effort, mode, plan: false, origin: "init", trigger: { kind: "new", text: init_request_text, attachments: [] } });
+  return begin({ chat_id, model_id, effort, mode, plan: false, origin: command, trigger: { kind: "new", text: command_texts[command], attachments: [] } });
 };
 
 export const compact_turn = async (chat_id: string): Promise<CompactResult> => {

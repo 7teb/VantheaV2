@@ -4,6 +4,7 @@ import { undoable_turn } from "../../../shared/file-changes.ts";
 import { ArrowDownIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { last_assistant } from "../../state/chat-view-reduce.ts";
+import { turn_segments } from "../../state/turn-groups.ts";
 import { AssistantMessage } from "./AssistantMessage.tsx";
 import { last_own_send, plan_state } from "./assistant-blocks.ts";
 import { stepless_summary_after, summary_line_step } from "./compaction-line.ts";
@@ -19,32 +20,35 @@ export const MessageList = ({ chat_id, chat }: MessageListProps) => {
   const { scroller, content, away, jump } = use_follow_bottom(last_own_send(messages));
   const plans = useMemo(() => plan_state(messages), [messages]);
   const undoable_id = useMemo(() => undoable_turn(messages)?.id ?? null, [messages]);
+  const segments = useMemo(() => turn_segments(messages), [messages]);
   const busy = last_assistant(chat)?.status === "streaming";
-  const last_index = messages.length - 1;
+  const last_id = messages.at(-1)?.id ?? "";
   const summary_after = useMemo(() => stepless_summary_after(messages, chat.summary), [messages, chat.summary]);
 
   return (
     <div className="chat-slot">
       <div className="chat-scroll" ref={scroller}>
         <div className="chat-column" ref={content}>
-          {messages.map((message, index) => (
-            <Fragment key={message.id}>
-              {message.role === "user" ? (
-                <UserMessage chat_id={chat_id} message={message} busy={busy} />
-              ) : (
-                <AssistantMessage
-                  chat_id={chat_id}
-                  message={message}
-                  is_last={index === last_index}
-                  busy={busy}
-                  last_plan={plans.last_plan_id === message.id}
-                  plan_accepted={plans.accepted.has(message.id)}
-                  undoable={message.id === undoable_id}
-                />
-              )}
-              {summary_after === message.id && <CompactionRow step={summary_line_step} />}
-            </Fragment>
-          ))}
+          {segments.map((segment) =>
+            segment.kind === "user" ? (
+              <Fragment key={segment.message.id}>
+                <UserMessage chat_id={chat_id} message={segment.message} busy={busy} />
+                {summary_after === segment.message.id && <CompactionRow step={summary_line_step} />}
+              </Fragment>
+            ) : (
+              <AssistantMessage
+                key={segment.messages[0]?.id}
+                chat_id={chat_id}
+                messages={segment.messages}
+                last_id={last_id}
+                busy={busy}
+                last_plan_id={plans.last_plan_id}
+                accepted={plans.accepted}
+                undoable_id={undoable_id}
+                summary_after={summary_after}
+              />
+            ),
+          )}
         </div>
       </div>
       {away && (

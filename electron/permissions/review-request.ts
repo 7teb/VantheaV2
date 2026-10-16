@@ -6,7 +6,7 @@ import { estimate_review_tokens, fit_scripts, recent_human_messages, request_cap
 import { action_lines, decision_feed, type FeedLine, type FeedSource } from "./review-lines.ts";
 import { review_system_prompt } from "./review-prompt.ts";
 import { human_line_bytes, type AgentView, type ChatView } from "./review-sections.ts";
-import { review_parts } from "./review-state.ts";
+import { feed_id, review_parts } from "./review-state.ts";
 import { retained_scripts, type RetainedScript } from "./script-retention.ts";
 
 export type ReviewInput = {
@@ -34,7 +34,7 @@ const random_tag = (): string => randomBytes(6).toString("hex");
 const review_session_id = (chat_id: string): string => `vx-review:${chat_id}`.slice(0, 256);
 
 export const assemble_review = (input: ReviewInput, cap_tokens: number = request_cap_tokens, new_tag: () => string = random_tag): AssembledReview => {
-  const lines = decision_feed(input.source, input.agent.actor, input.mark);
+  const lines = decision_feed(input.source, input.agent.actor, input.mark, (key) => feed_id(input.chat.chat_id, key));
   const actions = action_lines(input.source.steps, lines, input.call_id);
   const retained = retained_scripts(input.source.records, input.agent.actor);
   const system_tokens = estimate_review_tokens(review_system_prompt);

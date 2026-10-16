@@ -1,0 +1,112 @@
+.files-split[data-surface="changes"] .files-tree {
+  width: clamp(240px, 40%, 360px);
+}
+
+.git-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px var(--space-2) var(--space-4);
+}
+
+.git-group-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 26px;
+  padding-left: 28px;
+}
+
+.git-group-count {
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.git-change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 26px;
+  padding: 0 var(--space-2) 0 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-ui);
+  text-align: left;
+  white-space: nowrap;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+button.git-change:hover {
+  background: var(--fill-hover);
+  color: var(--text-primary);
+}
+
+.git-change[data-active="true"] {
+  background: var(--fill-active);
+  color: var(--text-primary);
+}
+
+.git-change-mark {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+}
+
+.git-change-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-right: -12px;
+  padding-right: 12px;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, var(--mask) calc(100% - 12px), transparent);
+}
+
+.git-change[data-git="deleted"] .git-change-name {
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+}
+
+.git-change-dir {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
+  mask-image: linear-gradient(to right, var(--mask) calc(100% - 12px), transparent);
+}
+
+.git-counts {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.git-add {
+  color: var(--text-primary);
+}
+
+.git-del {
+  color: var(--text-danger);
+}
+
+.git-binary {
+  color: var(--text-detail);
+}
+
+.git-change-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 var(--space-2) 0 6px;
+}

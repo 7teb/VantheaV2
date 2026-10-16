@@ -59,6 +59,27 @@
     user-select: none;
   }
 
+  .diff-rows {
+    --diff-rows-chrome: 122px;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-code);
+    line-height: var(--leading-code);
+  }
+
+  .diff-rows .diff-row {
+    grid-template-columns: 44px 44px 18px minmax(max-content, 1fr);
+    width: auto;
+    min-width: max-content;
+  }
+
+  .diff-rows .diff-gutter {
+    color: var(--text-tertiary);
+  }
+
+  .diff-rows .diff-gap {
+    padding-block: 0;
+  }
+
   .diff-empty {
     font-size: var(--font-size-ui);
     color: var(--text-tertiary);

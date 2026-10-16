@@ -14,6 +14,8 @@ const pending = new Map<string, PendingEvent[]>();
 
 const delivering = new Set<string>();
 
+let held = new Set<string>();
+
 export const agent_event_text = (report: AgentReport): string =>
   report_event_text({
     agent_id: report.agent_id,
@@ -59,7 +61,7 @@ const deliver = async (chat_id: string) => {
   }
   const queue = pending.get(chat_id) ?? [];
   const first = queue[0];
-  if (!first || delivering.has(chat_id)) {
+  if (!first || delivering.has(chat_id) || held.has(chat_id)) {
     return;
   }
   const other = queue.findIndex((event) => event.origin !== first.origin);
@@ -115,6 +117,14 @@ export const notify_agent = (notice: AgentNotice): void => {
 
 export const deliver_pending_events = (chat_id: string): void => {
   void deliver(chat_id);
+};
+
+export const hold_events_for = (chat_ids: string[]): void => {
+  const released = [...held].filter((chat_id) => !chat_ids.includes(chat_id));
+  held = new Set(chat_ids);
+  for (const chat_id of released) {
+    void deliver(chat_id);
+  }
 };
 
 export const drop_pending_events = (chat_id: string): void => {

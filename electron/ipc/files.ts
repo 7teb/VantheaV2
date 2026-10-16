@@ -1,6 +1,7 @@
 import { shell, type WebContents } from "electron";
 import type { FilesScope } from "../../shared/ipc/files.ts";
 import { main_window } from "../app/window.ts";
+import { git_service } from "../git/index.ts";
 import { files_root, parse_scope, require_root } from "../project/files-root.ts";
 import { invalidate_index } from "../project/index.ts";
 import { find_files, list_dir, tree_path } from "../project/listing.ts";
@@ -18,6 +19,7 @@ export const stop_files_watch = () => {
   generation += 1;
   watching?.watcher.close();
   watching = null;
+  git_service.stop();
 };
 
 export const stop_chat_files_watch = (chat_id: string) => {
@@ -46,20 +48,28 @@ const start_files_watch = async (scope: FilesScope) => {
   if (ticket !== generation) {
     return;
   }
-  if (watching && watching.root === root?.path) {
+  if (watching && root && watching.root === root.path) {
     watching.chat_id = scope.chat_id;
+    git_service.bind(root);
     return;
   }
   watching?.watcher.close();
   watching = null;
   if (!root) {
+    git_service.stop();
     return;
   }
   hook_renderer();
-  const watcher = watch_tree(root.path, (change) => {
-    invalidate_index(root.path);
-    emit("files:changed", { root: root.path, ...change });
-  });
+  const tap = git_service.bind(root);
+  const watcher = watch_tree(
+    root.path,
+    (change) => {
+      invalidate_index(root.path);
+      emit("files:changed", { root: root.path, ...change });
+    },
+    undefined,
+    tap,
+  );
   watching = { root: root.path, chat_id: scope.chat_id, watcher };
 };
 

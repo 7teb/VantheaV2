@@ -1,32 +1,47 @@
 import { useMemo, type CSSProperties } from "react";
+import { decoration_of, type GitDecoration, type GitDecorations } from "../../../../shared/git/decorations.ts";
 import type { DirEntry } from "../../../../shared/ipc/files.ts";
 import { IconButton } from "../../../components/Button.tsx";
-import { ChevronRightIcon, CloseIcon, FileIcon, FolderIcon, FolderOpenIcon, SearchIcon } from "../../../components/icons.tsx";
+import { ChevronRightIcon, CloseIcon, FileIcon, FolderGitIcon, FolderIcon, FolderOpenIcon, SearchIcon } from "../../../components/icons.tsx";
 import { Skeleton, SkeletonRows } from "../../../components/Skeleton.tsx";
 import { TextField } from "../../../components/TextField.tsx";
 import { use_t } from "../../../i18n/index.ts";
-import { files_store, open_file, set_query, shown_view, toggle_dir } from "../../../state/files.ts";
+import { files_store, set_query, shown_view, toggle_dir } from "../../../state/files.ts";
 import { base_name, parent_dir, tree_rows, type TreeRow } from "../../../state/files-tree.ts";
 import { use_store } from "../../../state/use-store.ts";
+import { GitBadge } from "./git/GitBadge.tsx";
+import { use_git_decorations } from "./git/use-shown-git.ts";
 
 const indent = (depth: number) => ({ "--depth": depth }) as CSSProperties;
 
-const entry_icon = (entry: DirEntry, open: boolean) => {
+const entry_icon = (entry: DirEntry, open: boolean, nested_repo: boolean) => {
   if (entry.kind === "file") {
     return <FileIcon size={15} />;
+  }
+  if (nested_repo) {
+    return <FolderGitIcon size={15} />;
   }
   return open ? <FolderOpenIcon size={15} /> : <FolderIcon size={15} />;
 };
 
-type EntryRowProps = { entry: DirEntry; depth: number; open: boolean; active: boolean };
+const decoration_for = (decorations: GitDecorations | null, path: string, dir: boolean): GitDecoration | null =>
+  decorations ? decoration_of(decorations, path, dir) : null;
 
-const EntryRow = ({ entry, depth, open, active }: EntryRowProps) => {
+const row_git = (decoration: GitDecoration | null, dir: boolean): string | undefined =>
+  decoration && (!dir || decoration.status === "ignored") ? decoration.status : undefined;
+
+type EntryRowProps = { entry: DirEntry; depth: number; open: boolean; active: boolean; decoration: GitDecoration | null; on_open: (path: string) => void };
+
+const EntryRow = ({ entry, depth, open, active, decoration, on_open }: EntryRowProps) => {
+  const t = use_t();
+  const dir = entry.kind === "dir";
+  const nested_repo = decoration?.entry?.nested_repo === true;
   const activate = () => {
-    if (entry.kind === "dir") {
+    if (dir) {
       toggle_dir(entry.path);
       return;
     }
-    void open_file(entry.path);
+    on_open(entry.path);
   };
   return (
     <button
@@ -34,15 +49,17 @@ const EntryRow = ({ entry, depth, open, active }: EntryRowProps) => {
       className="files-row"
       style={indent(depth)}
       data-active={active}
-      aria-expanded={entry.kind === "dir" ? open : undefined}
-      title={entry.path}
+      data-git={row_git(decoration, dir)}
+      aria-expanded={dir ? open : undefined}
+      title={nested_repo ? `${entry.path}\n${t("git.nested_repo")}` : entry.path}
       onClick={activate}
     >
       <span className="files-row-chevron" data-open={open}>
-        {entry.kind === "dir" && <ChevronRightIcon size={13} />}
+        {dir && <ChevronRightIcon size={13} />}
       </span>
-      <span className="files-row-icon">{entry_icon(entry, open)}</span>
+      <span className="files-row-icon">{entry_icon(entry, open, nested_repo)}</span>
       <span className="files-row-label">{entry.name}</span>
+      <GitBadge decoration={decoration} dir={dir} />
     </button>
   );
 };
@@ -67,26 +84,36 @@ const NoteRow = ({ row }: NoteRowProps) => {
 
 const RowsSkeleton = () => <SkeletonRows widths={[58, 44, 66, 50, 38, 62]} row_height={26} icon className="files-rows-skeleton" />;
 
-const TreeRows = ({ active }: { active: string | null }) => {
+const TreeRows = ({ active, on_open }: { active: string | null; on_open: (path: string) => void }) => {
   const dirs = use_store(files_store, (state) => shown_view(state).dirs);
   const expanded = use_store(files_store, (state) => shown_view(state).expanded);
   const rows = useMemo(() => tree_rows(dirs, expanded), [dirs, expanded]);
+  const decorations = use_git_decorations();
   const top = dirs[""];
   if (!top || top.status === "loading") {
     return <RowsSkeleton />;
   }
   return rows.map((row) =>
     row.kind === "entry" ? (
-      <EntryRow key={row.entry.path} entry={row.entry} depth={row.depth} open={row.open} active={row.entry.path === active} />
+      <EntryRow
+        key={row.entry.path}
+        entry={row.entry}
+        depth={row.depth}
+        open={row.open}
+        active={row.entry.path === active}
+        decoration={decoration_for(decorations, row.entry.path, row.entry.kind === "dir")}
+        on_open={on_open}
+      />
     ) : (
       <NoteRow key={`${row.kind}:${row.path}`} row={row} />
     ),
   );
 };
 
-const MatchRows = ({ active }: { active: string | null }) => {
+const MatchRows = ({ active, on_open }: { active: string | null; on_open: (path: string) => void }) => {
   const t = use_t();
   const matches = use_store(files_store, (state) => shown_view(state).matches);
+  const decorations = use_git_decorations();
   if (matches.status === "failed") {
     return <p className="files-tree-note">{t("files.find_failed")}</p>;
   }
@@ -98,21 +125,33 @@ const MatchRows = ({ active }: { active: string | null }) => {
   }
   return (
     <>
-      {matches.paths.map((path) => (
-        <button key={path} type="button" className="files-row files-match" data-active={path === active} title={path} onClick={() => void open_file(path)}>
-          <span className="files-row-icon">
-            <FileIcon size={15} />
-          </span>
-          <span className="files-match-name">{base_name(path)}</span>
-          <span className="files-match-dir">{parent_dir(path)}</span>
-        </button>
-      ))}
+      {matches.paths.map((path) => {
+        const decoration = decoration_for(decorations, path, false);
+        return (
+          <button
+            key={path}
+            type="button"
+            className="files-row files-match"
+            data-active={path === active}
+            data-git={row_git(decoration, false)}
+            title={path}
+            onClick={() => on_open(path)}
+          >
+            <span className="files-row-icon">
+              <FileIcon size={15} />
+            </span>
+            <span className="files-match-name">{base_name(path)}</span>
+            <span className="files-match-dir">{parent_dir(path)}</span>
+            <GitBadge decoration={decoration} dir={false} />
+          </button>
+        );
+      })}
       {matches.truncated && <p className="files-tree-note">{t("files.matches_capped")}</p>}
     </>
   );
 };
 
-export const FileTree = () => {
+export const FileTree = ({ on_open }: { on_open: (path: string) => void }) => {
   const t = use_t();
   const query = use_store(files_store, (state) => shown_view(state).query);
   const active = use_store(files_store, (state) => shown_view(state).active);
@@ -143,7 +182,7 @@ export const FileTree = () => {
           }}
         />
       </div>
-      <div className="files-tree-scroll">{filtering ? <MatchRows active={active} /> : <TreeRows active={active} />}</div>
+      <div className="files-tree-scroll">{filtering ? <MatchRows active={active} on_open={on_open} /> : <TreeRows active={active} on_open={on_open} />}</div>
     </div>
   );
 };

@@ -59,7 +59,7 @@ const record_status = (record: ReviewRecord, answer: HumanDecision | undefined, 
 
 const spoke_since = (mark: string | null, anchor: string | null): boolean => (anchor === null ? mark !== null : mark !== anchor);
 
-export const decision_feed = (source: FeedSource, self: ReviewActor, mark: string | null): FeedLine[] => {
+export const decision_feed = (source: FeedSource, self: ReviewActor, mark: string | null, id_of: (key: string) => string): FeedLine[] => {
   const records = dedupe(source.records);
   const decisions = dedupe(source.decisions);
   const answers = new Map(decisions.flatMap((decision) => (decision.review_id ? [[decision.review_id, decision] as const] : [])));
@@ -71,7 +71,7 @@ export const decision_feed = (source: FeedSource, self: ReviewActor, mark: strin
   const numbered = items
     .map((item, index) => ({ item, index }))
     .sort((a, b) => a.item.at - b.item.at || a.index - b.index)
-    .map(({ item }, index) => ({ ...item, id: `d${index + 1}` }));
+    .map(({ item }) => ({ ...item, id: id_of(item.record?.id ?? item.decision?.id ?? "") }));
   const lines: FeedLine[] = [];
   for (const entry of numbered) {
     if (!entry.line) continue;

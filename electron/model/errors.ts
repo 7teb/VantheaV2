@@ -134,6 +134,9 @@ const kind_for = (status: number | null, error: ProviderError | null, retry_afte
   if (status === 402 || type === "payment_required") {
     return error?.limit_source === "openrouter_in_flight_budget" && retry_after_ms > 0 ? "rate_limited" : "credits";
   }
+  if (status === 403 && error?.limit_source) {
+    return "credits";
+  }
   if (status === 403 || policy_types.has(type) || provider_code === "cyber_policy" || error?.moderation) {
     return "policy";
   }

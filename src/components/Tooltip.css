@@ -27,6 +27,10 @@
     visibility: hidden;
   }
 
+  .tooltip > span {
+    white-space: pre-line;
+  }
+
   .tooltip-hint {
     font-family: var(--font-ui);
     font-size: var(--font-size-caption);

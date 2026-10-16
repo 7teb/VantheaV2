@@ -1,136 +1,98 @@
-import { memo, useMemo, useRef, useState } from "react";
-import { manual_compaction_only, type AssistantMessage as AssistantMessageData } from "../../../shared/chat.ts";
-import { IconButton } from "../../components/Button.tsx";
-import { ForkIcon } from "../../components/icons.tsx";
-import { Markdown } from "../../components/Markdown.tsx";
-import { CopyButton } from "../../components/MarkdownCopy.tsx";
-import { use_t } from "../../i18n/index.ts";
-import { fork_chat } from "../../state/chat-actions.ts";
-import { ImageBody } from "../tools/bodies-web.tsx";
-import { tool_icon } from "../tools/registry.tsx";
-import { tool_label } from "../tools/tool-meta.ts";
-import { WorkGroup } from "../tools/WorkGroup.tsx";
-import { answer_text, build_blocks, shows_thinking, type Block } from "./assistant-blocks.ts";
+import { Fragment, memo, useRef } from "react";
+import type { AssistantMessage as AssistantMessageData, Message } from "../../../shared/chat.ts";
+import { file_changes } from "../../../shared/file-changes.ts";
+import { build_blocks } from "./assistant-blocks.ts";
+import { summary_line_step } from "./compaction-line.ts";
 import { FileChanges } from "./FileChanges.tsx";
-import { PlanCard } from "./PlanCard.tsx";
-import { ReasoningRow } from "./ReasoningRow.tsx";
-import { CompactionRow, NoticeRow, SteerRow } from "./StepRows.tsx";
+import { OriginNote } from "./OriginNote.tsx";
+import { CompactionRow } from "./StepRows.tsx";
+import { TurnBody } from "./TurnBody.tsx";
 import { FoldItem, use_turn_folded } from "./TurnFold.tsx";
 import { TurnHead, use_turn_head } from "./TurnHead.tsx";
-import { foldable_block, turn_shape } from "./turn-shape.ts";
-import { RetryBanner, TurnOutcome } from "./TurnStatus.tsx";
+import { member_facts, turn_shape, type MemberFacts } from "./turn-shape.ts";
 import "./AssistantMessage.css";
 
-type BlockViewProps = {
-  block: Block;
-  chat_id: string;
-  message_id: string;
-  streaming: boolean;
-  tail: boolean;
-  can_accept: boolean;
-  accepted: boolean;
-};
+const facts_cache = new WeakMap<AssistantMessageData, MemberFacts>();
 
-const ImageStep = ({ block }: { block: Extract<Block, { kind: "image" }> }) => {
-  const t = use_t();
-  const Icon = tool_icon(block.step);
-  return (
-    <div className="image-step">
-      <div className="image-step-head">
-        <Icon size={14} />
-        <span>{tool_label(t, block.step)}</span>
-      </div>
-      <ImageBody view={block.view} step={block.step} />
-    </div>
-  );
-};
-
-const BlockView = ({ block, chat_id, message_id, streaming, tail, can_accept, accepted }: BlockViewProps) => {
-  switch (block.kind) {
-    case "reasoning":
-      return <ReasoningRow step={block.step} live={streaming} />;
-    case "text":
-      return <Markdown text={block.step.text} className="assistant-text" />;
-    case "tools":
-      return <WorkGroup chat_id={chat_id} steps={block.steps} streaming={streaming} tail={tail} />;
-    case "plan":
-      return <PlanCard chat_id={chat_id} message_id={message_id} text={block.text} can_accept={can_accept} accepted={accepted} />;
-    case "image":
-      return <ImageStep block={block} />;
-    case "steer":
-      return <SteerRow step={block.step} />;
-    case "notice":
-      return <NoticeRow step={block.step} />;
-    case "compaction":
-      return <CompactionRow step={block.step} />;
+const facts_of = (message: AssistantMessageData): MemberFacts => {
+  const cached = facts_cache.get(message);
+  if (cached) {
+    return cached;
   }
+  const facts = member_facts(message, build_blocks(message.steps));
+  facts_cache.set(message, facts);
+  return facts;
 };
 
 type AssistantMessageProps = {
   chat_id: string;
-  message: AssistantMessageData;
-  is_last: boolean;
+  messages: Message[];
+  last_id: string;
   busy: boolean;
-  last_plan: boolean;
-  plan_accepted: boolean;
-  undoable: boolean;
+  last_plan_id: string | null;
+  accepted: ReadonlySet<string>;
+  undoable_id: string | null;
+  summary_after: string | null;
 };
 
-export const AssistantMessage = memo(({ chat_id, message, is_last, busy, last_plan, plan_accepted, undoable }: AssistantMessageProps) => {
-  const t = use_t();
-  const blocks = useMemo(() => build_blocks(message.steps), [message.steps]);
-  const shape = useMemo(() => turn_shape(message, blocks), [message, blocks]);
+const same_turn = (before: AssistantMessageProps, after: AssistantMessageProps) =>
+  before.chat_id === after.chat_id &&
+  before.last_id === after.last_id &&
+  before.busy === after.busy &&
+  before.last_plan_id === after.last_plan_id &&
+  before.undoable_id === after.undoable_id &&
+  before.summary_after === after.summary_after &&
+  before.messages.length === after.messages.length &&
+  before.messages.every((message, index) => message === after.messages[index] && before.accepted.has(message.id) === after.accepted.has(message.id));
+
+export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_plan_id, accepted, undoable_id, summary_after }: AssistantMessageProps) => {
+  const members = messages.filter((message): message is AssistantMessageData => message.role === "assistant");
+  const facts = members.map(facts_of);
+  const shape = turn_shape(facts);
   const frame = useRef<HTMLDivElement>(null);
-  const folded = use_turn_folded(chat_id, message.id, shape, frame);
-  const answer = useMemo(() => answer_text(message), [message]);
-  const streaming = message.status === "streaming";
-  const head = use_turn_head(shape.head, streaming);
-  const [fork_error, set_fork_error] = useState("");
-  const fork = async () => {
-    const result = await fork_chat(chat_id, message.id);
-    set_fork_error(result.ok ? "" : result.error);
-  };
+  const leader = members[0] as AssistantMessageData;
+  const last = members.at(-1) as AssistantMessageData;
+  const fold = use_turn_folded(chat_id, leader.id, shape, frame);
+  const head = use_turn_head(shape.head, last.status === "streaming", fold.holding);
+  const finished = last.status !== "streaming" && !fold.holding;
+  const own_changes = members.slice(0, -1).every((member) => file_changes(member.steps).length === 0);
+  const file_card = finished && (
+    <FileChanges chat_id={chat_id} steps={members.flatMap((member) => member.steps)} undo_id={own_changes && undoable_id === last.id ? last.id : null} busy={busy} />
+  );
   return (
-    <div ref={frame} className="assistant-message enter-fade-up" data-last={is_last}>
-      {head && <TurnHead chat_id={chat_id} message_id={message.id} created_at={message.created_at} head={head} foldable={shape.foldable} folded={folded} />}
-      {blocks.map((block, index) => {
-        const view = (
-          <BlockView
-            key={block.id}
-            block={block}
-            chat_id={chat_id}
-            message_id={message.id}
-            streaming={streaming}
-            tail={index === blocks.length - 1}
-            can_accept={last_plan && !busy}
-            accepted={plan_accepted}
-          />
-        );
-        return foldable_block(block) ? (
-          <FoldItem key={block.id} folded={folded && shape.folds.has(block.id)}>
-            {view}
-          </FoldItem>
-        ) : (
-          view
+    <div ref={frame} className="assistant-message enter-fade-up" data-last={last.id === last_id}>
+      {head && <TurnHead chat_id={chat_id} message_id={leader.id} created_at={leader.created_at} head={head} foldable={fold.foldable} folded={fold.folded} />}
+      {messages.map((message) => {
+        const summary = summary_after === message.id && <CompactionRow step={summary_line_step} />;
+        if (message.role === "user") {
+          return (
+            <Fragment key={message.id}>
+              <FoldItem folded={fold.folded}>
+                <OriginNote message={message} />
+              </FoldItem>
+              {summary}
+            </Fragment>
+          );
+        }
+        const index = members.indexOf(message);
+        return (
+          <Fragment key={message.id}>
+            <TurnBody
+              chat_id={chat_id}
+              facts={facts[index] as MemberFacts}
+              folds={shape.folds[index] as ReadonlySet<string>}
+              folded={fold.folded}
+              final={index === members.length - 1}
+              is_last={message.id === last_id}
+              busy={busy}
+              last_plan={last_plan_id === message.id}
+              plan_accepted={accepted.has(message.id)}
+              file_card={index === members.length - 1 ? file_card : null}
+            />
+            {summary}
+          </Fragment>
         );
       })}
-      {shows_thinking(streaming, message.retry !== null, blocks) && (
-        <div className="assistant-pending">
-          <span className="is-working">{t("chat.thinking")}</span>
-        </div>
-      )}
-      {message.retry && <RetryBanner retry={message.retry} />}
-      {!manual_compaction_only(message) && <TurnOutcome chat_id={chat_id} message={message} has_content={blocks.length > 0} can_continue={is_last && !busy} />}
-      {!streaming && <FileChanges chat_id={chat_id} message={message} busy={busy} undoable={undoable} />}
-      {!streaming && !manual_compaction_only(message) && (
-        <div className="message-actions assistant-actions">
-          {answer && <CopyButton text={answer} label={t("chat.copy_answer")} />}
-          <IconButton label={t("chat.fork")} size="sm" onClick={() => void fork()}>
-            <ForkIcon size={14} />
-          </IconButton>
-        </div>
-      )}
-      {fork_error && <div className="inline-error">{fork_error}</div>}
     </div>
   );
-});
+}, same_turn);

@@ -4,45 +4,56 @@
     display: block;
   }
 
-  .critter[data-critter="crawler"] {
-    color: var(--critter-crawler);
+  .critter[data-tint="amber"] {
+    color: var(--agent-amber);
   }
 
-  .critter[data-critter="hopper"] {
-    color: var(--critter-hopper);
+  .critter[data-tint="coral"] {
+    color: var(--agent-coral);
   }
 
-  .critter[data-critter="imp"] {
-    color: var(--critter-imp);
+  .critter[data-tint="pink"] {
+    color: var(--agent-pink);
   }
 
-  .critter[data-critter="walker"] {
-    color: var(--critter-walker);
+  .critter[data-tint="violet"] {
+    color: var(--agent-violet);
   }
 
-  .critter[data-critter="chonk"] {
-    color: var(--critter-chonk);
+  .critter[data-tint="teal"] {
+    color: var(--agent-teal);
   }
 
-  .critter[data-critter="bug"] {
-    color: var(--critter-bug);
+  .critter[data-tint="green"] {
+    color: var(--agent-green);
   }
 
-  .critter[data-critter="shroom"] {
-    color: var(--critter-shroom);
+  .critter[data-tint="sand"] {
+    color: var(--agent-sand);
   }
 
-  .critter[data-critter="sprout"] {
-    color: var(--critter-sprout);
+  .critter[data-tint="stone"] {
+    color: var(--agent-stone);
   }
 
-  .critter.is-running {
+  .critter.is-running[data-shape="sprite"] {
     animation: critter-hop 0.8s var(--ease-in-out) infinite;
+  }
+
+  .critter.is-running[data-shape="bloom"] {
+    transform-origin: 50% 50%;
+    animation: bloom-spin 3.2s linear infinite;
   }
 
   @keyframes critter-hop {
     50% {
       transform: translateY(-1.5px);
+    }
+  }
+
+  @keyframes bloom-spin {
+    to {
+      transform: rotate(360deg);
     }
   }
 }

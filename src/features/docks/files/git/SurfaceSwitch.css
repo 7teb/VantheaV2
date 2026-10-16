@@ -1,0 +1,44 @@
+.git-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.git-head .dock-title-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-switch {
+  margin-left: -6px;
+}
+
+.git-switch .segment-icon {
+  display: none;
+}
+
+@container dock (max-width: 419px) {
+  .git-switch .segment {
+    padding: 0 9px;
+  }
+
+  .git-switch .segment-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .git-switch .segment-icon {
+    display: inline-grid;
+  }
+
+  .git-head .dock-title-meta {
+    display: none;
+  }
+}

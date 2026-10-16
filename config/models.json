@@ -91,6 +91,28 @@
       "max_output": 128000
     },
     {
+      "id": "openai/gpt-6-astra",
+      "label": "GPT 6 Astra",
+      "provider": "OpenAI",
+      "provider_order": ["openai"],
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 1050000,
+      "max_output": 128000
+    },
+    {
+      "id": "openai/gpt-6-astra:floor",
+      "label": "GPT 6 Astra Flex",
+      "provider": "OpenAI",
+      "provider_order": ["openai/flex", "openai"],
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 1050000,
+      "max_output": 128000
+    },
+    {
       "id": "google/gemini-3.8-flash",
       "label": "Gemini 3.8 Flash",
       "provider": "Google",

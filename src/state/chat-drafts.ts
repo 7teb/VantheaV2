@@ -209,3 +209,9 @@ export const set_error = (state: ComposerState, key: string, error: string): Com
   }
   return { ...state, errors };
 };
+
+export const held_chats = (state: ComposerState): string[] => {
+  const queued = Object.entries(state.queues).flatMap(([chat_id, queue]) => (queue.some((entry) => !entry.steering) ? [chat_id] : []));
+  const sending = Object.entries(state.sending).flatMap(([chat_id, flag]) => (flag ? [chat_id] : []));
+  return [...new Set([...queued, ...sending])].sort();
+};

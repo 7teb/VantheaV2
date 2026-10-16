@@ -1,10 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { strip_userinfo } from "../../shared/git/remote-url.ts";
+import { git_location, type GitLocation } from "../git/repo.ts";
 import { list_top_level } from "../prompts/project.ts";
 import { error_code, missing_path } from "../storage/coerce.ts";
-import { stat_optional } from "./source-read.ts";
-
-export type GitLocation = { work_tree: string; git_dir: string; common_dir: string };
 
 export type ProjectProfile = { root: string; git: string; listing: string; readme: string | null; scripts: string | null };
 
@@ -18,36 +17,6 @@ const read_optional = async (file: string): Promise<string | null> => {
     return null;
   }
 };
-
-export const git_location = async (root: string): Promise<GitLocation | null> => {
-  if (!root.trim()) {
-    return null;
-  }
-  let dir = path.resolve(root);
-  for (;;) {
-    const dot_git = path.join(dir, ".git");
-    const info = await stat_optional(dot_git, "a git folder");
-    if (info?.isDirectory()) {
-      const common = (await read_optional(path.join(dot_git, "commondir")))?.trim();
-      return { work_tree: dir, git_dir: dot_git, common_dir: common ? path.resolve(dot_git, common) : dot_git };
-    }
-    if (info?.isFile()) {
-      const pointer = /^gitdir:\s*(.+)$/m.exec((await read_optional(dot_git)) ?? "")?.[1]?.trim();
-      if (pointer) {
-        const git_dir = path.resolve(dir, pointer);
-        const common = (await read_optional(path.join(git_dir, "commondir")))?.trim();
-        return { work_tree: dir, git_dir, common_dir: common ? path.resolve(git_dir, common) : git_dir };
-      }
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      return null;
-    }
-    dir = parent;
-  }
-};
-
-export const strip_userinfo = (url: string): string => url.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^@/\s]*@/i, "$1");
 
 type GitConfig = { branches: Map<string, { remote: string; merge: string }>; remotes: Map<string, string>; includes: boolean };
 

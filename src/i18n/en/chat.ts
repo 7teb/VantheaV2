@@ -52,7 +52,7 @@ export const chat = {
   "chat.error_context_limit": "This chat no longer fits into the model's context window. Compact it or start a new chat.",
   "chat.error_policy": "The provider refused this request under its content policy. Nothing was run or changed.",
   "chat.error_auth": "OpenRouter rejected the API key. Check it in Settings.",
-  "chat.error_credits": "Your OpenRouter balance is too low for this request.",
+  "chat.error_credits": "Your OpenRouter balance or the limit of this API key is too low for this request.",
   "chat.error_bad_request": "The provider rejected the request.",
   "chat.error_app_closed": "The app was closed while this turn was running.",
   "chat.error_internal": "Something went wrong inside VantheaX.",

@@ -1,19 +1,14 @@
-import type { IconProps } from "./icons-base.tsx";
+import { agent_blooms, type AgentBloom } from "./agent-blooms.tsx";
+import { agent_sprites, agent_tints, type AgentSprite, type AgentTint } from "./agent-sprites.ts";
 import { class_names } from "./class-names.ts";
+import type { IconProps } from "./icons-base.tsx";
 import "./critters.css";
 
-type Critter = { key: string; path: string };
+type Glyph = { kind: "sprite"; sprite: AgentSprite } | { kind: "bloom"; bloom: AgentBloom };
 
-const critters: Critter[] = [
-  { key: "crawler", path: "M1 0h3v1h-3zM0 1h1v1h-1zM2 1h1v1h-1zM4 1h1v1h-1zM1 2h3v1h-3zM0 3h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM0 4h5v1h-5z" },
-  { key: "hopper", path: "M1 0h3v1h-3zM0 1h1v1h-1zM2 1h1v1h-1zM4 1h1v1h-1zM0 2h5v1h-5zM1 3h3v1h-3zM0 4h1v1h-1zM4 4h1v1h-1z" },
-  { key: "imp", path: "M0 0h2v1h-2zM3 0h2v1h-2zM0 1h1v1h-1zM2 1h1v1h-1zM4 1h1v1h-1zM0 2h5v1h-5zM2 3h1v1h-1zM0 4h1v1h-1zM4 4h1v1h-1z" },
-  { key: "walker", path: "M1 0h3v1h-3zM0 1h1v1h-1zM2 1h1v1h-1zM4 1h1v1h-1zM0 2h5v1h-5zM1 3h3v1h-3zM1 4h1v1h-1zM3 4h1v1h-1z" },
-  { key: "chonk", path: "M0 0h5v1h-5zM0 1h1v1h-1zM2 1h1v1h-1zM4 1h1v1h-1zM0 2h5v1h-5zM0 3h5v1h-5zM0 4h2v1h-2zM3 4h2v1h-2z" },
-  { key: "bug", path: "M1 0h1v1h-1zM3 0h1v1h-1zM0 1h1v1h-1zM2 1h1v1h-1zM4 1h1v1h-1zM1 2h3v1h-3zM1 3h3v1h-3zM0 4h5v1h-5z" },
-  { key: "shroom", path: "M0 0h5v1h-5zM0 1h1v1h-1zM2 1h1v1h-1zM4 1h1v1h-1zM0 2h5v1h-5zM2 3h1v1h-1zM2 4h1v1h-1z" },
-  { key: "sprout", path: "M1 0h3v1h-3zM0 1h1v1h-1zM2 1h1v1h-1zM4 1h1v1h-1zM1 2h3v1h-3zM0 3h5v1h-5zM2 4h1v1h-1z" },
-];
+const glyphs: Glyph[] = [...agent_sprites.map((sprite): Glyph => ({ kind: "sprite", sprite })), ...agent_blooms.map((bloom): Glyph => ({ kind: "bloom", bloom }))];
+
+const neutral: Glyph = { kind: "sprite", sprite: agent_sprites[0] as AgentSprite };
 
 const name_hash = (name: string): number => {
   let hash = 0x811c9dc5;
@@ -27,24 +22,37 @@ const name_hash = (name: string): number => {
   return hash >>> 0;
 };
 
+const glyph_key = (glyph: Glyph) => (glyph.kind === "sprite" ? glyph.sprite.key : glyph.bloom.key);
+
 type CritterIconProps = { name: string | null; running?: boolean; className?: string };
 
 export const CritterIcon = ({ name, running = false, className }: CritterIconProps) => {
-  const critter = critters[name === null ? 0 : name_hash(name) % critters.length];
+  const hash = name === null ? 0 : name_hash(name);
+  const glyph = name === null ? neutral : (glyphs[hash % glyphs.length] as Glyph);
+  const tint: AgentTint | undefined = name === null ? undefined : glyph.kind === "sprite" ? glyph.sprite.tint : agent_tints[(hash >>> 8) % agent_tints.length];
+  const shared = {
+    "aria-hidden": true,
+    focusable: false,
+    className: class_names("critter", running && "is-running", className),
+    "data-shape": glyph.kind,
+    "data-glyph": name === null ? undefined : glyph_key(glyph),
+    "data-tint": tint,
+  };
+  if (glyph.kind === "bloom") {
+    return (
+      <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" {...shared}>
+        {glyph.bloom.body}
+      </svg>
+    );
+  }
+  const { grid, size, path } = glyph.sprite;
   return (
-    <svg
-      width={15}
-      height={15}
-      viewBox="0 0 5 5"
-      shapeRendering="crispEdges"
-      aria-hidden="true"
-      focusable="false"
-      className={class_names("critter", running && "is-running", className)}
-      data-critter={name === null ? undefined : critter.key}
-    >
-      <path fill="currentColor" d={critter.path} />
+    <svg width={size} height={size} viewBox={`0 0 ${grid} ${grid}`} shapeRendering="crispEdges" {...shared}>
+      <path fill="currentColor" d={path} />
     </svg>
   );
 };
 
 export const CritterMark = ({ className }: IconProps) => <CritterIcon name={null} className={className} />;
+
+export const MainAgentIcon = ({ chat_id }: { chat_id: string }) => <CritterIcon name={`main:${chat_id}`} />;

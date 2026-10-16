@@ -1,5 +1,6 @@
 import type { ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import path from "node:path";
 import type { BackgroundTask } from "../../shared/ipc/work.ts";
 import type { ShellKind } from "../../shared/shell.ts";
 import { invalidate_index } from "../project/index.ts";
@@ -217,6 +218,9 @@ export const adopt_background = (input: BackgroundStart, detach: ShellDetach): A
   const started_at = new Date(taken.started_at).toISOString();
   return { status: "moved", task: track(input, { id, child: taken.child, cwd: input.cwd, started_at, output: taken.output }) };
 };
+
+export const running_background_roots = (): string[] =>
+  [...tasks.values()].filter((record) => record.status === "running").flatMap((record) => [record.project_root, path.resolve(record.project_root, record.cwd)]);
 
 export const list_background = (chat_id: string): BackgroundTask[] =>
   [...tasks.values()].filter((record) => record.chat_id === chat_id).sort(listing_order).map(public_task);

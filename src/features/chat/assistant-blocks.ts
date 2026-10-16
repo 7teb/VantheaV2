@@ -1,4 +1,4 @@
-import { own_send, type AssistantMessage, type CompactionStep, type Message, type NoticeStep, type ReasoningStep, type SteerStep, type Step, type TextStep, type ToolStep } from "../../../shared/chat.ts";
+import { own_send, type AssistantMessage, type CompactionStep, type Message, type NoticeKind, type NoticeStep, type ReasoningStep, type SteerStep, type Step, type TextStep, type ToolStep } from "../../../shared/chat.ts";
 import type { ToolView } from "../../../shared/tool-view.ts";
 import { is_active_status, is_hidden_step } from "../tools/tool-meta.ts";
 
@@ -12,6 +12,8 @@ export type Block =
   | { kind: "notice"; id: string; step: NoticeStep }
   | { kind: "compaction"; id: string; step: CompactionStep };
 
+const hidden_notices: ReadonlySet<NoticeKind> = new Set(["peer_digest", "agent_roster", "todos_carried", "update_reminder"]);
+
 const plain_block = (step: Exclude<Step, ToolStep>): Block | null => {
   switch (step.kind) {
     case "reasoning":
@@ -21,7 +23,7 @@ const plain_block = (step: Exclude<Step, ToolStep>): Block | null => {
     case "steer":
       return { kind: "steer", id: step.id, step };
     case "notice":
-      return step.notice === "peer_digest" || step.notice === "agent_roster" ? null : { kind: "notice", id: step.id, step };
+      return hidden_notices.has(step.notice) ? null : { kind: "notice", id: step.id, step };
     case "compaction":
       return { kind: "compaction", id: step.id, step };
   }

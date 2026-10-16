@@ -66,15 +66,50 @@ export const split_blocks = (text: string): string[] => {
 
 const code_span_pattern = /(```[\s\S]*?(?:```|$)|`[^`\n]*`)/g;
 
+const single_dollar = (text: string, at: number) => text[at] === "$" && text[at - 1] !== "$" && text[at + 1] !== "$" && text[at - 1] !== "\\";
+
+const opens_math = (text: string, at: number) => single_dollar(text, at) && /\S/.test(text[at + 1] ?? "");
+
+const closes_math = (text: string, at: number) => single_dollar(text, at) && /\S/.test(text[at - 1] ?? "") && !/\d/.test(text[at + 1] ?? "");
+
+const math_close = (text: string, open: number): number => {
+  for (let at = open + 2; at < text.length && text[at] !== "\n"; at += 1) {
+    if (closes_math(text, at)) {
+      return at;
+    }
+  }
+  return -1;
+};
+
+export const escape_currency = (text: string): string => {
+  let out = "";
+  let from = 0;
+  for (let at = 0; at < text.length; at += 1) {
+    if (!single_dollar(text, at)) {
+      continue;
+    }
+    const close = opens_math(text, at) ? math_close(text, at) : -1;
+    if (close >= 0) {
+      at = close;
+      continue;
+    }
+    out += `${text.slice(from, at)}\\$`;
+    from = at + 1;
+  }
+  return out + text.slice(from);
+};
+
 export const normalize_math = (text: string): string =>
   text
     .split(code_span_pattern)
     .map((part, index) =>
       index % 2 === 1
         ? part
-        : part
-            .replace(/\\\[([\s\S]+?)\\\]/g, (...groups: string[]) => `$$${groups[1]}$$`)
-            .replace(/\\\(([\s\S]+?)\\\)/g, (...groups: string[]) => `$${groups[1]}$`),
+        : escape_currency(
+            part
+              .replace(/\\\[([\s\S]+?)\\\]/g, (...groups: string[]) => `$$${groups[1]}$$`)
+              .replace(/\\\(([\s\S]+?)\\\)/g, (...groups: string[]) => `$${groups[1]?.trim()}$`),
+          ),
     )
     .join("");
 

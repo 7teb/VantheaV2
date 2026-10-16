@@ -1,4 +1,4 @@
-import type { Chat, ChatMeta, ChatSearchHit, ContextUsage, Message, PermissionMode, UserOrigin } from "../chat.ts";
+import type { Chat, ChatMeta, ChatSearchHit, CommandOrigin, ContextUsage, Message, PermissionMode, UserOrigin } from "../chat.ts";
 import type { ApprovalDecision } from "../approval.ts";
 import type { TurnEvent } from "../events.ts";
 import { emit, invoke } from "./channel.ts";
@@ -38,8 +38,9 @@ export const chats_channels = {
   "turn:continue": invoke<[chat_id: string], TurnStarted>(),
   "turn:accept_plan": invoke<[chat_id: string, message_id: string], TurnStarted>(),
   "turn:undo": invoke<[chat_id: string, message_id: string], TurnStarted>(),
-  "turn:init": invoke<[chat_id: string], TurnStarted>(),
+  "turn:init": invoke<[chat_id: string, command: CommandOrigin], TurnStarted>(),
   "turn:stop": invoke<[chat_id: string], void>(),
+  "turn:hold_events": invoke<[chat_ids: string[]], void>(),
   "turn:steer": invoke<[chat_id: string, text: string, attachment_ids: string[], steer_id: string], string | null>(),
   "turn:approve": invoke<[chat_id: string, call_id: string, decision: ApprovalDecision], void>(),
   "turn:hold_approval": invoke<[chat_id: string, call_id: string], void>(),

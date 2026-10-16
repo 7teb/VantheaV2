@@ -20,9 +20,13 @@ export type Attachment = {
   source_path?: string;
 };
 
-export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "continue" | "background" | "agent_report" | "agent_update";
+export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "git_init" | "continue" | "background" | "agent_report" | "agent_update";
 
-export const human_origin = (origin: UserOrigin): boolean => origin === "user" || origin === "plan_accept" || origin === "undo" || origin === "init";
+export type CommandOrigin = Extract<UserOrigin, "init" | "git_init">;
+
+export const command_origins: readonly CommandOrigin[] = ["init", "git_init"];
+
+export const human_origin = (origin: UserOrigin): boolean => origin === "user" || origin === "plan_accept" || origin === "undo" || origin === "init" || origin === "git_init";
 
 export const instruction_origin = (origin: UserOrigin): boolean => human_origin(origin) || origin === "continue";
 

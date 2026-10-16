@@ -1,0 +1,215 @@
+.git-toolbar {
+  flex: none;
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.git-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-size: var(--font-size-ui);
+  line-height: 18px;
+  animation: fade-in var(--duration-base) var(--ease-out) backwards;
+}
+
+.git-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--ring-card);
+  pointer-events: none;
+}
+
+.git-row,
+.git-skeleton-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: 0 var(--space-3);
+}
+
+.git-row {
+  min-height: 40px;
+  padding-block: 10px;
+}
+
+.git-skeleton-row {
+  height: 40px;
+}
+
+.git-card > * + *::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 40px;
+  height: 1px;
+  background: var(--ring-card);
+}
+
+.git-row-icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+}
+
+.git-row[data-tone="waiting"] .git-row-icon {
+  color: var(--text-waiting);
+}
+
+.git-row[data-tone="danger"] .git-row-icon {
+  color: var(--text-danger);
+}
+
+.git-row-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, var(--mask) calc(100% - 16px), transparent);
+}
+
+.git-part,
+.git-sync-part,
+.git-row-action .button-label {
+  width: calc-size(max-content, round(up, size, 1px));
+}
+
+.git-part,
+.git-sep {
+  flex: none;
+}
+
+.git-part:focus-visible {
+  border-radius: var(--radius-xs);
+  outline-offset: -2px;
+}
+
+.git-branch {
+  flex: 0 1 auto;
+  min-width: calc-size(max-content, min(size, 48px));
+  margin-right: -6px;
+  padding-right: 6px;
+  overflow: hidden;
+  color: var(--text-primary);
+  mask-image: linear-gradient(to right, var(--mask) calc(100% - 6px), transparent);
+}
+
+.git-title {
+  color: var(--text-primary);
+}
+
+.git-detail {
+  color: var(--text-detail);
+  font-variant-numeric: tabular-nums;
+}
+
+.git-sep {
+  color: var(--text-tertiary);
+}
+
+.git-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-detail);
+  font-variant-numeric: tabular-nums;
+}
+
+.git-sync-part {
+  display: inline-flex;
+  align-items: center;
+}
+
+.git-sync-part[data-nonzero="true"] {
+  color: var(--text-primary);
+}
+
+.git-conflict-count {
+  color: var(--git-conflicted);
+}
+
+.git-row-lead {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.git-row-lead > .git-row-icon {
+  margin-top: 1px;
+}
+
+.git-row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.git-row-title {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.git-row-detail {
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+  overflow-wrap: anywhere;
+}
+
+.git-row-detail[data-mono="true"] {
+  font-family: var(--font-mono);
+}
+
+.git-row-command {
+  display: flex;
+  gap: 1ch;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, var(--mask) calc(100% - 16px), transparent);
+}
+
+.git-row-command::before {
+  content: "$";
+  flex: none;
+  color: var(--text-tertiary);
+  user-select: none;
+}
+
+.git-row-command code {
+  font: inherit;
+}
+
+.git-row-action {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  margin-block: -4px;
+}
+
+.git-row-action .icon-button {
+  margin-right: -6px;
+}

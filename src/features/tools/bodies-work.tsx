@@ -2,9 +2,6 @@ import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { BodyProps } from "./body-types.ts";
 import { OutputBlock } from "./OutputBlock.tsx";
-import { TodoList } from "./TodoList.tsx";
-
-export const TodosBody = ({ view }: BodyProps<"todos">) => <TodoList todos={view.todos} />;
 
 export const PlanBody = ({ view }: BodyProps<"plan">) => <Markdown text={view.text} className="tool-body-markdown" />;
 
