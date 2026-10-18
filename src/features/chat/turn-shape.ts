@@ -13,7 +13,7 @@ const activity = (block: Block) => block.kind === "reasoning" || block.kind === 
 
 export const foldable_block = (block: Block) => activity(block) || block.kind === "text";
 
-const answer_block = (block: Block) => (block.kind === "text" && block.step.text.trim() !== "") || block.kind === "plan" || block.kind === "image";
+const answer_block = (block: Block) => (block.kind === "text" && block.step.text.trim() !== "") || block.kind === "plan" || block.kind === "image" || block.kind === "visual";
 
 const blank_reasoning = (block: Block) => block.kind === "reasoning" && block.step.text.trim() === "";
 
@@ -35,6 +35,7 @@ const step_ends = (block: Block): number[] => {
     case "reasoning":
     case "plan":
     case "image":
+    case "visual":
       return block.step.ended_at === null ? [] : [block.step.ended_at];
     case "tools":
       return block.steps.flatMap((step) => (step.ended_at === null ? [] : [step.ended_at]));
@@ -66,7 +67,7 @@ export const member_facts = (message: AssistantMessage, blocks: Block[]): Member
     return { message, blocks, last: -1, started: false, folds: no_folds };
   }
   const last = blocks.map((_, index) => work_block(blocks, index)).lastIndexOf(true);
-  const started = last >= 0 || blocks.some((block) => block.kind === "plan" || block.kind === "image");
+  const started = last >= 0 || blocks.some((block) => block.kind === "plan" || block.kind === "image" || block.kind === "visual");
   const work = blocks.slice(0, last + 1).filter(foldable_block);
   const trailing = blocks.filter((block, index) => index > last && (continues_answer(blocks, index) || blank_reasoning(block)));
   return { message, blocks, last, started, folds: new Set([...work, ...trailing].map((block) => block.id)) };

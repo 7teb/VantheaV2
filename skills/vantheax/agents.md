@@ -10,7 +10,7 @@ The main agent can start sub-agents that work in the background of the same chat
 - `message_agent`: sends an instruction to a running agent. It arrives at the start of the agent's next round. It fails if the agent is not running; use continue_agent then.
 - `get_agent_status`: detail of one agent's latest run (see below). It never waits; do not poll it.
 - `cancel_agent`: stops a running run. No report comes back from that run; continue_agent can start the agent again later.
-- `list_models`: lists the catalog models with their price per 1M tokens, for choosing an agent model.
+- `list_models`: lists the catalog models with their price per 1M tokens, for choosing an agent model. The built-in skill `model-guide` says which model and effort fit which job and what they cost.
 
 Agent ids can be given as the full id, as the short form `Name#xxxxxxxx` or `xxxxxxxx` that the roster shows, or as a unique leading part of the full id.
 
@@ -121,4 +121,4 @@ With an effort other than Major the main turn ends when the model ends its respo
 
 With Major effort the turn stays open: when the model ends a response while agents of the chat are still running, the app waits for an agent update, a report or a user message and continues the same turn when one arrives. If nothing arrives within 30 minutes, or no agent of the chat is running any more, the turn ends; reports that arrive later start a new turn. Outside plan mode Major also adds instructions to deploy independent parts in parallel and to run an independent review agent before finishing non-trivial work.
 
-The main agent should never use sleep commands or poll get_agent_status to wait for agents. When it only waits, it ends its response without text. The app rejects PowerShell Start-Sleep and its sleep alias in every command, and while agents of the chat run it also rejects other delay commands used to wait for them.
+The main agent should never use sleep commands or poll get_agent_status to wait for agents. When it only waits, it ends its response with one short sentence saying what it waits for, for example "Waiting for Iris's review.". The app rejects PowerShell Start-Sleep and its sleep alias in every command, and while agents of the chat run it also rejects other delay commands used to wait for them.

@@ -119,7 +119,7 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
       if (fit_window(api_messages, session.model, measure(session, api_messages, calibration), undefined, 1, calibration_scale(calibration)).length) {
         session.emit({ type: "notice", round, notice: "context_trimmed", text: window_note });
       }
-      const outcome = await run_round(session, round, api_messages);
+      const outcome = await run_round(session, round, api_messages, calibration);
       const next = calibrate(outcome.usage, outcome.estimate) ?? calibration;
       const rescale = calibration_scale(next) / calibration_scale(calibration);
       floor = Math.ceil(floor * rescale);

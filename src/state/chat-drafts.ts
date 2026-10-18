@@ -1,4 +1,5 @@
 import type { Attachment } from "../../shared/chat.ts";
+import { visual_tool_name } from "../../shared/visual.ts";
 
 export type DraftUpload = {
   key: string;
@@ -10,7 +11,9 @@ export type DraftUpload = {
   preview: string | null;
 };
 
-export type DraftChip = { kind: "skill" | "mcp"; name: string };
+export type DraftChip = { kind: "skill" | "mcp" | "visualize"; name: string };
+
+export const visualize_chip: DraftChip = { kind: "visualize", name: visual_tool_name };
 
 export type Draft = { text: string; uploads: DraftUpload[]; plan: boolean; chips: DraftChip[] };
 
@@ -49,6 +52,9 @@ export const put_upload = (state: ComposerState, key: string, upload: DraftUploa
   return patch_draft(state, key, { uploads: exists ? uploads.map((entry) => (entry.key === upload.key ? upload : entry)) : [...uploads, upload] });
 };
 
+export const upload_draft_key = (state: ComposerState, upload_key: string): string | null =>
+  Object.entries(state.drafts).find(([, draft]) => draft.uploads.some((entry) => entry.key === upload_key))?.[0] ?? null;
+
 export const remove_upload = (state: ComposerState, key: string, upload_key: string): ComposerState =>
   patch_draft(state, key, { uploads: draft_of(state, key).uploads.filter((entry) => entry.key !== upload_key) });
 
@@ -68,10 +74,16 @@ export const toggle_chip = (state: ComposerState, key: string, chip: DraftChip):
 export const remove_chip = (state: ComposerState, key: string, chip: DraftChip): ComposerState =>
   patch_draft(state, key, { chips: draft_of(state, key).chips.filter((entry) => !same_chip(entry, chip)) });
 
-export const chip_line = (chip: DraftChip): string =>
-  chip.kind === "skill"
-    ? `Use the skill "${chip.name}" for this request: load it with read_skill first and follow it.`
-    : `Use the tools of the MCP server "${chip.name}" for this request.`;
+export const chip_line = (chip: DraftChip): string => {
+  switch (chip.kind) {
+    case "skill":
+      return `Use the skill "${chip.name}" for this request: load it with read_skill first and follow it.`;
+    case "mcp":
+      return `Use the tools of the MCP server "${chip.name}" for this request.`;
+    case "visualize":
+      return `Answer this message with the ${chip.name} tool: build an interactive visualization that explains or shows the answer, and keep the text around it short.`;
+  }
+};
 
 export const message_text = (draft: Draft): string => [draft.chips.map(chip_line).join("\n"), draft.text.trim()].filter(Boolean).join("\n\n");
 

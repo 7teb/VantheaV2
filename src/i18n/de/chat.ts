@@ -68,4 +68,5 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.peer_alert_from": "Agenten-Nachrichten brauchen Aufmerksamkeit: {x}",
   "chat.peer_alert_blocked": "Blockiert",
   "chat.peer_alert_loop": "Schleife",
+  "chat.visual_error": "Skriptfehler in dieser Visualisierung: {error}",
 };

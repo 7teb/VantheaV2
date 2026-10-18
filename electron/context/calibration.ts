@@ -16,16 +16,16 @@ const prompt_margin = 1.05;
 
 const min_output_budget = 1024;
 
-export const output_budget = (messages: ApiMessage[], specs: ToolSpec[], model: ModelEntry): number | undefined => {
-  const room = model.context_length - Math.ceil(sent_estimate(messages, specs, model) * prompt_margin);
-  const budget = Math.min(model.max_output, room);
-  return budget >= min_output_budget ? budget : undefined;
-};
-
 export const calibration_scale = (calibration: ContextCalibration | null): number => (calibration ? calibration.prompt_tokens / calibration.estimate : 1);
 
 export const measure_request = (messages: ApiMessage[], specs: ToolSpec[], model: ModelEntry, calibration: ContextCalibration | null): number =>
   Math.ceil(sent_estimate(messages, specs, model) * calibration_scale(calibration));
+
+export const output_budget = (messages: ApiMessage[], specs: ToolSpec[], model: ModelEntry, calibration: ContextCalibration | null): number | undefined => {
+  const room = model.context_length - Math.ceil(measure_request(messages, specs, model, calibration) * prompt_margin);
+  const budget = Math.min(model.max_output, room);
+  return budget >= min_output_budget ? budget : undefined;
+};
 
 export const calibrate = (usage: RoundUsage | null, estimate: number): ContextCalibration | null =>
   usage && usage.prompt_tokens > 0 && estimate > 0 ? { prompt_tokens: usage.prompt_tokens, estimate } : null;

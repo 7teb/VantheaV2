@@ -1,6 +1,7 @@
 import type { ToolStep } from "../../../shared/chat.ts";
 import { call_shell, type ShellKind } from "../../../shared/shell.ts";
 import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
+import { visual_tool_name } from "../../../shared/visual.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
 
@@ -38,6 +39,7 @@ export type ToolIconName =
   | "clock"
   | "models"
   | "question"
+  | "visual"
   | "text";
 
 export type ToolCategory =
@@ -63,6 +65,7 @@ export type ToolCategory =
   | "memory"
   | "images"
   | "questions"
+  | "visuals"
   | "other";
 
 type Label = (t: Translate, step: ToolStep) => string;
@@ -89,6 +92,7 @@ export const view_kinds = [
   "skill",
   "models",
   "questions",
+  "visual",
   "text",
 ] as const satisfies readonly ToolViewKind[];
 
@@ -149,6 +153,13 @@ const listed_label: Label = (t, step) => {
 };
 
 const viewed_image = (step: ToolStep) => base_name(view_of(step, "text")?.text || step_path(step));
+
+const visual_title = (step: ToolStep) => view_of(step, "visual")?.title || text_arg(step, "title");
+
+const titled = (plain: MessageKey, named_key: MessageKey): Label => (t, step) => {
+  const title = visual_title(step);
+  return title ? t(named_key, { x: title }) : t(plain);
+};
 
 const first_question = (step: ToolStep): string => {
   const view = view_of(step, "questions");
@@ -231,6 +242,7 @@ const named: Record<string, ToolMeta> = {
   generate_image: entry("image", "images", fixed("tool_label.generating_image"), fixed("tool_label.generated_image")),
   analyze_image: entry("image", "other", fixed("tool_label.analyze_image"), fixed("tool_label.analyzed_image")),
   view_image: entry("image", "reads", with_x("tool_label.viewing_image", file_name), with_x("tool_label.viewed_image", viewed_image)),
+  [visual_tool_name]: entry("visual", "visuals", titled("tool_label.visualizing", "tool_label.visualizing_named"), titled("tool_label.visualized", "tool_label.visualized_named")),
   deploy_agent: entry("agent", "agents", with_x("tool_label.deploying_agent", agent_name), with_x("tool_label.deployed_agent", agent_name)),
   continue_agent: entry("agent", "agent_runs", with_x("tool_label.continuing_agent", agent_name), with_x("tool_label.continued_agent", agent_name)),
   get_agent_status: entry("agent", "agent_checks", with_x("tool_label.agent_status", agent_name), with_x("tool_label.checked_agent", agent_name)),
@@ -333,6 +345,7 @@ const by_kind: Record<ToolViewKind, ToolMeta> = {
   skill: named.read_skill,
   models: named.list_models,
   questions: named.ask_user,
+  visual: named[visual_tool_name],
   text: entry("text", "other", with_x("tool_label.running", (step) => step.name), with_x("tool_label.ran", (step) => step.name)),
 };
 
@@ -354,6 +367,8 @@ export const is_hidden_step = (step: ToolStep) => hidden_tools.has(step.name);
 export const is_active_status = (status: ToolStep["status"]) =>
   status === "drafting" || status === "queued" || status === "running" || status === "awaiting_approval";
 
+const labels_while_drafting = new Set<ToolCategory>(["edits", "visuals"]);
+
 const denied_target = (step: ToolStep) => command_of(step) || step_path(step) || query_of(step) || step.name;
 
 export const tool_label = (t: Translate, step: ToolStep): string => {
@@ -361,7 +376,7 @@ export const tool_label = (t: Translate, step: ToolStep): string => {
   if (step.status === "denied") {
     return t("tool_label.denied", { x: denied_target(step) });
   }
-  if (step.status === "drafting" && meta.category !== "edits") {
+  if (step.status === "drafting" && !labels_while_drafting.has(meta.category)) {
     return t("tool_label.drafting");
   }
   return is_active_status(step.status) ? meta.active(t, step) : meta.done(t, step);

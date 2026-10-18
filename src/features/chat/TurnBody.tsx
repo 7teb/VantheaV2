@@ -17,6 +17,7 @@ import { CompactionRow, NoticeRow, SteerRow } from "./StepRows.tsx";
 import { FoldItem } from "./TurnFold.tsx";
 import { foldable_block, type MemberFacts } from "./turn-shape.ts";
 import { RetryBanner, TurnOutcome } from "./TurnStatus.tsx";
+import { VisualBlock } from "./VisualBlock.tsx";
 
 type BlockViewProps = {
   block: Block;
@@ -54,6 +55,8 @@ const BlockView = ({ block, chat_id, message_id, streaming, tail, can_accept, ac
       return <PlanCard chat_id={chat_id} message_id={message_id} text={block.text} can_accept={can_accept} accepted={accepted} />;
     case "image":
       return <ImageStep block={block} />;
+    case "visual":
+      return <VisualBlock view={block.view} />;
     case "steer":
       return <SteerRow step={block.step} />;
     case "notice":

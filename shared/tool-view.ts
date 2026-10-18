@@ -60,6 +60,7 @@ export type ToolView =
   | { kind: "skill"; action: "read" | "install"; name: string }
   | { kind: "models"; models: ModelPrice[] }
   | { kind: "questions"; questions: AskQuestion[] }
+  | { kind: "visual"; title: string; code: string }
   | { kind: "text"; text: string };
 
 export type ToolViewKind = ToolView["kind"];

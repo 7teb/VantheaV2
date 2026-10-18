@@ -14,6 +14,7 @@ import { shell_tools } from "./shell/index.ts";
 import { skill_tools } from "./skills/index.ts";
 import type { Tool, ToolProfile } from "./types.ts";
 import { vision_tools } from "./vision/index.ts";
+import { visualize_tool } from "./visual/index.ts";
 import { web_search_tool } from "./web/index.ts";
 
 const groups: Tool[][] = [
@@ -26,6 +27,7 @@ const groups: Tool[][] = [
   [add_mcp_server_tool],
   [web_search_tool],
   [generate_image_tool],
+  [visualize_tool],
   [read_attachment_tool],
   memory_tools,
   skill_tools,

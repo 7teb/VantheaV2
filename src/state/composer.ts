@@ -31,6 +31,7 @@ import {
   set_steering,
   take_draft,
   toggle_chip,
+  upload_draft_key,
   type ComposerState,
   type DraftChip,
   type DraftUpload,
@@ -131,15 +132,17 @@ const upload_one = async (key: string, file: File) => {
       ...(source ? { model_source: source } : {}),
       ...(source_path ? { source_path } : {}),
     });
-    if (!draft_of(composer_store.get(), key).uploads.some((entry) => entry.key === upload_key)) {
+    const holder = upload_draft_key(composer_store.get(), upload_key);
+    if (holder === null) {
       discard_ids([attachment.id]);
       return;
     }
-    composer_store.update((state) => put_upload(state, key, { ...base, image: attachment.kind === "image", status: "ready", attachment }));
+    composer_store.update((state) => put_upload(state, holder, { ...base, image: attachment.kind === "image", status: "ready", attachment }));
   } catch (error) {
     console.error(`[composer] attachments:save failed for ${name} (${file.size} bytes)`, error);
     revoke_previews([base]);
-    composer_store.update((state) => set_error(remove_upload(state, key, upload_key), key, t("composer.upload_failed", { name, error: error_text(error) })));
+    const holder = upload_draft_key(composer_store.get(), upload_key) ?? key;
+    composer_store.update((state) => set_error(remove_upload(state, holder, upload_key), holder, t("composer.upload_failed", { name, error: error_text(error) })));
   }
 };
 

@@ -50,13 +50,14 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
     case "memory":
       return view.text !== "";
     case "background":
-    case "questions":
     case "peer_message":
       return true;
     case "read":
     case "browser":
     case "skill":
     case "todos":
+    case "questions":
+    case "visual":
       return false;
   }
 };

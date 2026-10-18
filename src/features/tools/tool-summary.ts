@@ -133,6 +133,7 @@ const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
   memory: ["tools.combine_memory_one", "tools.combine_memory_other"],
   images: ["tools.combine_images_one", "tools.combine_images_other"],
   questions: ["tools.combine_questions_one", "tools.combine_questions_other"],
+  visuals: ["tools.combine_visuals_one", "tools.combine_visuals_other"],
   other: ["tools.combine_other_one", "tools.combine_other_other"],
 };
 

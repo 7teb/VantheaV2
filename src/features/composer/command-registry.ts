@@ -2,6 +2,7 @@ import type { CompactResult } from "../../../shared/ipc/chats.ts";
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
+  ChartPieIcon,
   ClipboardListIcon,
   FilePenIcon,
   FoldVerticalIcon,
@@ -15,8 +16,9 @@ import {
 } from "../../components/icons.tsx";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { fork_chat } from "../../state/chat-actions.ts";
+import { visualize_chip } from "../../state/chat-drafts.ts";
 import { set_chat_archived, set_chat_pinned } from "../../state/chats.ts";
-import { compact_now, start_init, toggle_plan } from "../../state/composer.ts";
+import { compact_now, start_init, toggle_draft_chip, toggle_plan } from "../../state/composer.ts";
 import { open_memories } from "../../state/memories-panel.ts";
 import { set_auto_compact, set_context_limit } from "../../state/settings.ts";
 import type { ComposerCommand } from "./command-menu.ts";
@@ -138,5 +140,15 @@ export const composer_commands: ComposerCommand[] = [
     hint: ({ t }) => t("commands.plan_hint"),
     toggled: ({ plan }) => plan,
     run: ({ draft_key }) => toggle_plan(draft_key),
+  },
+  {
+    id: "visualize",
+    needs: "none",
+    icon: () => ChartPieIcon,
+    label: ({ t }) => t("commands.visualize"),
+    keywords: ["chart", "diagram", "graph", "visual", "widget", "Diagramm", "Grafik", "visualisieren"],
+    hint: ({ t }) => t("commands.visualize_hint"),
+    toggled: ({ visualize }) => visualize,
+    run: ({ draft_key }) => toggle_draft_chip(draft_key, visualize_chip),
   },
 ];

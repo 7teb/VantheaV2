@@ -45,7 +45,7 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
 export const write_file_tool = define_tool<{ path: string; content: string }>({
   spec: {
     name: "write_file",
-    description: "Create a file or overwrite it with the given UTF-8 text. path is project-relative; missing folders are created. Prefer replace_in_file for small changes to an existing file.",
+    description: "Create a file or overwrite it with the given text. A new file is written as UTF-8; an existing file keeps its encoding (UTF-8, UTF-16 or Windows-1252). path is project-relative; missing folders are created. Prefer replace_in_file for small changes to an existing file.",
     parameters: {
       type: "object",
       properties: {

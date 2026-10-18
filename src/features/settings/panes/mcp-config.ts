@@ -66,14 +66,47 @@ const try_parse = (candidate: string): Parsed => {
   }
 };
 
-const parse_json = (text: string): unknown => {
-  const cleaned = text.trim().replace(/,(\s*[}\]])/g, "$1");
-  const direct = try_parse(cleaned);
-  if (direct.ok) {
-    return direct.value;
+const parse_object = (candidate: string): Parsed => {
+  const direct = try_parse(candidate);
+  return direct.ok ? direct : try_parse(`{${candidate}}`);
+};
+
+const strip_trailing_commas = (text: string) => {
+  const closer = /\s*[}\]]/y;
+  let out = "";
+  let in_string = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (in_string) {
+      if (char === "\\") {
+        out += text.slice(index, index + 2);
+        index += 1;
+        continue;
+      }
+      in_string = char !== '"';
+      out += char;
+      continue;
+    }
+    if (char === ",") {
+      closer.lastIndex = index + 1;
+      if (closer.test(text)) {
+        continue;
+      }
+    }
+    in_string = char === '"';
+    out += char;
   }
-  const wrapped = try_parse(`{${cleaned}}`);
-  return wrapped.ok ? wrapped.value : null;
+  return out;
+};
+
+const parse_json = (text: string): unknown => {
+  const trimmed = text.trim();
+  const exact = parse_object(trimmed);
+  if (exact.ok) {
+    return exact.value;
+  }
+  const cleaned = parse_object(strip_trailing_commas(trimmed));
+  return cleaned.ok ? cleaned.value : null;
 };
 
 const server_group = (value: Record<string, unknown>) => {

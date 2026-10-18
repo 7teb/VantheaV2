@@ -7,6 +7,7 @@ import {
   BookOpenIcon,
   BracesIcon,
   CameraIcon,
+  ChartPieIcon,
   CircleHelpIcon,
   ClipboardListIcon,
   ClockIcon,
@@ -44,7 +45,7 @@ import { AgentBody, BackgroundBody, CommandBody } from "./bodies-run.tsx";
 import { EditBody, FilesBody, GrepBody, OutlineBody } from "./bodies-files.tsx";
 import { ModelsBody } from "./bodies-models.tsx";
 import { ImageBody, WebSearchBody } from "./bodies-web.tsx";
-import { McpBody, MemoryBody, PeerMessageBody, PlanBody, QuestionsBody, TextBody } from "./bodies-work.tsx";
+import { McpBody, MemoryBody, PeerMessageBody, PlanBody, TextBody } from "./bodies-work.tsx";
 import type { BodyProps } from "./body-types.ts";
 import { DraftCode } from "./DraftCode.tsx";
 import { live_draft } from "./live-draft.ts";
@@ -90,6 +91,7 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   clock: ClockIcon,
   models: CoinsIcon,
   question: CircleHelpIcon,
+  visual: ChartPieIcon,
   text: MessageSquareIcon,
 };
 
@@ -110,7 +112,6 @@ export const view_bodies: Bodies = {
   mcp: McpBody,
   memory: MemoryBody,
   models: ModelsBody,
-  questions: QuestionsBody,
   text: TextBody,
 };
 

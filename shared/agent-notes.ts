@@ -51,8 +51,11 @@ const update_event_marker = "[AGENT UPDATE EVENT]";
 const previous_update_event_outro =
   "Use this update to adjust your work: do not redo what the agent says it covers, and change your plan if the update shows that something it assumes is wrong. Do not acknowledge the update, recap it or announce that you are waiting. Speak only when it leads to a new result, a changed action, a blocker or a required user decision; otherwise continue silently, and if nothing needs to change right now, end this turn with at most one short sentence.";
 
-const update_event_outro =
+const silent_update_event_outro =
   "Use this update to adjust your work: do not redo what the agent says it covers, and change your plan if the update shows that something it assumes is wrong. Do not acknowledge the update, recap it or announce that you are waiting. Speak only when it leads to a new result, a changed action, a blocker or a required user decision; otherwise continue silently, and if nothing needs to change right now, end the response with no visible text.";
+
+const update_event_outro =
+  "Use this update to adjust your work: do not redo what the agent says it covers, and change your plan if the update shows that something it assumes is wrong. Do not acknowledge the update or recap it. Speak at length only when it leads to a new result, a changed action, a blocker or a required user decision; if nothing needs to change right now, end the response with one short sentence that says what you are waiting for.";
 
 const update_label = "\n\nUpdate:\n";
 
@@ -175,7 +178,7 @@ const update_note = (chunk: string): AgentNote => {
   const at = chunk.indexOf(update_label);
   const head = at < 0 ? chunk : chunk.slice(0, at);
   const tail = at < 0 ? "" : chunk.slice(at + update_label.length);
-  const end = Math.max(...[update_event_outro, previous_update_event_outro].map((outro) => tail.lastIndexOf(`\n\n${outro}`)));
+  const end = Math.max(...[update_event_outro, silent_update_event_outro, previous_update_event_outro].map((outro) => tail.lastIndexOf(`\n\n${outro}`)));
   return {
     kind: "update",
     name: field_of(head, "Name"),

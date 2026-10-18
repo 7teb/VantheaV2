@@ -15,6 +15,7 @@ export type CommandContext = {
   busy: boolean;
   compacting: boolean;
   plan: boolean;
+  visualize: boolean;
   usage_percent: number | null;
   model: ModelEntry | null;
   model_context: ModelContext | undefined;

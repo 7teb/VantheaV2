@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import { visual_frame_file, visual_shell } from "./shared/visual-doc.ts";
 
 const content_security_policy = [
   "default-src 'self'",
@@ -20,9 +21,22 @@ const csp_plugin = (): Plugin => ({
     html.replace("<head>", `<head>\n    <meta http-equiv="Content-Security-Policy" content="${content_security_policy}" />`),
 });
 
+const visual_frame_plugin = (): Plugin => ({
+  name: "vx-visual-frame",
+  configureServer: (server) => {
+    server.middlewares.use(`/${visual_frame_file}`, (_request, response) => {
+      response.setHeader("Content-Type", "text/html; charset=utf-8");
+      response.end(visual_shell);
+    });
+  },
+  generateBundle() {
+    this.emitFile({ type: "asset", fileName: visual_frame_file, source: visual_shell });
+  },
+});
+
 export default defineConfig({
   base: "./",
-  plugins: [react(), csp_plugin()],
+  plugins: [react(), csp_plugin(), visual_frame_plugin()],
   build: {
     outDir: "dist",
     emptyOutDir: true,

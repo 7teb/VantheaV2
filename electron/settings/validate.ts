@@ -22,7 +22,7 @@ const effort_pattern = /^[a-z_]{1,16}$/;
 
 export const default_settings = (): Settings => ({
   language: "en",
-  model: "deepseek/deepseek-v4.1-flash",
+  model: "deepseek/deepseek-v4.1-flash-1017",
   effort: "high",
   mode: "auto",
   projects: [],

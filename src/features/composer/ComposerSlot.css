@@ -145,6 +145,34 @@
     color: var(--text-primary);
   }
 
+  .draft-chip {
+    --pop-shift: 3px;
+    animation: pop-in var(--duration-base) var(--ease-out) backwards;
+  }
+
+  .draft-chip-icon {
+    display: grid;
+    flex: none;
+  }
+
+  .draft-chip-icon > svg {
+    grid-area: 1 / 1;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .draft-chip-icon > svg:last-child,
+  .draft-chip:is(:hover, :focus-visible) .draft-chip-icon > svg:first-child {
+    opacity: 0;
+  }
+
+  .draft-chip:is(:hover, :focus-visible) .draft-chip-icon > svg:last-child {
+    opacity: 1;
+  }
+
+  .draft-chip-name {
+    max-width: 160px;
+  }
+
   .composer-chip[data-mode="full"] svg {
     color: var(--text-danger);
   }

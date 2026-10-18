@@ -1,0 +1,32 @@
+@layer components {
+  .visual-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+    margin: 2px 0 14px;
+  }
+
+  .visual-frame {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color-scheme: dark;
+    opacity: 0;
+    transition: opacity var(--duration-slow) var(--ease-out);
+  }
+
+  .visual-block[data-measured="true"] .visual-frame {
+    opacity: 1;
+  }
+
+  .visual-error {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-size-caption);
+    color: var(--text-tertiary);
+  }
+}

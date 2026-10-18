@@ -14,6 +14,7 @@ import {
   type FloorScope,
 } from "./floor-shared.ts";
 import { posix_floor_reason } from "./floor-posix.ts";
+import { literal_view } from "./floor-quotes.ts";
 import { shell_words, type Piece, type Word } from "./shell-words.ts";
 import { quote_of, split_pipelines, split_statements, statement_parts, type Dialect, type StatementElement } from "./statements.ts";
 
@@ -53,35 +54,37 @@ export const deletes = (statement: string) => delete_verb.test(statement) || dot
 
 const touches_system_path = (statement: string) => is_system_path(statement) || is_system_path(joined_literal(statement));
 
-const statement_reason = (statement: string, system_variables: Set<string>): string => {
-  if (/(?:^|\s)(diskpart|bcdedit)(?:\.exe)?(?=\s|$)/i.test(statement)) {
+const statement_reason = (statement: string, system_variables: Set<string>, bare: string): string => {
+  if (/(?:^|\s)(diskpart|bcdedit)(?:\.exe)?(?=\s|$)/i.test(bare)) {
     return partition_reason;
   }
-  if (/\b(clear-disk|format-volume|initialize-disk|reset-physicaldisk)\b/i.test(statement)) {
+  if (/\b(clear-disk|format-volume|initialize-disk|reset-physicaldisk)\b/i.test(bare)) {
     return "a disk-wiping cmdlet (Clear-Disk / Format-Volume / Initialize-Disk / Reset-PhysicalDisk)";
   }
-  if (/(?:^|\s)format(?:\.com)?\s+(?:\/\S+\s+)*[a-z]:/i.test(statement)) {
+  if (/(?:^|\s)format(?:\.com)?\s+(?:\/\S+\s+)*[a-z]:/i.test(bare)) {
     return format_reason;
   }
-  if (/\bvssadmin(?:\.exe)?\s+delete\s+shadows\b/i.test(statement) || /\bwmic(?:\.exe)?\s+shadowcopy\s+delete\b/i.test(statement)) {
+  if (/\bvssadmin(?:\.exe)?\s+delete\s+shadows\b/i.test(bare) || /\bwmic(?:\.exe)?\s+shadowcopy\s+delete\b/i.test(bare)) {
     return shadow_reason;
   }
-  if (/\bcipher(?:\.exe)?\s+\/w\b/i.test(statement)) {
+  if (/\bcipher(?:\.exe)?\s+\/w\b/i.test(bare)) {
     return cipher_reason;
   }
-  if (!deletes(statement) && !/\breg(?:\.exe)?\s+delete\b/i.test(statement)) {
+  const removing = deletes(bare);
+  const reg_delete = /\breg(?:\.exe)?\s+delete\b/i.test(bare);
+  if (!removing && !reg_delete) {
     return "";
   }
-  if (deletes(statement) && touches_system_path(statement)) {
+  if (removing && touches_system_path(statement)) {
     return system_delete_reason;
   }
-  if (deletes(statement) && [...statement.matchAll(variable_use)].some((match) => system_variables.has((match[1] ?? "").toLowerCase()))) {
+  if (removing && [...statement.matchAll(variable_use)].some((match) => system_variables.has((match[1] ?? "").toLowerCase()))) {
     return system_variable_reason;
   }
-  if (/\breg(?:\.exe)?\s+delete\b/i.test(statement) && /\b(hklm|hkey_local_machine)\b/i.test(statement)) {
+  if (reg_delete && /\b(hklm|hkey_local_machine)\b/i.test(statement)) {
     return hklm_reason;
   }
-  if (deletes(statement) && /\bhklm:/i.test(statement)) {
+  if (removing && /\bhklm:/i.test(statement)) {
     return hklm_reason;
   }
   return "";
@@ -327,8 +330,9 @@ const piped_bash_payloads = (command: string): string[] => {
 const powershell_floor_reason = (command: string, scope: FloorScope): string => {
   const statements = split_statements(String(command || ""));
   const system_variables = system_path_variables(statements);
+  const literal_text = literal_view(String(command || ""), "powershell");
   for (const statement of statements) {
-    const reason = statement_reason(statement, system_variables);
+    const reason = statement_reason(statement, system_variables, literal_text(statement));
     if (reason) {
       return reason;
     }

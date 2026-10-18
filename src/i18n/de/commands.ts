@@ -15,6 +15,8 @@ export const commands: Record<keyof typeof en, string> = {
   "commands.added": "Zu dieser Nachricht hinzugefügt",
   "commands.skill_chip": "Skill {name}",
   "commands.mcp_chip": "MCP-Server {name}",
+  "commands.visualize": "Visualisieren",
+  "commands.visualize_hint": "Beantwortet die nächste Nachricht mit einer interaktiven Visualisierung",
   "commands.menu": "Befehle",
   "commands.back": "Zurück",
   "commands.compact": "Komprimieren",

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import { max_view_bytes, type FileView } from "../../shared/ipc/files.ts";
 import { missing_path } from "../storage/coerce.ts";
-import { decode_text, looks_binary, read_head } from "../storage/text-codec.ts";
+import { decode_head, decode_text, looks_binary, read_head } from "../storage/text-codec.ts";
 import { tree_path } from "./listing.ts";
 import { resolve_inside, type ScopedPath } from "./scope.ts";
 
@@ -35,11 +35,11 @@ export const read_for_view = async (project_root: string, relative: string): Pro
     throw new Error(`${file} is not a file`);
   }
   const bytes = await read_head(scoped.target, Math.min(stat.size, max_view_bytes));
-  const { text } = decode_text(bytes);
+  const truncated = stat.size > bytes.length;
+  const { text } = truncated ? decode_head(bytes) : decode_text(bytes);
   if (looks_binary(text)) {
     return { kind: "binary", path: file, size: stat.size };
   }
-  const truncated = stat.size > bytes.length;
   const shown = truncated ? whole_lines(text) : text;
   return { kind: "text", path: file, size: stat.size, text: shown.replace(/\r\n?/g, "\n"), truncated };
 };

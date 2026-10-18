@@ -8,6 +8,7 @@ export type Block =
   | { kind: "tools"; id: string; steps: ToolStep[] }
   | { kind: "plan"; id: string; step: ToolStep; text: string }
   | { kind: "image"; id: string; step: ToolStep; view: Extract<ToolView, { kind: "image" }> }
+  | { kind: "visual"; id: string; step: ToolStep; view: Extract<ToolView, { kind: "visual" }> }
   | { kind: "steer"; id: string; step: SteerStep }
   | { kind: "notice"; id: string; step: NoticeStep }
   | { kind: "compaction"; id: string; step: CompactionStep };
@@ -48,6 +49,10 @@ export const build_blocks = (steps: Step[]): Block[] => {
     }
     if (step.view?.kind === "image" && step.view.images.length > 0) {
       blocks.push({ kind: "image", id: step.id, step, view: step.view });
+      continue;
+    }
+    if (step.status === "done" && step.view?.kind === "visual") {
+      blocks.push({ kind: "visual", id: step.id, step, view: step.view });
       continue;
     }
     const last = blocks.at(-1);

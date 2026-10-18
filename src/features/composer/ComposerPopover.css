@@ -234,56 +234,6 @@
     transform: rotate(45deg);
   }
 
-  .draft-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 0 4px;
-  }
-
-  .draft-chip {
-    --pop-shift: 3px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-    height: 26px;
-    padding: 0 4px 0 9px;
-    border-radius: var(--radius-full);
-    background: var(--surface-on-raised);
-    box-shadow: inset 0 0 0 1px var(--ring-on-raised);
-    color: var(--text-primary);
-    animation: pop-in var(--duration-base) var(--ease-out) backwards;
-  }
-
-  .draft-chip > svg {
-    color: var(--text-tertiary);
-  }
-
-  .draft-chip-name {
-    max-width: 240px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .draft-chip-remove {
-    display: inline-grid;
-    place-items: center;
-    width: 18px;
-    height: 18px;
-    border-radius: var(--radius-full);
-    color: var(--text-tertiary);
-    transition:
-      background var(--duration-fast) var(--ease-out),
-      color var(--duration-fast) var(--ease-out);
-  }
-
-  .draft-chip-remove:hover {
-    background: var(--fill-hover);
-    color: var(--text-primary);
-  }
-
   .composer-slot > :not(.composer) {
     transition: translate var(--duration-slow) var(--ease-out);
   }

@@ -9,23 +9,6 @@ export const MemoryBody = ({ view }: BodyProps<"memory">) => <div className="too
 
 export const TextBody = ({ view }: BodyProps<"text">) => <OutputBlock text={view.text} />;
 
-export const QuestionsBody = ({ view }: BodyProps<"questions">) => (
-  <div className="tool-body-stack">
-    {view.questions.map((question, index) => (
-      <div key={index} className="tool-body-stack">
-        <div>{question.title}</div>
-        {question.options.length > 0 && (
-          <ol className="tool-body-quote">
-            {question.options.map((option, at) => (
-              <li key={at}>{`${at + 1}. ${option}`}</li>
-            ))}
-          </ol>
-        )}
-      </div>
-    ))}
-  </div>
-);
-
 export const PeerMessageBody = ({ view }: BodyProps<"peer_message">) => {
   const t = use_t();
   return (

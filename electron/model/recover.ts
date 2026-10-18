@@ -1,4 +1,5 @@
 import { deepseek_call_begin, deepseek_calls_begin } from "./content-split.ts";
+import { create_code_tracker } from "./markdown-code.ts";
 
 export type RecoveredCall = { name: string; arguments: string };
 
@@ -50,24 +51,42 @@ const tagged = (body: string): RecoveredCall | null => {
   return name && args !== null ? { name, arguments: args } : null;
 };
 
+const read_call = (match: RegExpExecArray): RecoveredCall | null => {
+  if (match[0].startsWith("<tool_call>")) {
+    return tagged(match[1] ?? "");
+  }
+  const name = match[1] ?? match[3] ?? "";
+  const args = object_text(match[2] ?? match[4] ?? "");
+  return name && args !== null ? { name, arguments: args } : null;
+};
+
 export const recover_tool_calls = (held: string, known: Set<string>): Recovery => {
   const calls: RecoveredCall[] = [];
-  let rest = held;
-  const take = (raw: string, call: RecoveredCall | null) => {
+  let rest = "";
+  const matches = [...held.matchAll(tagged_call), ...held.matchAll(deepseek_call)].sort((a, b) => a.index - b.index);
+  const code = create_code_tracker();
+  let position = 0;
+  let kept = 0;
+  for (const match of matches) {
+    if (match.index < position) {
+      continue;
+    }
+    code.feed(held.slice(position, match.index));
+    position = match.index;
+    if (code.inside()) {
+      continue;
+    }
+    code.skip(match[0]);
+    position = match.index + match[0].length;
+    const call = read_call(match);
     if (!call || !known.has(call.name)) {
-      return;
+      continue;
     }
     calls.push(call);
-    rest = rest.replace(raw, "");
-  };
-  for (const match of held.matchAll(tagged_call)) {
-    take(match[0], tagged(match[1] ?? ""));
+    rest += held.slice(kept, match.index);
+    kept = position;
   }
-  for (const match of held.matchAll(deepseek_call)) {
-    const name = match[1] ?? match[3] ?? "";
-    const args = object_text(match[2] ?? match[4] ?? "");
-    take(match[0], name && args !== null ? { name, arguments: args } : null);
-  }
+  rest += held.slice(kept);
   if (calls.length) {
     rest = rest.replaceAll(deepseek_calls_begin, "").replaceAll(deepseek_calls_end, "");
   }

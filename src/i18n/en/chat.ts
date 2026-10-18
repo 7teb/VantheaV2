@@ -66,4 +66,5 @@ export const chat = {
   "chat.peer_alert_from": "Agent messages need attention: {x}",
   "chat.peer_alert_blocked": "Blocked",
   "chat.peer_alert_loop": "Loop",
+  "chat.visual_error": "Script error in this visualization: {error}",
 };

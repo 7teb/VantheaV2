@@ -12,6 +12,7 @@ import {
   system_delete_reason,
   type FloorScope,
 } from "./floor-shared.ts";
+import { literal_view } from "./floor-quotes.ts";
 import { is_msys_root_target, msys_resolve, msys_translate, type MsysPath } from "./msys-paths.ts";
 import { basename, head_index, is_flag, posix_literal } from "./posix-command.ts";
 import { shell_words, type Word } from "./shell-words.ts";
@@ -57,21 +58,21 @@ const expand_posix = (token: string, variables: Map<string, string>): string => 
 
 type Classification = "system" | "app" | "none" | "unresolved";
 
-type State = { location: string | null; variables: Map<string, string> };
+type State = { location: string | null; variables: Map<string, string>; literal: (statement: string) => string };
 
-const clone = (state: State): State => ({ location: state.location, variables: new Map(state.variables) });
+const clone = (state: State): State => ({ location: state.location, variables: new Map(state.variables), literal: state.literal });
 
 const is_msys_system = (rest: string): boolean => is_msys_root_target(rest) || !msys_virtual.test(rest);
 
-const program_reason = (statement: string): string => {
-  if (/(?:^|[\s;&|(/])(?:diskpart|bcdedit)(?:\.exe)?(?=\s|$)/i.test(statement)) return partition_reason;
-  if (/(?:^|[\s;&|(/])(?:parted|sfdisk|fdisk|gdisk)(?:\.exe)?(?=\s|$)/i.test(statement) && disk_device.test(statement)) return partition_reason;
-  if (/(?:^|\s)format(?:\.com)?\s+(?:\/\/?\S+\s+)*[a-z]:/i.test(statement)) return format_reason;
-  if (/(?:^|[\s;&|(/])(?:mkfs(?:\.\w+)?|mke2fs|mkntfs)(?=\s|$)/i.test(statement) && disk_device.test(statement)) return format_reason;
-  if (/\bvssadmin(?:\.exe)?\s+delete\s+shadows\b/i.test(statement) || /\bwmic(?:\.exe)?\s+shadowcopy\s+delete\b/i.test(statement)) return shadow_reason;
-  if (/\bcipher(?:\.exe)?\s+\/\/?w\b/i.test(statement)) return cipher_reason;
-  if (/(?:^|[\s;&|(/])dd(?=\s)/i.test(statement) && dd_disk.test(statement)) return dd_reason;
-  if (/(?:^|[\s;&|(/])reg(?:\.exe)?\s+delete\b/i.test(statement) && /\b(?:hklm|hkey_local_machine)\b/i.test(statement)) return hklm_reason;
+const program_reason = (statement: string, bare: string): string => {
+  if (/(?:^|[\s;&|(/])(?:diskpart|bcdedit)(?:\.exe)?(?=\s|$)/i.test(bare)) return partition_reason;
+  if (/(?:^|[\s;&|(/])(?:parted|sfdisk|fdisk|gdisk)(?:\.exe)?(?=\s|$)/i.test(bare) && disk_device.test(statement)) return partition_reason;
+  if (/(?:^|\s)format(?:\.com)?\s+(?:\/\/?\S+\s+)*[a-z]:/i.test(bare)) return format_reason;
+  if (/(?:^|[\s;&|(/])(?:mkfs(?:\.\w+)?|mke2fs|mkntfs)(?=\s|$)/i.test(bare) && disk_device.test(statement)) return format_reason;
+  if (/\bvssadmin(?:\.exe)?\s+delete\s+shadows\b/i.test(bare) || /\bwmic(?:\.exe)?\s+shadowcopy\s+delete\b/i.test(bare)) return shadow_reason;
+  if (/\bcipher(?:\.exe)?\s+\/\/?w\b/i.test(bare)) return cipher_reason;
+  if (/(?:^|[\s;&|(/])dd(?=\s)/i.test(bare) && dd_disk.test(statement)) return dd_reason;
+  if (/(?:^|[\s;&|(/])reg(?:\.exe)?\s+delete\b/i.test(bare) && /\b(?:hklm|hkey_local_machine)\b/i.test(statement)) return hklm_reason;
   return "";
 };
 
@@ -222,7 +223,7 @@ const classify_stage = (stage: StatementElement, classify: (token: string) => Cl
 
 const walk_pipeline = (pipeline: PosixPipeline, scope: FloorScope, cross: CrossFloor | undefined, state: State): string => {
   for (const stage of pipeline.stages) {
-    const program = program_reason(stage.text);
+    const program = program_reason(stage.text, state.literal(stage.text));
     if (program) return program;
     if (cross) {
       for (const payload of launch_cross(stage.text)) {
@@ -262,4 +263,8 @@ const run = (command: string, scope: FloorScope, cross: CrossFloor | undefined, 
 };
 
 export const posix_floor_reason = (command: string, scope: FloorScope, cross?: CrossFloor): string =>
-  run(String(command || ""), scope, cross, { location: scope.cwd ? path.win32.resolve(scope.cwd) : null, variables: new Map() });
+  run(String(command || ""), scope, cross, {
+    location: scope.cwd ? path.win32.resolve(scope.cwd) : null,
+    variables: new Map(),
+    literal: literal_view(String(command || ""), "posix"),
+  });

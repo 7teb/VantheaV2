@@ -4,7 +4,7 @@ import { compacted_messages } from "../context/compact.ts";
 import { compaction_request, removed_output_line } from "../context/compact-text.ts";
 import { estimate_tokens } from "../context/estimate.ts";
 import { drop_oldest_outputs, fit_window, type RemovedOutput } from "../context/window.ts";
-import { ModelError } from "../model/errors.ts";
+import { is_retryable, ModelError } from "../model/errors.ts";
 import { abortable_sleep } from "../model/transport.ts";
 import type { ApiMessage, ApiUserMessage, RoundCallbacks, RoundRequest } from "../model/types.ts";
 import { error_text } from "../storage/coerce.ts";
@@ -14,7 +14,7 @@ import type { TurnSession } from "./session.ts";
 
 export type CompactOutcome = { status: "done"; tokens: number } | { status: "failed"; error: CompactionError } | { status: "stopped" };
 
-type NoteOutcome = { status: "written"; note: string } | { status: "failed"; error: CompactionError } | { status: "stopped" };
+type NoteOutcome = { status: "written"; note: string } | { status: "failed"; error: CompactionError; retry: boolean } | { status: "stopped" };
 
 type NoteRequest = { messages: ApiMessage[]; ask: ApiUserMessage; removed: RemovedOutput[]; tool_choice?: "none"; cut: boolean };
 
@@ -74,7 +74,7 @@ const drop_next_output = (session: TurnSession, note: NoteRequest): RemovedOutpu
   return removed;
 };
 
-const write_note = async (session: TurnSession, note: NoteRequest, tools: ToolSpec[]): Promise<NoteReply> => {
+const write_note = async (session: TurnSession, note: NoteRequest, tools: ToolSpec[], calibration: ContextCalibration | null): Promise<NoteReply> => {
   const request: RoundRequest = {
     model: session.model,
     effort: session.effort,
@@ -83,7 +83,7 @@ const write_note = async (session: TurnSession, note: NoteRequest, tools: ToolSp
     ...(note.tool_choice ? { tool_choice: note.tool_choice } : {}),
   };
   await fit_request(request);
-  request.max_tokens = output_budget(request.messages, request.tools, session.model);
+  request.max_tokens = output_budget(request.messages, request.tools, session.model, calibration);
   const room_bound = request.max_tokens === undefined || request.max_tokens < session.model.max_output;
   const callbacks: RoundCallbacks = {
     on_text: ignore,
@@ -101,7 +101,7 @@ const write_note = async (session: TurnSession, note: NoteRequest, tools: ToolSp
 const attempt_note = async (session: TurnSession, round: number, note: NoteRequest, tools: ToolSpec[], calibration: ContextCalibration | null): Promise<NoteOutcome> => {
   try {
     for (;;) {
-      const reply = await write_note(session, note, tools);
+      const reply = await write_note(session, note, tools, calibration);
       if (session.signal.aborted) {
         return { status: "stopped" };
       }
@@ -118,13 +118,13 @@ const attempt_note = async (session: TurnSession, round: number, note: NoteReque
           continue;
         }
       }
-      return reply.text ? { status: "written", note: reply.text } : { status: "failed", error: { kind: "empty_note", message: `${session.model.id} returned an empty compaction note` } };
+      return reply.text ? { status: "written", note: reply.text } : { status: "failed", error: { kind: "empty_note", message: `${session.model.id} returned an empty compaction note` }, retry: true };
     }
   } catch (error) {
     if (session.signal.aborted) {
       return { status: "stopped" };
     }
-    return { status: "failed", error: failure_of(error) };
+    return { status: "failed", error: failure_of(error), retry: !(error instanceof ModelError) || is_retryable(error) };
   }
 };
 
@@ -152,7 +152,7 @@ const note_with_retries = async (session: TurnSession, round: number, source: Co
     }
     const { kind, message } = outcome.error;
     console.error(`[turn] compaction attempt ${attempt} of ${compaction_attempts} in round ${round} of ${turn_scope(session)} failed (${kind}): ${message}`);
-    if (kind === "context_limit" || attempt === compaction_attempts) {
+    if (!outcome.retry || attempt === compaction_attempts) {
       return outcome;
     }
     const wait_ms = quick_waits_ms[attempt - 1] ?? slow_wait_ms;

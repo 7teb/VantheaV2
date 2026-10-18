@@ -13,6 +13,8 @@ export const commands = {
   "commands.added": "Added to this message",
   "commands.skill_chip": "Skill {name}",
   "commands.mcp_chip": "MCP server {name}",
+  "commands.visualize": "Visualize",
+  "commands.visualize_hint": "Answer the next message with an interactive visualization",
   "commands.menu": "Commands",
   "commands.back": "Back",
   "commands.compact": "Compact",

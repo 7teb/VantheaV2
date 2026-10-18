@@ -32,7 +32,7 @@ To move a skill into a group, move its folder into the group folder, then open S
 
 ## Built-in skills
 
-Built-in skills ship with the app: `vantheax` gives the agent reliable facts about VantheaX, `effects-lab` in the group `design` builds visual effect pages and composed ads (its scaffold and source lint run with python from the skill folder and write only into an output folder in the project; the check_page tool then checks the page in a hidden browser window inside the app and saves its screenshots in the page's `_shots` folder). They are enabled by default, can be disabled in Settings like any skill, cannot be removed (no remove button, and the app refuses a remove request), and win a name clash against a user skill. Settings lists them first with the label "Built-in" ("Integriert").
+Built-in skills ship with the app: `vantheax` gives the agent reliable facts about VantheaX, `model-guide` helps choose a model and effort (the owner's benchmark of the catalog models with run costs, public benchmarks, what "Flex" means, cost rules for sub-agents), `effects-lab` in the group `design` builds visual effect pages and composed ads (its scaffold and source lint run with python from the skill folder and write only into an output folder in the project; the check_page tool then checks the page in a hidden browser window inside the app and saves its screenshots in the page's `_shots` folder). They are enabled by default, can be disabled in Settings like any skill, cannot be removed (no remove button, and the app refuses a remove request), and win a name clash against a user skill. Settings lists them first with the label "Built-in" ("Integriert").
 
 ## Settings > Skills
 

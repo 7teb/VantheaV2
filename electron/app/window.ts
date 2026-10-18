@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell } from "electron";
 import path from "node:path";
 import type { WindowState } from "../../shared/ipc/app.ts";
+import { visual_frame_file } from "../../shared/visual-doc.ts";
 import { init_spellcheck } from "./spellcheck.ts";
 
 let window: BrowserWindow | null = null;
@@ -67,6 +68,21 @@ export const create_window = (on_state: (state: WindowState) => void) => {
       void shell.openExternal(url);
     }
   });
+  current.webContents.on("will-frame-navigate", (event) => {
+    if (event.isMainFrame || event.url === new URL(visual_frame_file, current.webContents.getURL()).href) {
+      return;
+    }
+    console.warn(`[app] blocked a sub-frame navigation of the main window to ${event.url.slice(0, 200)}`);
+    event.preventDefault();
+  });
+  const app_session = current.webContents.session;
+  app_session.setPermissionRequestHandler((_contents, permission, callback, details) => {
+    if (!details.isMainFrame) {
+      console.warn(`[app] denied ${permission} to a sub-frame of the main window at ${details.requestingUrl.slice(0, 200)}`);
+    }
+    callback(details.isMainFrame);
+  });
+  app_session.setPermissionCheckHandler((_contents, permission, _origin, details) => details.isMainFrame && permission !== "deprecated-sync-clipboard-read");
 
   current.once("ready-to-show", () => {
     current.maximize();

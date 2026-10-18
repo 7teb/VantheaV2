@@ -1,5 +1,5 @@
 import { approval_skip_ms, skips_unanswered } from "../../shared/approval.ts";
-import type { StepImage, ToolProgress } from "../../shared/chat.ts";
+import type { ContextCalibration, StepImage, ToolProgress } from "../../shared/chat.ts";
 import type { ToolEndStatus } from "../../shared/events.ts";
 import { last_human_id, note_human_answer } from "../permissions/context.ts";
 import { human_decision } from "../permissions/decisions.ts";
@@ -228,7 +228,7 @@ const stream_with_status = async (session: TurnSession, round: number, request: 
   }
 };
 
-export const run_round = async (session: TurnSession, round: number, api_messages: ApiMessage[]): Promise<RoundOutcome> => {
+export const run_round = async (session: TurnSession, round: number, api_messages: ApiMessage[], calibration: ContextCalibration | null): Promise<RoundOutcome> => {
   const profile = round_profile(session);
   const tools = session.resolve_tools(profile);
   const request: RoundRequest = { model: session.model, effort: session.effort, messages: api_messages, tools: tools.map((tool) => tool.spec) };
@@ -236,7 +236,7 @@ export const run_round = async (session: TurnSession, round: number, api_message
     session.emit({ type: "notice", round, notice: "context_trimmed", text: images_left_out_note });
   }
   const estimate = sent_estimate(request.messages, request.tools, session.model);
-  request.max_tokens = output_budget(request.messages, request.tools, session.model);
+  request.max_tokens = output_budget(request.messages, request.tools, session.model, calibration);
   const result = await stream_with_status(session, round, request);
   const assistant = assistant_api_message(result);
   api_messages.push(assistant);

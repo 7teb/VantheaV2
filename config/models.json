@@ -1,7 +1,7 @@
 {
   "models": [
     {
-      "id": "deepseek/deepseek-v4.1-flash",
+      "id": "deepseek/deepseek-v4.1-flash-1017",
       "label": "DeepSeek V4.1 Flash",
       "provider": "DeepSeek",
       "provider_order": ["deepseek"],

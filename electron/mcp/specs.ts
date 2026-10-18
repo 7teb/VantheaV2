@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import type { JsonSchema } from "../tools/types.ts";
 
 const max_spec_name = 64;
@@ -95,17 +96,34 @@ export type McpResultText = { text: string; is_error: boolean; images: McpImage[
 
 export type CallResult = { content?: unknown; structuredContent?: unknown; toolResult?: unknown; isError?: unknown };
 
-export const format_result = (result: CallResult): McpResultText => {
-  const parts = Array.isArray(result.content) ? (result.content as ContentPart[]) : [];
-  const images: McpImage[] = [];
-  let text = parts
-    .filter((part) => part && typeof part === "object")
-    .map((part) => part_text(part, images))
-    .join("\n");
-  const structured = result.structuredContent ?? result.toolResult;
-  if (!text && structured !== undefined) {
-    text = JSON.stringify(structured);
+const parses_to = (candidate: string, structured: unknown) => {
+  try {
+    return isDeepStrictEqual(JSON.parse(candidate), structured);
+  } catch {
+    return false;
   }
+};
+
+const with_structured = (text: string, parts: ContentPart[], structured: unknown) => {
+  if (structured === undefined) {
+    return text;
+  }
+  const json = JSON.stringify(structured);
+  if (!text) {
+    return json;
+  }
+  const candidates = [text, ...parts.filter((part) => part.type === "text").map((part) => String(part.text ?? ""))];
+  if (candidates.some((candidate) => parses_to(candidate.trim(), structured))) {
+    return text;
+  }
+  return `${text}\n\n${json}`;
+};
+
+export const format_result = (result: CallResult): McpResultText => {
+  const parts = (Array.isArray(result.content) ? (result.content as ContentPart[]) : []).filter((part) => part && typeof part === "object");
+  const images: McpImage[] = [];
+  const content = parts.map((part) => part_text(part, images)).join("\n");
+  const text = with_structured(content, parts, result.structuredContent ?? result.toolResult);
   const is_error = result.isError === true;
   const body = text || "(empty result)";
   return { text: is_error ? `[MCP tool error] ${body}` : body, is_error, images };

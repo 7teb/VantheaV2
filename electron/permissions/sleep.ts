@@ -8,7 +8,7 @@ const timer_call = /\b(?:time|asyncio)\.sleep\s*\(|\bsetTimeout\s*\(|\b(?:Thread
 const external_delay = /^(?:timeout(?:\.exe)?\s+\/t\b|ping(?:\.exe)?\b[\s\S]*\s-n\s+\d+)/i;
 const agent_wait = /\b(?:wait(?:ing|ed)?|sleep(?:ing)?|hold(?:ing)?)\b[\s\S]{0,100}\b(?:sub[-_ ]?agents?|agents?|readers?|reviewers?|reports?)\b|\b(?:sub[-_ ]?agents?|agents?|readers?|reviewers?)\b[\s\S]{0,100}\b(?:finish(?:ed|ing)?|complet(?:e|ed|ion)|reports?)\b/i;
 
-const agent_reason = "Do not use sleep commands to wait for agents. End your current model response normally with no visible text and no tool calls. Agent reports arrive automatically and the harness resumes the work. Do not print stop_reason or finish_reason.";
+const agent_reason = "Do not use sleep commands to wait for agents. End your current model response with one short sentence that says what you are waiting for, and no tool calls. Agent reports arrive automatically and the harness resumes the work.";
 
 export const rejected_text = (reason: string): string => "Tool call rejected [" + reason + "]";
 

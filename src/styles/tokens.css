@@ -53,6 +53,7 @@
     --text-code: #d6d6d6;
     --text-disabled: #3e3e3e;
     --text-danger: #f0656a;
+    --text-positive: #6ad4b0;
     --text-waiting: #e3b341;
     --text-warning: #ff8549;
     --text-on-primary: #0a0a0a;
@@ -151,6 +152,11 @@
     --graph-lane-4: var(--terminal-cyan);
     --graph-lane-5: var(--terminal-green);
     --graph-lane-6: var(--terminal-bright-red);
+    --chart-series-1: #9d76ec;
+    --chart-series-2: #d95926;
+    --chart-series-3: #199e70;
+    --chart-series-4: #c98500;
+    --chart-series-5: #d55181;
     --pr-open: var(--terminal-green);
     --pr-merged: var(--terminal-magenta);
     --pr-closed: var(--terminal-red);

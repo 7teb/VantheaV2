@@ -10,7 +10,7 @@ import { resolve_write_target, type WriteTarget } from "./scope.ts";
 
 export const max_write_bytes = 1024 * 1024;
 
-export type PreparedEdit = { project_root: string; target: WriteTarget; previous: string | null; encoding: TextEncoding; next: string; diff: LineDiff };
+export type PreparedEdit = { project_root: string; target: WriteTarget; previous: string | null; next: string; bytes: Buffer; diff: LineDiff };
 
 export type PreparedReplace = PreparedEdit & { replaced: number; flexible: boolean };
 
@@ -46,7 +46,8 @@ export const prepare_write = async (project_root: string, relative: string, cont
   const target = await resolve_write_target(project_root, relative);
   const existing = await read_existing(target);
   const previous = existing?.text ?? null;
-  return { project_root, target, previous, encoding: existing?.encoding ?? plain_utf8, next: content, diff: line_diff(previous, content) };
+  const bytes = encode_text(content, existing?.encoding ?? plain_utf8);
+  return { project_root, target, previous, next: content, bytes, diff: line_diff(previous, content) };
 };
 
 export const prepare_replace = async (
@@ -67,8 +68,8 @@ export const prepare_replace = async (
     project_root,
     target,
     previous: existing.text,
-    encoding: existing.encoding,
     next: replacement.updated,
+    bytes: encode_text(replacement.updated, existing.encoding),
     diff: line_diff(existing.text, replacement.updated),
     replaced: replacement.replaced,
     flexible: replacement.flexible,
@@ -80,8 +81,7 @@ export const commit_edit = async (prepared: PreparedEdit): Promise<string> => {
   if ((current?.text ?? null) !== prepared.previous) {
     throw new Error(`${prepared.target.relative} changed on disk after this edit was prepared; read it again and redo the edit`);
   }
-  const bytes = encode_text(prepared.next, prepared.encoding);
-  await write_file_atomic(prepared.target.target, bytes);
+  await write_file_atomic(prepared.target.target, prepared.bytes);
   invalidate_index(prepared.project_root);
-  return createHash("sha256").update(bytes).digest("hex");
+  return createHash("sha256").update(prepared.bytes).digest("hex");
 };

@@ -1,3 +1,5 @@
+import { create_code_tracker } from "./markdown-code.ts";
+
 export type SplitPart = { text: string; reasoning: string };
 
 export type SplitEnd = SplitPart & { held: string };
@@ -35,9 +37,14 @@ export const create_content_splitter = (): ContentSplitter => {
   let state: "text" | "think" | "held" = "text";
   let tail = "";
   let held = "";
+  const code = create_code_tracker();
 
   const push = (chunk: string): SplitPart => {
     const out: SplitPart = { text: "", reasoning: "" };
+    const emit = (value: string) => {
+      out.text += value;
+      code.feed(value);
+    };
     if (state === "held") {
       held += chunk;
       return out;
@@ -52,7 +59,7 @@ export const create_content_splitter = (): ContentSplitter => {
         if (state === "think") {
           out.reasoning += ready;
         } else {
-          out.text += ready;
+          emit(ready);
         }
         tail = pending.slice(pending.length - keep);
         return out;
@@ -65,12 +72,16 @@ export const create_content_splitter = (): ContentSplitter => {
         state = tag.startsWith("</") ? "text" : "think";
         continue;
       }
-      out.text += before;
+      emit(before);
       if (tag.startsWith("<think")) {
         state = "think";
         continue;
       }
       if (tag.startsWith("</")) {
+        continue;
+      }
+      if (code.inside()) {
+        emit(match[0]);
         continue;
       }
       state = "held";

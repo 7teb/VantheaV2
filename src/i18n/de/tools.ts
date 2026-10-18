@@ -30,6 +30,8 @@ export const tools: Record<keyof typeof en, string> = {
   "tools.combine_todos_other": "To-dos aktualisiert",
   "tools.combine_questions_one": "{n} Frage gestellt",
   "tools.combine_questions_other": "{n} Fragen gestellt",
+  "tools.combine_visuals_one": "{n} Visualisierung erstellt",
+  "tools.combine_visuals_other": "{n} Visualisierungen erstellt",
   "tools.combine_agents_one": "{n} Agent deployed",
   "tools.combine_agents_other": "{n} Agenten deployed",
   "tools.combine_agent_runs_one": "{n} Agent fortgesetzt",

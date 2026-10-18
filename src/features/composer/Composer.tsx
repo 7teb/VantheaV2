@@ -6,7 +6,7 @@ import { class_names } from "../../components/class-names.ts";
 import { ArrowUpIcon, ClipboardListIcon, CircleSpinnerIcon, PlusIcon, StopIcon } from "../../components/icons.tsx";
 import { layer_count } from "../../components/layers.ts";
 import { use_t } from "../../i18n/index.ts";
-import { draft_of, draft_sendable } from "../../state/chat-drafts.ts";
+import { draft_of, draft_sendable, has_chip, visualize_chip } from "../../state/chat-drafts.ts";
 import { attach_files, compact_now, composer_store, dismiss_error, queue_draft, set_composer_error, set_draft_text, stop_turn, submit, toggle_plan } from "../../state/composer.ts";
 import { use_store } from "../../state/use-store.ts";
 import { use_chat_busy, use_context_usage, use_model_context } from "./composer-hooks.ts";
@@ -71,6 +71,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     busy,
     compacting,
     plan: draft.plan,
+    visualize: has_chip(draft, visualize_chip),
     usage: shown_usage,
     model,
     model_context: context_setting,
@@ -177,7 +178,6 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
       onDrop={on_drop}
     >
       <ComposerMedia draft_key={draft_key} uploads={draft.uploads} />
-      <DraftChips draft_key={draft_key} chips={draft.chips} />
       <textarea
         ref={area}
         className="composer-input"
@@ -239,6 +239,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
           <ClipboardListIcon size={15} />
           <span className="composer-chip-label">{t("composer.plan")}</span>
         </button>
+        <DraftChips draft_key={draft_key} chips={draft.chips} />
         <span className="composer-spacer" />
         {shown_usage && chat_id && (
           <ContextRing key={chat_id} usage={shown_usage} compact={{ run: () => compact_now(chat_id), busy }} mark={limited ? (limited.compact_at ?? compact_fraction) : undefined} />

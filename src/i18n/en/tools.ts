@@ -28,6 +28,8 @@ export const tools = {
   "tools.combine_todos_other": "updated todos",
   "tools.combine_questions_one": "asked {n} question",
   "tools.combine_questions_other": "asked {n} questions",
+  "tools.combine_visuals_one": "created {n} visualization",
+  "tools.combine_visuals_other": "created {n} visualizations",
   "tools.combine_agents_one": "deployed {n} agent",
   "tools.combine_agents_other": "deployed {n} agents",
   "tools.combine_agent_runs_one": "continued {n} agent",
