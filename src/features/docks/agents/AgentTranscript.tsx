@@ -47,7 +47,7 @@ const BlockView = ({ block, chat_id, run, streaming, tail }: BlockViewProps) => 
     case "visual":
       return <WorkGroup chat_id={chat_id} run={run} steps={[block.step]} streaming={streaming} tail={tail} />;
     case "steer":
-      return <MainMessageRow chat_id={chat_id} step={block.step} />;
+      return <MainMessageRow chat_id={chat_id} />;
     case "notice":
       return block.step.notice === "peer_message" ? <PeerMessageRow step={block.step} /> : <NoticeRow step={block.step} />;
     case "compaction":

@@ -1,12 +1,10 @@
 import { agent_detail } from "../../agents/detail.ts";
 import { reachable_live, unreachable_state } from "../../agents/live.ts";
 import { current_run, type AgentRecord, type RunRecord } from "../../agents/records.ts";
-import { label_of } from "../../agents/roster.ts";
 import { cancel_agent, message_agent } from "../../agents/runner.ts";
 import { failed, guarded, read_int_arg } from "../fs/common.ts";
 import { define_tool } from "../types.ts";
 import { agent_id_property, agent_view, read_agent_id, read_text, resolve_agent } from "./common.ts";
-import { agent_text_gate, agent_text_subject } from "./text-gate.ts";
 
 const id_parameters = {
   type: "object" as const,
@@ -75,7 +73,7 @@ export const message_agent_tool = define_tool<{ agent_id: string; text: string }
   spec: {
     name: "message_agent",
     description:
-      "Send an instruction to a running agent. It arrives at the start of the agent's next round, after the step it is on. Use it to narrow the scope, hand over a missing fact, tell it to wrap up and report now, or step in when agents are stuck messaging each other. The automatic review checks the text before it arrives.",
+      "Send an instruction to a running agent. It arrives at the start of the agent's next round, after the step it is on. Use it to narrow the scope, hand over a missing fact, tell it to wrap up and report now, or step in when agents are stuck messaging each other.",
     parameters: {
       type: "object",
       properties: {
@@ -94,11 +92,6 @@ export const message_agent_tool = define_tool<{ agent_id: string; text: string }
       const run = latest(agent);
       if (!reachable_live(agent)) {
         return not_running(agent);
-      }
-      const subject = agent_text_subject([`message_agent to ${label_of(agent)}, topic ${agent.topic || "none"}, a running sub-agent`, "an instruction from the main agent"], args.text);
-      const gate = await agent_text_gate(ctx, { tool: "message_agent", to_name: label_of(agent), to_id: agent.agent_id, about: agent.topic, text: args.text }, subject);
-      if (gate.kind !== "pass") {
-        return { status: "denied", text: gate.text, view: agent_view(agent, run) };
       }
       if (!message_agent(agent, args.text)) {
         return not_running(agent);

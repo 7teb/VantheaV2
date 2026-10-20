@@ -41,13 +41,9 @@ export type Reviewer = Omit<ActorReview, "mirror"> & { record: (entry: ReviewRec
 
 export type PeerRequest = { to: string; type: PeerType; about: string; summary: string; text: string; in_reply_to: string | null };
 
-export type PeerTarget = { agent_id: string; label: string };
-
 export type TextGate = { kind: "pass" } | { kind: "denied"; text: string; reason: string } | { kind: "declined"; text: string };
 
-export type PeerGate = (target: PeerTarget, subject: string, on_card: () => void) => Promise<TextGate>;
-
-export type PeerSend = (request: PeerRequest, gate: PeerGate) => Promise<ToolResult>;
+export type PeerSend = (request: PeerRequest) => Promise<ToolResult>;
 
 export type ToolContext = {
   chat_id: string;

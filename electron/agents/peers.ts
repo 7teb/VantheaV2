@@ -3,7 +3,7 @@ import type { Step } from "../../shared/chat.ts";
 import { agent_label } from "../../shared/peer-notes.ts";
 import type { PeerOutcome, ToolView } from "../../shared/tool-view.ts";
 import { same_subject } from "../permissions/decisions.ts";
-import type { PeerGate, PeerRequest, ToolResult } from "../tools/types.ts";
+import type { PeerRequest, ToolResult } from "../tools/types.ts";
 import type { InboxEntry, PeerEntry } from "./inbox.ts";
 import { live_run, reachable_live, unreachable_state, type LiveRun } from "./live.ts";
 import { received_message, sent_message, sent_messages, type SentMessage } from "./peer-steps.ts";
@@ -12,7 +12,6 @@ import { current_run, type AgentRecord, type RunRecord } from "./records.ts";
 import { deliver_alert, queue_digest } from "./reports.ts";
 import { label_of } from "./roster.ts";
 import { find_agent, get_agent, hold_message } from "./store.ts";
-import { agent_text_subject } from "../tools/agents/text-gate.ts";
 
 export type PeerSender = { agent: AgentRecord; run: RunRecord; live: LiveRun };
 
@@ -44,18 +43,6 @@ const is_empty = (steps: Step[], peer_id: string): boolean => {
   const anchor = steps.findLastIndex((step) => touches_peer(step, peer_id));
   return anchor >= 0 && !steps.slice(anchor + 1).some(counts_as_work);
 };
-
-const subject_of = (target: AgentRecord, request: PeerRequest): string =>
-  agent_text_subject(
-    [
-      `message_peer to ${label_of(target)}, topic ${target.topic || "none"}`,
-      `type ${request.type}`,
-      `about ${request.about}`,
-      `summary ${request.summary}`,
-      ...(request.in_reply_to ? [`in_reply_to ${request.in_reply_to}`] : []),
-    ],
-    request.text,
-  );
 
 const queued_text = (to: string, message_id: string, request: PeerRequest): string => {
   const head = `In the inbox of ${to} as ${message_id}; it arrives at its next round boundary.`;
@@ -104,7 +91,7 @@ const hold_answer = (target: AgentRecord, entry: PeerEntry, line: string) => {
   queue_digest(target.chat_id, `${line}. ${label_of(target)} has finished, so the answer ${entry.message_id} is kept for its next run; continue_agent with agent_id ${target.agent_id} delivers it.`);
 };
 
-export const send_peer = async (sender: PeerSender, request: PeerRequest, gate: PeerGate): Promise<ToolResult> => {
+export const send_peer = async (sender: PeerSender, request: PeerRequest): Promise<ToolResult> => {
   const found = find_agent(request.to, sender.agent.chat_id);
   if (!found.agent) {
     const main = /^main(\s|$)/i.test(request.to.trim());
@@ -126,7 +113,8 @@ export const send_peer = async (sender: PeerSender, request: PeerRequest, gate: 
     outcome,
   });
   const answer = request.type === "answer";
-  if (!answer && !reachable_live(target)) {
+  const live = reachable_live(target);
+  if (!answer && !live) {
     return { status: "failed", text: not_running_text(target, to, request.type), view: view("", "not_running") };
   }
   const steps = sender.live.transcript.steps;
@@ -140,21 +128,6 @@ export const send_peer = async (sender: PeerSender, request: PeerRequest, gate: 
   const empty = is_empty(steps, target.agent_id);
   const message_id = new_message_id();
   const line = message_line(from, to, request);
-  const verdict = await gate({ agent_id: target.agent_id, label: to }, subject_of(target, request), () => queue_digest(sender.agent.chat_id, `${line} waits for the user's approval.`));
-  if (verdict.kind === "denied") {
-    deliver_alert({
-      chat_id: sender.agent.chat_id,
-      agent_id: sender.agent.agent_id,
-      run_id: sender.run.run_id,
-      name: sender.agent.name,
-      cause: "blocked",
-      body: `The review denied a message from ${from} to ${to} (${request.type}, about ${request.about}: '${request.summary}'). It was not delivered. Review reason: ${verdict.reason || "none given"}`,
-    });
-    return { status: "denied", text: verdict.text, view: view(message_id, "denied") };
-  }
-  if (verdict.kind === "declined") {
-    return { status: "denied", text: verdict.text, view: view(message_id, "declined") };
-  }
   const entry: PeerEntry = {
     from: "peer",
     message_id,
@@ -166,10 +139,6 @@ export const send_peer = async (sender: PeerSender, request: PeerRequest, gate: 
     text: request.text,
     in_reply_to: answer ? request.in_reply_to : null,
   };
-  const live = reachable_live(target);
-  if (!live && !answer) {
-    return { status: "failed", text: not_running_text(target, to, request.type), view: view(message_id, "not_running") };
-  }
   const answered = answer && request.in_reply_to ? answer_question(request.in_reply_to, target.agent_id, sender.agent.agent_id) : null;
   if (!live) {
     hold_answer(target, entry, line);

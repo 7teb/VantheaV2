@@ -8,7 +8,7 @@ export const agent_text_subject = (header: string[], text: string): string =>
 
 export type AgentCard = Omit<Extract<ApprovalRequest, { kind: "agent_message" }>, "kind" | "review">;
 
-export const agent_text_gate = async (ctx: ToolContext, card: AgentCard, subject: string, on_card?: () => void): Promise<TextGate> => {
+export const agent_text_gate = async (ctx: ToolContext, card: AgentCard, subject: string): Promise<TextGate> => {
   const gate = await tool_gate(ctx, card.tool, subject, { review_in_ask: true });
   if (gate.kind === "run") {
     return { kind: "pass" };
@@ -16,7 +16,6 @@ export const agent_text_gate = async (ctx: ToolContext, card: AgentCard, subject
   if (gate.kind === "denied") {
     return { kind: "denied", text: gate.text, reason: gate.reason };
   }
-  on_card?.();
   const decision = await ctx.approve({ kind: "agent_message", ...card, ...(gate.note ? { review: gate.note } : {}) });
   if (decision.approved) {
     return { kind: "pass" };

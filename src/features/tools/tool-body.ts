@@ -13,6 +13,10 @@ const inline_tools = new Set(["datetime", "view_image"]);
 
 const notice_views = new Set<ToolViewKind>(["command", "background", "mcp"]);
 
+const message_tools = new Set(["message_agent", "message_peer", "message_main_agent"]);
+
+export const is_agent_message = (step: ToolStep): boolean => message_tools.has(step.name);
+
 export const view_content = (t: Translate, step: ToolStep, view: ToolView): boolean => {
   switch (view.kind) {
     case "files":
@@ -84,10 +88,11 @@ export const opens_by_itself = (step: ToolStep, main_chat: boolean): boolean =>
   !is_reviewing(step) && live_draft(step) === null && !(main_chat && is_shell_run(step.name));
 
 export const has_body = (t: Translate, step: ToolStep): boolean =>
-  is_reviewing(step) ||
-  Boolean(shown_error(step)) ||
-  Boolean(step.progress?.output_tail) ||
-  live_command(step) ||
-  live_draft(step) !== null ||
-  (denial_note(t, step)?.lines.length ?? 0) > 0 ||
-  (step.view ? view_content(t, step, step.view) : step.status !== "denied" && !is_active_status(step.status) && step.result_text !== "");
+  !is_agent_message(step) &&
+  (is_reviewing(step) ||
+    Boolean(shown_error(step)) ||
+    Boolean(step.progress?.output_tail) ||
+    live_command(step) ||
+    live_draft(step) !== null ||
+    (denial_note(t, step)?.lines.length ?? 0) > 0 ||
+    (step.view ? view_content(t, step, step.view) : step.status !== "denied" && !is_active_status(step.status) && step.result_text !== ""));

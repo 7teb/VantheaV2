@@ -13,7 +13,7 @@ import { tool_icon, ToolBody } from "./registry.tsx";
 import { is_reviewing } from "./review-phase.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
 import { CommandTime, RowDetail } from "./RowMeta.tsx";
-import { has_body, opens_by_itself } from "./tool-body.ts";
+import { has_body, is_agent_message, opens_by_itself } from "./tool-body.ts";
 import { is_active_status, started_run, tool_label, tool_meta } from "./tool-meta.ts";
 import { step_hint } from "./tool-summary.ts";
 import "./tools.css";
@@ -54,7 +54,7 @@ export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false
   const drafted = step.status === "drafting" ? (step.progress?.lines ?? 0) : 0;
   const reviewing = is_reviewing(step);
   const expandable = has_body(t, step);
-  const run = !expandable && step.view?.kind === "agent" ? step.view : null;
+  const run = !expandable && step.view?.kind === "agent" && !is_agent_message(step) ? step.view : null;
   const started = started_run(step);
   const open = expandable && (chosen ?? (running && opens_by_itself(step, main_chat)));
   if (open && !seen) {

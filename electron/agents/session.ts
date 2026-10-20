@@ -116,7 +116,7 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
       return true;
     },
     message_main: (text) => message_main(agent, run, live, text),
-    send_peer: (peer_request, gate) => send_peer({ agent, run, live }, peer_request, gate),
+    send_peer: (peer_request) => send_peer({ agent, run, live }, peer_request),
     compaction: { audience: "agent", facts: async () => agent_facts(live, request.project_root) },
     stored_context: stored,
     reasoning_status,
