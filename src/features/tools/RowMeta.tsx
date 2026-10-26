@@ -42,7 +42,7 @@ export const RowDetail = ({ chat_id, step }: LiveDetailProps) => {
   return <StaticDetail step={step} />;
 };
 
-const Elapsed = ({ started_at }: { started_at: number }) => {
+export const Elapsed = ({ started_at }: { started_at: number }) => {
   const now = use_clock(true);
   const elapsed = Math.max(0, now - started_at);
   const text = format_elapsed(elapsed);

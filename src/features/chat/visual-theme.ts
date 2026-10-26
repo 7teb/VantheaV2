@@ -11,7 +11,7 @@ export const visual_tokens: Readonly<Record<string, string>> = {
   "--vx-border": "--ring-card",
   "--vx-divider": "--divider",
   "--vx-code-bg": "--fill-code",
-  "--vx-accent": "--ring-accent",
+  "--vx-accent": "--accent",
   "--vx-positive": "--text-positive",
   "--vx-warning": "--text-waiting",
   "--vx-danger": "--text-danger",

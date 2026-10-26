@@ -1,0 +1,19 @@
+@layer components {
+  .thought-mark {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: currentColor;
+    opacity: 0.7;
+  }
+
+  .thought-row .tool-row-head,
+  .thought-row .tool-row-head:hover:not(:disabled) {
+    color: var(--text-tertiary);
+  }
+
+  .thought-row[data-open="true"] .tool-row-chevron {
+    transform: rotate(90deg);
+  }
+}

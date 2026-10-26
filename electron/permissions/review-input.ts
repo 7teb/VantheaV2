@@ -16,6 +16,7 @@ import { command_targets, program_lines, run_git, target_facts, type GitRunner }
 
 export type InputRequest = {
   chat_id: string;
+  chat_started_at: number;
   project_root: string;
   custom_instructions: string;
   actor: ReviewActor;
@@ -49,7 +50,7 @@ export const review_input = async (request: InputRequest, git: GitRunner = run_g
   const edits = await agent_edits(request.chat_id, request.project_root);
   const { action } = request;
   const targets = action.call.kind !== "command" ? null : await command_targets(action.subject, action.cwd, action.files, action.shell === "posix" ? bash_env(process.env) : process.env, action.shell);
-  const facts = targets ? [...program_lines(action.programs, action.notes, action.files), ...(await target_facts(targets, git))] : [];
+  const facts = targets ? [...program_lines(action.programs, action.notes, action.files), ...(await target_facts(targets, { chat_id: request.chat_id, chat_started_at: request.chat_started_at }, git))] : [];
   return {
     chat: { chat_id: request.chat_id, project_root: request.project_root, custom_instructions: request.custom_instructions, humans, profile, snapshot },
     chat_key,

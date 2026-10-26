@@ -1,6 +1,7 @@
 import { init_agent_approvals } from "./agent-approvals.ts";
 import { init_agents } from "./agents.ts";
 import { init_artifacts } from "./artifacts.ts";
+import { init_attention } from "./attention.ts";
 import { init_background } from "./background.ts";
 import { init_browser } from "./browser.ts";
 import { init_chat_view } from "./chat-view.ts";
@@ -26,6 +27,7 @@ export const init_state = (): (() => void) => {
     init_chats(),
     init_window(),
     init_chat_view(),
+    init_attention(),
     init_composer(),
     init_event_hold(),
     init_terminal(),

@@ -11,7 +11,7 @@ export type ScriptPin = { path: string; sha256: string | null };
 
 export type PinChange = { path: string; before: string | null; after: string | null };
 
-export type SourceRead = { sha256: string; bytes: number; mtime: number; text: string | null; binary: boolean; over_limit: boolean };
+export type SourceRead = { sha256: string; bytes: number; mtime: number; birthtime: number; text: string | null; binary: boolean; over_limit: boolean };
 
 const sha256_of = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
 
@@ -27,12 +27,12 @@ export const read_source = async (file: string): Promise<SourceRead> => {
   const stat = await fs.stat(file);
   if (stat.size > read_limit_bytes) {
     const head = decode_head(await read_head(file)).text;
-    return { sha256: await file_sha256(file), bytes: stat.size, mtime: stat.mtimeMs, text: null, binary: looks_binary(head), over_limit: true };
+    return { sha256: await file_sha256(file), bytes: stat.size, mtime: stat.mtimeMs, birthtime: stat.birthtimeMs, text: null, binary: looks_binary(head), over_limit: true };
   }
   const bytes = await fs.readFile(file);
   const { text } = decode_text(bytes);
   const binary = looks_binary(text);
-  return { sha256: sha256_of(bytes), bytes: bytes.length, mtime: stat.mtimeMs, text: binary ? null : text, binary, over_limit: false };
+  return { sha256: sha256_of(bytes), bytes: bytes.length, mtime: stat.mtimeMs, birthtime: stat.birthtimeMs, text: binary ? null : text, binary, over_limit: false };
 };
 
 export const stat_optional = async (file: string, purpose: string): Promise<Stats | null> => {

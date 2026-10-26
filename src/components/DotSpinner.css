@@ -1,0 +1,21 @@
+@layer components {
+  .dot-spinner {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 16px;
+    height: 14px;
+    color: var(--accent);
+  }
+
+  .dot-spinner > i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3.4px;
+    height: 3.4px;
+    margin: -1.7px 0 0 -1.7px;
+    border-radius: var(--radius-full);
+    background: currentColor;
+  }
+}

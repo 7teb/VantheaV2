@@ -1,0 +1,48 @@
+@property --group-fade-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --group-fade-bottom {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@layer components {
+  @keyframes work-group-edge-fade {
+    0% {
+      --group-fade-top: 0px;
+      --group-fade-bottom: 18px;
+    }
+
+    4% {
+      --group-fade-top: 10px;
+    }
+
+    96% {
+      --group-fade-bottom: 18px;
+    }
+
+    100% {
+      --group-fade-top: 10px;
+      --group-fade-bottom: 0px;
+    }
+  }
+
+  .work-group-head .tool-row-duration {
+    margin-left: 2px;
+  }
+
+  .work-group-scroll {
+    max-height: min(18rem, 50vh);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    mask-image: linear-gradient(to bottom, transparent 0, var(--mask) var(--group-fade-top), var(--mask) calc(100% - var(--group-fade-bottom)), transparent 100%);
+    animation-name: work-group-edge-fade;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(self y);
+  }
+}

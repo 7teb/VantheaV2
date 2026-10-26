@@ -103,6 +103,20 @@
     margin-left: var(--space-2);
   }
 
+  .composer-bar .button-primary:not(:disabled) {
+    background: var(--surface-accent);
+    color: var(--text-on-accent);
+  }
+
+  .composer-bar .button-primary:hover:not(:disabled) {
+    background: var(--surface-accent-hover);
+  }
+
+  .composer-bar .button-primary:disabled {
+    background: var(--surface-accent-disabled);
+    color: var(--text-on-accent-disabled);
+  }
+
   .composer-chip {
     display: inline-flex;
     align-items: center;

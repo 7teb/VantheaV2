@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Language } from "../../../shared/settings.ts";
 import { Segmented, type SegmentedOption } from "../../components/Segmented.tsx";
 import { Skeleton } from "../../components/Skeleton.tsx";
+import { Toggle } from "../../components/Toggle.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { settings_store, update_settings } from "../../state/settings.ts";
 import { use_store } from "../../state/use-store.ts";
@@ -19,6 +20,7 @@ export const GeneralPane = () => {
   const t = use_t();
   const language = use_store(settings_store, (view) => view?.language ?? null);
   const has_key = use_store(settings_store, (view) => view?.secrets.openrouter ?? false);
+  const sound = use_store(settings_store, (view) => view?.notification_sound ?? true);
   const [revision, set_revision] = useState(0);
 
   if (language === null) {
@@ -35,26 +37,33 @@ export const GeneralPane = () => {
   }
 
   return (
-    <SettingsGroup>
-      <SettingsRow label={t("settings.language")} hint={t("settings.language_sub")}>
-        <Segmented
-          className="language-switch"
-          options={language_options}
-          value={language}
-          label={t("settings.language")}
-          on_change={(next) => update_settings({ language: next })}
+    <>
+      <SettingsGroup>
+        <SettingsRow label={t("settings.language")} hint={t("settings.language_sub")}>
+          <Segmented
+            className="language-switch"
+            options={language_options}
+            value={language}
+            label={t("settings.language")}
+            on_change={(next) => update_settings({ language: next })}
+          />
+        </SettingsRow>
+        <SecretRow
+          name="openrouter"
+          label={t("settings.api_key")}
+          stored={has_key}
+          placeholder={t("settings.key_placeholder")}
+          on_saved={() => set_revision((value) => value + 1)}
         />
-      </SettingsRow>
-      <SecretRow
-        name="openrouter"
-        label={t("settings.api_key")}
-        stored={has_key}
-        placeholder={t("settings.key_placeholder")}
-        on_saved={() => set_revision((value) => value + 1)}
-      />
-      <SettingsRow label={t("settings.balance")}>
-        <BalanceLine has_key={has_key} revision={revision} />
-      </SettingsRow>
-    </SettingsGroup>
+        <SettingsRow label={t("settings.balance")}>
+          <BalanceLine has_key={has_key} revision={revision} />
+        </SettingsRow>
+      </SettingsGroup>
+      <SettingsGroup label={t("settings.notifications")}>
+        <SettingsRow label={t("settings.notify_sound")} hint={t("settings.notify_sound_sub")}>
+          <Toggle checked={sound} label={t("settings.notify_sound")} on_change={(enabled) => void update_settings({ notification_sound: enabled })} />
+        </SettingsRow>
+      </SettingsGroup>
+    </>
   );
 };

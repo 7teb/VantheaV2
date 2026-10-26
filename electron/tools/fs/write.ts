@@ -2,6 +2,7 @@ import type { ToolView } from "../../../shared/tool-view.ts";
 import { effective_mode } from "../../permissions/full-window.ts";
 import { is_instruction_file } from "../../permissions/instruction-files.ts";
 import { actor_label } from "../../permissions/script-retention.ts";
+import { stat_optional } from "../../permissions/source-read.ts";
 import { record_write } from "../../permissions/written-files.ts";
 import { commit_edit, prepare_replace, prepare_write, type PreparedEdit } from "../../project/edit.ts";
 import { require_string } from "../browser/common.ts";
@@ -37,8 +38,9 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
       return denied(`the edit to ${prepared.target.relative}`, decision);
     }
   }
+  const prior = await stat_optional(prepared.target.target, "the write ledger");
   const sha256 = await commit_edit(prepared);
-  record_write(ctx.chat_id, prepared.target.target, { actor: actor_label(ctx.review.actor), tool, call_id: ctx.call_id, at: Date.now(), sha256 });
+  record_write(ctx.chat_id, prepared.target.target, { actor: actor_label(ctx.review.actor), tool, call_id: ctx.call_id, at: Date.now(), sha256, prior_birthtime: prior?.birthtimeMs ?? null });
   return { status: "done", text: `${summary} (+${prepared.diff.added} -${prepared.diff.removed} lines)`, view };
 };
 

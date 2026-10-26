@@ -1,0 +1,44 @@
+import { memo, useState } from "react";
+import type { ReasoningStep } from "../../../shared/chat.ts";
+import { class_names } from "../../components/class-names.ts";
+import { CollapsibleBody } from "../../components/Collapsible.tsx";
+import { ChevronRightIcon } from "../../components/icons.tsx";
+import { Markdown } from "../../components/Markdown.tsx";
+import { use_t } from "../../i18n/index.ts";
+import { reasoning_head } from "../chat/reasoning-head.ts";
+import "./ThoughtRow.css";
+
+type ThoughtRowProps = { step: ReasoningStep; live: boolean };
+
+export const ThoughtRow = memo(({ step, live }: ThoughtRowProps) => {
+  const t = use_t();
+  const [open, set_open] = useState(false);
+  const [seen, set_seen] = useState(false);
+  const { label, meta, expandable, working } = reasoning_head(t, step, live);
+  return (
+    <div className="thought-row" data-open={expandable && open}>
+      <button
+        type="button"
+        className="tool-row-head"
+        disabled={!expandable}
+        aria-expanded={expandable ? open : undefined}
+        onClick={() => {
+          set_seen(true);
+          set_open(!open);
+        }}
+      >
+        <span className="tool-row-icon">
+          <i className="thought-mark" />
+        </span>
+        <span className={class_names("tool-row-label", working && "is-working")}>{label}</span>
+        {meta && <span className="tool-row-duration">{meta}</span>}
+        {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}
+      </button>
+      {expandable && (
+        <CollapsibleBody open={open}>
+          <div className="reasoning-body">{seen && <Markdown text={step.text} className="reasoning-markdown" />}</div>
+        </CollapsibleBody>
+      )}
+    </div>
+  );
+});

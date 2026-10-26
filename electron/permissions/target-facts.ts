@@ -12,14 +12,18 @@ import { msys_mounts, msys_native } from "./msys-paths.ts";
 import { change_text } from "./review-action.ts";
 import { dynamic_path, script_dialect, shell_source } from "./script-refs.ts";
 import { shell_words, type Word } from "./shell-words.ts";
+import { file_sha256 } from "./source-read.ts";
 import type { ScriptFile } from "./sources.ts";
 import type { Dialect } from "./statements.ts";
+import { change_mark, write_entry, type ChangeMark } from "./written-files.ts";
 
 export type Target = { written: string; where: string | null; path: string };
 
 export type TargetList = { targets: Target[]; unresolved: string[] };
 
 export type GitRunner = (args: string[], cwd: string) => Promise<string>;
+
+export type MarkScope = { chat_id: string; chat_started_at: number };
 
 const max_targets = 20;
 
@@ -206,8 +210,8 @@ export const program_lines = (programs: ProgramFact[], notes: string[], scripts:
 ];
 
 type Shape =
-  | { kind: "file"; bytes: number }
-  | { kind: "directory"; count: number; complete: boolean; names: string[]; unread: string[] }
+  | { kind: "file"; bytes: number; change: ChangeMark | null }
+  | { kind: "directory"; count: number; complete: boolean; names: string[]; unread: string[]; change: ChangeMark | null }
   | { kind: "missing" }
   | { kind: "unreadable"; failure: string }
   | { kind: "remote" };
@@ -221,7 +225,7 @@ const list_dir = async (dir: string, unread: string[]): Promise<Dirent[]> => {
   }
 };
 
-const count_entries = async (dir: string): Promise<Shape> => {
+const count_entries = async (dir: string, change: ChangeMark | null): Promise<Shape> => {
   const deadline = Date.now() + walk_ms;
   const unread: string[] = [];
   const top = await list_dir(dir, unread);
@@ -230,7 +234,7 @@ const count_entries = async (dir: string): Promise<Shape> => {
   const pending = [dir];
   while (pending.length) {
     if (count >= walk_entries || Date.now() > deadline) {
-      return { kind: "directory", count, complete: false, names: [], unread };
+      return { kind: "directory", count, complete: false, names: [], unread, change };
     }
     const current = pending.pop() ?? "";
     for (const entry of current === dir ? top : await list_dir(current, unread)) {
@@ -238,28 +242,33 @@ const count_entries = async (dir: string): Promise<Shape> => {
       if (entry.isDirectory() && entry.name !== ".git" && entry.name !== "node_modules") pending.push(path.join(current, entry.name));
     }
   }
-  return { kind: "directory", count, complete: unread.length === 0, names: names.length <= listed_names ? names : [], unread };
+  return { kind: "directory", count, complete: unread.length === 0, names: names.length <= listed_names ? names : [], unread, change };
 };
 
-const shape_of = async (target: string): Promise<Shape> => {
+const shape_of = async (target: string, scope: MarkScope): Promise<Shape> => {
   if (remote_path(target)) return { kind: "remote" };
   let info: Stats;
+  let sha256: string | null = null;
   try {
     info = await fs.stat(target);
+    if (!info.isDirectory() && write_entry(scope.chat_id, target)) sha256 = await file_sha256(target);
   } catch (error) {
     return missing_path(error) ? { kind: "missing" } : { kind: "unreadable", failure: failure(error) };
   }
-  return info.isDirectory() ? count_entries(target) : { kind: "file", bytes: info.size };
+  const change = change_mark(scope.chat_id, scope.chat_started_at, target, sha256, { mtime: info.mtimeMs, birthtime: info.birthtimeMs });
+  return info.isDirectory() ? count_entries(target, change) : { kind: "file", bytes: info.size, change };
 };
+
+const mark_part = (change: ChangeMark | null): string => (change ? `, ${change_text(change)}` : "");
 
 const shape_text = (shape: Shape): string => {
   if (shape.kind === "remote") return "network or remote location, not read";
   if (shape.kind === "missing") return "does not exist";
   if (shape.kind === "unreadable") return `could not be read (${shape.failure})`;
-  if (shape.kind === "file") return `file, ${shape.bytes} bytes`;
+  if (shape.kind === "file") return `file, ${shape.bytes} bytes${mark_part(shape.change)}`;
   const count = shape.complete ? `${shape.count} entries` : `more than ${shape.count} entries`;
   const unread = shape.unread.length ? `, not listed: ${shape.unread.slice(0, 3).join(", ")}` : "";
-  return `directory, ${count}${shape.names.length ? ` (${shape.names.join(", ")})` : ""}${unread}`;
+  return `directory, ${count}${shape.names.length ? ` (${shape.names.join(", ")})` : ""}${mark_part(shape.change)}${unread}`;
 };
 
 type IndexEntry = { mtime_ns: bigint; size: number };
@@ -322,8 +331,8 @@ const git_text = async (facts: GitFacts, relative: string, file: string, shape: 
   return `git: tracked, ${await worktree_state(file, entry, facts.index_mtime_ns)}`;
 };
 
-export const target_facts = async (list: TargetList, git: GitRunner = run_git): Promise<string[]> => {
-  const shapes = await Promise.all(list.targets.map((target) => shape_of(target.path)));
+export const target_facts = async (list: TargetList, scope: MarkScope, git: GitRunner = run_git): Promise<string[]> => {
+  const shapes = await Promise.all(list.targets.map((target) => shape_of(target.path, scope)));
   const trees = new Map<string, { work_tree: string; git_dir: string; indexes: number[] }>();
   for (const [index, target] of list.targets.entries()) {
     const shape = shapes[index]?.kind;

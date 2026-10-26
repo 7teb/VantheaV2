@@ -11,7 +11,7 @@ export type ProgramKind = "native" | "missing" | "network" | "script" | "install
 
 export type ProgramFact = { written: string; how: string; path: string; kind: ProgramKind; bytes: number | null; outside: boolean; change: ChangeMark | null; origin: string; line: number };
 
-export type LaunchKind = { kind: "missing" } | { kind: "directory" } | { kind: "unreadable"; failure: string } | { kind: "native" | "file"; bytes: number; mtime: number };
+export type LaunchKind = { kind: "missing" } | { kind: "directory" } | { kind: "unreadable"; failure: string } | { kind: "native" | "file"; bytes: number; mtime: number; birthtime: number };
 
 export type PathMatch = { dir: string; file: string; installed: boolean };
 
@@ -50,10 +50,10 @@ export const launch_kind = async (file: string): Promise<LaunchKind> => {
     return missing_path(error) ? { kind: "missing" } : { kind: "unreadable", failure: failure(error) };
   }
   if (info.isDirectory()) return { kind: "directory" };
-  if (!native_extension.test(file)) return { kind: "file", bytes: info.size, mtime: info.mtimeMs };
+  if (!native_extension.test(file)) return { kind: "file", bytes: info.size, mtime: info.mtimeMs, birthtime: info.birthtimeMs };
   try {
     const head = await read_head(file);
-    return { kind: head[0] === 0x4d && head[1] === 0x5a ? "native" : "file", bytes: info.size, mtime: info.mtimeMs };
+    return { kind: head[0] === 0x4d && head[1] === 0x5a ? "native" : "file", bytes: info.size, mtime: info.mtimeMs, birthtime: info.birthtimeMs };
   } catch (error) {
     return { kind: "unreadable", failure: failure(error) };
   }

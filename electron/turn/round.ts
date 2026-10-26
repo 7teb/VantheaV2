@@ -217,7 +217,7 @@ const stream_with_status = async (session: TurnSession, round: number, request: 
           session.emit({ type: "tool_draft", round, index, name, ...draft });
         },
         on_retry: (attempt, max, reason, wait_ms) => {
-          status?.close();
+          status?.drop();
           session.emit({ type: "retry", round, attempt, max, reason, wait_ms });
         },
       },

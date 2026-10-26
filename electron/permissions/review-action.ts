@@ -38,8 +38,10 @@ const review_time = (at: number): string => new Date(at).toISOString().slice(5, 
 const hash16 = (sha256: string | null) => (sha256 ?? "absent").slice(0, 16);
 
 export const change_text = (mark: ChangeMark): string => {
+  if (mark.kind === "created") return `created in this chat at ${review_time(mark.at)}`;
   if (mark.kind === "modified") return `modified since this chat started at ${review_time(mark.at)}`;
-  return mark.same_bytes ? `written by ${mark.actor} via ${mark.tool} at ${review_time(mark.at)}` : `written by ${mark.actor} at ${review_time(mark.at)}, changed on disk since`;
+  const older = mark.before_chat ? ", existed before this chat" : "";
+  return mark.same_bytes ? `written by ${mark.actor} via ${mark.tool} at ${review_time(mark.at)}${older}` : `written by ${mark.actor} at ${review_time(mark.at)}, changed on disk since${older}`;
 };
 
 const history_note = (file: ScriptFile, history: RetainedScript[]): string | null => {
@@ -75,7 +77,7 @@ const not_sent_reason = (file: ScriptFile, placement: ScriptPlacement): string =
   const earlier = placement.earlier.get(file.id);
   if (earlier) return `over the review budget, sent in the review at ${review_time(earlier.at)} with this hash: ${earlier.verdict}`;
   if (!placement.context.has(file.id)) return "over the review budget";
-  return file.change ? "over the review budget, changed on disk in this chat, not written by the agent" : "over the review budget, unchanged in this chat";
+  return file.change ? `over the review budget, ${change_text(file.change)}` : "over the review budget, unchanged in this chat";
 };
 
 const pending_lines = (action: ActionView, tag: string): string[] => {

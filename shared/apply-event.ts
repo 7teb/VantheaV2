@@ -8,7 +8,7 @@ type DraftEvent = Extract<Event, { type: "tool_draft" }>;
 
 const open_tool_statuses = new Set<ToolStep["status"]>(["queued", "running", "awaiting_approval"]);
 
-const end_reasoning = ({ status_line, ...step }: ReasoningStep, at: number): ReasoningStep => ({ ...step, ended_at: at });
+const end_reasoning = (step: ReasoningStep, at: number): ReasoningStep => ({ ...step, ended_at: at });
 
 const open_reasoning = (step: Step): step is ReasoningStep => step.kind === "reasoning" && step.ended_at === null;
 
@@ -81,11 +81,11 @@ const append_reasoning = (steps: Step[], event: Extract<Event, { type: "reasonin
 };
 
 const set_reasoning_status = (steps: Step[], event: Extract<Event, { type: "reasoning_status" }>): Step[] => {
-  const last = steps.at(-1);
-  if (last?.kind !== "reasoning" || last.round !== event.round || last.ended_at !== null) {
+  const target = steps.findLast((step): step is ReasoningStep => step.kind === "reasoning" && step.round === event.round && step.text.trim() !== "");
+  if (!target) {
     return steps;
   }
-  return [...steps.slice(0, -1), { ...last, status_line: event.text }];
+  return steps.map((step) => (step === target ? { ...target, status_line: event.text } : step));
 };
 
 const drop_attempt = (steps: Step[], round: number): Step[] =>

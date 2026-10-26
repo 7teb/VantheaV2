@@ -14,7 +14,7 @@ import { script_dialect, script_extension } from "./script-refs.ts";
 import { file_sha256, stat_optional } from "./source-read.ts";
 import type { Dialect } from "./statements.ts";
 import type { LaunchRef } from "./step-refs.ts";
-import { change_mark, type ChangeMark } from "./written-files.ts";
+import { change_mark, type ChangeMark, type FileTimes } from "./written-files.ts";
 
 export type LaunchInput = InputRef & { location: Value };
 
@@ -38,7 +38,7 @@ export const launch_resolver = (host: LaunchHost) => {
   const programs: ProgramFact[] = [];
   const inputs: LaunchInput[] = [];
   const lookup = path_lookup();
-  const marked = (file: string, sha256: string | null, mtime: number) => change_mark(host.scope.chat_id, host.scope.chat_started_at, file, sha256, mtime);
+  const marked = (file: string, sha256: string | null, times: FileTimes) => change_mark(host.scope.chat_id, host.scope.chat_started_at, file, sha256, times);
   const add_fact = (fact: ProgramFact) => {
     const same = (known: ProgramFact) => known.written === fact.written && known.how === fact.how && known.origin === fact.origin && known.path.toLowerCase() === fact.path.toLowerCase();
     if (!programs.some(same)) programs.push(fact);
@@ -58,7 +58,7 @@ export const launch_resolver = (host: LaunchHost) => {
       }
       host.pin(file, sha256);
     }
-    program(ref, step, file, "native", kind.bytes, marked(file, sha256, kind.mtime));
+    program(ref, step, file, "native", kind.bytes, marked(file, sha256, kind));
   };
   const extensions = (step: Step, ref: LaunchRef): string[] => {
     const value = env_value(step.state, "pathext");
@@ -103,7 +103,7 @@ export const launch_resolver = (host: LaunchHost) => {
       return false;
     }
     const kind = await launch_kind(match.file);
-    if (kind.kind === "native") program(shown, step, match.file, "native", kind.bytes, marked(match.file, null, kind.mtime));
+    if (kind.kind === "native") program(shown, step, match.file, "native", kind.bytes, marked(match.file, null, kind));
     else if (kind.kind === "file") program(shown, step, match.file, "script", kind.bytes);
     else if (kind.kind === "unreadable") program(shown, step, match.file, "unreadable");
     return kind.kind === "file" || kind.kind === "unreadable";
@@ -156,7 +156,7 @@ export const launch_resolver = (host: LaunchHost) => {
     for (const match of matches) {
       const first = match.dir === matches[0]?.dir;
       const info = !match.installed && script_extension.test(match.file) ? await stat_optional(match.file, "a PATH script") : null;
-      if (info && marked(match.file, null, info.mtimeMs)) {
+      if (info && marked(match.file, null, { mtime: info.mtimeMs, birthtime: info.birthtimeMs })) {
         const read = await launch_file(match.file, { ...ref, mode: "path" }, step, depth);
         if (first) exit = read;
       } else if (first) {

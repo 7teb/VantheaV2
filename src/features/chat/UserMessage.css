@@ -19,7 +19,9 @@
     max-width: 100%;
     padding: 11px var(--space-4);
     border-radius: var(--radius-2xl);
+    background: var(--surface-user-bubble);
     box-shadow: none;
+    color: var(--text-on-accent);
     font-size: var(--font-size-prose);
     line-height: var(--leading-prose);
     white-space: pre-wrap;

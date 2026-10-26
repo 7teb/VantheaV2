@@ -24,6 +24,10 @@
     --surface-primary: #ececec;
     --surface-primary-hover: #ffffff;
     --surface-primary-disabled: rgba(252, 252, 252, 0.1);
+    --surface-accent: #8f63e8;
+    --surface-accent-hover: #9b72ef;
+    --surface-accent-disabled: rgba(166, 125, 242, 0.24);
+    --surface-user-bubble: #503285;
     --surface-solid: #fcfcfc;
     --surface-solid-hover: rgba(252, 252, 252, 0.8);
     --surface-toggle-off: rgba(255, 255, 255, 0.1);
@@ -57,6 +61,8 @@
     --text-waiting: #e3b341;
     --text-warning: #ff8549;
     --text-on-primary: #0a0a0a;
+    --text-on-accent: #ffffff;
+    --text-on-accent-disabled: rgba(255, 255, 255, 0.45);
     --text-placeholder: rgba(252, 252, 252, 0.235);
     --text-composer-placeholder: var(--text-placeholder);
     --text-on-caption-close: #ffffff;
@@ -83,7 +89,8 @@
     --ring-on-raised: rgba(252, 252, 252, 0.075);
     --ring-rail: rgba(252, 252, 252, 0.06);
     --ring-strong: rgba(252, 252, 252, 0.2);
-    --ring-accent: #a67df2;
+    --accent: #a67df2;
+    --ring-accent: var(--accent);
     --ring-danger: rgba(240, 101, 106, 0.16);
     --raised-divider: rgba(252, 252, 252, 0.075);
     --highlight: rgba(255, 255, 255, 0.06);

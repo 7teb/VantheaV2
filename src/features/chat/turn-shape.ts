@@ -9,7 +9,7 @@ export type MemberFacts = { message: AssistantMessage; blocks: Block[]; last: nu
 
 export type TurnShape = { head: HeadState | null; folds: ReadonlySet<string>[]; foldable: boolean; runs: RunRef[] };
 
-const activity = (block: Block) => block.kind === "reasoning" || block.kind === "tools" || block.kind === "notice" || block.kind === "compaction";
+const activity = (block: Block) => block.kind === "reasoning" || block.kind === "work" || block.kind === "notice" || block.kind === "compaction";
 
 export const foldable_block = (block: Block) => activity(block) || block.kind === "text";
 
@@ -37,7 +37,7 @@ const step_ends = (block: Block): number[] => {
     case "image":
     case "visual":
       return block.step.ended_at === null ? [] : [block.step.ended_at];
-    case "tools":
+    case "work":
       return block.steps.flatMap((step) => (step.ended_at === null ? [] : [step.ended_at]));
     default:
       return [];

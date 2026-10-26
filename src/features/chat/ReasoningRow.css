@@ -18,4 +18,13 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+
+  .reasoning-meta {
+    flex: none;
+    margin-left: 2px;
+    font-size: var(--font-size-body);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-detail);
+    white-space: nowrap;
+  }
 }

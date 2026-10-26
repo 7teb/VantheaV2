@@ -14,7 +14,7 @@ export const ReasoningRow = memo(({ step, live }: ReasoningRowProps) => {
   const t = use_t();
   const [open, set_open] = useState(false);
   const [seen, set_seen] = useState(false);
-  const { label, status, expandable, working } = reasoning_head(t, step, live);
+  const { label, meta, status, expandable, working } = reasoning_head(t, step, live);
   return (
     <div className="reasoning-row" data-open={expandable && open}>
       <button
@@ -31,6 +31,7 @@ export const ReasoningRow = memo(({ step, live }: ReasoningRowProps) => {
         <span key={status ?? ""} className={class_names("reasoning-label", status && "is-status")} title={status}>
           <span className={class_names("reasoning-label-text", working && "is-working")}>{label}</span>
         </span>
+        {meta && <span className="reasoning-meta">{meta}</span>}
       </button>
       {expandable && (
         <CollapsibleBody open={open}>

@@ -31,7 +31,7 @@ export const review_schema: JsonSchema = {
     decision: {
       type: "string",
       enum: [...review_verdicts],
-      description: "Apply YOUR ROLE before selecting a verdict. An excluded requirement alone requires allow. Review requires missing permission or a concrete unresolved effect; deny requires an applicable DENY WHEN case.",
+      description: "Apply YOUR ROLE before selecting a verdict. An excluded requirement alone requires allow. Low and medium risk require allow; review requires high risk that no human message clearly asks for, or another case the prompt sends to review; deny requires an applicable DENY WHEN case.",
     },
   },
   required: ["rule_source", "rule", "workaround_of", "script_summary", "reason", "decision"],

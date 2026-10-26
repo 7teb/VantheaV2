@@ -28,6 +28,7 @@ export const default_settings = (): Settings => ({
   projects: [],
   personality: "pragmatic",
   custom_instructions: "",
+  notification_sound: true,
   memory: { enabled: false, exclude_tool_chats: false },
   web_search: { enabled: false, max_results: 5, depth: "basic", topic: "general" },
   image_gen: { enabled: false, model: "google/gemini-3.1-flash-image", quality: "auto" },
@@ -166,6 +167,7 @@ export const normalize_settings = (value: unknown, base: Settings): Settings => 
     projects: projects(raw.projects, base.projects),
     personality: pick(raw.personality, personalities, base.personality),
     custom_instructions: as_string(raw.custom_instructions, base.custom_instructions),
+    notification_sound: as_boolean(raw.notification_sound, base.notification_sound),
     memory: {
       enabled: as_boolean(memory.enabled, base.memory.enabled),
       exclude_tool_chats: as_boolean(memory.exclude_tool_chats, base.memory.exclude_tool_chats),

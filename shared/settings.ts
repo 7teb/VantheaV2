@@ -31,6 +31,7 @@ export type Settings = {
   projects: ProjectEntry[];
   personality: Personality;
   custom_instructions: string;
+  notification_sound: boolean;
   memory: { enabled: boolean; exclude_tool_chats: boolean };
   web_search: { enabled: boolean; max_results: number; depth: "basic" | "advanced"; topic: "general" | "news" };
   image_gen: { enabled: boolean; model: string; quality: "auto" | "low" | "medium" | "high" };

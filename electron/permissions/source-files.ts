@@ -74,7 +74,7 @@ export const source_files = (scope: FileScope) => {
         text: read.text,
         binary: read.binary,
         over_limit: read.over_limit,
-        change: change_mark(scope.chat_id, scope.chat_started_at, real, read.sha256, read.mtime),
+        change: change_mark(scope.chat_id, scope.chat_started_at, real, read.sha256, read),
       };
       files.push(entry);
       by_key.set(path_key(target), entry);

@@ -24,6 +24,18 @@
       "max_output": 131072
     },
     {
+      "id": "moonshotai/kimi-k3.1-pro",
+      "label": "Kimi K3.1 Pro",
+      "provider": "Moonshot",
+      "provider_order": ["moonshotai/mxfp4"],
+      "efforts": ["low", "high", "max"],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 1048576,
+      "max_output": 131072,
+      "reasoning_passback": true
+    },
+    {
       "id": "xiaomi/mimo-v2.6-pro",
       "label": "MiMo V2.6 Pro",
       "provider": "Xiaomi",

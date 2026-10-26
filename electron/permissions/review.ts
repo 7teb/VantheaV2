@@ -9,7 +9,7 @@ import { effective_mode } from "./full-window.ts";
 import type { PinChange } from "./source-read.ts";
 import type { Dialect } from "./statements.ts";
 
-const chat_start = (chat_id: string): number => {
+export const chat_start = (chat_id: string): number => {
   const started = Date.parse(chat_meta(chat_id)?.created_at ?? "");
   return Number.isFinite(started) ? started : Date.now();
 };

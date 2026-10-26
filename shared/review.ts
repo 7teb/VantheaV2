@@ -41,7 +41,7 @@ export const script_roles = ["started", "named", "loaded", "manifest", "payload"
 
 export type ScriptRole = (typeof script_roles)[number];
 
-export const script_changes = ["written", "modified"] as const;
+export const script_changes = ["written", "created", "modified"] as const;
 
 export type ReviewScript = {
   path: string;

@@ -10,7 +10,7 @@ import { ImageBody } from "../tools/bodies-web.tsx";
 import { tool_icon } from "../tools/registry.tsx";
 import { tool_label } from "../tools/tool-meta.ts";
 import { WorkGroup } from "../tools/WorkGroup.tsx";
-import { answer_text, shows_thinking, type Block } from "./assistant-blocks.ts";
+import { answer_text, shows_thinking, thinks_in_group, type Block } from "./assistant-blocks.ts";
 import { PlanCard } from "./PlanCard.tsx";
 import { ReasoningRow } from "./ReasoningRow.tsx";
 import { CompactionRow, NoticeRow, SteerRow } from "./StepRows.tsx";
@@ -25,6 +25,7 @@ type BlockViewProps = {
   message_id: string;
   streaming: boolean;
   tail: boolean;
+  pending: boolean;
   can_accept: boolean;
   accepted: boolean;
 };
@@ -43,14 +44,14 @@ const ImageStep = ({ block }: { block: Extract<Block, { kind: "image" }> }) => {
   );
 };
 
-const BlockView = ({ block, chat_id, message_id, streaming, tail, can_accept, accepted }: BlockViewProps) => {
+const BlockView = ({ block, chat_id, message_id, streaming, tail, pending, can_accept, accepted }: BlockViewProps) => {
   switch (block.kind) {
     case "reasoning":
       return <ReasoningRow step={block.step} live={streaming} />;
     case "text":
       return <Markdown text={block.step.text} className="assistant-text" />;
-    case "tools":
-      return <WorkGroup chat_id={chat_id} steps={block.steps} streaming={streaming} tail={tail} />;
+    case "work":
+      return <WorkGroup chat_id={chat_id} steps={block.steps} streaming={streaming} tail={tail} pending={pending} />;
     case "plan":
       return <PlanCard chat_id={chat_id} message_id={message_id} text={block.text} can_accept={can_accept} accepted={accepted} />;
     case "image":
@@ -83,6 +84,7 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
   const t = use_t();
   const { message, blocks } = facts;
   const streaming = message.status === "streaming";
+  const grouped_thinking = thinks_in_group(streaming, message.retry !== null, blocks);
   const [fork_error, set_fork_error] = useState("");
   const fork = async () => {
     const result = await fork_chat(chat_id, message.id);
@@ -106,6 +108,7 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
             message_id={message.id}
             streaming={streaming}
             tail={index === blocks.length - 1}
+            pending={grouped_thinking && index === blocks.length - 1}
             can_accept={last_plan && !busy}
             accepted={plan_accepted}
           />
@@ -118,7 +121,7 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
           view
         );
       })}
-      {shows_thinking(streaming, message.retry !== null, blocks) && (
+      {shows_thinking(streaming, message.retry !== null, blocks) && !grouped_thinking && (
         <div className="assistant-pending">
           <span className="is-working">{t("chat.thinking")}</span>
         </div>

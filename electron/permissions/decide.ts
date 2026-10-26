@@ -145,6 +145,7 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
     signal,
     input: {
       chat_id: input.chat_id,
+      chat_started_at: input.chat_started_at,
       project_root: input.project_root,
       custom_instructions: input.custom_instructions,
       actor: reviewer.actor,

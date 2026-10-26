@@ -5,6 +5,7 @@ export type StatusClock = { now: () => number; after: (ms: number, run: () => vo
 export type StatusDriver = {
   reasoning: (delta: string) => void;
   close: () => void;
+  drop: () => void;
 };
 
 type Call = { at: number; total: number; heading_end: number };
@@ -15,6 +16,7 @@ type Phase = {
   heading_end: number;
   called: Call | null;
   status: string;
+  closed: boolean;
   stop_timer: (() => void) | null;
   controller: AbortController | null;
 };
@@ -28,6 +30,8 @@ export const refresh_chars = 1200;
 export const text_floor = 200;
 
 export const tail_chars = 1500;
+
+export const closing_floor = 40;
 
 const kept_chars = 4000;
 
@@ -67,6 +71,9 @@ const refresh_due = (phase: Phase, now: number): boolean => {
   return now - called.at >= refresh_ms && phase.total - called.total >= refresh_chars;
 };
 
+const closing_request_due = (phase: Phase, aborted: boolean): boolean =>
+  !phase.status && !phase.controller && !aborted && phase.tail.trim().length >= closing_floor && phase.called?.total !== phase.total;
+
 export const create_status_driver = (session: TurnSession, round: number, clock: StatusClock = system_clock): StatusDriver | null => {
   const call = session.reasoning_status;
   if (!call) {
@@ -86,15 +93,16 @@ export const create_status_driver = (session: TurnSession, round: number, clock:
       reasoning: current.tail.slice(-tail_chars),
       previous: current.status,
     };
+    const signal = AbortSignal.any([session.signal, controller.signal]);
     try {
-      const text = await call(input, AbortSignal.any([session.signal, controller.signal]));
-      if (phase !== current || controller.signal.aborted || !text || text === current.status) {
+      const text = await call(input, signal);
+      if (phase !== current || signal.aborted || !text || text === current.status) {
         return;
       }
       current.status = text;
       session.emit({ type: "reasoning_status", round, text });
     } catch (error) {
-      if (controller.signal.aborted || session.signal.aborted) {
+      if (signal.aborted) {
         return;
       }
       console.warn(`[turn] reasoning status for chat ${session.chat_id} round ${round} failed:`, error);
@@ -106,7 +114,8 @@ export const create_status_driver = (session: TurnSession, round: number, clock:
   };
 
   const open = (): Phase => {
-    const current: Phase = { tail: "", total: 0, heading_end: 0, called: null, status: "", stop_timer: null, controller: null };
+    phase?.controller?.abort();
+    const current: Phase = { tail: "", total: 0, heading_end: 0, called: null, status: "", closed: false, stop_timer: null, controller: null };
     current.stop_timer = clock.after(first_status_ms, () => {
       current.stop_timer = null;
       void request(current);
@@ -116,6 +125,21 @@ export const create_status_driver = (session: TurnSession, round: number, clock:
   };
 
   const close = () => {
+    if (!phase || phase.closed) {
+      return;
+    }
+    phase.closed = true;
+    phase.stop_timer?.();
+    if (phase.status) {
+      phase.controller?.abort();
+      return;
+    }
+    if (closing_request_due(phase, session.signal.aborted)) {
+      void request(phase);
+    }
+  };
+
+  const drop = () => {
     if (!phase) {
       return;
     }
@@ -126,10 +150,11 @@ export const create_status_driver = (session: TurnSession, round: number, clock:
 
   return {
     reasoning: (delta) => {
-      if (!phase && !delta.trim()) {
+      const streaming = phase && !phase.closed ? phase : null;
+      if (!streaming && !delta.trim()) {
         return;
       }
-      const current = phase ?? open();
+      const current = streaming ?? open();
       current.tail = (current.tail + delta).slice(-kept_chars);
       current.total += delta.length;
       current.heading_end = heading_end_after(current, delta.length);
@@ -138,5 +163,6 @@ export const create_status_driver = (session: TurnSession, round: number, clock:
       }
     },
     close,
+    drop,
   };
 };

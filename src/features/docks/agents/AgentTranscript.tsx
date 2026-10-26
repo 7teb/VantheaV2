@@ -4,7 +4,7 @@ import { Markdown } from "../../../components/Markdown.tsx";
 import { Skeleton, SkeletonLines } from "../../../components/Skeleton.tsx";
 import { use_t } from "../../../i18n/index.ts";
 import type { RunRef, Transcript } from "../../../state/agents-reduce.ts";
-import { build_blocks, shows_thinking, type Block } from "../../chat/assistant-blocks.ts";
+import { build_blocks, shows_thinking, thinks_in_group, type Block } from "../../chat/assistant-blocks.ts";
 import { ReasoningRow } from "../../chat/ReasoningRow.tsx";
 import { CompactionRow, NoticeRow } from "../../chat/StepRows.tsx";
 import { ErrorCard, RetryBanner } from "../../chat/TurnStatus.tsx";
@@ -32,16 +32,16 @@ export const TranscriptSkeleton = () => (
   </div>
 );
 
-type BlockViewProps = { block: Block; chat_id: string; run: RunRef; streaming: boolean; tail: boolean };
+type BlockViewProps = { block: Block; chat_id: string; run: RunRef; streaming: boolean; tail: boolean; pending: boolean };
 
-const BlockView = ({ block, chat_id, run, streaming, tail }: BlockViewProps) => {
+const BlockView = ({ block, chat_id, run, streaming, tail, pending }: BlockViewProps) => {
   switch (block.kind) {
     case "reasoning":
       return <ReasoningRow step={block.step} live={streaming} />;
     case "text":
       return <Markdown text={block.step.text} className="assistant-text" />;
-    case "tools":
-      return <WorkGroup chat_id={chat_id} run={run} steps={block.steps} streaming={streaming} tail={tail} />;
+    case "work":
+      return <WorkGroup chat_id={chat_id} run={run} steps={block.steps} streaming={streaming} tail={tail} pending={pending} />;
     case "plan":
     case "image":
     case "visual":
@@ -68,6 +68,7 @@ export const AgentTranscript = memo(({ transcript, chat_id, report }: AgentTrans
   const final_report = streaming ? "" : report.trim();
   const blocks = useMemo(() => without_report_echo(build_blocks(transcript.steps), final_report), [transcript.steps, final_report]);
   const run = useMemo(() => ({ agent_id: transcript.agent_id, run_id: transcript.run_id }), [transcript.agent_id, transcript.run_id]);
+  const grouped_thinking = thinks_in_group(streaming, transcript.retry !== null, blocks);
   const empty = !streaming && blocks.length === 0 && !final_report && !transcript.error;
   return (
     <div className="agent-transcript">
@@ -79,9 +80,9 @@ export const AgentTranscript = memo(({ transcript, chat_id, report }: AgentTrans
         </Collapsible>
       )}
       {blocks.map((block, index) => (
-        <BlockView key={block.id} block={block} chat_id={chat_id} run={run} streaming={streaming} tail={index === blocks.length - 1} />
+        <BlockView key={block.id} block={block} chat_id={chat_id} run={run} streaming={streaming} tail={index === blocks.length - 1} pending={grouped_thinking && index === blocks.length - 1} />
       ))}
-      {shows_thinking(streaming, transcript.retry !== null, blocks) && (
+      {shows_thinking(streaming, transcript.retry !== null, blocks) && !grouped_thinking && (
         <div className="assistant-pending">
           <span className="is-working">{t("chat.thinking")}</span>
         </div>

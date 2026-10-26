@@ -15,6 +15,7 @@
 
   .work-single[data-live],
   .work-group[data-live],
+  .work-group[data-live] .work-group-body > .thought-row:not(:first-child),
   .work-group[data-live] .work-group-body > .tool-row:not(:first-child) {
     animation: fade-up var(--duration-enter) var(--ease-out) backwards;
   }

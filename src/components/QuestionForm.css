@@ -271,12 +271,12 @@
   }
 
   .question-button[data-variant="primary"] {
-    background: var(--surface-solid);
-    color: var(--text-on-primary);
+    background: var(--surface-accent);
+    color: var(--text-on-accent);
   }
 
   .question-button[data-variant="primary"]:hover {
-    background: var(--surface-solid-hover);
+    background: var(--surface-accent-hover);
   }
 
   .question-error {
