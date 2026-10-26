@@ -59,6 +59,19 @@
       "note": "MiMo V2.6 Pro on Xiaomi's Ultraspeed route: about 320 to 345 output tokens per second (measured, versus about 62 on the normal route), first token after about 1 s. Ten times the price of the normal Pro: 4.35 USD per million input tokens and 8.70 USD per million output tokens."
     },
     {
+      "id": "minimax/minimax-m3.1-flash",
+      "label": "MiniMax M3.1 Flash",
+      "provider": "MiniMax",
+      "provider_order": ["parasail/fp8", "novita/fp16"],
+      "efforts": ["low", "medium", "high", "xhigh", "max"],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 1000000,
+      "max_output": 524288,
+      "reasoning_passback": true,
+      "note": "Runs on Parasail (fp8, about 260 to 370 output tokens per second, first token after about 0.7 s, measured) with Novita (fp16, about 125 tokens per second) as fallback. MiniMax ships the weights in MXFP8 with NVFP4 experts, so both serve the full release quality. 0.15 USD per million input tokens and 0.60 USD per million output tokens."
+    },
+    {
       "id": "qwen/qwen3.8-max",
       "label": "Qwen 3.8 Max",
       "provider": "Qwen",
@@ -169,6 +182,18 @@
       "context_length": 1048576,
       "max_output": 65536,
       "note": "Gemini 4 Argon on Google AI Studio's Flex tier: half the price of the standard route (1 USD per million input tokens and 5 USD per million output tokens while the launch discount lasts), slower and may queue under load. Falls back to the standard route when Flex is unavailable. Not yet measured in VantheaX."
+    },
+    {
+      "id": "x-ai/grok-4.7",
+      "label": "Grok 4.7",
+      "provider": "xAI",
+      "provider_order": ["xai"],
+      "efforts": ["low", "medium", "high", "xhigh"],
+      "default_effort": "high",
+      "vision": true,
+      "context_length": 500000,
+      "max_output": 450000,
+      "note": "xAI's flagship for coding and agentic work. 2 USD per million input tokens and 6 USD per million output tokens; above 200k prompt tokens xAI charges 4 and 12 USD, so the Context limit command can keep a chat at 200k to stay below that tier."
     },
     {
       "id": "openai/gpt-oss-120b",
