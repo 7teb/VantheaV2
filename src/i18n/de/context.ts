@@ -31,5 +31,13 @@ export const context: Record<keyof typeof en, string> = {
   "context.compact_percent": "{percent} %",
   "context.compact_hint": "bei {tokens} Tokens",
   "context.compact_mark": "Automatische Komprimierung",
+  "context.part_system": "Systemprompt",
+  "context.part_tools": "Tools",
+  "context.part_messages": "Nachrichten",
+  "context.part_used": "Belegt",
+  "context.part_free": "Frei",
+  "context.compact_line": "Automatisch komprimieren bei {percent}%",
+  "context.not_measured": "Wird nach der ersten Antwort in diesem Chat gemessen",
+  "context.close": "Schließen",
   "context.compact_busy": "Warte, bis der laufende Turn fertig ist.",
 };

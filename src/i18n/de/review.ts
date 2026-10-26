@@ -28,7 +28,6 @@ export const review: Record<keyof typeof en, string> = {
   "review.denied": "Von der automatischen Prüfung abgelehnt",
   "review.workaround": "Abgelehnt: Umgehungsversuch",
   "review.denied_by_you": "Von dir abgelehnt",
-  "review.skipped_unanswered": "Übersprungen, keine Antwort in {n} s",
   "review.feedback": "Dein Feedback: {x}",
   "review.blocked": "Blockiert: VantheaX führt diesen Befehl nie aus",
   "review.pending_title": "Automatische Prüfung",

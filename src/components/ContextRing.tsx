@@ -9,7 +9,7 @@ import { compact_tokens } from "./token-count.ts";
 import { use_t, type MessageKey } from "../i18n/index.ts";
 import "./ContextRing.css";
 
-const result_keys: Record<CompactResult["status"], MessageKey> = {
+export const result_keys: Record<CompactResult["status"], MessageKey> = {
   done: "context.compacted_manual",
   nothing: "context.compact_nothing",
   busy: "context.compact_busy",

@@ -1,5 +1,5 @@
-import type { ContextUsage } from "../../../shared/chat.ts";
-import type { ModelEntry } from "../../../shared/models.ts";
+import { compact_fraction, type ContextUsage } from "../../../shared/chat.ts";
+import { with_context_setting, type ModelEntry } from "../../../shared/models.ts";
 import type { ModelContext } from "../../../shared/settings.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import { chats_store } from "../../state/chats.ts";
@@ -35,6 +35,18 @@ export const use_model_context = (): ModelContextChoice => {
   const model_id = use_store(settings_store, (state) => state?.model ?? null);
   const setting = use_store(settings_store, (state) => (model_id ? state?.model_context[model_id] : undefined));
   return { model: model_id ? find_model(catalog, model_id) : null, setting };
+};
+
+export type ShownContext = { usage: ContextUsage | null; compact_at: number | null };
+
+export const use_shown_context = (chat_id: string | null): ShownContext => {
+  const { model, setting } = use_model_context();
+  const usage = use_context_usage(chat_id);
+  const limited = model ? with_context_setting(model, setting) : null;
+  return {
+    usage: usage && limited ? { ...usage, limit: limited.context_length } : usage,
+    compact_at: limited ? (limited.compact_at ?? compact_fraction) : null,
+  };
 };
 
 const effort_keys: Record<string, MessageKey> = {

@@ -6,7 +6,6 @@
   column-gap: var(--space-3);
   align-items: center;
   height: var(--size-titlebar);
-  background: var(--surface-shell);
   user-select: none;
   -webkit-app-region: drag;
 }
@@ -18,8 +17,23 @@
 .titlebar-start {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  padding-left: 10px;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: var(--size-sidebar);
+  padding: 0 10px 0 20px;
+  interpolate-size: allow-keywords;
+  transition: width var(--duration-slower) var(--ease-out);
+}
+
+.titlebar[data-sidebar="closed"] .titlebar-start {
+  width: auto;
+}
+
+.titlebar-brand {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
 }
 
 .titlebar-title {

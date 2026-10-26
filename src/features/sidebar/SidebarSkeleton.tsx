@@ -13,7 +13,7 @@ export const SidebarSkeleton = () => (
         <div className="sidebar-section-head">
           <Skeleton width={group.label} height={9} radius={4} />
         </div>
-        <SkeletonRows widths={group.rows} />
+        <SkeletonRows widths={group.rows} row_height={30} />
       </div>
     ))}
   </div>

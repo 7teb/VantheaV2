@@ -1,0 +1,41 @@
+@layer components {
+  .composer-bar .dictation-mic:not(:disabled) {
+    color: var(--text-primary);
+  }
+
+  .dictation-recording {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-1);
+    height: var(--size-control);
+    padding: 0 5px 0 7px;
+    overflow: hidden;
+    border: 1px solid var(--ring-card);
+    border-radius: var(--radius-full);
+    color: var(--text-tertiary);
+    interpolate-size: allow-keywords;
+    animation: dictation-open var(--duration-slower) var(--ease-out);
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .dictation-recording:hover {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .dictation-wave {
+    flex: none;
+    width: 32px;
+    height: 20px;
+    mask-image: linear-gradient(to right, transparent, var(--mask) 10px);
+  }
+
+  @keyframes dictation-open {
+    from {
+      width: var(--size-control);
+    }
+  }
+}

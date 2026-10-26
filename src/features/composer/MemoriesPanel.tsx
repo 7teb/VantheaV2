@@ -2,12 +2,12 @@ import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "re
 import type { MemoryRecord } from "../../../shared/ipc/extensions.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
 import { CloseIcon, PlusIcon, TrashIcon, WormIcon } from "../../components/icons.tsx";
-import { use_layer } from "../../components/use-layer.ts";
+import { use_layer, use_presence, type Presence } from "../../components/use-layer.ts";
 import { SkeletonRows } from "../../components/Skeleton.tsx";
 import { TextField } from "../../components/TextField.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { add_memory, load_saved_memories, memory_store, remove_memory } from "../../state/extensions.ts";
-import { close_memories, memories_panel_store } from "../../state/memories-panel.ts";
+import { close_panel, composer_panel_store } from "../../state/composer-panel.ts";
 import { settings_store } from "../../state/settings.ts";
 import { use_store } from "../../state/use-store.ts";
 import { base_name } from "../tools/tool-meta.ts";
@@ -46,7 +46,7 @@ const MemoryRow = ({ record }: { record: MemoryRecord }) => {
   );
 };
 
-const MemoriesCard = ({ panel_key }: { panel_key: string }) => {
+const MemoriesCard = ({ panel_key, presence }: { panel_key: string; presence: Presence }) => {
   const t = use_t();
   const card = useRef<HTMLDivElement>(null);
   const memories = use_store(memory_store, (state) => state);
@@ -54,8 +54,8 @@ const MemoriesCard = ({ panel_key }: { panel_key: string }) => {
   const [text, set_text] = useState("");
   const [adding, set_adding] = useState(false);
   const [error, set_error] = useState("");
-  const close = () => close_memories(panel_key);
-  use_layer(true, close);
+  const close = () => close_panel(panel_key, "memories");
+  use_layer(presence.state === "open", close);
 
   useEffect(() => {
     void load_saved_memories();
@@ -97,44 +97,54 @@ const MemoriesCard = ({ panel_key }: { panel_key: string }) => {
 
   const count = memories.status === "ready" ? memories.items.length : 0;
   return (
-    <div ref={card} className="memories-panel composer-dock-card raised-surface enter-fade-up" role="region" aria-label={t("memories.title")}>
-      <div className="memories-head">
-        <WormIcon size={16} className="memories-head-icon" />
-        <span className="memories-title">{t("memories.title")}</span>
-        {count > 0 && <span className="memories-count">{count}</span>}
-        <IconButton size="sm" className="memories-close" label={t("memories.close")} onClick={close}>
-          <CloseIcon size={14} />
-        </IconButton>
+    <div
+      ref={card}
+      className="memories-panel dock-panel composer-dock-card raised-surface enter-fade-up"
+      data-state={presence.state}
+      role="region"
+      aria-label={t("memories.title")}
+      onAnimationEnd={presence.on_animation_end}
+    >
+      <div className="dock-panel-inner">
+        <div className="memories-head">
+          <WormIcon size={16} className="memories-head-icon" />
+          <span className="memories-title">{t("memories.title")}</span>
+          {count > 0 && <span className="memories-count">{count}</span>}
+          <IconButton size="sm" className="memories-close" label={t("memories.close")} onClick={close}>
+            <CloseIcon size={14} />
+          </IconButton>
+        </div>
+        {!enabled && <p className="memories-note">{t("memories.off")}</p>}
+        {memories.status === "loading" && <SkeletonRows widths={[82, 64, 74]} row_height={32} className="memories-skeleton" />}
+        {memories.status === "failed" && <p className="memories-note">{t("personalization.mem_load_failed")}</p>}
+        {count > 0 && (
+          <ul className="memories-list">
+            {memories.items.map((record) => (
+              <MemoryRow key={record.id} record={record} />
+            ))}
+          </ul>
+        )}
+        <form className="memories-add" onSubmit={(event) => void submit(event)}>
+          <TextField
+            value={text}
+            on_change={set_text}
+            placeholder={t("memories.add_placeholder")}
+            aria-label={t("memories.add_placeholder")}
+            autoFocus
+            className="memories-input"
+          />
+          <Button type="submit" icon={<PlusIcon size={14} />} disabled={adding || !text.trim()}>
+            {t("memories.add")}
+          </Button>
+        </form>
+        {error && <p className="memories-error">{error}</p>}
       </div>
-      {!enabled && <p className="memories-note">{t("memories.off")}</p>}
-      {memories.status === "loading" && <SkeletonRows widths={[82, 64, 74]} row_height={32} className="memories-skeleton" />}
-      {memories.status === "failed" && <p className="memories-note">{t("personalization.mem_load_failed")}</p>}
-      {count > 0 && (
-        <ul className="memories-list">
-          {memories.items.map((record) => (
-            <MemoryRow key={record.id} record={record} />
-          ))}
-        </ul>
-      )}
-      <form className="memories-add" onSubmit={(event) => void submit(event)}>
-        <TextField
-          value={text}
-          on_change={set_text}
-          placeholder={t("memories.add_placeholder")}
-          aria-label={t("memories.add_placeholder")}
-          autoFocus
-          className="memories-input"
-        />
-        <Button type="submit" icon={<PlusIcon size={14} />} disabled={adding || !text.trim()}>
-          {t("memories.add")}
-        </Button>
-      </form>
-      {error && <p className="memories-error">{error}</p>}
     </div>
   );
 };
 
 export const MemoriesPanel = ({ panel_key }: { panel_key: string }) => {
-  const open = use_store(memories_panel_store, (state) => state === panel_key);
-  return open ? <MemoriesCard panel_key={panel_key} /> : null;
+  const open = use_store(composer_panel_store, (state) => state?.key === panel_key && state.panel === "memories");
+  const presence = use_presence(open);
+  return presence.mounted ? <MemoriesCard panel_key={panel_key} presence={presence} /> : null;
 };

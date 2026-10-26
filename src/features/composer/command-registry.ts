@@ -8,6 +8,7 @@ import {
   FoldVerticalIcon,
   ForkIcon,
   GitBranchPlusIcon,
+  LayersIcon,
   PercentIcon,
   PinIcon,
   PinOffIcon,
@@ -19,7 +20,7 @@ import { fork_chat } from "../../state/chat-actions.ts";
 import { visualize_chip } from "../../state/chat-drafts.ts";
 import { set_chat_archived, set_chat_pinned } from "../../state/chats.ts";
 import { compact_now, start_init, toggle_draft_chip, toggle_plan } from "../../state/composer.ts";
-import { open_memories } from "../../state/memories-panel.ts";
+import { open_panel } from "../../state/composer-panel.ts";
 import { set_auto_compact, set_context_limit } from "../../state/settings.ts";
 import type { ComposerCommand } from "./command-menu.ts";
 import { auto_compact_options, chosen_hint, command_options, context_limit_options } from "./context-options.ts";
@@ -31,6 +32,15 @@ const compact_notes: Record<Exclude<CompactResult["status"], "done">, { key: Mes
 };
 
 export const composer_commands: ComposerCommand[] = [
+  {
+    id: "context",
+    needs: "none",
+    icon: () => LayersIcon,
+    label: ({ t }) => t("commands.context"),
+    keywords: ["tokens", "usage", "window", "Kontext"],
+    hint: ({ t, usage_percent }) => (usage_percent === null ? t("commands.context_hint") : t("commands.context_used", { percent: usage_percent })),
+    run: ({ draft_key }) => open_panel(draft_key, "context"),
+  },
   {
     id: "compact",
     needs: "idle_chat",
@@ -109,7 +119,7 @@ export const composer_commands: ComposerCommand[] = [
     label: ({ t }) => t("memories.title"),
     keywords: ["memory", "remember"],
     hint: ({ t }) => t("commands.memories_hint"),
-    run: ({ draft_key }) => open_memories(draft_key),
+    run: ({ draft_key }) => open_panel(draft_key, "memories"),
   },
   {
     id: "init",

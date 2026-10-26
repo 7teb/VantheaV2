@@ -1,0 +1,93 @@
+.brand-field {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: var(--size-sidebar);
+  height: 104px;
+  overflow: hidden;
+  pointer-events: none;
+  mask-image:
+    linear-gradient(to bottom, var(--mask) 0, var(--mask) 34px, transparent 100%),
+    linear-gradient(to right, var(--mask) 0, var(--mask) 80%, transparent 100%);
+  mask-composite: intersect;
+  transition: height var(--duration-slower) var(--ease-out);
+}
+
+.brand-field[data-state="closed"] {
+  height: var(--size-titlebar);
+}
+
+.brand-aurora,
+.brand-grid {
+  position: absolute;
+  inset: 0;
+}
+
+.brand-aurora {
+  filter: blur(14px);
+  opacity: 0.68;
+}
+
+.brand-grid {
+  opacity: 0.7;
+  mask-image:
+    repeating-linear-gradient(to right, var(--mask) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(to bottom, var(--mask) 0 1px, transparent 1px 3px),
+    linear-gradient(to bottom, var(--mask) 0, var(--mask) 20px, transparent 60px);
+  mask-composite: intersect;
+}
+
+.brand-blob {
+  position: absolute;
+  border-radius: var(--radius-full);
+  animation: var(--ease-in-out) infinite alternate;
+}
+
+.brand-blob.is-violet {
+  top: -46px;
+  left: -40px;
+  width: 200px;
+  height: 96px;
+  background: radial-gradient(closest-side, var(--brand-violet), transparent);
+  animation-name: brand-violet;
+  animation-duration: 22s;
+}
+
+.brand-blob.is-indigo {
+  top: -44px;
+  left: 120px;
+  width: 170px;
+  height: 84px;
+  background: radial-gradient(closest-side, var(--brand-indigo), transparent);
+  animation-name: brand-indigo;
+  animation-duration: 27s;
+}
+
+.brand-blob.is-lilac {
+  top: -34px;
+  left: 30px;
+  width: 120px;
+  height: 64px;
+  background: radial-gradient(closest-side, var(--brand-lilac), transparent);
+  animation-name: brand-lilac;
+  animation-duration: 17s;
+}
+
+@keyframes brand-violet {
+  to {
+    transform: translate(90px, 10px);
+  }
+}
+
+@keyframes brand-indigo {
+  to {
+    transform: translate(-110px, 6px);
+  }
+}
+
+@keyframes brand-lilac {
+  to {
+    transform: translate(150px, -4px);
+  }
+}

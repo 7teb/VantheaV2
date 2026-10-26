@@ -1,17 +1,17 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from "react";
-import { compact_fraction } from "../../../shared/chat.ts";
-import { with_context_setting } from "../../../shared/models.ts";
 import { IconButton, PrimaryButton } from "../../components/Button.tsx";
 import { class_names } from "../../components/class-names.ts";
-import { ArrowUpIcon, ClipboardListIcon, CircleSpinnerIcon, PlusIcon, StopIcon } from "../../components/icons.tsx";
+import { ArrowUpIcon, ClipboardListIcon, CircleSpinnerIcon, CloseIcon, PlusIcon, StopIcon } from "../../components/icons.tsx";
 import { layer_count } from "../../components/layers.ts";
 import { use_t } from "../../i18n/index.ts";
 import { draft_of, draft_sendable, has_chip, visualize_chip } from "../../state/chat-drafts.ts";
-import { attach_files, compact_now, composer_store, dismiss_error, queue_draft, set_composer_error, set_draft_text, stop_turn, submit, toggle_plan } from "../../state/composer.ts";
+import { attach_files, composer_store, dismiss_error, queue_draft, set_composer_error, set_draft_text, stop_turn, submit, toggle_plan } from "../../state/composer.ts";
+import { cancel_dictation, dictation_store, finish_dictation } from "../../state/dictation.ts";
+import { insert_dictation } from "../../state/dictation-text.ts";
 import { use_store } from "../../state/use-store.ts";
-import { use_chat_busy, use_context_usage, use_model_context } from "./composer-hooks.ts";
+import { use_chat_busy, use_model_context, use_shown_context } from "./composer-hooks.ts";
 import { ComposerMedia } from "./ComposerMedia.tsx";
-import { ContextRing } from "../../components/ContextRing.tsx";
+import { DictationButton } from "./DictationButton.tsx";
 import { DraftChips } from "./DraftChips.tsx";
 import { ModelPicker } from "./ModelPicker.tsx";
 import { ModePicker } from "./ModePicker.tsx";
@@ -32,6 +32,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
   const picker = useRef<HTMLInputElement>(null);
   const plus_button = useRef<HTMLButtonElement>(null);
   const pending_caret = useRef<number | null>(null);
+  const shown_key = useRef(draft_key);
   const list_id = useId();
   const [dragging, set_dragging] = useState(false);
   const [plus_for, set_plus_for] = useState<string | null>(null);
@@ -46,13 +47,12 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
   const sending = use_store(composer_store, (state) => Boolean(state.sending[draft_key]));
   const compacting = use_store(composer_store, (state) => Boolean(state.compacting[draft_key]));
   const error = use_store(composer_store, (state) => state.errors[draft_key] ?? "");
+  const dictating = use_store(dictation_store, (state) => (state?.draft_key === draft_key ? state.phase : null));
   const { model, setting: context_setting } = use_model_context();
   const busy = use_chat_busy(chat_id);
-  const usage = use_context_usage(chat_id);
 
-  const limited = model ? with_context_setting(model, context_setting) : null;
-  const shown_usage = usage && limited ? { ...usage, limit: limited.context_length } : usage;
-  const sendable = draft_sendable(draft) && model !== null;
+  const { usage: shown_usage } = use_shown_context(chat_id);
+  const sendable = (draft_sendable(draft) || dictating === "recording") && model !== null && dictating !== "starting" && dictating !== "transcribing";
   const needs_vision = model !== null && !model.vision && draft.uploads.some((upload) => upload.image);
   const plus_open = plus_for === draft_key;
   const shown_note = note?.text ?? "";
@@ -106,7 +106,55 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     area.current?.focus({ preventScroll: true });
   }, [chat_id]);
 
+  useLayoutEffect(() => {
+    shown_key.current = draft_key;
+    return () => {
+      if (dictation_store.get()?.draft_key === draft_key) {
+        cancel_dictation();
+      }
+    };
+  }, [draft_key]);
+
+  useEffect(() => {
+    if (dictating !== "starting" && dictating !== "recording") {
+      return;
+    }
+    const on_escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        cancel_dictation();
+      }
+    };
+    window.addEventListener("keydown", on_escape);
+    return () => window.removeEventListener("keydown", on_escape);
+  }, [dictating]);
+
+  const finish_dictating = async (then_send: boolean) => {
+    const key = draft_key;
+    const spoken = await finish_dictation();
+    if (spoken === null) {
+      return;
+    }
+    const showing = shown_key.current === key;
+    const inserted = insert_dictation(draft_of(composer_store.get(), key).text, showing ? (area.current?.selectionStart ?? null) : null, spoken);
+    if (showing) {
+      pending_caret.current = inserted.caret;
+    }
+    set_draft_text(key, inserted.text);
+    if (!showing) {
+      return;
+    }
+    area.current?.focus({ preventScroll: true });
+    if (then_send && model !== null) {
+      void submit(chat_id, project_path);
+    }
+  };
+
   const send = () => {
+    if (dictating === "recording") {
+      void finish_dictating(true);
+      return;
+    }
     if (sendable) {
       void submit(chat_id, project_path);
     }
@@ -154,7 +202,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     if (sending && !busy) {
       return <PrimaryButton label={t("composer.sending")} icon={<CircleSpinnerIcon size={16} className="spin" />} disabled />;
     }
-    if (busy && chat_id !== null && draft.text.trim() === "" && draft.uploads.length === 0 && draft.chips.length === 0) {
+    if (busy && chat_id !== null && dictating === null && draft.text.trim() === "" && draft.uploads.length === 0 && draft.chips.length === 0) {
       return <PrimaryButton label={t("composer.stop")} icon={<StopIcon size={16} />} onClick={() => void stop_turn(chat_id)} />;
     }
     return <PrimaryButton label={t(busy || compacting ? "composer.queue_send" : "composer.send")} icon={<ArrowUpIcon size={16} />} disabled={!sendable} onClick={send} />;
@@ -235,15 +283,26 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
         />
         <ModelPicker />
         <ModePicker chat_id={chat_id} />
-        <button type="button" className="composer-chip" aria-pressed={draft.plan} data-active={draft.plan} onClick={() => toggle_plan(draft_key)}>
-          <ClipboardListIcon size={15} />
-          <span className="composer-chip-label">{t("composer.plan")}</span>
-        </button>
+        {draft.plan && (
+          <button
+            type="button"
+            className="composer-chip draft-chip"
+            data-active
+            data-kind="plan"
+            aria-pressed
+            onPointerDown={(event) => event.preventDefault()}
+            onClick={() => toggle_plan(draft_key)}
+          >
+            <span className="draft-chip-icon">
+              <ClipboardListIcon size={15} />
+              <CloseIcon size={15} />
+            </span>
+            <span className="composer-chip-label">{t("composer.plan")}</span>
+          </button>
+        )}
         <DraftChips draft_key={draft_key} chips={draft.chips} />
         <span className="composer-spacer" />
-        {shown_usage && chat_id && (
-          <ContextRing key={chat_id} usage={shown_usage} compact={{ run: () => compact_now(chat_id), busy }} mark={limited ? (limited.compact_at ?? compact_fraction) : undefined} />
-        )}
+        <DictationButton draft_key={draft_key} on_stop={() => void finish_dictating(false)} />
         {action()}
       </div>
       {dragging && <div className="composer-drop">{t("composer.drop")}</div>}

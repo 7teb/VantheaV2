@@ -3,6 +3,7 @@ import { set_sidebar_collapsed, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
 import { SettingsPage } from "../settings/SettingsPage.tsx";
 import { Sidebar } from "../sidebar/Sidebar.tsx";
+import { BrandField } from "./BrandField.tsx";
 import { DockHost } from "./DockHost.tsx";
 import { MainArea } from "./MainArea.tsx";
 import { SearchOverlay } from "./SearchOverlay.tsx";
@@ -33,6 +34,7 @@ export const Shell = () => {
 
   return (
     <div className="shell">
+      <BrandField />
       <Titlebar />
       <div className="shell-body">
         <Sidebar />

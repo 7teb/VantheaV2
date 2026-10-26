@@ -9,6 +9,7 @@ import { remove_project, rename_project, set_project_pinned } from "../../state/
 import { start_new_chat, toggle_project_collapsed } from "../../state/ui.ts";
 import { InlineRename } from "./InlineRename.tsx";
 import { project_label, type ProjectGroup as Group } from "./sidebar-model.ts";
+import "./ProjectGroup.css";
 
 type ProjectGroupProps = { group: Group; chat_total: number; collapsed: boolean; selected: boolean; children: ReactNode };
 

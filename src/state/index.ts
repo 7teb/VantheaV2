@@ -4,6 +4,7 @@ import { init_artifacts } from "./artifacts.ts";
 import { init_attention } from "./attention.ts";
 import { init_background } from "./background.ts";
 import { init_browser } from "./browser.ts";
+import { init_chat_marks } from "./chat-marks.ts";
 import { init_chat_view } from "./chat-view.ts";
 import { init_chats } from "./chats.ts";
 import { init_composer } from "./composer.ts";
@@ -28,6 +29,7 @@ export const init_state = (): (() => void) => {
     init_window(),
     init_chat_view(),
     init_attention(),
+    init_chat_marks(),
     init_composer(),
     init_event_hold(),
     init_terminal(),

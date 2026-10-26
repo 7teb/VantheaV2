@@ -3,7 +3,6 @@ import type { sidebar as en } from "../en/sidebar.ts";
 export const sidebar: Record<keyof typeof en, string> = {
   "sidebar.new_chat": "Neuer Chat",
   "sidebar.search": "Suche",
-  "sidebar.open_project": "Projekt öffnen",
   "sidebar.settings": "Einstellungen",
   "sidebar.projects": "Projekte",
   "sidebar.no_project": "Kein Projekt",
@@ -19,6 +18,8 @@ export const sidebar: Record<keyof typeof en, string> = {
   "sidebar.navigation": "Chats und Projekte",
   "sidebar.pinned": "Angepinnt",
   "sidebar.working": "Arbeitet",
+  "sidebar.waiting": "Wartet auf dich",
+  "sidebar.unread": "Neue Antwort",
   "sidebar.delete_title": "Diesen Chat löschen?",
   "sidebar.rename_label": "Chat-Titel",
   "sidebar.archive": "Archivieren",

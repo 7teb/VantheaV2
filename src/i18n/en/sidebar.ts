@@ -1,7 +1,6 @@
 export const sidebar = {
   "sidebar.new_chat": "New chat",
   "sidebar.search": "Search",
-  "sidebar.open_project": "Open project",
   "sidebar.settings": "Settings",
   "sidebar.projects": "Projects",
   "sidebar.no_project": "No project",
@@ -17,6 +16,8 @@ export const sidebar = {
   "sidebar.navigation": "Chats and projects",
   "sidebar.pinned": "Pinned",
   "sidebar.working": "Working",
+  "sidebar.waiting": "Waiting for you",
+  "sidebar.unread": "New response",
   "sidebar.delete_title": "Delete this chat?",
   "sidebar.rename_label": "Chat title",
   "sidebar.archive": "Archive",

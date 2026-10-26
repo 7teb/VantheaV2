@@ -33,7 +33,7 @@ export const with_context_limit = (model: ModelEntry, setting: ModelContext | un
   compact_percent: compact_percent_of(setting),
 });
 
-export type SideModelRole = "title" | "overseer" | "vision" | "web_answer" | "memory" | "reasoning_status";
+export type SideModelRole = "title" | "overseer" | "vision" | "web_answer" | "memory" | "reasoning_status" | "transcription";
 
 export type ImageModelEntry = { id: string; label: string; quality: boolean };
 

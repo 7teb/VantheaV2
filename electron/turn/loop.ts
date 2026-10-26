@@ -1,6 +1,6 @@
 import type { ContextCalibration, TurnError } from "../../shared/chat.ts";
 import type { FinalStatus } from "../../shared/events.ts";
-import { calibrate, calibration_scale, context_usage, measure_request } from "../context/calibration.ts";
+import { calibrate, calibration_scale, context_parts, context_usage, measure_request } from "../context/calibration.ts";
 import { compact_threshold, compaction_due, compaction_floor } from "../context/compact.ts";
 import { trim_tool_messages } from "../context/trim.ts";
 import { fit_window } from "../context/window.ts";
@@ -41,8 +41,8 @@ const round_specs = (session: TurnSession): ToolSpec[] => session.resolve_tools(
 const measure = (session: TurnSession, messages: ApiMessage[], calibration: ContextCalibration | null): number =>
   measure_request(messages, round_specs(session), session.model, calibration);
 
-const report_context = (session: TurnSession, used: number, calibration: ContextCalibration | null, floor: number) =>
-  session.emit({ type: "context", usage: context_usage(used, session.model, calibration, floor) });
+const report_context = (session: TurnSession, messages: ApiMessage[], used: number, calibration: ContextCalibration | null, floor: number) =>
+  session.emit({ type: "context", usage: context_usage(used, session.model, calibration, floor, context_parts(messages, round_specs(session), session.model, used)) });
 
 const inject_steers = async (session: TurnSession, round: number, api_messages: ApiMessage[]): Promise<boolean> => {
   const source = session.steers;
@@ -101,7 +101,7 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
       }
       await deliver_input(session, round, api_messages);
       const tokens = measure(session, api_messages, calibration);
-      report_context(session, tokens, calibration, carried_floor);
+      report_context(session, api_messages, tokens, calibration, carried_floor);
       if (compaction_due(tokens, floor, session.model)) {
         const compaction = await compact_context(session, round, api_messages, "auto", calibration);
         if (compaction.status === "stopped") {
@@ -113,7 +113,7 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
         }
         floor = compaction_floor(compaction.status === "done" ? compaction.tokens : tokens, session.model);
         carried_floor = compaction.status === "done" ? floor : 0;
-        report_context(session, measure(session, api_messages, calibration), calibration, carried_floor);
+        report_context(session, api_messages, measure(session, api_messages, calibration), calibration, carried_floor);
         await deliver_input(session, round, api_messages);
       }
       if (fit_window(api_messages, session.model, measure(session, api_messages, calibration), undefined, 1, calibration_scale(calibration)).length) {
@@ -125,7 +125,7 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
       floor = Math.ceil(floor * rescale);
       carried_floor = Math.ceil(carried_floor * rescale);
       calibration = next;
-      report_context(session, measure(session, api_messages, calibration), calibration, carried_floor);
+      report_context(session, api_messages, measure(session, api_messages, calibration), calibration, carried_floor);
       if (outcome.aborted) {
         session.emit({ type: "end", status: "stopped", error: null });
         return;
@@ -170,7 +170,7 @@ export const run_compaction_turn = async (session: TurnSession, api_messages: Ap
     return;
   }
   if (outcome.status === "done") {
-    report_context(session, outcome.tokens, calibration, compaction_floor(outcome.tokens, session.model));
+    report_context(session, api_messages, outcome.tokens, calibration, compaction_floor(outcome.tokens, session.model));
   }
   session.emit({ type: "end", status: outcome.status === "done" ? "done" : "stopped", error: null });
 };

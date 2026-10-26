@@ -1,0 +1,62 @@
+.project-toggle {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 100%;
+  margin-right: -10px;
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+}
+
+.project-toggle > svg {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out);
+}
+
+.project-chevron {
+  opacity: 0;
+}
+
+.project-group:not([data-collapsed="true"]) .project-chevron {
+  transform: rotate(90deg);
+}
+
+.project-row:hover .project-chevron,
+.project-toggle:focus-visible .project-chevron {
+  opacity: 1;
+}
+
+.project-row:hover .project-folder,
+.project-toggle:focus-visible .project-folder {
+  opacity: 0;
+}
+
+.project-toggle:hover {
+  color: var(--text-primary);
+}
+
+.project-pin {
+  color: var(--text-tertiary);
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.project-row:hover .project-pin,
+.project-row:focus-within .project-pin,
+.project-row[data-menu-open="true"] .project-pin {
+  opacity: 0;
+}
+
+.project-chats .collapsible-clip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: var(--space-5);
+}
+
+.project-chats .collapsible-clip > :first-child {
+  margin-top: 1px;
+}

@@ -25,6 +25,33 @@
     box-shadow: var(--shadow-dock);
   }
 
+  @keyframes dock-panel-out {
+    to {
+      grid-template-rows: 0fr;
+      margin-bottom: calc(-1 * var(--space-2));
+      padding-block: 0;
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  .dock-panel {
+    display: grid;
+    grid-template-rows: 1fr;
+  }
+
+  .dock-panel-inner {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .dock-panel[data-state="closed"] {
+    pointer-events: none;
+    animation: dock-panel-out var(--duration-slow) var(--ease-in) forwards;
+  }
+
   .composer-slot:has(.composer-dock-card ~ .composer-dock-card) .composer-dock-card {
     max-height: min(420px, 24vh, var(--composer-card-cap, 420px));
   }
@@ -203,6 +230,10 @@
 
   .composer-chip-hint {
     color: var(--text-tertiary);
+  }
+
+  .composer-chip-hint[data-effort="major"] {
+    color: var(--accent);
   }
 
   .composer-chip-chevron {

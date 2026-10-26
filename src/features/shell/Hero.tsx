@@ -1,6 +1,5 @@
 import "./Hero.css";
-
-const wordmark = "VantheaX";
+import { wordmark } from "./wordmark.ts";
 
 export const Hero = () => (
   <div className="hero-stage">

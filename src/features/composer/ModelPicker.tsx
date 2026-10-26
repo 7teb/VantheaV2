@@ -65,7 +65,11 @@ export const ModelPicker = () => {
         onClick={() => set_open(!open)}
       >
         <span className="composer-chip-label composer-chip-model">{model?.label ?? t("composer.model_fallback")}</span>
-        {model && model.efforts.length > 0 && <span className="composer-chip-hint">{effort_label(t, effort)}</span>}
+        {model && model.efforts.length > 0 && (
+          <span className="composer-chip-hint" data-effort={effort}>
+            {effort_label(t, effort)}
+          </span>
+        )}
         <ChevronDownIcon size={14} className="composer-chip-chevron" />
       </button>
       <Menu

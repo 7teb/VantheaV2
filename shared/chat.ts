@@ -152,7 +152,9 @@ export type RetryState = { attempt: number; max: number; reason: string; until: 
 
 export type ContextCalibration = { prompt_tokens: number; estimate: number };
 
-export type ContextUsage = { used: number; limit: number; calibration?: ContextCalibration; floor?: number };
+export type ContextParts = { system: number; tools: number; messages: number };
+
+export type ContextUsage = { used: number; limit: number; calibration?: ContextCalibration; floor?: number; parts?: ContextParts };
 
 export const compact_fraction = 0.7;
 

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
+import { class_names } from "../../components/class-names.ts";
 import { ArchiveIcon, ComposeIcon, FolderOpenIcon, FolderPlusIcon, PlusIcon, SearchIcon, SettingsIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
+import { Tooltip } from "../../components/Tooltip.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { chats_store, load_chats } from "../../state/chats.ts";
 import { choose_project, create_project } from "../../state/projects.ts";
@@ -28,21 +30,22 @@ const use_minute_clock = () => {
 
 const report = (action: string) => (error: unknown) => console.error(`[sidebar] ${action} failed`, error);
 
-type NavButtonProps = { icon: ReactNode; label: string; hint?: string; count?: number; on_click: () => void };
+type NavButtonProps = { icon: ReactNode; label: string; hint?: string; className?: string; on_click: () => void };
 
-const NavButton = ({ icon, label, hint, count, on_click }: NavButtonProps) => (
-  <button type="button" className="sidebar-nav-button" onClick={on_click}>
+const NavButton = ({ icon, label, hint, className, on_click }: NavButtonProps) => (
+  <button type="button" className={class_names("sidebar-nav-button", className)} onClick={on_click}>
     {icon}
     <span className="sidebar-nav-label">{label}</span>
     {hint && <kbd className="sidebar-nav-hint">{hint}</kbd>}
-    {count !== undefined && <span className="sidebar-nav-count">{count}</span>}
   </button>
 );
 
-const Section = ({ label, action, children }: { label: string; action?: ReactNode; children: ReactNode }) => (
+type SectionProps = { label: string; action?: ReactNode; action_shown?: boolean; children: ReactNode };
+
+const Section = ({ label, action, action_shown = false, children }: SectionProps) => (
   <section className="sidebar-section">
-    <div className="sidebar-section-head">
-      <span className="section-label">{label}</span>
+    <div className="sidebar-section-head" data-action-shown={action_shown}>
+      <span className="sidebar-section-label">{label}</span>
       {action}
     </div>
     {children}
@@ -97,10 +100,12 @@ export const Sidebar = () => {
         {model.pinned.length > 0 && <Section label={t("sidebar.pinned")}>{rows(model.pinned)}</Section>}
         <Section
           label={t("sidebar.projects")}
+          action_shown={add_open || model.projects.length === 0}
           action={
             <IconButton
               ref={set_add_anchor}
               size="sm"
+              className="sidebar-section-add"
               label={t("projects.add")}
               aria-haspopup="menu"
               aria-expanded={add_open}
@@ -132,16 +137,20 @@ export const Sidebar = () => {
     <aside className="sidebar" data-state={collapsed ? "closed" : "open"} inert={collapsed} aria-label={t("sidebar.navigation")}>
       <div className="sidebar-inner">
         <nav className="sidebar-nav">
-          <NavButton icon={<ComposeIcon size={17} />} label={t("sidebar.new_chat")} hint={shortcut_hint("new_chat")} on_click={() => start_new_chat(project_path)} />
-          <NavButton icon={<SearchIcon size={17} />} label={t("sidebar.search")} hint={shortcut_hint("search")} on_click={open_search} />
-          <NavButton icon={<FolderOpenIcon size={17} />} label={t("sidebar.open_project")} on_click={() => choose_project().catch(report("choosing a project"))} />
+          <NavButton icon={<ComposeIcon size={16} />} label={t("sidebar.new_chat")} hint={shortcut_hint("new_chat")} on_click={() => start_new_chat(project_path)} />
+          <NavButton icon={<SearchIcon size={16} />} label={t("sidebar.search")} hint={shortcut_hint("search")} className="sidebar-search" on_click={open_search} />
         </nav>
         <div className="sidebar-scroll">{body()}</div>
         <div className="sidebar-footer">
+          <NavButton icon={<SettingsIcon size={16} />} label={t("sidebar.settings")} hint={shortcut_hint("settings")} on_click={() => open_settings()} />
           {chats.status === "ready" && archived.length > 0 && (
-            <NavButton icon={<ArchiveIcon size={17} />} label={t("sidebar.archived")} count={archived.length} on_click={() => set_archive_open(true)} />
+            <Tooltip label={t("sidebar.archived")}>
+              <button type="button" className="sidebar-archive" aria-label={t("sidebar.archived")} onClick={() => set_archive_open(true)}>
+                <ArchiveIcon size={16} />
+                <span className="sidebar-archive-count">{archived.length}</span>
+              </button>
+            </Tooltip>
           )}
-          <NavButton icon={<SettingsIcon size={17} />} label={t("sidebar.settings")} hint={shortcut_hint("settings")} on_click={() => open_settings()} />
         </div>
       </div>
       <ArchivedDialog open={archive_open} chats={archived} active_chat_id={active_chat_id} now={now} on_close={() => set_archive_open(false)} />

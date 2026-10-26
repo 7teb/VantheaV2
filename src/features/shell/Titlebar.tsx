@@ -9,6 +9,7 @@ import { dock_toggles, titlebar_docks } from "./docks.ts";
 import { shortcut_hint } from "./shortcuts.ts";
 import { TitlebarMenu } from "./TitlebarMenu.tsx";
 import { WindowControls } from "./WindowControls.tsx";
+import { wordmark } from "./wordmark.ts";
 import "./Titlebar.css";
 
 export const Titlebar = () => {
@@ -20,8 +21,9 @@ export const Titlebar = () => {
   const title = chat_title === undefined ? "" : chat_label(t, chat_title);
 
   return (
-    <header className="titlebar">
+    <header className="titlebar" data-sidebar={collapsed ? "closed" : "open"}>
       <div className="titlebar-start">
+        <span className="titlebar-brand">{wordmark}</span>
         <IconButton
           label={collapsed ? t("shell.sidebar_open") : t("shell.sidebar_close")}
           hint={shortcut_hint("toggle_sidebar")}

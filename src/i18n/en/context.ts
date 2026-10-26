@@ -30,4 +30,12 @@ export const context = {
   "context.compact_percent": "{percent}%",
   "context.compact_hint": "at {tokens} tokens",
   "context.compact_mark": "Automatic compaction",
+  "context.part_system": "System prompt",
+  "context.part_tools": "Tools",
+  "context.part_messages": "Messages",
+  "context.part_used": "Used",
+  "context.part_free": "Free",
+  "context.compact_line": "Auto-compact at {percent}%",
+  "context.not_measured": "Measured after the first answer in this chat",
+  "context.close": "Close",
 };

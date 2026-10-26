@@ -1,4 +1,4 @@
-import { approval_skip_ms, type ApprovalRequest, type HumanDecision } from "../../../shared/approval.ts";
+import type { ApprovalRequest, HumanDecision } from "../../../shared/approval.ts";
 import type { ToolStep } from "../../../shared/chat.ts";
 import { review_deadline_ms, type ReviewNote, type ReviewRaise, type ReviewRecord, type RuleSource } from "../../../shared/review.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
@@ -85,9 +85,9 @@ export const approval_lines = (t: Translate, request: ApprovalRequest): NoteLine
 
 const denied_notice = (t: Translate, current: ReviewRecord | null, decision: HumanDecision | null): OutcomeNote | null => {
   if (decision && !decision.approved) {
-    const reason = current?.source === "model" && current.reason ? [line(t("review.reason", { x: current.reason }), "reason")] : [];
+    const reason = current?.source === "model" && current.reason ? [line(decision.expired ? current.reason : t("review.reason", { x: current.reason }), "reason")] : [];
     const feedback = decision.feedback.trim() ? [line(t("review.feedback", { x: decision.feedback.trim() }), "detail")] : [];
-    return { title: decision.expired ? t("review.skipped_unanswered", { n: approval_skip_ms / 1000 }) : t("review.denied_by_you"), lines: [...reason, ...feedback] };
+    return { title: decision.expired ? t("review.denied") : t("review.denied_by_you"), lines: [...reason, ...feedback] };
   }
   if (!current || current.verdict !== "deny" || current.source !== "model") {
     return null;

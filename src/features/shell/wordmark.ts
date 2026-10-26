@@ -1,0 +1,1 @@
+export const wordmark = "VantheaX";

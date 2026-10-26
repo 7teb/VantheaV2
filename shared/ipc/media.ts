@@ -16,6 +16,8 @@ export type AttachmentUpload = { name: string; mime: string; bytes: Uint8Array; 
 
 export const attachment_limits = { image_bytes: 20 * 1024 * 1024, file_bytes: 20 * 1024 * 1024, max_files: 10 } as const;
 
+export const dictation_limit_bytes = 25 * 1024 * 1024;
+
 export const media_channels = {
   "attachments:save": invoke<[upload: AttachmentUpload], Attachment>(),
   "attachments:discard": invoke<[attachment_ids: string[]], void>(),
@@ -24,4 +26,5 @@ export const media_channels = {
   "artifacts:update": invoke<[artifact_id: string, patch: Partial<Pick<Artifact, "title" | "pinned">>], Artifact>(),
   "artifacts:export": invoke<[artifact_id: string], boolean>(),
   "artifacts:changed": emit<{ project_path: string }>(),
+  "dictation:transcribe": invoke<[audio: Uint8Array], string>(),
 } as const;

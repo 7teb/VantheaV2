@@ -91,6 +91,14 @@
     --ring-strong: rgba(252, 252, 252, 0.2);
     --accent: #a67df2;
     --ring-accent: var(--accent);
+    --brand-violet: rgba(166, 125, 242, 0.95);
+    --brand-indigo: rgba(92, 72, 230, 0.9);
+    --brand-lilac: rgba(222, 196, 255, 0.8);
+    --context-system: rgba(252, 252, 252, 0.5);
+    --context-tools: rgba(92, 72, 230, 0.95);
+    --context-messages: var(--accent);
+    --context-free: rgba(252, 252, 252, 0.07);
+    --context-mark: rgba(252, 252, 252, 0.6);
     --ring-danger: rgba(240, 101, 106, 0.16);
     --raised-divider: rgba(252, 252, 252, 0.075);
     --highlight: rgba(255, 255, 255, 0.06);

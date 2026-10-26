@@ -7,6 +7,7 @@ import { commands } from "./commands.ts";
 import { common } from "./common.ts";
 import { composer } from "./composer.ts";
 import { context } from "./context.ts";
+import { dictation } from "./dictation.ts";
 import { docks } from "./docks.ts";
 import { files } from "./files.ts";
 import { git } from "./git.ts";
@@ -42,6 +43,7 @@ export const en = {
   ...common,
   ...composer,
   ...context,
+  ...dictation,
   ...docks,
   ...files,
   ...git,

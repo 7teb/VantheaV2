@@ -1,9 +1,11 @@
 import { dialog } from "electron";
 import fs from "node:fs/promises";
 import type { Attachment } from "../../shared/chat.ts";
-import { attachment_limits, type AttachmentUpload } from "../../shared/ipc/media.ts";
+import { attachment_limits, dictation_limit_bytes, type AttachmentUpload } from "../../shared/ipc/media.ts";
 import { main_window } from "../app/window.ts";
 import { find_artifact, list_artifacts, update_artifact } from "../media/artifacts.ts";
+import { transcribe } from "../media/dictation.ts";
+import { model_catalog } from "../model/catalog-file.ts";
 import { is_media_id, read_attachment_text, resolve_media_file, save_attachment } from "../media/files.ts";
 import { save_model_copy } from "../media/model-copy.ts";
 import { discard_uploads, remember_upload } from "../media/uploads.ts";
@@ -42,6 +44,16 @@ const upload = (value: unknown): AttachmentUpload => {
   };
 };
 
+const dictation_audio = (value: unknown): Uint8Array => {
+  if (!(value instanceof Uint8Array)) {
+    throw new Error("dictation audio must be a Uint8Array");
+  }
+  if (value.byteLength === 0 || value.byteLength > dictation_limit_bytes) {
+    throw new Error(`dictation audio is ${value.byteLength} bytes, it must be 1 to ${dictation_limit_bytes}`);
+  }
+  return value;
+};
+
 const save_upload = async (value: AttachmentUpload): Promise<Attachment> => {
   const original = await save_attachment(value);
   const saved = original.kind === "image" && value.model_source ? await save_model_copy(value.model_source, original) : original;
@@ -75,4 +87,8 @@ export const register_media_ipc = () => {
   handle("artifacts:list", (project_path) => list_artifacts(require_string(project_path, "project path", 2000)));
   handle("artifacts:update", (id, patch) => update_artifact(media_id(id, "artifact id"), artifact_patch(patch)));
   handle("artifacts:export", (id) => export_artifact(media_id(id, "artifact id")));
+  handle("dictation:transcribe", async (audio) => {
+    const recording = dictation_audio(audio);
+    return transcribe((await model_catalog()).side.transcription, recording);
+  });
 };

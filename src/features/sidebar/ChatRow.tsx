@@ -2,12 +2,17 @@ import { memo, useState } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
 import { IconButton } from "../../components/Button.tsx";
 import { ConfirmDialog } from "../../components/Dialog.tsx";
-import { ArchiveIcon, CircleSpinnerIcon, MoreHorizontalIcon, PencilLineIcon, PinIcon, PinOffIcon, TrashIcon } from "../../components/icons.tsx";
+import { DotSpinner } from "../../components/DotSpinner.tsx";
+import { ArchiveIcon, MoreHorizontalIcon, PencilLineIcon, PinIcon, PinOffIcon, TrashIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
 import { use_t } from "../../i18n/index.ts";
+import type { Translate } from "../../i18n/translate.ts";
 import { relative_time } from "../../i18n/relative-time.ts";
+import { row_status, type RowStatus } from "../../state/chat-marks-rules.ts";
+import { chat_marks_store } from "../../state/chat-marks.ts";
 import { delete_chat, rename_chat, set_chat_archived, set_chat_pinned } from "../../state/chats.ts";
 import { open_chat } from "../../state/ui.ts";
+import { use_store } from "../../state/use-store.ts";
 import { InlineRename } from "./InlineRename.tsx";
 import { chat_label } from "./sidebar-model.ts";
 
@@ -15,12 +20,29 @@ type ChatRowProps = { chat: ChatMeta; active: boolean; now: number };
 
 const report = (action: string, chat_id: string) => (error: unknown) => console.error(`[sidebar] ${action} failed for chat ${chat_id}`, error);
 
+const Trailing = ({ t, status, updated_at, now }: { t: Translate; status: RowStatus; updated_at: string; now: number }) => {
+  if (status === "idle") {
+    return <span className="chat-row-time">{relative_time(t, updated_at, now)}</span>;
+  }
+  const shown = {
+    waiting: { label: t("sidebar.waiting"), mark: <span className="wait-dot" /> },
+    running: { label: t("sidebar.working"), mark: <DotSpinner /> },
+    unread: { label: t("sidebar.unread"), mark: <span className="chat-row-unread" /> },
+  };
+  return (
+    <span className="chat-row-status" role="status" aria-label={shown[status].label}>
+      {shown[status].mark}
+    </span>
+  );
+};
+
 export const ChatRow = memo(({ chat, active, now }: ChatRowProps) => {
   const t = use_t();
   const [menu_anchor, set_menu_anchor] = useState<HTMLButtonElement | null>(null);
   const [menu_open, set_menu_open] = useState(false);
   const [renaming, set_renaming] = useState(false);
   const [confirming, set_confirming] = useState(false);
+  const status = use_store(chat_marks_store, (marks) => row_status(marks[chat.id], chat.streaming));
 
   return (
     <div className="sidebar-row chat-row" data-active={active} data-menu-open={menu_open}>
@@ -38,13 +60,7 @@ export const ChatRow = memo(({ chat, active, now }: ChatRowProps) => {
       ) : (
         <button type="button" className="sidebar-row-main" aria-current={active ? "page" : undefined} onClick={() => open_chat(chat.id, chat.project_path)}>
           <span className="sidebar-row-label">{chat_label(t, chat.title)}</span>
-          {chat.streaming ? (
-            <span className="chat-row-status" role="status" aria-label={t("sidebar.working")}>
-              <CircleSpinnerIcon size={12} className="spin" />
-            </span>
-          ) : (
-            <span className="chat-row-time">{relative_time(t, chat.updated_at, now)}</span>
-          )}
+          <Trailing t={t} status={status} updated_at={chat.updated_at} now={now} />
         </button>
       )}
       {!renaming && (
