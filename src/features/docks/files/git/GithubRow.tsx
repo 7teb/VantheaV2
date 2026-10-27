@@ -24,7 +24,7 @@ const slug_of = (repo: GithubRepoRef): string => `${repo.owner}/${repo.name}`;
 
 const clock_of = (language: string, iso: string): string => new Intl.DateTimeFormat(language, { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
-const DownloadCli = () => {
+export const DownloadCli = () => {
   const t = use_t();
   return (
     <Tooltip label={cli_download_url.replace(/^https:\/\//, "").replace(/\/$/, "")}>

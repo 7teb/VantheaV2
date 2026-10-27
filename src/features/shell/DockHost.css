@@ -47,10 +47,10 @@
 .dock-resize::after {
   content: "";
   position: absolute;
-  top: 0;
+  top: var(--radius-xl);
   bottom: 0;
   left: 2px;
-  width: 2px;
+  width: 1px;
   border-radius: var(--radius-full);
   background: transparent;
   transition: background var(--duration-fast) var(--ease-out);

@@ -10,6 +10,7 @@ import { context } from "./context.ts";
 import { dictation } from "./dictation.ts";
 import { docks } from "./docks.ts";
 import { files } from "./files.ts";
+import { git_actions } from "./git-actions.ts";
 import { git } from "./git.ts";
 import { github } from "./github.ts";
 import { image } from "./image.ts";
@@ -17,6 +18,7 @@ import { mcp } from "./mcp.ts";
 import { memories } from "./memories.ts";
 import { personalization } from "./personalization.ts";
 import { plan } from "./plan.ts";
+import { privacy } from "./privacy.ts";
 import { projects } from "./projects.ts";
 import { questions } from "./questions.ts";
 import { review } from "./review.ts";
@@ -31,7 +33,9 @@ import { terminal } from "./terminal.ts";
 import { time } from "./time.ts";
 import { tool_label } from "./tool-label.ts";
 import { tools } from "./tools.ts";
+import { turn_diff } from "./turn-diff.ts";
 import { web } from "./web.ts";
+import { worktree } from "./worktree.ts";
 
 import type { MessageKey } from "../en/index.ts";
 
@@ -49,12 +53,14 @@ export const de: Record<MessageKey, string> = {
   ...docks,
   ...files,
   ...git,
+  ...git_actions,
   ...github,
   ...image,
   ...mcp,
   ...memories,
   ...personalization,
   ...plan,
+  ...privacy,
   ...projects,
   ...questions,
   ...review,
@@ -69,5 +75,7 @@ export const de: Record<MessageKey, string> = {
   ...time,
   ...tool_label,
   ...tools,
+  ...turn_diff,
   ...web,
+  ...worktree,
 };

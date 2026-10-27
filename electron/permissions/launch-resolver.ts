@@ -1,5 +1,5 @@
 import path from "node:path";
-import { is_secret_path } from "../project/scope.ts";
+import { is_secret_path } from "../../shared/secret-path.ts";
 import type { InputRef } from "./build-inputs.ts";
 import { error_code, error_text } from "../storage/coerce.ts";
 import { against_location, child_state, resolved, type Step, type Value, type WalkState } from "./command-walk.ts";

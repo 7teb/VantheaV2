@@ -8,13 +8,28 @@ export type GitTool = { exe: string; version: string; numbers: GitVersion; local
 
 export type GitConfigPair = [key: string, value: string];
 
-export type GitCall = { cwd: string; args: string[]; flags?: string[]; config?: GitConfigPair[]; literal_paths?: boolean; env?: Record<string, string>; signal?: AbortSignal; on_exit?: () => void };
+export type GitCall = {
+  cwd: string;
+  args: string[];
+  flags?: string[];
+  config?: GitConfigPair[];
+  literal_paths?: boolean;
+  env?: Record<string, string>;
+  hooks?: boolean;
+  input?: Buffer;
+  signal?: AbortSignal;
+  on_exit?: () => void;
+};
 
 export type GitOutput = { code: number; stdout: Buffer; stderr: string };
 
-type ProgramRun = { cwd: string; env: NodeJS.ProcessEnv; signal?: AbortSignal; on_exit?: () => void };
+type ProgramRun = { cwd: string; env: NodeJS.ProcessEnv; input?: Buffer; signal?: AbortSignal; on_exit?: () => void };
 
-export const base_flags = ["-c", "core.hooksPath=NUL", "-c", "safe.bareRepository=explicit"];
+const bare_flags = ["-c", "safe.bareRepository=explicit"];
+
+export const base_flags = ["-c", "core.hooksPath=NUL", ...bare_flags];
+
+export const write_hooks = false;
 
 const fixed_env: Record<string, string> = {
   GIT_OPTIONAL_LOCKS: "0",
@@ -51,7 +66,12 @@ export const run_program = (exe: string, args: string[], run: ProgramRun): Promi
       reject(signal.reason);
       return;
     }
-    const child = spawn(exe, args, { cwd: run.cwd, env: run.env, windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+    const options = { cwd: run.cwd, env: run.env, windowsHide: true, shell: false };
+    const child = run.input ? spawn(exe, args, { ...options, stdio: ["pipe", "pipe", "pipe"] }) : spawn(exe, args, { ...options, stdio: ["ignore", "pipe", "pipe"] });
+    if (run.input) {
+      child.stdin?.on("error", (error) => console.warn(`[git] writing the input of ${exe} ${args.join(" ")} in ${run.cwd} failed: ${error.message}`));
+      child.stdin?.end(run.input);
+    }
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
     const abort = () => {
@@ -74,9 +94,10 @@ export const run_program = (exe: string, args: string[], run: ProgramRun): Promi
   });
 
 export const exec_git = (tool: GitTool, call: GitCall): Promise<GitOutput> =>
-  run_program(tool.exe, [...base_flags, ...(call.flags ?? []), ...call.args], {
+  run_program(tool.exe, [...(call.hooks ? bare_flags : base_flags), ...(call.flags ?? []), ...call.args], {
     cwd: call.cwd,
     env: git_env(process.env, tool.local_env, call.config, call.literal_paths, call.env),
+    input: call.input,
     signal: call.signal,
     on_exit: call.on_exit,
   });

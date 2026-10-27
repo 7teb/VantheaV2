@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { ScriptRole } from "../../shared/review.ts";
-import { is_inside, is_secret_path, to_posix } from "../project/scope.ts";
+import { is_secret_path } from "../../shared/secret-path.ts";
+import { is_inside, to_posix } from "../project/scope.ts";
 import { error_code } from "../storage/coerce.ts";
 import { path_key } from "../storage/paths.ts";
 import { network_path } from "./launch-targets.ts";

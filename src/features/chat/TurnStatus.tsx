@@ -7,6 +7,7 @@ import { use_clock } from "../../components/use-clock.ts";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { continue_turn } from "../../state/chat-actions.ts";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 
 export const RetryBanner = ({ retry }: { retry: RetryState }) => {
   const t = use_t();
@@ -15,7 +16,7 @@ export const RetryBanner = ({ retry }: { retry: RetryState }) => {
   return (
     <div className="retry-banner enter-fade-up">
       <CloudAlertIcon size={14} />
-      <span className="is-working">{t("status.retrying", { n: retry.attempt, total: retry.max })}</span>
+      <span className="is-working"><WorkingLetters text={t("status.retrying", { n: retry.attempt, total: retry.max })} /></span>
       {seconds > 0 && <span className="retry-banner-wait">{t("chat.retry_in", { n: seconds })}</span>}
       {retry.reason && <span className="retry-banner-reason">{retry.reason}</span>}
     </div>

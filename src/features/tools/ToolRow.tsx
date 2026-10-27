@@ -16,6 +16,7 @@ import { CommandTime, RowDetail } from "./RowMeta.tsx";
 import { has_body, is_agent_message, opens_by_itself } from "./tool-body.ts";
 import { is_active_status, started_run, tool_label, tool_meta } from "./tool-meta.ts";
 import { step_hint } from "./tool-summary.ts";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./tools.css";
 import "./tool-motion.css";
 
@@ -74,7 +75,7 @@ export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false
           {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter chat_id={chat_id} step={step} /> : <Icon size={14} />}
         </span>
         <span className={class_names("tool-row-label", active && step.status !== "queued" && !reviewing && "is-working")}>
-          {reviewing ? <ReviewingLabel step={step} /> : tool_label(t, step)}
+          {reviewing ? <ReviewingLabel step={step} /> : <WorkingLetters text={tool_label(t, step)} active={active && step.status !== "queued"} />}
         </span>
         {reviewing && <ShieldTerminalIcon size={16} className="tool-row-shield" />}
         {edit && <span className="tool-stat-add">+{edit.added}</span>}

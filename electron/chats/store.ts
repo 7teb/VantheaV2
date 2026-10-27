@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Chat, ChatMeta, ChatSummary, Message } from "../../shared/chat.ts";
+import type { Chat, ChatMeta, ChatSummary, ChatWorktree, Message } from "../../shared/chat.ts";
 import { delete_attachment } from "../media/files.ts";
 import { path_key } from "../storage/paths.ts";
 import { load_chat_index } from "./boot.ts";
@@ -143,13 +143,14 @@ export const get_chat = async (chat_id: string): Promise<Chat | null> => {
   return body && meta ? compose_chat(meta, body) : null;
 };
 
-export const create_chat = async (project_path: string): Promise<ChatMeta> => {
+export const create_chat = async (project_path: string, worktree: ChatWorktree | null = null): Promise<ChatMeta> => {
   const now = now_iso();
   const meta: ChatMeta = {
     id: randomUUID(),
     title: "",
     project_path,
     workspace: "",
+    ...(worktree ? { worktree } : {}),
     pinned: false,
     created_at: now,
     updated_at: now,
@@ -182,6 +183,38 @@ export const update_meta = async (chat_id: string, patch: MetaPatch): Promise<Ch
   await persist_index();
   announce(chat_id);
   return { ...next };
+};
+
+export const archive_all_chats = async (): Promise<{ archived: number; skipped: number }> => {
+  const changed: string[] = [];
+  let skipped = 0;
+  for (const [chat_id, meta] of metas) {
+    if (meta.archived) {
+      continue;
+    }
+    if (meta.streaming) {
+      skipped += 1;
+      continue;
+    }
+    metas.set(chat_id, { ...meta, archived: true });
+    if (bodies.has(chat_id)) {
+      schedule_save(chat_id);
+    }
+    changed.push(chat_id);
+  }
+  if (changed.length > 0) {
+    await persist_index();
+    changed.forEach(announce);
+  }
+  return { archived: changed.length, skipped };
+};
+
+export const delete_all_chats = async (): Promise<number> => {
+  const ids = [...metas.keys()];
+  for (const chat_id of ids) {
+    await delete_chat(chat_id);
+  }
+  return ids.length;
 };
 
 export const unarchive_chat = async (chat_id: string): Promise<void> => {
@@ -217,6 +250,7 @@ const delete_released = async (chat_id: string, ids: string[]) => {
 };
 
 const remove_chat = async (chat_id: string): Promise<void> => {
+  const meta = require_meta(chat_id);
   const body = await ensure_body(chat_id);
   await forget_saves(chat_id);
   metas.delete(chat_id);
@@ -231,16 +265,16 @@ const remove_chat = async (chat_id: string): Promise<void> => {
   chat_events().removed(chat_id);
   for (const listener of removed_listeners) {
     try {
-      listener(chat_id);
+      listener(chat_id, meta);
     } catch (error) {
       console.error(`[chats] cleanup after deleting chat ${chat_id} failed:`, error);
     }
   }
 };
 
-const removed_listeners = new Set<(chat_id: string) => void>();
+const removed_listeners = new Set<(chat_id: string, meta: ChatMeta) => void>();
 
-export const on_chat_removed = (listener: (chat_id: string) => void): (() => void) => {
+export const on_chat_removed = (listener: (chat_id: string, meta: ChatMeta) => void): (() => void) => {
   removed_listeners.add(listener);
   return () => {
     removed_listeners.delete(listener);

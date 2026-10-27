@@ -5,7 +5,7 @@ import { as_array, is_record, require_record } from "../storage/coerce.ts";
 import { web_link, type GithubTroubleResult } from "./access.ts";
 import { api_path, type GithubClient, type GithubPages, type GithubResult, type GithubSource, type RoundTally } from "./client.ts";
 
-export type RepoInfo = Pick<GithubData, "repo" | "html_url" | "visibility" | "archived" | "fork_parent" | "renamed_from">;
+export type RepoInfo = Pick<GithubData, "repo" | "html_url" | "default_branch" | "visibility" | "archived" | "fork_parent" | "renamed_from">;
 
 export type RoundTarget = { branch: string | null; tracking: string | null };
 
@@ -47,6 +47,8 @@ const count_of = (value: unknown): number | null => (typeof value === "number" &
 
 const text_of = (value: unknown): string | null => (typeof value === "string" && value.trim() ? value : null);
 
+const branch_of = (value: unknown): string | null => (typeof value === "string" && /^[^\s~^:?*[\\\u0000-\u001f\u007f]+$/.test(value) && !value.startsWith("-") && !value.includes("..") ? value : null);
+
 export const parse_repo_info = (body: unknown, requested: GithubRepoRef): RepoInfo => {
   const raw = require_record(body, "GitHub repository");
   const full_name = typeof raw.full_name === "string" ? raw.full_name : "";
@@ -60,6 +62,7 @@ export const parse_repo_info = (body: unknown, requested: GithubRepoRef): RepoIn
   return {
     repo: { host: requested.host, owner: match[1], name: match[2] },
     html_url: web_link(raw.html_url, requested.host),
+    default_branch: branch_of(raw.default_branch),
     visibility: named ?? (typeof raw.private === "boolean" ? (raw.private ? "private" : "public") : null),
     archived: raw.archived === true,
     fork_parent: raw.fork === true ? parent : null,

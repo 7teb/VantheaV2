@@ -35,10 +35,18 @@
     margin-left: 2px;
   }
 
+  .work-group-body > :is(.agent-note, .notice-row) {
+    margin: 0;
+  }
+
+  .work-group-body > .notice-row {
+    padding: 5px 0;
+    color: var(--text-tertiary);
+  }
+
   .work-group-scroll {
     max-height: min(18rem, 50vh);
     overflow-y: auto;
-    scrollbar-width: thin;
     mask-image: linear-gradient(to bottom, transparent 0, var(--mask) var(--group-fade-top), var(--mask) calc(100% - var(--group-fade-bottom)), transparent 100%);
     animation-name: work-group-edge-fade;
     animation-timing-function: linear;

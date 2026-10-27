@@ -133,7 +133,8 @@
     color: var(--text-tertiary);
     white-space: pre;
     overflow-wrap: normal;
-    scrollbar-color: var(--scrollbar-command) transparent;
+    --scrollbar: var(--scrollbar-command);
+    --scrollbar-hover: var(--scrollbar-command);
     mask: linear-gradient(to bottom, transparent, var(--mask) var(--edge-fade-top) calc(100% - var(--edge-fade-bottom)), transparent);
   }
 

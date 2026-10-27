@@ -6,6 +6,7 @@ import { ChevronRightIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { reasoning_head } from "./reasoning-head.ts";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./ReasoningRow.css";
 
 type ReasoningRowProps = { step: ReasoningStep; live: boolean };
@@ -29,7 +30,7 @@ export const ReasoningRow = memo(({ step, live }: ReasoningRowProps) => {
       >
         {expandable && <ChevronRightIcon size={14} className="reasoning-chevron" />}
         <span key={status ?? ""} className={class_names("reasoning-label", status && "is-status")} title={status}>
-          <span className={class_names("reasoning-label-text", working && "is-working")}>{label}</span>
+          <span className={class_names("reasoning-label-text", working && "is-working")}><WorkingLetters text={label} active={working} /></span>
         </span>
         {meta && <span className="reasoning-meta">{meta}</span>}
       </button>

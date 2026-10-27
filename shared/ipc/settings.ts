@@ -10,8 +10,10 @@ export const settings_channels = {
   "settings:changed": emit<SettingsView>(),
   "models:catalog": invoke<[], ModelCatalog>(),
   "projects:choose": invoke<[], ProjectEntry | null>(),
-  "projects:create": invoke<[], ProjectEntry | null>(),
+  "projects:pick_folder": invoke<[], string | null>(),
+  "projects:create": invoke<[request: { name: string; folder: string | null }], ProjectEntry | null>(),
   "projects:update": invoke<[path: string, patch: Partial<Pick<ProjectEntry, "name" | "pinned">>], SettingsView>(),
   "projects:remove": invoke<[path: string], SettingsView>(),
+  "projects:remove_all": invoke<[], SettingsView>(),
   "projects:open": invoke<[path: string], void>(),
 } as const;

@@ -41,7 +41,7 @@ export const AgentNoteRow = memo(({ note }: { note: AgentNote }) => {
   const [open, set_open] = useState(false);
   const [seen, set_seen] = useState(false);
   const status = note.kind === "alert" ? alert_keys[note.status] : status_keys[note.status];
-  const expandable = note.kind !== "update" && note.body.trim().length > 0;
+  const expandable = note.kind === "alert" && note.body.trim().length > 0;
   if (open && !seen) {
     set_seen(true);
   }

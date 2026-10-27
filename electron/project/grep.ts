@@ -7,7 +7,8 @@ import type { GrepMatch } from "../../shared/tool-view.ts";
 import { error_text } from "../storage/coerce.ts";
 import { ignored_dirs } from "./index.ts";
 import { encoding_batches, find_utf16_files, type Utf16Encoding } from "./grep-encoding.ts";
-import { is_secret_path, resolve_inside, type ScopedPath } from "./scope.ts";
+import { is_secret_path } from "../../shared/secret-path.ts";
+import { resolve_inside, type ScopedPath } from "./scope.ts";
 
 export type GrepQuery = { query: string; path: string; regex: boolean; case_sensitive: boolean };
 

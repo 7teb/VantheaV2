@@ -1,7 +1,7 @@
 import { secret_read_subject, type SecretRead } from "../../../shared/approval.ts";
 import { tool_gate } from "../../permissions/tool-gate.ts";
 import { not_approved_text, note_reason } from "../../permissions/verdict-text.ts";
-import { is_secret_path } from "../../project/scope.ts";
+import { is_secret_path } from "../../../shared/secret-path.ts";
 import type { ToolContext, ToolResult } from "../types.ts";
 
 export const secret_read_refused = async (ctx: ToolContext, read: SecretRead): Promise<ToolResult | null> => {

@@ -15,8 +15,9 @@ import { open_chat } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
 import { InlineRename } from "./InlineRename.tsx";
 import { chat_label } from "./sidebar-model.ts";
+import { WorktreeWarning } from "./WorktreeWarning.tsx";
 
-type ChatRowProps = { chat: ChatMeta; active: boolean; now: number };
+type ChatRowProps = { chat: ChatMeta; active: boolean; now: number; detail?: string };
 
 const report = (action: string, chat_id: string) => (error: unknown) => console.error(`[sidebar] ${action} failed for chat ${chat_id}`, error);
 
@@ -36,7 +37,7 @@ const Trailing = ({ t, status, updated_at, now }: { t: Translate; status: RowSta
   );
 };
 
-export const ChatRow = memo(({ chat, active, now }: ChatRowProps) => {
+export const ChatRow = memo(({ chat, active, now, detail }: ChatRowProps) => {
   const t = use_t();
   const [menu_anchor, set_menu_anchor] = useState<HTMLButtonElement | null>(null);
   const [menu_open, set_menu_open] = useState(false);
@@ -45,7 +46,7 @@ export const ChatRow = memo(({ chat, active, now }: ChatRowProps) => {
   const status = use_store(chat_marks_store, (marks) => row_status(marks[chat.id], chat.streaming));
 
   return (
-    <div className="sidebar-row chat-row" data-active={active} data-menu-open={menu_open}>
+    <div className="sidebar-row chat-row" data-active={active} data-menu-open={menu_open} data-detail={detail !== undefined || undefined}>
       {renaming ? (
         <InlineRename
           initial={chat.title}
@@ -59,7 +60,14 @@ export const ChatRow = memo(({ chat, active, now }: ChatRowProps) => {
         />
       ) : (
         <button type="button" className="sidebar-row-main" aria-current={active ? "page" : undefined} onClick={() => open_chat(chat.id, chat.project_path)}>
-          <span className="sidebar-row-label">{chat_label(t, chat.title)}</span>
+          {detail === undefined ? (
+            <span className="sidebar-row-label">{chat_label(t, chat.title)}</span>
+          ) : (
+            <span className="chat-row-lines">
+              <span className="sidebar-row-label">{chat_label(t, chat.title)}</span>
+              <span className="chat-row-detail">{detail}</span>
+            </span>
+          )}
           <Trailing t={t} status={status} updated_at={chat.updated_at} now={now} />
         </button>
       )}
@@ -115,7 +123,9 @@ export const ChatRow = memo(({ chat, active, now }: ChatRowProps) => {
         danger
         on_confirm={() => delete_chat(chat.id).catch(report("delete", chat.id))}
         on_close={() => set_confirming(false)}
-      />
+      >
+        <WorktreeWarning target={{ kind: "chats", chat_ids: [chat.id] }} />
+      </ConfirmDialog>
     </div>
   );
 });

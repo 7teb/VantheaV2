@@ -21,6 +21,7 @@ export const settings: Record<keyof typeof en, string> = {
   "settings.tab_mcp": "MCP-Server",
   "settings.tab_web_search": "Websuche",
   "settings.tab_personalization": "Personalisierung",
+  "settings.tab_privacy": "Datenschutz",
   "settings.tab_image_gen": "Bildgenerierung",
   "settings.tab_skills": "Skills",
   "settings.balance_no_key": "Key speichern, um das Guthaben zu sehen",

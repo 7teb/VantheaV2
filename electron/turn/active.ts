@@ -50,8 +50,25 @@ export const reserve_chat = (chat_id: string): boolean => {
 };
 
 export const release_chat = (chat_id: string): void => {
-  reserved.delete(chat_id);
+  if (reserved.delete(chat_id)) {
+    announce_change();
+  }
 };
+
+export const turn_settled = (chat_id: string): Promise<void> =>
+  new Promise((resolve) => {
+    if (!is_active(chat_id)) {
+      resolve();
+      return;
+    }
+    const stop = on_active_turns_changed(() => {
+      if (is_active(chat_id)) {
+        return;
+      }
+      stop();
+      resolve();
+    });
+  });
 
 export const active_turn = (chat_id: string): ActiveTurn | null => active.get(chat_id) ?? null;
 

@@ -13,6 +13,7 @@ export type WorkSources = {
 
 export type RepoBusy = {
   in_use: (common_dir: string) => Promise<boolean>;
+  checkout_in_use: (top: string) => Promise<boolean>;
   changed: () => void;
   on_change: (listener: () => void) => () => void;
 };
@@ -28,6 +29,7 @@ const real_path = async (dir: string): Promise<string> => {
 
 export const create_repo_busy = (sources: WorkSources): RepoBusy => {
   const known = new Map<string, string>();
+  const trees = new Map<string, string>();
   const listeners = new Set<() => void>();
   let signature = "";
   let settling = false;
@@ -43,10 +45,23 @@ export const create_repo_busy = (sources: WorkSources): RepoBusy => {
     return common;
   };
 
+  const tree_of = async (dir: string): Promise<string | null> => {
+    const key = path_key(dir);
+    const cached = trees.get(key);
+    if (cached !== undefined) return cached;
+    const location = await git_location(await real_path(dir));
+    if (!location) return null;
+    const tree = path_key(await real_path(location.work_tree));
+    trees.set(key, tree);
+    return tree;
+  };
+
   const turn_roots = async (): Promise<string[]> => {
     const roots = await Promise.all(sources.turn_chats().map(sources.chat_root));
     return roots.filter((root) => root !== null);
   };
+
+  const work_roots = async (): Promise<string[]> => [...new Set([...(await turn_roots()), ...sources.agent_roots(), ...sources.background_roots()])];
 
   const work_signature = (): string => {
     const keys = (roots: string[]) => roots.map(path_key).sort();
@@ -55,9 +70,14 @@ export const create_repo_busy = (sources: WorkSources): RepoBusy => {
 
   return {
     in_use: async (common_dir) => {
-      const roots = [...(await turn_roots()), ...sources.agent_roots(), ...sources.background_roots()];
-      const [wanted, commons] = await Promise.all([real_path(common_dir), Promise.all([...new Set(roots)].map(common_of))]);
+      const roots = await work_roots();
+      const [wanted, commons] = await Promise.all([real_path(common_dir), Promise.all(roots.map(common_of))]);
       return commons.includes(path_key(wanted));
+    },
+    checkout_in_use: async (top) => {
+      const roots = await work_roots();
+      const [wanted, tops] = await Promise.all([real_path(top), Promise.all(roots.map(tree_of))]);
+      return tops.includes(path_key(wanted));
     },
     changed: () => {
       if (settling) return;

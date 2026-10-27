@@ -4,6 +4,7 @@ import { newly_done } from "../../../shared/todos.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CircleCheckIcon, CircleIcon, CircleSpinnerIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./TodoList.css";
 
 const TodoMark = ({ status, live }: { status: Todo["status"]; live: boolean }) => {
@@ -39,7 +40,7 @@ export const TodoList = ({ todos, live = false }: { todos: Todo[]; live?: boolea
           <span className="todo-mark">
             <TodoMark status={todo.status} live={live} />
           </span>
-          <span className={class_names("todo-text", live && todo.status === "in_progress" && "is-working")}>{todo.text}</span>
+          <span className={class_names("todo-text", live && todo.status === "in_progress" && "is-working")}><WorkingLetters text={todo.text} active={live && todo.status === "in_progress"} /></span>
         </li>
       ))}
     </ul>

@@ -1,0 +1,41 @@
+@property --title-branch-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes title-branch-fade {
+  from,
+  to {
+    --title-branch-fade: 16px;
+  }
+}
+
+.title-branch {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: min(180px, 40%);
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+}
+
+.title-branch svg {
+  flex: none;
+}
+
+.title-branch[data-missing="true"] {
+  color: var(--text-danger);
+}
+
+.title-branch-name {
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, var(--mask) calc(100% - var(--title-branch-fade)), transparent);
+  animation: title-branch-fade linear both;
+  animation-timeline: scroll(self inline);
+}

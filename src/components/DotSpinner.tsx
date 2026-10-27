@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { bridge_frames, bridge_ms, dot_motions, next_motion } from "./dot-sequence.ts";
+import { bridge_frames, bridge_ms, dot_motions, first_motion, next_motion } from "./dot-sequence.ts";
 import "./DotSpinner.css";
 
 const reduced_motion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -32,11 +32,12 @@ export const DotSpinner = () => {
 
     const play = (index: number) => {
       const motion = dot_motions[index];
-      const next = dot_motions[next_motion(index)];
+      const following = next_motion(index);
+      const next = dot_motions[following];
       run(
         (dot) => motion.frames[dot],
         { duration: motion.duration },
-        () => run((dot) => bridge_frames(motion, next, dot), { duration: bridge_ms, easing: "ease-in-out" }, () => play(next_motion(index))),
+        () => run((dot) => bridge_frames(motion, next, dot), { duration: bridge_ms, easing: "ease-in-out" }, () => play(following)),
       );
     };
 
@@ -44,7 +45,7 @@ export const DotSpinner = () => {
       run((dot) => dot_motions[0].frames[dot], { duration: dot_motions[0].duration }, null);
       running.forEach((animation) => animation.pause());
     } else {
-      play(0);
+      play(first_motion());
     }
     return () => {
       stopped = true;

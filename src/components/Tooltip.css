@@ -28,6 +28,7 @@
   }
 
   .tooltip > span {
+    overflow-wrap: anywhere;
     white-space: pre-line;
   }
 

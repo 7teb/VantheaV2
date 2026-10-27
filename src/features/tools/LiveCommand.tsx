@@ -7,6 +7,7 @@ import { use_t, type MessageKey } from "../../i18n/index.ts";
 import { move_command_to_background, type CommandMove } from "../../state/background.ts";
 import { CommandCard } from "./CommandCard.tsx";
 import { offers_background } from "./tool-body.ts";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 
 const move_problems: Record<Exclude<CommandMove["status"], "moved">, MessageKey> = {
   finished: "tools.move_finished",
@@ -54,7 +55,7 @@ export const LiveCommand = ({ step, output, chat_id }: LiveCommandProps) => {
       footer={
         <>
           {offers_background(step) && <MoveToBackground chat_id={chat_id} call_id={step.call_id} />}
-          <span className="is-working">{t("tools.command_running")}</span>
+          <span className="is-working"><WorkingLetters text={t("tools.command_running")} /></span>
         </>
       }
     />

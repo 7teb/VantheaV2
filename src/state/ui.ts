@@ -6,8 +6,11 @@ export type TaskSection = "running" | "finished";
 
 export type DockState = { kind: DockKind | null; width: number; expanded: boolean };
 
+export type SidebarView = "lists" | "activity";
+
 export type UiState = {
   sidebar_collapsed: boolean;
+  sidebar_view: SidebarView;
   active_chat_id: string | null;
   project_path: string;
   dock: DockState;
@@ -67,6 +70,7 @@ export const clamp_dock_width = (width: number) => Math.min(max_dock_width(), Ma
 
 export const ui_store = create_store<UiState>({
   sidebar_collapsed: false,
+  sidebar_view: "lists",
   active_chat_id: read_storage(active_chat_key),
   project_path: "",
   dock: { kind: null, width: clamp_dock_width(window.innerWidth * 0.42), expanded: false },
@@ -80,6 +84,13 @@ export const ui_store = create_store<UiState>({
 export const set_sidebar_collapsed = (collapsed: boolean) => ui_store.update((state) => ({ ...state, sidebar_collapsed: collapsed }));
 
 export const toggle_sidebar = () => set_sidebar_collapsed(!ui_store.get().sidebar_collapsed);
+
+export const toggle_activity_view = () =>
+  ui_store.update((state) =>
+    state.sidebar_collapsed
+      ? { ...state, sidebar_collapsed: false, sidebar_view: "activity" }
+      : { ...state, sidebar_view: state.sidebar_view === "activity" ? "lists" : "activity" },
+  );
 
 export const open_chat = (chat_id: string, project_path: string) => {
   write_storage(active_chat_key, chat_id);

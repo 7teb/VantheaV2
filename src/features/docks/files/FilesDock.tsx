@@ -8,17 +8,22 @@ import { files_store, open_file, set_tree_open, shown_view, sync_files, toggle_t
 import { reload_git_diffs } from "../../../state/git-diff.ts";
 import { reload_git_history } from "../../../state/git-history.ts";
 import { changed_entries, drop_git_session, git_store, git_ui_of, refresh_git, set_surface, set_viewer_mode, type GitSurface, type ViewerMode } from "../../../state/git.ts";
+import { refresh_turn_diff } from "../../../state/turn-diff.ts";
 import { toggle_dock_expanded, ui_store } from "../../../state/ui.ts";
 import { use_store } from "../../../state/use-store.ts";
 import type { DockViewProps } from "../dock-view.ts";
 import { DockEmpty, DockPanel, DockTitle } from "../DockPanel.tsx";
+import { TurnDiffView } from "./diff/TurnDiffView.tsx";
+import { use_turn_diff } from "./diff/use-turn-diff.ts";
 import { FileTree } from "./FileTree.tsx";
 import { FileViewer } from "./FileViewer.tsx";
 import { ChangesList } from "./git/ChangesList.tsx";
 import { GitCard } from "./git/GitCard.tsx";
 import { HistoryView } from "./git/HistoryView.tsx";
+import { PrComposer } from "./git/PrComposer.tsx";
 import { SurfaceSwitch } from "./git/SurfaceSwitch.tsx";
 import { use_shown_git } from "./git/use-shown-git.ts";
+import { WorktreeMissing } from "./WorktreeMissing.tsx";
 import "./FilesDock.css";
 
 const narrow_below = 420;
@@ -30,7 +35,10 @@ const refresh = () => {
   void sync_files();
 };
 
-const surface_of = (stored: GitSurface, git: GitView, changes: number): GitSurface => {
+const surface_of = (stored: GitSurface, git: GitView, changes: number, has_turns: boolean): GitSurface => {
+  if (stored === "diff" && has_turns) {
+    return "diff";
+  }
   if (stored === "changes" && (git.kind === "loading" || changes > 0)) {
     return "changes";
   }
@@ -41,7 +49,7 @@ const surface_of = (stored: GitSurface, git: GitView, changes: number): GitSurfa
 };
 
 const column_label = (t: Translate, surface: GitSurface, open: boolean): string => {
-  if (surface === "changes") {
+  if (surface === "changes" || surface === "diff") {
     return open ? t("git.hide_list") : t("git.show_list");
   }
   return open ? t("files.hide_tree") : t("files.show_tree");
@@ -75,7 +83,10 @@ export const FilesDock = ({ visible, chat_id, project_path }: DockViewProps) => 
   const fetching = git.kind === "repo" && git.fetch.running;
   const changes = changed_entries(git).length;
   const has_history = git.kind === "repo" && git.head !== null;
-  const surface = surface_of(stored_surface, git, changes);
+  const diff = use_turn_diff(chat_id, visible && stored_surface === "diff", narrow);
+  const surface = surface_of(stored_surface, git, changes, diff.has_turns);
+  const missing = root.root?.worktree?.missing === true;
+  const has_viewer = surface === "diff" ? diff.selected !== null : has_tabs;
 
   useEffect(() => {
     if (!visible) {
@@ -131,6 +142,12 @@ export const FilesDock = ({ visible, chat_id, project_path }: DockViewProps) => 
         </div>
       );
     }
+    if (missing && chat_id !== null) {
+      return <WorktreeMissing chat_id={chat_id} path={root.root.path} />;
+    }
+    if (surface === "diff" && chat_id !== null) {
+      return <TurnDiffView chat_id={chat_id} model={diff} live={visible} narrow={narrow} measure={measure} />;
+    }
     if (surface === "history") {
       return <HistoryView live={visible} measure={measure} />;
     }
@@ -146,17 +163,35 @@ export const FilesDock = ({ visible, chat_id, project_path }: DockViewProps) => 
 
   return (
     <DockPanel
-      title={git.kind === "repo" ? <SurfaceSwitch surface={surface} changes={changes} history={has_history} meta={name} narrow={narrow} /> : <DockTitle label={t("files.title")} meta={name} />}
+      title={
+        (git.kind === "repo" || diff.has_turns) && !missing ? (
+          <SurfaceSwitch surface={surface} git={git.kind === "repo"} diff={diff.has_turns} changes={changes} history={has_history} meta={name} narrow={narrow} />
+        ) : (
+          <DockTitle label={t("files.title")} meta={name} />
+        )
+      }
       close_label={t("files.close")}
-      toolbar={<GitCard />}
+      toolbar={
+        missing ? undefined : (
+          <>
+            <GitCard />
+            <PrComposer />
+          </>
+        )
+      }
       actions={
         <>
-          {git.kind !== "none" && (
+          {surface === "diff" && chat_id !== null && !missing && (
+            <IconButton label={t("git.refresh")} onClick={() => refresh_turn_diff(chat_id)}>
+              <RetryIcon size={16} />
+            </IconButton>
+          )}
+          {surface !== "diff" && git.kind !== "none" && !missing && (
             <IconButton label={fetching ? t("git.fetching") : t("git.refresh")} onClick={refresh}>
               <RetryIcon size={16} className={fetching ? "spin" : undefined} />
             </IconButton>
           )}
-          {has_tabs && surface !== "history" && (
+          {has_viewer && surface !== "history" && (
             <IconButton label={column_label(t, surface, tree_open)} aria-pressed={!tree_open} onClick={toggle_tree}>
               <PanelLeftIcon size={16} />
             </IconButton>

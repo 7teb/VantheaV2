@@ -238,6 +238,8 @@
     --steel-glow: #333333;
     --gradient-hero-halo: radial-gradient(closest-side, rgba(255, 255, 255, 0.045), transparent);
     --gradient-working: linear-gradient(90deg, #4a4a4a 0%, #4a4a4a 32%, #f2f2f2 50%, #4a4a4a 68%, #4a4a4a 100%);
+    --working-dim: rgba(252, 252, 252, 0.46);
+    --working-peak: #ffffff;
     --gradient-skeleton: linear-gradient(
       90deg,
       transparent 0%,

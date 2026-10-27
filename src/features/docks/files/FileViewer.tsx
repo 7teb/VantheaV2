@@ -1,14 +1,10 @@
-import { memo, useMemo, type ReactNode } from "react";
+import { memo, useMemo } from "react";
 import type { GitFileDiff } from "../../../../shared/git-view.ts";
 import { max_view_bytes, type FileView } from "../../../../shared/ipc/files.ts";
-import { IconButton } from "../../../components/Button.tsx";
 import { file_language, highlightable } from "../../../components/code-language.ts";
-import { FolderOpenIcon } from "../../../components/icons.tsx";
-import { CopyButton } from "../../../components/MarkdownCopy.tsx";
-import { SkeletonLines } from "../../../components/Skeleton.tsx";
 import { use_highlight } from "../../../components/use-highlight.ts";
 import { use_t, type Translate } from "../../../i18n/index.ts";
-import { close_file, files_store, reveal_file, select_file, shown_view, type FileTab } from "../../../state/files.ts";
+import { close_file, files_store, select_file, shown_view, type FileTab } from "../../../state/files.ts";
 import { base_name, line_count } from "../../../state/files-tree.ts";
 import type { GitLoad } from "../../../state/git-diff.ts";
 import { use_store } from "../../../state/use-store.ts";
@@ -17,30 +13,13 @@ import { DockEmpty } from "../DockPanel.tsx";
 import { DockTabs } from "../DockTabs.tsx";
 import { conflict_title } from "./git/GitBadge.tsx";
 import { ChangeBars, conflict_text, diff_meta, DiffBody, use_tab_git, ViewerModeSwitch, ViewerNote, type TabGit } from "./git/ViewerDiff.tsx";
+import { PathBar, ViewerSkeleton } from "./ViewerParts.tsx";
 
 type TextView = Extract<FileView, { kind: "text" }>;
 
 type DiffLoad = GitLoad<GitFileDiff> | null;
 
 const highlight_limit = 200_000;
-
-type PathBarProps = { path: string; meta: ReactNode; on_disk?: boolean };
-
-const PathBar = ({ path, meta, on_disk = true }: PathBarProps) => {
-  const t = use_t();
-  return (
-    <div className="files-path">
-      <span className="files-path-text">{path}</span>
-      <span className="files-path-meta">{meta}</span>
-      <CopyButton text={path} label={t("files.copy_path")} />
-      {on_disk && (
-        <IconButton label={t("files.reveal")} size="sm" onClick={() => void reveal_file(path)}>
-          <FolderOpenIcon size={14} />
-        </IconButton>
-      )}
-    </div>
-  );
-};
 
 type CodeViewProps = { path: string; text: string; lines: number; diff: DiffLoad; conflict: boolean };
 
@@ -83,12 +62,6 @@ const TextBody = ({ view, git }: { view: TextView; git: TabGit | null }) => {
     </>
   );
 };
-
-const ViewerSkeleton = () => (
-  <div className="files-viewer-skeleton" aria-busy="true">
-    <SkeletonLines widths={[38, 64, 52, 80, 46, 72, 58, 34]} height={11} gap={9} />
-  </div>
-);
 
 const diff_content = (t: Translate, load: DiffLoad) => {
   if (load?.value) {

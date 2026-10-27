@@ -1,0 +1,55 @@
+.files-split[data-surface="diff"] .files-tree {
+  width: clamp(240px, 40%, 360px);
+}
+
+.turn-diff-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-2) 0 var(--space-3);
+}
+
+.turn-diff-range {
+  flex: none;
+}
+
+.turn-diff-time {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, var(--mask) calc(100% - 12px), transparent);
+}
+
+.turn-diff-scroll {
+  padding-top: 0;
+}
+
+.turn-diff-count {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 26px;
+  padding: 0 var(--space-2) 0 6px;
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  white-space: nowrap;
+}
+
+.turn-diff-list .files-note {
+  padding: 2px 6px 8px;
+  overflow-wrap: anywhere;
+}
+
+.turn-diff-list .dock-empty {
+  padding: var(--space-6) var(--space-2);
+}
+
+.turn-diff-viewer .files-path {
+  height: 40px;
+}

@@ -1,12 +1,14 @@
 import { IconButton } from "../../components/Button.tsx";
-import { PanelLeftIcon } from "../../components/icons.tsx";
+import { PanelLeftIcon, SearchIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { chats_store } from "../../state/chats.ts";
-import { toggle_dock, toggle_sidebar, ui_store } from "../../state/ui.ts";
+import { open_search, toggle_dock, toggle_sidebar, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
+import { ActivityBell } from "../sidebar/ActivityBell.tsx";
 import { chat_label } from "../sidebar/sidebar-model.ts";
 import { dock_toggles, titlebar_docks } from "./docks.ts";
 import { shortcut_hint } from "./shortcuts.ts";
+import { TitleBranch } from "./TitleBranch.tsx";
 import { TitlebarMenu } from "./TitlebarMenu.tsx";
 import { WindowControls } from "./WindowControls.tsx";
 import { wordmark } from "./wordmark.ts";
@@ -24,16 +26,25 @@ export const Titlebar = () => {
     <header className="titlebar" data-sidebar={collapsed ? "closed" : "open"}>
       <div className="titlebar-start">
         <span className="titlebar-brand">{wordmark}</span>
-        <IconButton
-          label={collapsed ? t("shell.sidebar_open") : t("shell.sidebar_close")}
-          hint={shortcut_hint("toggle_sidebar")}
-          aria-expanded={!collapsed}
-          onClick={toggle_sidebar}
-        >
-          <PanelLeftIcon size={18} />
-        </IconButton>
+        <span className="titlebar-actions">
+          <ActivityBell />
+          <IconButton label={t("sidebar.search")} hint={shortcut_hint("search")} onClick={open_search}>
+            <SearchIcon size={16} />
+          </IconButton>
+          <IconButton
+            label={collapsed ? t("shell.sidebar_open") : t("shell.sidebar_close")}
+            hint={shortcut_hint("toggle_sidebar")}
+            aria-expanded={!collapsed}
+            onClick={toggle_sidebar}
+          >
+            <PanelLeftIcon size={18} />
+          </IconButton>
+        </span>
       </div>
-      <div className="titlebar-title">{title}</div>
+      <div className="titlebar-title">
+        <span className="titlebar-title-text">{title}</span>
+        <TitleBranch chat_id={active_chat_id} />
+      </div>
       <div className="titlebar-end">
         <div className="titlebar-docks">
           {titlebar_docks.map((kind) => {

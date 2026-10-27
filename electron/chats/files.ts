@@ -10,6 +10,7 @@ import { as_array, as_boolean, as_iso, as_number, as_record, as_string, error_co
 import { parse_attachments } from "./attachment-coerce.ts";
 import { coerce_questions_view, parse_question_states, stored_question_states } from "./question-coerce.ts";
 import { chat_dirs, metas, refs, sorted_metas, type ChatBody } from "./state.ts";
+import { parse_worktree } from "./worktree-coerce.ts";
 
 const compress = promisify(brotliCompress);
 const decompress = promisify(brotliDecompress);
@@ -38,11 +39,13 @@ export const parse_meta = (value: unknown, fallback_time: string): ChatMeta | nu
     return null;
   }
   const created_at = as_iso(raw.created_at, fallback_time);
+  const worktree = parse_worktree(raw.worktree);
   return {
     id,
     title: as_string(raw.title).slice(0, 200),
     project_path: as_string(raw.project_path),
     workspace: as_string(raw.workspace),
+    ...(worktree ? { worktree } : {}),
     pinned: as_boolean(raw.pinned, false),
     ...(as_boolean(raw.archived, false) ? { archived: true } : {}),
     created_at,

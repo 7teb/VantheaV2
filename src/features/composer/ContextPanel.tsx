@@ -11,6 +11,7 @@ import { close_panel, composer_panel_store } from "../../state/composer-panel.ts
 import { use_store } from "../../state/use-store.ts";
 import { use_chat_busy, use_shown_context } from "./composer-hooks.ts";
 import { cell_count, context_cells, context_rows, share_text, type ContextPart } from "./context-cells.ts";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./ContextPanel.css";
 
 const part_keys: Record<ContextPart, MessageKey> = {
@@ -105,7 +106,7 @@ const ContextCard = ({ panel_key, chat_id, presence }: ContextPanelProps & { pre
               </span>
             )}
             <Button className={running ? "is-working" : undefined} disabled={busy || running} onClick={() => void run_compact(chat_id)}>
-              {running ? t("context.compacting") : t("context.compact_now")}
+              {running ? <WorkingLetters text={t("context.compacting")} /> : t("context.compact_now")}
             </Button>
           </div>
         )}

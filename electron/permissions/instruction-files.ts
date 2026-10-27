@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { instruction_fallback } from "../chats/workspace.ts";
 import { line_diff } from "../project/diff.ts";
+import { instruction_dirs } from "../prompts/project.ts";
 import { error_code } from "../storage/coerce.ts";
 import { path_key } from "../storage/paths.ts";
 import { decode_text } from "../storage/text-codec.ts";
@@ -9,7 +11,7 @@ import { stat_optional } from "./source-read.ts";
 
 const instruction_names = ["AGENTS.md", "CLAUDE.md"] as const;
 
-export type InstructionFile = { name: string; text: string | null; size: number; mtime: number };
+export type InstructionFile = { name: string; dir: string; text: string | null; size: number; mtime: number };
 
 export type InstructionSnapshot = { anchor: string | null; number: number; after_restart: boolean; files: InstructionFile[] };
 
@@ -21,17 +23,38 @@ const process_started = Date.now();
 
 export const is_instruction_file = (relative: string): boolean => instruction_names.some((name) => path_key(name) === path_key(relative));
 
-const read_file = async (root: string, name: string): Promise<InstructionFile> => {
-  const file = path.join(root, name);
+const read_file = async (dir: string, name: string): Promise<InstructionFile | null> => {
+  const file = path.join(dir, name);
   try {
     const [stat, bytes] = await Promise.all([fs.stat(file), fs.readFile(file)]);
-    return { name, text: decode_text(bytes).text, size: stat.size, mtime: stat.mtimeMs };
+    return { name, dir, text: decode_text(bytes).text, size: stat.size, mtime: stat.mtimeMs };
   } catch (error) {
-    if (error_code(error) !== "ENOENT") {
-      console.warn(`[permissions] reading ${file} for the instruction snapshot failed: ${error_code(error) || String(error)}`);
+    if (error_code(error) === "ENOENT") {
+      return null;
     }
-    return { name, text: null, size: -1, mtime: -1 };
+    console.warn(`[permissions] reading ${file} for the instruction snapshot failed: ${error_code(error) || String(error)}`);
+    return { name, dir, text: null, size: -1, mtime: -1 };
   }
+};
+
+const resolve_file = async (dirs: string[], name: string): Promise<InstructionFile> => {
+  for (const dir of dirs) {
+    const file = await read_file(dir, name);
+    if (file) {
+      return file;
+    }
+  }
+  return { name, dir: dirs[0] ?? "", text: null, size: -1, mtime: -1 };
+};
+
+const current_stat = async (dirs: string[], name: string): Promise<{ dir: string; size: number; mtime: number }> => {
+  for (const dir of dirs) {
+    const stat = await stat_optional(path.join(dir, name), "agent edits");
+    if (stat) {
+      return { dir, size: stat.size, mtime: stat.mtimeMs };
+    }
+  }
+  return { dir: dirs[0] ?? "", size: -1, mtime: -1 };
 };
 
 export const instruction_snapshot = async (chat_id: string, root: string, humans: HumanRequest[]): Promise<InstructionSnapshot> => {
@@ -40,7 +63,8 @@ export const instruction_snapshot = async (chat_id: string, root: string, humans
   if (existing && existing.anchor === (anchor?.id ?? null)) {
     return existing;
   }
-  const files = root ? await Promise.all(instruction_names.map((name) => read_file(root, name))) : [];
+  const dirs = root ? instruction_dirs(root, await instruction_fallback(chat_id)) : [];
+  const files = root ? await Promise.all(instruction_names.map((name) => resolve_file(dirs, name))) : [];
   const snapshot = {
     anchor: anchor?.id ?? null,
     number: humans.length,
@@ -69,16 +93,15 @@ export const agent_edits = async (chat_id: string, root: string): Promise<AgentE
   if (!snapshot || !root) {
     return { text: "", files: [] };
   }
+  const dirs = instruction_dirs(root, await instruction_fallback(chat_id));
   const blocks: string[] = [];
   const changed: string[] = [];
   for (const before of snapshot.files) {
-    const stat = await stat_optional(path.join(root, before.name), "agent edits");
-    const size = stat?.size ?? -1;
-    const mtime = stat?.mtimeMs ?? -1;
-    if (size === before.size && mtime === before.mtime) {
+    const current = await current_stat(dirs, before.name);
+    if (current.dir === before.dir && current.size === before.size && current.mtime === before.mtime) {
       continue;
     }
-    const after = await read_file(root, before.name);
+    const after = await resolve_file(dirs, before.name);
     if (after.text === before.text) {
       continue;
     }

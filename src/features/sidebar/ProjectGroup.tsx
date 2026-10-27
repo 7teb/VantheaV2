@@ -9,6 +9,7 @@ import { remove_project, rename_project, set_project_pinned } from "../../state/
 import { start_new_chat, toggle_project_collapsed } from "../../state/ui.ts";
 import { InlineRename } from "./InlineRename.tsx";
 import { project_label, type ProjectGroup as Group } from "./sidebar-model.ts";
+import { WorktreeWarning } from "./WorktreeWarning.tsx";
 import "./ProjectGroup.css";
 
 type ProjectGroupProps = { group: Group; chat_total: number; collapsed: boolean; selected: boolean; children: ReactNode };
@@ -103,7 +104,9 @@ export const ProjectGroup = ({ group, chat_total, collapsed, selected, children 
         danger
         on_confirm={() => remove_project(project.path).catch(report("remove", project.path))}
         on_close={() => set_confirming(false)}
-      />
+      >
+        <WorktreeWarning target={{ kind: "project", project_path: project.path }} />
+      </ConfirmDialog>
     </section>
   );
 };

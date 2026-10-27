@@ -1,11 +1,12 @@
 import type { ComponentType } from "react";
-import { BookOpenIcon, GlobeCheckIcon, ImageIcon, PlugIcon, SlidersIcon, SmileIcon, type IconComponent } from "../../components/icons.tsx";
+import { BookOpenIcon, GlobeCheckIcon, ImageIcon, PlugIcon, ShieldCheckIcon, SlidersIcon, SmileIcon, type IconComponent } from "../../components/icons.tsx";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { GeneralPane } from "./GeneralPane.tsx";
 import { pane_search } from "./pane-keywords.ts";
 import { ImagePane } from "./panes/ImagePane.tsx";
 import { McpPane } from "./panes/McpPane.tsx";
 import { PersonalizationPane } from "./panes/PersonalizationPane.tsx";
+import { PrivacyPane } from "./panes/PrivacyPane.tsx";
 import { SkillsPane } from "./panes/SkillsPane.tsx";
 import { WebSearchPane } from "./panes/WebSearchPane.tsx";
 import type { SearchableSection } from "./settings-search.ts";
@@ -29,6 +30,7 @@ export const settings_sections: SettingsSection[] = [
     Pane: GeneralPane,
   },
   { id: "personalization", group: "app", icon: SmileIcon, Pane: PersonalizationPane, ...pane_search.personalization },
+  { id: "privacy", group: "app", icon: ShieldCheckIcon, Pane: PrivacyPane, ...pane_search.privacy },
   { id: "web_search", group: "integrations", icon: GlobeCheckIcon, Pane: WebSearchPane, ...pane_search.web_search },
   { id: "image_gen", group: "integrations", icon: ImageIcon, Pane: ImagePane, ...pane_search.image_gen },
   { id: "mcp", group: "integrations", icon: PlugIcon, Pane: McpPane, ...pane_search.mcp },

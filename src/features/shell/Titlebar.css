@@ -29,6 +29,12 @@
   width: auto;
 }
 
+.titlebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .titlebar-brand {
   color: var(--text-primary);
   font-size: 15px;
@@ -37,14 +43,22 @@
 }
 
 .titlebar-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   min-width: 0;
   max-width: 560px;
   overflow: hidden;
   color: var(--text-secondary);
   font-size: var(--font-size-ui);
-  text-align: center;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.titlebar-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .titlebar-end {

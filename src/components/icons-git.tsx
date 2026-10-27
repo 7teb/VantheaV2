@@ -120,3 +120,31 @@ export const LockOpenIcon = (props: IconProps) => (
     <path d="M7 11V7a5 5 0 0 1 9.9-1" />
   </Icon>
 );
+
+export const WorktreeIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M18 19a5 5 0 0 1-5-5v8" />
+    <path d="M9 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v5" />
+    <circle cx="13" cy="12" r="2" />
+    <circle cx="20" cy="19" r="2" />
+  </Icon>
+);
+
+export const PushIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m18 9-6-6-6 6" />
+    <path d="M12 3v14" />
+    <path d="M5 21h14" />
+  </Icon>
+);
+
+export const GitCompareIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="5" cy="6" r="3" />
+    <path d="M12 6h5a2 2 0 0 1 2 2v7" />
+    <path d="m15 9-3-3 3-3" />
+    <circle cx="19" cy="18" r="3" />
+    <path d="M12 18H7a2 2 0 0 1-2-2V9" />
+    <path d="m9 15 3 3-3 3" />
+  </Icon>
+);

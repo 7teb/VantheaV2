@@ -29,7 +29,7 @@ const detect_args = [
   "--show-superproject-working-tree",
 ];
 
-const read_optional = async (file: string): Promise<string | null> => {
+export const read_optional = async (file: string): Promise<string | null> => {
   try {
     return await fs.readFile(file, "utf8");
   } catch (error) {
@@ -135,13 +135,36 @@ export const own_worktree = (paths: RepoPaths): string | null => {
   return match ? (match[0] ?? null) : null;
 };
 
+export const main_tree_of = (common_dir: string): string => (path.basename(common_dir).toLowerCase() === ".git" ? path.dirname(common_dir) : common_dir);
+
+const ancestors = (dir: string): string[] => {
+  const found: string[] = [];
+  for (let current = path.resolve(dir); ; current = path.dirname(current)) {
+    found.push(current);
+    if (path.dirname(current) === current) {
+      return found;
+    }
+  }
+};
+
+export const main_twin = async (dir: string): Promise<string | null> => {
+  const kinds = await Promise.all(ancestors(dir).map((entry) => entry_kind(path.join(entry, ".git"))));
+  if (!kinds.includes("file")) {
+    return null;
+  }
+  const location = await git_location(dir);
+  if (!location || location.dot_git !== "file" || path_key(location.git_dir) === path_key(location.common_dir)) {
+    return null;
+  }
+  return path.join(main_tree_of(location.common_dir), path.relative(location.work_tree, path.resolve(dir)));
+};
+
 export const repo_info = (paths: RepoPaths): GitRepoInfo => {
   const worktree = own_worktree(paths);
-  const main_tree = path.posix.basename(paths.common_dir).toLowerCase() === ".git" ? path.posix.dirname(paths.common_dir) : paths.common_dir;
   return {
     root: paths.top,
     prefix: paths.prefix.replace(/\/+$/, ""),
-    worktree_of: worktree === null ? null : main_tree,
+    worktree_of: worktree === null ? null : main_tree_of(paths.common_dir),
     superproject: paths.superproject,
     shallow: paths.shallow,
   };

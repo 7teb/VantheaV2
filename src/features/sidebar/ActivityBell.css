@@ -1,0 +1,14 @@
+.activity-bell {
+  position: relative;
+}
+
+.activity-bell-dot {
+  position: absolute;
+  top: 6px;
+  left: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  outline: 2px solid var(--surface-shell);
+}

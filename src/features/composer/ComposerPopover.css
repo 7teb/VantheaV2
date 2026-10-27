@@ -123,6 +123,10 @@
     color: var(--text-disabled);
   }
 
+  .composer-popover-row:disabled .toggle {
+    opacity: 0.45;
+  }
+
   .composer-popover-name {
     flex: none;
     max-width: 50%;

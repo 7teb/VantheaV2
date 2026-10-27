@@ -15,4 +15,12 @@ export const projects: Record<keyof typeof en, string> = {
   "projects.rename_label": "Projektname",
   "projects.delete_title": "Dieses Projekt löschen?",
   "projects.new_chat": "Neuer Chat in diesem Projekt",
+  "projects.create_title": "Projekt erstellen",
+  "projects.name_placeholder": "Projektname",
+  "projects.folder_label": "Ordner",
+  "projects.folder_empty": "Ohne Ordner legt VantheaX Dokumente\\VantheaX\\{name} an und richtet darin Git ein, wenn Git installiert ist.",
+  "projects.folder_add": "Ordner hinzufügen",
+  "projects.folder_remove": "Ordner entfernen",
+  "projects.create_submit": "Projekt erstellen",
+  "projects.create_failed": "Das Projekt konnte nicht angelegt werden: {error}",
 };

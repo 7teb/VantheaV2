@@ -5,6 +5,7 @@ import { Tooltip } from "../../../../components/Tooltip.tsx";
 import { use_clock } from "../../../../components/use-clock.ts";
 import { use_t, type Translate } from "../../../../i18n/index.ts";
 import { relative_time } from "../../../../i18n/relative-time.ts";
+import { WorkingLetters } from "../../../../components/WorkingLetters.tsx";
 
 type Tracking = { upstream: string; ahead: number; behind: number };
 
@@ -100,7 +101,7 @@ export const GitLocalRow = ({ view }: { view: GitRepoView }) => {
     });
   }
   if (view.refreshing) {
-    parts.push({ key: "status", node: <span className="git-part is-working">{t("git.reading_status")}</span> });
+    parts.push({ key: "status", node: <span className="git-part is-working"><WorkingLetters text={t("git.reading_status")} /></span> });
   } else if (tracking) {
     const fetch = fetch_parts(t, view.fetch, now);
     const paused = pause_tip(t, view.fetch);

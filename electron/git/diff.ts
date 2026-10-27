@@ -9,7 +9,7 @@ export type GitReadAccess = { tool: GitTool; root: string; config: GitConfigPair
 
 export const diff_flags = ["--no-ext-diff", "--no-textconv", "--no-color", "--submodule=short"];
 
-const no_index_refresh = ["-c", "diff.autoRefreshIndex=false"];
+export const no_index_refresh = ["-c", "diff.autoRefreshIndex=false"];
 
 const content_statuses = new Set<GitEntry["status"]>(["modified", "type_changed"]);
 

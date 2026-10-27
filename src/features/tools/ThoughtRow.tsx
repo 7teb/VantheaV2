@@ -6,6 +6,7 @@ import { ChevronRightIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { reasoning_head } from "../chat/reasoning-head.ts";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./ThoughtRow.css";
 
 type ThoughtRowProps = { step: ReasoningStep; live: boolean };
@@ -30,7 +31,7 @@ export const ThoughtRow = memo(({ step, live }: ThoughtRowProps) => {
         <span className="tool-row-icon">
           <i className="thought-mark" />
         </span>
-        <span className={class_names("tool-row-label", working && "is-working")}>{label}</span>
+        <span className={class_names("tool-row-label", working && "is-working")}><WorkingLetters text={label} active={working} /></span>
         {meta && <span className="tool-row-duration">{meta}</span>}
         {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}
       </button>

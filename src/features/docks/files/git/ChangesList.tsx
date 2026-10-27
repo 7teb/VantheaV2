@@ -9,6 +9,7 @@ import { base_name, parent_dir } from "../../../../state/files-tree.ts";
 import { counts_of, git_diff_store, load_counts } from "../../../../state/git-diff.ts";
 import { changed_entries, git_store, shown_root, type ViewerMode } from "../../../../state/git.ts";
 import { use_store } from "../../../../state/use-store.ts";
+import { CommitBox } from "./CommitBox.tsx";
 import { GitBadge } from "./GitBadge.tsx";
 import { use_shown_git } from "./use-shown-git.ts";
 import "./ChangesList.css";
@@ -125,7 +126,7 @@ const ChangeRow = ({ entry, active, counts, on_open }: ChangeRowProps) => {
   );
 };
 
-const ChangesSkeleton = () => (
+export const ChangesSkeleton = () => (
   <div className="git-list" aria-busy="true">
     {skeleton_widths.map((width, index) => (
       <div key={index} className="git-change-skeleton">
@@ -172,6 +173,7 @@ export const ChangesList = ({ live, on_open }: ChangesListProps) => {
           }
         />
       </div>
+      <CommitBox view={view} />
     </div>
   );
 };

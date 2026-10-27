@@ -113,23 +113,20 @@
     display: none !important;
   }
 
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar) transparent;
-  }
-
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 9px;
+    height: 9px;
   }
 
   ::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
     border-radius: var(--radius-full);
-    background: var(--scrollbar);
+    background-color: var(--scrollbar);
+    background-clip: padding-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-hover);
+    background-color: var(--scrollbar-hover);
   }
 
   ::-webkit-scrollbar-track,

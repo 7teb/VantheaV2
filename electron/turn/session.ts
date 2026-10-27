@@ -66,4 +66,5 @@ export type TurnSession = {
   compaction: CompactionHooks;
   stored_context?: StoredContext;
   reasoning_status?: ReasoningStatusCall;
+  before_tools?: () => Promise<void>;
 };

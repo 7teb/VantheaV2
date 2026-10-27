@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { is_secret_path, resolve_inside } from "../project/scope.ts";
+import { is_secret_path } from "../../shared/secret-path.ts";
+import { resolve_inside } from "../project/scope.ts";
 import { error_text } from "../storage/coerce.ts";
 
 export type ServedFolder = { folder: string; project_root: string };

@@ -24,6 +24,7 @@ import { describe_attachment_image } from "../side/vision.ts";
 import { error_text } from "../storage/coerce.ts";
 import { mcp_tools } from "../tools/mcp/tools.ts";
 import { tools_for } from "../tools/registry.ts";
+import { turn_diffs } from "../turn-diff/index.ts";
 import { drop_untaken_steers, unregister_active, type ActiveTurn } from "./active.ts";
 import { carried_todos_note } from "./carried-todos.ts";
 import { build_api_messages } from "./history.ts";
@@ -138,6 +139,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       compaction: chat_compaction(plan),
       stored_context: stored_context(history, plan.model.id),
       reasoning_status: reasoning_status_call,
+      before_tools: () => turn_diffs.ready(plan.chat_id, plan.message_id, signal),
     };
     await (plan.compact_only ? run_compaction_turn(session, api_messages) : run_turn_loop(session, api_messages));
   } catch (error) {
@@ -148,6 +150,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     console.error(`[turn] turn ${plan.message_id} in chat ${plan.chat_id} failed to run:`, error);
     turn.emit({ type: "end", status: "failed", error: { kind: "internal", message: error_text(error) } });
   } finally {
+    if (!plan.compact_only) turn_diffs.end(plan.chat_id, plan.message_id);
     drop_untaken_steers(plan.chat_id, turn);
     set_streaming(plan.chat_id, false);
     unregister_active(plan.chat_id, plan.message_id);

@@ -4,8 +4,6 @@ export type SkillParse = { ok: true; skill: SkillFile } | { ok: false; error: st
 
 export const max_skill_bytes = 100 * 1024;
 
-const max_description_chars = 1000;
-
 const max_name_chars = 80;
 
 const key_line = /^([^\s#][^:]*):(?:\s+(.*))?$/;
@@ -139,12 +137,6 @@ export const parse_skill_file = (raw: string): SkillParse => {
   }
   if (!description) {
     return { ok: false, error: "SKILL.md frontmatter has no description, and the description is what tells the agent when to use the skill" };
-  }
-  if (description.length > max_description_chars) {
-    return {
-      ok: false,
-      error: `The description is ${description.length} characters, the limit is ${max_description_chars} because it is sent with every request`,
-    };
   }
   if (!skill_slug(name)) {
     return { ok: false, error: `The name "${name}" contains no usable characters for a folder name` };

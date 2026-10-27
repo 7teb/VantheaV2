@@ -60,12 +60,12 @@ export const undo_turn = async (chat_id: string, message_id: string): Promise<Ac
   }
 };
 
-export const init_turn = async (chat_id: string, command: CommandOrigin): Promise<ActionResult> => {
+export const init_turn = async (chat_id: string, command: CommandOrigin, argument: string | null): Promise<ActionResult> => {
   try {
-    await api.invoke("turn:init", chat_id, command);
+    await api.invoke("turn:init", chat_id, command, argument);
     return ok;
   } catch (error) {
-    console.error(`[chat] turn:init failed for chat ${chat_id} (${command})`, error);
+    console.error(`[chat] turn:init failed for chat ${chat_id} (${argument === null ? command : `${command} ${argument}`})`, error);
     return failure(error);
   }
 };

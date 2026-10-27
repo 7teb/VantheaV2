@@ -82,12 +82,27 @@
   }
 
   .is-working {
-    color: transparent;
-    background: var(--gradient-working);
-    background-size: 300% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    animation: label-sweep 1.9s var(--ease-linear) infinite;
+    color: var(--working-dim);
+  }
+
+  .working-letter {
+    animation: letter-wave 2.4s var(--ease-in-out) infinite;
+    animation-delay: calc(var(--letter) * 55ms);
+  }
+
+  @keyframes letter-wave {
+    0% {
+      color: var(--working-dim);
+    }
+
+    12% {
+      color: var(--working-peak);
+    }
+
+    28%,
+    100% {
+      color: var(--working-dim);
+    }
   }
 
   .spin {

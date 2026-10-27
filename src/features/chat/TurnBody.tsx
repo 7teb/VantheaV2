@@ -18,6 +18,7 @@ import { FoldItem } from "./TurnFold.tsx";
 import { foldable_block, type MemberFacts } from "./turn-shape.ts";
 import { RetryBanner, TurnOutcome } from "./TurnStatus.tsx";
 import { VisualBlock } from "./VisualBlock.tsx";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 
 type BlockViewProps = {
   block: Block;
@@ -123,7 +124,7 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
       })}
       {shows_thinking(streaming, message.retry !== null, blocks) && !grouped_thinking && (
         <div className="assistant-pending">
-          <span className="is-working">{t("chat.thinking")}</span>
+          <span className="is-working"><WorkingLetters text={t("chat.thinking")} /></span>
         </div>
       )}
       {final ? outcome : <FoldItem folded={folded}>{outcome}</FoldItem>}

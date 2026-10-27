@@ -4,7 +4,8 @@ import type { ToolEndStatus } from "../../shared/events.ts";
 import { last_human_id, note_human_answer } from "../permissions/context.ts";
 import { human_decision } from "../permissions/decisions.ts";
 import { error_text } from "../storage/coerce.ts";
-import { output_budget, sent_estimate } from "../context/calibration.ts";
+import { calibrate, calibration_scale, measure_request, output_budget, sent_estimate } from "../context/calibration.ts";
+import { next_compaction } from "../context/compact.ts";
 import { cap_text, result_cap_tokens } from "../context/estimate.ts";
 import { fit_images, image_slots, shrink_images } from "../context/images.ts";
 import type { ToolView } from "../../shared/tool-view.ts";
@@ -13,7 +14,7 @@ import { image_limit, image_rules } from "../model/image-limits.ts";
 import { reasoning_bound_to_prefix } from "../model/prompt-cache.ts";
 import { round_body } from "../model/stream.ts";
 import type { ApiAssistantMessage, ApiMessage, ApiToolCall, RoundRequest, RoundResult, RoundToolCall, RoundUsage } from "../model/types.ts";
-import type { Tool, ToolContext, ToolImage, ToolProfile } from "../tools/types.ts";
+import type { ContextReading, Tool, ToolContext, ToolImage, ToolProfile } from "../tools/types.ts";
 import { carrier, image_url, type CarrierImage } from "./carriers.ts";
 import { create_status_driver } from "./reasoning-status.ts";
 import type { Emitter, TurnSession } from "./session.ts";
@@ -85,7 +86,7 @@ type KeptImages = { stored: StepImage[]; carried: CarrierImage[]; note: string }
 
 const images_left_out_note = "Older images were left out of this request to stay inside the model provider's documented limits.";
 
-const build_context = (session: TurnSession, call_id: string, profile: ToolProfile, image_count: number): ToolContext => ({
+const build_context = (session: TurnSession, call_id: string, profile: ToolProfile, image_count: number, context: () => ContextReading): ToolContext => ({
   chat_id: session.chat_id,
   turn_id: session.message_id,
   call_id,
@@ -124,6 +125,7 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
   },
   message_main: session.message_main ?? null,
   send_peer: session.send_peer ?? null,
+  context,
 });
 
 const execute_tool = async (
@@ -134,6 +136,7 @@ const execute_tool = async (
   args: Record<string, unknown> | null,
   profile: ToolProfile,
   image_count: number,
+  context: () => ContextReading,
 ): Promise<ToolOutcome> => {
   if (!tool) {
     const message = session.without_tools?.includes(name) ? removed_tool_text(name) : `Unknown tool: ${name}`;
@@ -144,7 +147,7 @@ const execute_tool = async (
     return { aborted: false, status: "failed", result_text: message, view: null, error: message, images: [] };
   }
   try {
-    const result = await tool.execute(build_context(session, call_id, profile, image_count), args);
+    const result = await tool.execute(build_context(session, call_id, profile, image_count, context), args);
     return {
       aborted: false,
       status: result.status,
@@ -228,7 +231,7 @@ const stream_with_status = async (session: TurnSession, round: number, request: 
   }
 };
 
-export const run_round = async (session: TurnSession, round: number, api_messages: ApiMessage[], calibration: ContextCalibration | null): Promise<RoundOutcome> => {
+export const run_round = async (session: TurnSession, round: number, api_messages: ApiMessage[], calibration: ContextCalibration | null, floor: number): Promise<RoundOutcome> => {
   const profile = round_profile(session);
   const tools = session.resolve_tools(profile);
   const request: RoundRequest = { model: session.model, effort: session.effort, messages: api_messages, tools: tools.map((tool) => tool.spec) };
@@ -264,6 +267,21 @@ export const run_round = async (session: TurnSession, round: number, api_message
   for (const call of calls) {
     session.emit({ type: "tool_call", round, index: call.index, call_id: call.engine_id, name: call.name, args: call.args ?? {} });
   }
+  try {
+    await session.before_tools?.();
+  } catch (error) {
+    if (session.signal.aborted) return aborted_outcome(result, estimate);
+    throw error;
+  }
+  const context = (): ContextReading => {
+    const next = calibrate(result.usage, estimate) ?? calibration;
+    const rescale = calibration_scale(next) / calibration_scale(calibration);
+    return {
+      used: measure_request(api_messages, request.tools, session.model, next),
+      limit: session.model.context_length,
+      compact_at: next_compaction(Math.ceil(floor * rescale), session.model),
+    };
+  };
   let plan_presented = false;
   const sent_images = image_slots(api_messages).length;
   const carried: CarrierImage[] = [];
@@ -273,7 +291,7 @@ export const run_round = async (session: TurnSession, round: number, api_message
     }
     session.emit({ type: "tool_start", call_id: call.engine_id });
     const tool = tools.find((entry) => entry.spec.name === call.name) ?? null;
-    const outcome = await execute_tool(session, tool, call.engine_id, call.name, call.args, profile, sent_images + carried.length + 1);
+    const outcome = await execute_tool(session, tool, call.engine_id, call.name, call.args, profile, sent_images + carried.length + 1, context);
     if (outcome.aborted) {
       return aborted_outcome(result, estimate);
     }

@@ -84,6 +84,10 @@ export const set_chat_archived = async (chat_id: string, archived: boolean) => {
   }
 };
 
+export const archive_all_chats = () => api.invoke("chats:archive_all");
+
+export const delete_all_chats = () => api.invoke("chats:delete_all");
+
 export const delete_chat = async (chat_id: string) => {
   await api.invoke("chats:delete", chat_id);
   receive({ kind: "removed", chat_id });

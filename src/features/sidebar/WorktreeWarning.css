@@ -1,0 +1,17 @@
+.worktree-warning {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  color: var(--text-secondary);
+  font-size: var(--font-size-ui);
+  line-height: var(--leading-ui);
+  overflow-wrap: anywhere;
+}
+
+.worktree-warning-line[data-tone="warning"] {
+  color: var(--text-warning);
+}
+
+.worktree-warning .skeleton-lines {
+  padding: 3px 0;
+}

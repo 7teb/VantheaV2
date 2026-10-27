@@ -37,6 +37,7 @@ export type ToolIconName =
   | "page_check"
   | "mcp"
   | "clock"
+  | "gauge"
   | "models"
   | "question"
   | "visual"
@@ -257,6 +258,7 @@ const named: Record<string, ToolMeta> = {
   read_skill: entry("skill", "skills", with_x("tool_label.read_skill", skill_name), with_x("tool_label.read_skill_done", skill_name)),
   install_skill: entry("skill", "skill_installs", with_x("tool_label.install_skill", skill_name), with_x("tool_label.installed_skill", skill_name)),
   datetime: entry("clock", "other", fixed("tool_label.datetime"), fixed("tool_label.checked_datetime")),
+  context_status: entry("gauge", "other", fixed("tool_label.context_status"), fixed("tool_label.checked_context")),
   list_models: entry("models", "other", fixed("tool_label.list_models"), fixed("tool_label.listed_models")),
   add_mcp_server: entry("mcp", "mcp_servers", with_x("tool_label.adding_mcp", (step) => text_arg(step, "name")), with_x("tool_label.added_mcp", (step) => text_arg(step, "name"))),
   check_page: entry("page_check", "other", with_x("tool_label.check_page", (step) => base_name(text_arg(step, "path"))), with_x("tool_label.check_page_done", (step) => base_name(text_arg(step, "path")))),

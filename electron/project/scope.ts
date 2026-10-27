@@ -1,26 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { error_code, error_text } from "../storage/coerce.ts";
+import { is_secret_path, windows_name } from "../../shared/secret-path.ts";
+import { main_twin } from "../git/repo.ts";
+import { error_code, error_text, missing_path } from "../storage/coerce.ts";
+import { path_key } from "../storage/paths.ts";
 
 export type ScopedPath = { root: string; target: string; relative: string };
 
 export type WriteTarget = ScopedPath & { exists: boolean };
-
-const secret_names = [
-  /^\.env($|\.)/i,
-  /^\.npmrc$/i,
-  /^\.pypirc$/i,
-  /^id_rsa$/i,
-  /^id_ed25519$/i,
-  /\.pem$/i,
-  /\.key$/i,
-  /\.p12$/i,
-  /\.pfx$/i,
-  /^secrets\./i,
-  /^credentials\./i,
-];
-
-const secret_exceptions = new Set([".env.example", ".env.sample"]);
 
 const reserved_device = /^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i;
 
@@ -28,25 +15,6 @@ export const outside_message =
   "Path is outside the project folder. list_files, read_file and grep_files only reach the project; read a file outside it with run_command, for example Get-Content -Raw '<absolute path>'.";
 
 export const to_posix = (value: string) => value.replaceAll("\\", "/");
-
-const windows_name = (part: string) => part.replace(/[. ]+$/, "");
-
-export const is_secret_path = (relative: string): boolean => {
-  const normalized = to_posix(relative).toLowerCase();
-  if (normalized === ".git/config" || normalized.endsWith("/.git/config")) {
-    return true;
-  }
-  if (normalized === ".git/hooks" || normalized.startsWith(".git/hooks/") || normalized.includes("/.git/hooks/") || normalized.endsWith("/.git/hooks")) {
-    return true;
-  }
-  return normalized.split("/").some((raw) => {
-    const part = windows_name(raw);
-    if (part === ".ssh") {
-      return true;
-    }
-    return !secret_exceptions.has(part) && secret_names.some((pattern) => pattern.test(part));
-  });
-};
 
 export const is_inside = (root: string, target: string): boolean => {
   const relative = path.relative(root, target);
@@ -69,6 +37,34 @@ export const project_real_root = async (project_root: string): Promise<string> =
   return real;
 };
 
+export const linked_modules = async (root: string): Promise<string | null> => {
+  const link = path.join(root, "node_modules");
+  try {
+    if (!(await fs.lstat(link)).isSymbolicLink()) {
+      return null;
+    }
+    const twin = await main_twin(root);
+    if (!twin) {
+      return null;
+    }
+    const [linked, expected, main_root] = await Promise.all([fs.realpath(link), fs.realpath(path.join(twin, "node_modules")), fs.realpath(twin)]);
+    return path_key(linked) === path_key(expected) && is_inside(main_root, expected) ? linked : null;
+  } catch (error) {
+    if (missing_path(error)) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+const through_modules = async (root: string, requested: string, target: string): Promise<boolean> => {
+  if (!is_inside(path.join(root, "node_modules"), requested)) {
+    return false;
+  }
+  const linked = await linked_modules(root);
+  return linked !== null && is_inside(linked, target);
+};
+
 export const resolve_inside = async (project_root: string, relative = "."): Promise<ScopedPath> => {
   const root = await project_real_root(project_root);
   const requested = path.resolve(root, relative || ".");
@@ -84,10 +80,13 @@ export const resolve_inside = async (project_root: string, relative = "."): Prom
     }
     throw error;
   }
-  if (!is_inside(root, target)) {
-    throw new Error(outside_message);
+  if (is_inside(root, target)) {
+    return { root, target, relative: to_posix(path.relative(root, target)) || "." };
   }
-  return { root, target, relative: to_posix(path.relative(root, target)) || "." };
+  if (await through_modules(root, requested, target)) {
+    return { root, target, relative: to_posix(path.relative(root, requested)) };
+  }
+  throw new Error(outside_message);
 };
 
 const check_write_path = (relative: string) => {

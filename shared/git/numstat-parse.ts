@@ -1,6 +1,6 @@
 export type NumstatRecord = { path: string; orig_path: string | null; added: number | null; removed: number | null };
 
-export type RawRecord = { status: string; path: string; orig_path: string | null };
+export type RawRecord = { status: string; path: string; orig_path: string | null; old_mode: string; new_mode: string; old_oid: string; new_oid: string };
 
 type DiffRecords = { numstat: NumstatRecord[]; raw: RawRecord[] };
 
@@ -16,13 +16,14 @@ const walk_records = (text: string): DiffRecords => {
   while (index < tokens.length) {
     const token = take();
     if (token.startsWith(":")) {
-      const status = token.split(" ").at(-1) ?? "";
+      const [old_mode = "", new_mode = "", old_oid = "", new_oid = "", status = ""] = token.slice(1).split(" ");
       const letter = status.charAt(0);
+      const head = { status: letter, old_mode, new_mode, old_oid, new_oid };
       if (letter === "R" || letter === "C") {
         const orig_path = take();
-        records.raw.push({ status: letter, path: take(), orig_path });
+        records.raw.push({ ...head, path: take(), orig_path });
       } else {
-        records.raw.push({ status: letter, path: take(), orig_path: null });
+        records.raw.push({ ...head, path: take(), orig_path: null });
       }
       continue;
     }

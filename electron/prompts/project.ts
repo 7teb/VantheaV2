@@ -11,7 +11,9 @@ const ignored_dirs = new Set([".git", "node_modules", "dist", "build", ".vs", ".
 
 const max_listing_entries = 200;
 
-const load_doc = async (root: string, name: string): Promise<ProjectDoc | null> => {
+export const instruction_dirs = (root: string, fallback: string | null): string[] => (fallback ? [root, fallback] : [root]);
+
+const read_doc = async (root: string, name: string): Promise<ProjectDoc | null | "missing"> => {
   try {
     const raw = await fs.readFile(path.join(root, name), "utf8");
     const text = (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).trim();
@@ -21,18 +23,30 @@ const load_doc = async (root: string, name: string): Promise<ProjectDoc | null> 
     const content = text.length > max_doc_chars ? `${text.slice(0, max_doc_chars)}\n...[${name} truncated to fit context]` : text;
     return { name, content };
   } catch (error) {
-    if ((error as { code?: string }).code !== "ENOENT") {
-      console.warn(`[prompts] reading ${name} in ${root} failed: ${error instanceof Error ? error.message : String(error)}`);
+    if ((error as { code?: string }).code === "ENOENT") {
+      return "missing";
     }
+    console.warn(`[prompts] reading ${name} in ${root} failed: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 };
 
-export const load_project_docs = async (root: string): Promise<ProjectDoc[]> => {
+const load_doc = async (dirs: string[], name: string): Promise<ProjectDoc | null> => {
+  for (const dir of dirs) {
+    const doc = await read_doc(dir, name);
+    if (doc !== "missing") {
+      return doc;
+    }
+  }
+  return null;
+};
+
+export const load_project_docs = async (root: string, fallback: string | null = null): Promise<ProjectDoc[]> => {
   if (!root.trim()) {
     return [];
   }
-  const docs = await Promise.all(doc_candidates.map((name) => load_doc(root, name)));
+  const dirs = instruction_dirs(root, fallback);
+  const docs = await Promise.all(doc_candidates.map((name) => load_doc(dirs, name)));
   return docs.filter((doc): doc is ProjectDoc => doc !== null);
 };
 

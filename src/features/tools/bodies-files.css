@@ -33,7 +33,8 @@
     background: none;
     box-shadow: none;
     line-height: 19.5px;
-    scrollbar-color: var(--scrollbar-command) transparent;
+    --scrollbar: var(--scrollbar-command);
+    --scrollbar-hover: var(--scrollbar-command);
   }
 
   .edit-card .diff-view:focus-visible {

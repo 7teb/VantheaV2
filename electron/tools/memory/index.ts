@@ -4,6 +4,7 @@ import { canonicalize_memory } from "../../memory/canonical.ts";
 import { new_memory_id } from "../../memory/records.ts";
 import { confirm_memory, confirmed_memories, find_confirmed, known_memories, memory_loaded, remove_memory } from "../../memory/store.ts";
 import { memory_handle, memory_text_chars, normalize_memory_key, redact_secrets } from "../../memory/text.ts";
+import { chat_home_of } from "../../chats/workspace.ts";
 import { path_key } from "../../storage/paths.ts";
 import { require_string } from "../browser/common.ts";
 import { tool_gate } from "../../permissions/tool-gate.ts";
@@ -64,7 +65,7 @@ const remember_tool = define_tool<{ text: string }>({
       return unavailable("remember");
     }
     const canonical = await canonicalize_memory(args.text, known_memories(), ctx.side_model, ctx.signal);
-    const project = path_key(ctx.project_root);
+    const project = path_key(await chat_home_of(ctx.chat_id));
     const kind = canonical.kind === "project_rule" && !project ? "global_preference" : canonical.kind;
     const text = redact_secrets(canonical.text, memory_text_chars);
     const stop = await refused(ctx, "remember", text);

@@ -1,0 +1,16 @@
+.git-actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px var(--space-2);
+}
+
+.git-actions .button {
+  min-width: 0;
+}
+
+.git-actions .button[aria-expanded="true"] {
+  background: var(--surface-button-hover);
+}

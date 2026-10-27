@@ -1,0 +1,113 @@
+.pr-composer-slot {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  max-height: 50%;
+  min-height: 0;
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.pr-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  padding: var(--space-2);
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--surface-card);
+  box-shadow: inset 0 0 0 1px var(--ring-card);
+  font-size: var(--font-size-ui);
+  animation: fade-in var(--duration-base) var(--ease-out) backwards;
+}
+
+.pr-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  height: 24px;
+  padding-left: 2px;
+}
+
+.pr-head .section-label {
+  flex: none;
+}
+
+.pr-into {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, var(--mask) calc(100% - 16px), transparent);
+}
+
+.pr-close.icon-button-sm {
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  margin-right: -2px;
+}
+
+.pr-title.text-field {
+  flex: none;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-lg);
+}
+
+.pr-body.text-area {
+  flex: 0 1 auto;
+  min-height: 53px;
+  padding: 7px 10px;
+  border-radius: var(--radius-lg);
+  line-height: 19.5px;
+}
+
+.pr-title .text-field-input:disabled,
+.pr-body.text-area:disabled {
+  color: var(--text-secondary);
+}
+
+.pr-field-skeleton {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-lg);
+}
+
+.pr-body-skeleton {
+  display: grid;
+  flex: none;
+  align-content: start;
+  gap: 9px;
+  height: 72px;
+  padding: 12px 10px;
+  border-radius: var(--radius-lg);
+}
+
+.pr-composer .git-row {
+  padding-inline: 2px;
+}
+
+.pr-foot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pr-push-note {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+  overflow-wrap: anywhere;
+}

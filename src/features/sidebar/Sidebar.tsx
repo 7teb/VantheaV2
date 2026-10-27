@@ -1,21 +1,23 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
-import { class_names } from "../../components/class-names.ts";
-import { ArchiveIcon, ComposeIcon, FolderOpenIcon, FolderPlusIcon, PlusIcon, SearchIcon, SettingsIcon } from "../../components/icons.tsx";
+import { ArchiveIcon, ComposeIcon, FolderOpenIcon, FolderPlusIcon, PlusIcon, SettingsIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
 import { Tooltip } from "../../components/Tooltip.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { chats_store, load_chats } from "../../state/chats.ts";
-import { choose_project, create_project } from "../../state/projects.ts";
+import { choose_project } from "../../state/projects.ts";
 import { settings_store } from "../../state/settings.ts";
-import { open_search, open_settings, start_new_chat, ui_store } from "../../state/ui.ts";
+import { open_settings, start_new_chat, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
 import { shortcut_hint } from "../shell/shortcuts.ts";
+import { ActivityView } from "./ActivityView.tsx";
 import { ArchivedDialog } from "./ArchivedDialog.tsx";
 import { ChatRow } from "./ChatRow.tsx";
+import { CreateProjectDialog } from "./CreateProjectDialog.tsx";
 import { ProjectGroup } from "./ProjectGroup.tsx";
 import { archived_chats, build_sidebar, normalize_path } from "./sidebar-model.ts";
+import { SidebarSection as Section } from "./SidebarSection.tsx";
 import { SidebarSkeleton } from "./SidebarSkeleton.tsx";
 import "./Sidebar.css";
 
@@ -30,32 +32,21 @@ const use_minute_clock = () => {
 
 const report = (action: string) => (error: unknown) => console.error(`[sidebar] ${action} failed`, error);
 
-type NavButtonProps = { icon: ReactNode; label: string; hint?: string; className?: string; on_click: () => void };
+type NavButtonProps = { icon: ReactNode; label: string; hint?: string; on_click: () => void };
 
-const NavButton = ({ icon, label, hint, className, on_click }: NavButtonProps) => (
-  <button type="button" className={class_names("sidebar-nav-button", className)} onClick={on_click}>
+const NavButton = ({ icon, label, hint, on_click }: NavButtonProps) => (
+  <button type="button" className="sidebar-nav-button" onClick={on_click}>
     {icon}
     <span className="sidebar-nav-label">{label}</span>
     {hint && <kbd className="sidebar-nav-hint">{hint}</kbd>}
   </button>
 );
 
-type SectionProps = { label: string; action?: ReactNode; action_shown?: boolean; children: ReactNode };
-
-const Section = ({ label, action, action_shown = false, children }: SectionProps) => (
-  <section className="sidebar-section">
-    <div className="sidebar-section-head" data-action-shown={action_shown}>
-      <span className="sidebar-section-label">{label}</span>
-      {action}
-    </div>
-    {children}
-  </section>
-);
-
 export const Sidebar = () => {
   const t = use_t();
   const now = use_minute_clock();
   const collapsed = use_store(ui_store, (state) => state.sidebar_collapsed);
+  const view = use_store(ui_store, (state) => state.sidebar_view);
   const active_chat_id = use_store(ui_store, (state) => state.active_chat_id);
   const project_path = use_store(ui_store, (state) => state.project_path);
   const collapsed_projects = use_store(ui_store, (state) => state.collapsed_projects);
@@ -64,6 +55,7 @@ export const Sidebar = () => {
   const [add_anchor, set_add_anchor] = useState<HTMLButtonElement | null>(null);
   const [add_open, set_add_open] = useState(false);
   const [archive_open, set_archive_open] = useState(false);
+  const [create_open, set_create_open] = useState(false);
   const model = useMemo(() => (projects ? build_sidebar(chats.list, projects) : null), [chats.list, projects]);
   const archived = useMemo(() => archived_chats(chats.list), [chats.list]);
   if (archive_open && archived.length === 0) {
@@ -95,17 +87,18 @@ export const Sidebar = () => {
     if (chats.status === "loading" || model === null) {
       return <SidebarSkeleton />;
     }
+    if (view === "activity") {
+      return <ActivityView active_chat_id={active_chat_id} now={now} />;
+    }
     return (
       <div className="sidebar-sections enter-fade-up">
         {model.pinned.length > 0 && <Section label={t("sidebar.pinned")}>{rows(model.pinned)}</Section>}
         <Section
           label={t("sidebar.projects")}
-          action_shown={add_open || model.projects.length === 0}
           action={
             <IconButton
               ref={set_add_anchor}
               size="sm"
-              className="sidebar-section-add"
               label={t("projects.add")}
               aria-haspopup="menu"
               aria-expanded={add_open}
@@ -138,7 +131,6 @@ export const Sidebar = () => {
       <div className="sidebar-inner">
         <nav className="sidebar-nav">
           <NavButton icon={<ComposeIcon size={16} />} label={t("sidebar.new_chat")} hint={shortcut_hint("new_chat")} on_click={() => start_new_chat(project_path)} />
-          <NavButton icon={<SearchIcon size={16} />} label={t("sidebar.search")} hint={shortcut_hint("search")} className="sidebar-search" on_click={open_search} />
         </nav>
         <div className="sidebar-scroll">{body()}</div>
         <div className="sidebar-footer">
@@ -153,6 +145,7 @@ export const Sidebar = () => {
           )}
         </div>
       </div>
+      <CreateProjectDialog open={create_open} on_close={() => set_create_open(false)} />
       <ArchivedDialog open={archive_open} chats={archived} active_chat_id={active_chat_id} now={now} on_close={() => set_archive_open(false)} />
       <Menu
         open={add_open}
@@ -164,7 +157,7 @@ export const Sidebar = () => {
             id: "add",
             items: [
               { id: "existing", label: t("projects.add_existing"), icon: <FolderOpenIcon size={15} />, on_select: () => choose_project().catch(report("choosing a project")) },
-              { id: "create", label: t("projects.create"), icon: <FolderPlusIcon size={15} />, on_select: () => create_project().catch(report("creating a project")) },
+              { id: "create", label: t("projects.create"), icon: <FolderPlusIcon size={15} />, on_select: () => set_create_open(true) },
             ],
           },
         ]}

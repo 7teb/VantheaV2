@@ -1,6 +1,7 @@
 import type { PermissionMode } from "../../shared/chat.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import type { Personality, Settings } from "../../shared/settings.ts";
+import { instruction_fallback } from "../chats/workspace.ts";
 import { major_effort } from "../model/catalog.ts";
 import type { Tool } from "../tools/types.ts";
 import { list_top_level, load_project_docs } from "./project.ts";
@@ -8,7 +9,7 @@ import { compose_sections, major_review, render_sections, type PromptSection } f
 
 export type { PromptSection } from "./sections.ts";
 
-export type PromptSectionInput = { chat_id: string; project_path: string; user_text: string; tool_names: Set<string> };
+export type PromptSectionInput = { chat_id: string; user_text: string; tool_names: Set<string> };
 
 export type PromptSectionProvider = (input: PromptSectionInput) => Promise<PromptSection[]>;
 
@@ -37,7 +38,7 @@ const extra_sections = async (input: BuildPromptInput, tool_names: Set<string>):
     return [];
   }
   try {
-    return await section_provider({ chat_id: input.chat_id, project_path: input.project_root, user_text: input.user_text, tool_names });
+    return await section_provider({ chat_id: input.chat_id, user_text: input.user_text, tool_names });
   } catch (error) {
     console.error(`[prompts] extra section provider failed for chat ${input.chat_id}:`, error);
     return [];
@@ -47,7 +48,7 @@ const extra_sections = async (input: BuildPromptInput, tool_names: Set<string>):
 export const build_system_prompt = async (input: BuildPromptInput): Promise<string> => {
   const tool_names = new Set(input.tools.map((tool) => tool.spec.name));
   const [project_docs, listing, extra] = await Promise.all([
-    load_project_docs(input.project_root),
+    instruction_fallback(input.chat_id).then((fallback) => load_project_docs(input.project_root, fallback)),
     list_top_level(input.project_root),
     extra_sections(input, tool_names),
   ]);

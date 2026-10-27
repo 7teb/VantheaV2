@@ -33,6 +33,7 @@ export const round_body = (request: RoundRequest): Record<string, unknown> => {
     ...(request.tools.length ? { tools: to_api_tools(request.tools), tool_choice: request.tool_choice ?? "auto" } : {}),
     ...(model.efforts.length ? { reasoning: reasoning_fields(model, request.effort) } : {}),
     ...(request.max_tokens ? { max_tokens: request.max_tokens } : {}),
+    ...(model.verbosity ? { verbosity: model.verbosity } : {}),
     ...(model.provider_order.length ? { provider: { order: model.provider_order, allow_fallbacks: false } } : {}),
     ...safety_fields(model.id),
     ...prompt_cache_fields(model.id),

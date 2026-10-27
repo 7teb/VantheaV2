@@ -9,6 +9,7 @@ import { attach_files, composer_store, dismiss_error, queue_draft, set_composer_
 import { cancel_dictation, dictation_store, finish_dictation } from "../../state/dictation.ts";
 import { insert_dictation } from "../../state/dictation-text.ts";
 import { use_store } from "../../state/use-store.ts";
+import { start_typed_review } from "./command-registry.ts";
 import { use_chat_busy, use_model_context, use_shown_context } from "./composer-hooks.ts";
 import { ComposerMedia } from "./ComposerMedia.tsx";
 import { DictationButton } from "./DictationButton.tsx";
@@ -16,9 +17,11 @@ import { DraftChips } from "./DraftChips.tsx";
 import { ModelPicker } from "./ModelPicker.tsx";
 import { ModePicker } from "./ModePicker.tsx";
 import { PlusMenu } from "./PlusMenu.tsx";
+import { parse_review_command } from "./review-command.ts";
 import { SlashMenu, slash_option_id } from "./SlashMenu.tsx";
 import { use_command_context } from "./use-command-context.ts";
 import { use_slash_menu } from "./use-slash-menu.ts";
+import { WorktreeChip } from "./WorktreeChip.tsx";
 
 const max_area_px = 240;
 
@@ -153,6 +156,10 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
   const send = () => {
     if (dictating === "recording") {
       void finish_dictating(true);
+      return;
+    }
+    const review = parse_review_command(draft.text);
+    if (review !== null && start_typed_review(context, review.pr)) {
       return;
     }
     if (sendable) {
@@ -300,6 +307,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
             <span className="composer-chip-label">{t("composer.plan")}</span>
           </button>
         )}
+        {chat_id === null && <WorktreeChip draft_key={draft_key} project_path={project_path} />}
         <DraftChips draft_key={draft_key} chips={draft.chips} />
         <span className="composer-spacer" />
         <DictationButton draft_key={draft_key} on_stop={() => void finish_dictating(false)} />

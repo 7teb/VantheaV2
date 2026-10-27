@@ -5,6 +5,7 @@ import { actor_label } from "../../permissions/script-retention.ts";
 import { stat_optional } from "../../permissions/source-read.ts";
 import { record_write } from "../../permissions/written-files.ts";
 import { commit_edit, prepare_replace, prepare_write, type PreparedEdit } from "../../project/edit.ts";
+import { turn_diffs } from "../../turn-diff/index.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool, ToolArgumentError, type ToolContext, type ToolProfile, type ToolResult } from "../types.ts";
 import { denied, guarded, read_int_arg, read_text_arg } from "./common.ts";
@@ -39,6 +40,7 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
     }
   }
   const prior = await stat_optional(prepared.target.target, "the write ledger");
+  await turn_diffs.before_write(ctx.chat_id, prepared.target.target);
   const sha256 = await commit_edit(prepared);
   record_write(ctx.chat_id, prepared.target.target, { actor: actor_label(ctx.review.actor), tool, call_id: ctx.call_id, at: Date.now(), sha256, prior_birthtime: prior?.birthtimeMs ?? null });
   return { status: "done", text: `${summary} (+${prepared.diff.added} -${prepared.diff.removed} lines)`, view };

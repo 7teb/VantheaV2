@@ -1,6 +1,6 @@
 import { memo, useState, type CSSProperties } from "react";
 import { parse_agent_notice } from "../../../shared/agent-notes.ts";
-import { parse_peer_alerts } from "../../../shared/peer-notes.ts";
+import { parse_peer_alerts, parse_peer_notice } from "../../../shared/peer-notes.ts";
 import type { CompactionStep, NoticeKind, NoticeStep, SteerStep } from "../../../shared/chat.ts";
 import { InfoIcon, TextSelectIcon } from "../../components/icons.tsx";
 import { use_clock } from "../../components/use-clock.ts";
@@ -8,7 +8,9 @@ import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { AgentNoteRow } from "./AgentNoteRow.tsx";
 import { compaction_text, compaction_wait_text, slow_notice_delay } from "./compaction-line.ts";
+import { PeerMessageRow } from "./PeerMessageRow.tsx";
 import { UserAttachments } from "./UserAttachments.tsx";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./UserMessage.css";
 
 export const SteerRow = memo(({ step }: { step: SteerStep }) => (
@@ -45,6 +47,10 @@ export const NoticeRow = memo(({ step }: { step: NoticeStep }) => {
   if (note) {
     return <AgentNoteRow note={note} />;
   }
+  const peer = step.notice === "peer_message" ? parse_peer_notice(step.text) : null;
+  if (peer) {
+    return <PeerMessageRow message={peer} />;
+  }
   return (
     <div className="notice-row enter-fade-up" data-notice={step.notice}>
       <InfoIcon size={14} />
@@ -77,7 +83,7 @@ export const CompactionRow = memo(({ step }: { step: CompactionStep }) => {
       <TextSelectIcon size={16} />
       {live ? (
         <span className="compaction-text is-working">
-          {text}
+          <WorkingLetters text={text} />
           {step.status === "running" && <SlowNotice step={step} />}
         </span>
       ) : (

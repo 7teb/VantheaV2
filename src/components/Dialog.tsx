@@ -70,12 +70,14 @@ type ConfirmDialogProps = {
   danger?: boolean;
   on_confirm: () => void;
   on_close: () => void;
+  children?: ReactNode;
 };
 
-export const ConfirmDialog = ({ open, title, detail, confirm_label, cancel_label, danger = false, on_confirm, on_close }: ConfirmDialogProps) => (
+export const ConfirmDialog = ({ open, title, detail, confirm_label, cancel_label, danger = false, on_confirm, on_close, children }: ConfirmDialogProps) => (
   <Dialog open={open} on_close={on_close} label={title} className="confirm-dialog">
     <h2 className="confirm-title">{title}</h2>
     {detail && <p className="confirm-detail">{detail}</p>}
+    {children}
     <div className="confirm-actions">
       <Button variant="ghost" onClick={on_close}>
         {cancel_label}

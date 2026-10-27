@@ -30,6 +30,7 @@ export type GithubData = {
   kind: "data";
   repo: GithubRepoRef;
   html_url: string | null;
+  default_branch: string | null;
   visibility: "public" | "private" | "internal" | null;
   archived: boolean;
   fork_parent: string | null;

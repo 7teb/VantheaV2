@@ -192,7 +192,7 @@ const find_submodules = async (tool: GitTool, paths: RepoPaths, known: TreeLinks
   return { trees, work_trees, loose_dirs: modules.filter((dir) => !covered.has(path_key(dir))) };
 };
 
-const repo_config = async (tool: GitTool, cwd: string, signal?: AbortSignal): Promise<ConfigEntry[]> => {
+export const repo_config = async (tool: GitTool, cwd: string, signal?: AbortSignal): Promise<ConfigEntry[]> => {
   const output = await exec_git(tool, { cwd, args: ["config", "--list", "--show-scope", "-z"], signal });
   return parse_config_list(git_ok(output, `git config --list in ${cwd}`).toString("utf8"), true);
 };

@@ -21,6 +21,9 @@ export type StoragePaths = {
   memories: string;
   skills: string;
   workspaces: string;
+  worktrees: string;
+  worktree_ledger: string;
+  turn_diffs: string;
   legacy_settings: string;
   legacy_artifacts: string;
   legacy_memories: string;
@@ -49,6 +52,9 @@ const storage_paths_for = (user_data: string): StoragePaths => {
     memories: path.join(root, "memories.json"),
     skills: path.join(root, "skills"),
     workspaces: path.join(root, "workspaces"),
+    worktrees: path.join(root, "worktrees"),
+    worktree_ledger: path.join(root, "worktrees", "ledger.json"),
+    turn_diffs: path.join(root, "turn-diffs"),
     legacy_settings: path.join(user_data, "settings.json"),
     legacy_artifacts: path.join(user_data, "artifacts.json"),
     legacy_memories: path.join(user_data, "memories-v2.json"),
@@ -66,6 +72,8 @@ export const storage_dirs = (paths: StoragePaths): string[] => [
   paths.favicons,
   paths.skills,
   paths.agents,
+  paths.worktrees,
+  paths.turn_diffs,
 ];
 
 let current: StoragePaths | null = null;

@@ -6,7 +6,7 @@ A skill is a folder with a SKILL.md. The installed and enabled skills are listed
 
 - The file starts with a YAML frontmatter block between two `---` lines, followed by the body.
 - `name` is required, at most 80 characters, and must contain characters usable in a folder name.
-- `description` is required, at most 1000 characters. It is sent with every request and tells the agent when to load the skill.
+- `description` is required and has no length limit. It is sent with every request and tells the agent when to load the skill.
 - The body must not be empty.
 - SKILL.md may be at most 100 KB (102400 bytes). read_skill returns at most 100000 characters of the body and marks the rest as truncated.
 - read_skill names the skill folder on disk (`Skill folder: ...`) and lists extra files: every file directly in the skill folder, then text files (`.md .markdown .txt .json .yaml .yml .css .html .js .mjs .py`) one subfolder deep as `<subfolder>/<file>`, for example `styles/neon_glow.md`. Hidden files, folders starting with a dot, junctions and anything two levels down are not listed; at most 100 entries. read_skill with the same name and `file` set to one of those listed paths returns that file (up to 100 KB). This works in every agent profile and in plan mode, with no approval.

@@ -1,11 +1,11 @@
 import { existsSync } from "node:fs";
 import { net } from "electron";
-import type { GithubRepoView } from "../../shared/github-view.ts";
+import type { GithubData, GithubRepoView } from "../../shared/github-view.ts";
 import { app_window, git_service, type GitEvent } from "../git/index.ts";
 import { path_key } from "../storage/paths.ts";
 import { create_github_client, net_transport, type GithubClient } from "./client.ts";
-import { create_gh_cache, gh_transport, run_gh, type GhCache } from "./gh-cli.ts";
-import { create_repo_session, github_target, type RepoMemory, type RepoSession, type RepoSessionDeps } from "./repo-session.ts";
+import { create_gh_cache, gh_transport, run_gh, type GhCache, type GhStatus } from "./gh-cli.ts";
+import { create_repo_session, github_target, type GithubTarget, type RepoMemory, type RepoSession, type RepoSessionDeps } from "./repo-session.ts";
 
 type ViewListener = (root: string, view: GithubRepoView) => void;
 
@@ -84,6 +84,17 @@ export const github_service = {
       listeners.delete(listener);
     };
   },
+  bound_target: (root: string): { target: GithubTarget; data: GithubData } | null => {
+    const memory = bound_at(root)?.memory();
+    return memory?.data ? { target: memory.target, data: memory.data } : null;
+  },
+  cli_status: (host: string): Promise<GhStatus> => {
+    if (!github) {
+      throw new Error("the GitHub part was used before init_github");
+    }
+    return github.gh.reread(host);
+  },
+  refresh: (root: string) => bound_at(root)?.refresh(),
 };
 
 export const init_github = () => {

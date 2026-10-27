@@ -60,28 +60,41 @@ const fetch_patterns: [RegExp, FetchError["kind"] | "busy"][] = [
 
 const plain_remote = /^[A-Za-z0-9_][A-Za-z0-9._/-]*$/;
 
+export type CopyAction = { kind: "fetch" } | { kind: "push"; upstream: string | null };
+
 const head_key = (remote: string, branch: string): string => `${remote}\0${branch}`;
 
+export const insecure_scheme = (url: string): string | null => {
+  const scheme = transport_scheme(url);
+  return scheme && insecure_schemes.has(scheme) ? scheme : null;
+};
+
 export const fetch_blocked = (target: FetchTarget): FetchBlock | null => {
-  const scheme = transport_scheme(target.remote.url);
-  if (scheme && insecure_schemes.has(scheme)) return { kind: "insecure_transport", scheme };
+  const scheme = insecure_scheme(target.remote.url);
+  if (scheme) return { kind: "insecure_transport", scheme };
   return fetch_block(target.guard, target.remote.name);
 };
 
 export const classify_fetch = (stderr: string): FetchError["kind"] | "busy" => fetch_patterns.find(([pattern]) => pattern.test(stderr))?.[1] ?? "error";
 
-const copy_command = (kind: FetchError["kind"], remote: GitRemote): string | null => {
-  if (kind === "auth_required") return plain_remote.test(remote.name) ? `git fetch ${remote.name}` : null;
+const action_command = (remote: string, action: CopyAction): string | null => {
+  if (action.kind === "fetch") return `git fetch ${remote}`;
+  if (action.upstream === null) return `git push -u ${remote} HEAD`;
+  return plain_remote.test(action.upstream) ? `git push ${remote} HEAD:${action.upstream}` : null;
+};
+
+const copy_command = (kind: FetchError["kind"], remote: GitRemote, action: CopyAction): string | null => {
+  if (kind === "auth_required") return plain_remote.test(remote.name) ? action_command(remote.name, action) : null;
   if (kind === "ssh_key_rejected" || kind === "ssh_host_unknown") return ssh_test_command(remote.url);
   return null;
 };
 
-const fetch_error = (kind: FetchError["kind"], remote: GitRemote, detail: string): FetchError => ({
+export const fetch_error = (kind: FetchError["kind"], remote: GitRemote, detail: string, action: CopyAction = { kind: "fetch" }): FetchError => ({
   kind,
   remote: remote.name,
   host: parse_remote_url(remote.url).host,
   detail,
-  command: copy_command(kind, remote),
+  command: copy_command(kind, remote, action),
 });
 
 export const fetch_call = (target: FetchTarget, signal?: AbortSignal): GitCall => ({

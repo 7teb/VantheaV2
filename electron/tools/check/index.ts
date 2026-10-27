@@ -9,10 +9,12 @@ import { actor_label } from "../../permissions/script-retention.ts";
 import { stat_optional } from "../../permissions/source-read.ts";
 import { record_write } from "../../permissions/written-files.ts";
 import { invalidate_index } from "../../project/index.ts";
-import { is_secret_path, resolve_inside, resolve_write_target, to_posix } from "../../project/scope.ts";
+import { is_secret_path } from "../../../shared/secret-path.ts";
+import { resolve_inside, resolve_write_target, to_posix } from "../../project/scope.ts";
 import { usable_skills } from "../../skills/store.ts";
 import { error_code, error_text } from "../../storage/coerce.ts";
 import { write_file_atomic } from "../../storage/json-file.ts";
+import { turn_diffs } from "../../turn-diff/index.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool, type ToolContext, type ToolImage, type ToolResult } from "../types.ts";
 
@@ -51,6 +53,7 @@ const page_folder = async (ctx: ToolContext, requested: string): Promise<PageFol
 const save_shot = (ctx: ToolContext, page: PageFolder) => async (name: string, png: Buffer) => {
   const target = await resolve_write_target(ctx.project_root, path.posix.join(page.relative, "_shots", `${name}.png`));
   const prior = await stat_optional(target.target, "the write ledger");
+  await turn_diffs.before_write(ctx.chat_id, target.target);
   await write_file_atomic(target.target, png);
   const sha256 = createHash("sha256").update(png).digest("hex");
   record_write(ctx.chat_id, target.target, { actor: actor_label(ctx.review.actor), tool: "check_page", call_id: ctx.call_id, at: Date.now(), sha256, prior_birthtime: prior?.birthtimeMs ?? null });

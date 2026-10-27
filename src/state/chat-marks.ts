@@ -1,9 +1,11 @@
 import { api } from "../api/bridge.ts";
-import { mark_event, mark_seen, type ChatMarks } from "./chat-marks-rules.ts";
+import { mark_all_read, mark_event, mark_seen, type ChatMarks } from "./chat-marks-rules.ts";
 import { create_store } from "./create-store.ts";
 import { on_active_chat, ui_store } from "./ui.ts";
 
 export const chat_marks_store = create_store<ChatMarks>({});
+
+export const read_all_marks = () => chat_marks_store.update(mark_all_read);
 
 export const init_chat_marks = (): (() => void) => {
   const stops = [

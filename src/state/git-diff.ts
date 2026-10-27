@@ -19,11 +19,11 @@ export const diff_of = (state: GitDiffState, root: string, path: string): GitLoa
 
 export const counts_of = (state: GitDiffState, root: string): GitLoad<LineCount[]> | null => state.counts[root] ?? null;
 
-const starting = <T>(load: GitLoad<T> | undefined): GitLoad<T> => ({ status: load?.value ? load.status : "loading", value: load?.value ?? null, fresh: true });
+export const starting = <T>(load: GitLoad<T> | undefined): GitLoad<T> => ({ status: load?.value ? load.status : "loading", value: load?.value ?? null, fresh: true });
 
-const settled = <T>(load: GitLoad<T> | undefined, status: "ready" | "failed", value: T | null): GitLoad<T> => ({ status, value, fresh: load?.fresh ?? true });
+export const settled = <T>(load: GitLoad<T> | undefined, status: "ready" | "failed", value: T | null): GitLoad<T> => ({ status, value, fresh: load?.fresh ?? true });
 
-const stale = <T>(load: GitLoad<T>): GitLoad<T> => (load.fresh ? { ...load, fresh: false } : load);
+export const stale = <T>(load: GitLoad<T>): GitLoad<T> => (load.fresh ? { ...load, fresh: false } : load);
 
 const set_diff = (key: string, change: (load: GitLoad<GitFileDiff> | undefined) => GitLoad<GitFileDiff>) =>
   git_diff_store.update((state) => ({ ...state, diffs: { ...state.diffs, [key]: change(state.diffs[key]) } }));

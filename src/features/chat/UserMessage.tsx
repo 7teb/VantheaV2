@@ -12,7 +12,7 @@ import "./UserMessage.css";
 
 type UserMessageProps = { chat_id: string; message: UserMessageData; busy: boolean };
 
-const command_text: Partial<Record<UserOrigin, string>> = { init: "/init", git_init: "/gitinit" };
+const command_text: Partial<Record<UserOrigin, string>> = { init: "/init", git_init: "/gitinit", review: "/review" };
 
 export const UserMessage = memo(({ chat_id, message, busy }: UserMessageProps) => {
   const t = use_t();
@@ -23,7 +23,8 @@ export const UserMessage = memo(({ chat_id, message, busy }: UserMessageProps) =
   if (message.origin !== "user" && !command) {
     return <OriginNote message={message} />;
   }
-  const shown = command ?? message.text;
+  const command_line = command && message.command_arg ? `${command} ${message.command_arg}` : command;
+  const shown = command_line ?? message.text;
 
   const fork = async () => {
     const result = await fork_chat(chat_id, message.id);

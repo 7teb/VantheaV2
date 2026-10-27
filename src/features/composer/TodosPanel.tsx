@@ -12,6 +12,7 @@ import { use_store } from "../../state/use-store.ts";
 import { TodoList } from "../tools/TodoList.tsx";
 import { use_chat_busy } from "./composer-hooks.ts";
 import { shown_todos, type ShownTodos } from "./todos-shown.ts";
+import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./TodosPanel.css";
 
 const no_messages: Message[] = [];
@@ -49,7 +50,7 @@ export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
       <div className="todos-panel-inner">
         <button type="button" className="todos-panel-head" aria-expanded={open} onClick={() => set_open(!open)}>
           <ProgressRing ratio={done / next.todos.length} size={16} className="todos-panel-ring" />
-          <span className={class_names("todos-panel-title", current && live && "is-working")}>{current ? current.text : t("tools.todo_tasks")}</span>
+          <span className={class_names("todos-panel-title", current && live && "is-working")}><WorkingLetters text={current ? current.text : t("tools.todo_tasks")} active={Boolean(current && live)} /></span>
           <span className="todos-panel-count">
             {done}/{next.todos.length}
           </span>

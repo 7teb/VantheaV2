@@ -3,6 +3,10 @@ import { min_context_limit, type ModelContext } from "./settings.ts";
 
 export type ModelRoute = { id: string; label: string; provider_order: string[] };
 
+export const verbosity_levels = ["low", "medium", "high", "xhigh", "max"] as const;
+
+export type Verbosity = (typeof verbosity_levels)[number];
+
 export type ModelEntry = {
   id: string;
   label: string;
@@ -14,6 +18,7 @@ export type ModelEntry = {
   context_length: number;
   max_output: number;
   reasoning_passback: boolean;
+  verbosity?: Verbosity;
   compact_at?: number;
   note?: string;
   fallback?: ModelRoute;
@@ -33,12 +38,15 @@ export const with_context_limit = (model: ModelEntry, setting: ModelContext | un
   compact_percent: compact_percent_of(setting),
 });
 
-export type SideModelRole = "title" | "overseer" | "vision" | "web_answer" | "memory" | "reasoning_status" | "transcription";
+export type SideModelRole = "title" | "overseer" | "vision" | "web_answer" | "memory" | "reasoning_status" | "transcription" | "git_text";
+
+export type SideModelEntry = { id: string; context_length: number; max_output: number };
 
 export type ImageModelEntry = { id: string; label: string; quality: boolean };
 
 export type ModelCatalog = {
   models: ModelEntry[];
   side: Record<SideModelRole, string>;
+  side_models: SideModelEntry[];
   image_models: ImageModelEntry[];
 };

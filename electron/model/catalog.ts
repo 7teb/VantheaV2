@@ -1,10 +1,10 @@
-import type { ImageModelEntry, ModelCatalog, ModelEntry, SideModelRole } from "../../shared/models.ts";
+import { verbosity_levels, type ImageModelEntry, type ModelCatalog, type ModelEntry, type SideModelEntry, type SideModelRole, type Verbosity } from "../../shared/models.ts";
 
 export const major_effort = "major";
 
 const effort_rank = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
 
-const side_roles: SideModelRole[] = ["title", "overseer", "vision", "web_answer", "memory", "reasoning_status", "transcription"];
+const side_roles: SideModelRole[] = ["title", "overseer", "vision", "web_answer", "memory", "reasoning_status", "transcription", "git_text"];
 
 type Raw = Record<string, unknown>;
 
@@ -42,6 +42,9 @@ const parse_efforts = (value: unknown, where: string): string[] => {
   return efforts;
 };
 
+const parse_verbosity = (value: unknown, where: string): Verbosity =>
+  verbosity_levels.find((level) => level === value) ?? fail(where, `must be one of ${verbosity_levels.join(", ")}`);
+
 const parse_model = (value: unknown, index: number): ModelEntry => {
   const where = `models[${index}]`;
   const raw = as_record(value, where);
@@ -63,6 +66,7 @@ const parse_model = (value: unknown, index: number): ModelEntry => {
     context_length: as_count(raw.context_length, `${named}.context_length`),
     max_output: as_count(raw.max_output, `${named}.max_output`),
     reasoning_passback: raw.reasoning_passback === undefined ? false : as_flag(raw.reasoning_passback, `${named}.reasoning_passback`),
+    ...(raw.verbosity === undefined ? {} : { verbosity: parse_verbosity(raw.verbosity, `${named}.verbosity`) }),
     ...(raw.note === undefined ? {} : { note: as_text(raw.note, `${named}.note`) }),
   };
 };
@@ -100,6 +104,13 @@ const parse_side = (value: unknown): Record<SideModelRole, string> => {
   return Object.fromEntries(entries) as Record<SideModelRole, string>;
 };
 
+const parse_side_model = (value: unknown, index: number): SideModelEntry => {
+  const where = `side_models[${index}]`;
+  const raw = as_record(value, where);
+  const id = as_text(raw.id, `${where}.id`);
+  return { id, context_length: as_count(raw.context_length, `${where} (${id}).context_length`), max_output: as_count(raw.max_output, `${where} (${id}).max_output`) };
+};
+
 const unique_ids = (ids: string[], where: string) => {
   const seen = new Set<string>();
   for (const id of ids) {
@@ -120,6 +131,8 @@ export const parse_catalog = (value: unknown): ModelCatalog => {
   }
   const models = resolve_fallbacks(raw.models, raw.models.map(parse_model));
   const image_models = raw.image_models.map(parse_image_model);
+  const side_list = raw.side_models === undefined ? [] : Array.isArray(raw.side_models) ? raw.side_models : fail("side_models", "must be an array");
+  const side_models = side_list.map(parse_side_model);
   unique_ids(
     models.map((model) => model.id),
     "models",
@@ -128,10 +141,23 @@ export const parse_catalog = (value: unknown): ModelCatalog => {
     image_models.map((model) => model.id),
     "image_models",
   );
-  return { models, side: parse_side(raw.side), image_models };
+  unique_ids(
+    side_models.map((model) => model.id),
+    "side_models",
+  );
+  return { models, side: parse_side(raw.side), side_models, image_models };
 };
 
 export const find_model = (catalog: ModelCatalog, id: string): ModelEntry | null => catalog.models.find((model) => model.id === id) ?? null;
+
+export const side_window = (catalog: ModelCatalog, role: SideModelRole): SideModelEntry => {
+  const id = catalog.side[role];
+  const known = find_model(catalog, id) ?? catalog.side_models.find((model) => model.id === id);
+  if (!known) {
+    throw new Error(`models.json: side.${role} names ${id}, which has no entry in models or side_models, so its context window is unknown`);
+  }
+  return { id, context_length: known.context_length, max_output: known.max_output };
+};
 
 export const resolve_effort = (model: ModelEntry, effort: string): string => (model.efforts.includes(effort) ? effort : model.default_effort);
 

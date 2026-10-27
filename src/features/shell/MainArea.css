@@ -5,9 +5,14 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
   border-top-left-radius: var(--radius-xl);
   background: var(--surface-main);
   box-shadow: var(--shadow-edge-left);
+}
+
+.shell-body:has(> .dock-host[data-state="open"]) > .main-area {
+  border-top-right-radius: var(--radius-xl);
 }
 
 .content-column {

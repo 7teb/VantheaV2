@@ -8,6 +8,7 @@ import { relative_time } from "../../i18n/relative-time.ts";
 import { delete_chat, set_chat_archived } from "../../state/chats.ts";
 import { open_chat } from "../../state/ui.ts";
 import { chat_label } from "./sidebar-model.ts";
+import { WorktreeWarning } from "./WorktreeWarning.tsx";
 import "./ArchivedDialog.css";
 
 type ArchivedDialogProps = { open: boolean; chats: ChatMeta[]; active_chat_id: string | null; now: number; on_close: () => void };
@@ -92,7 +93,9 @@ export const ArchivedDialog = ({ open, chats, active_chat_id, now, on_close }: A
           }
         }}
         on_close={() => set_deleting((current) => (current ? { ...current, open: false } : null))}
-      />
+      >
+        {deleting && <WorktreeWarning target={{ kind: "chats", chat_ids: [deleting.chat.id] }} />}
+      </ConfirmDialog>
     </>
   );
 };

@@ -2,7 +2,7 @@ import { emit, invoke } from "./channel.ts";
 
 export type FilesScope = { chat_id: string | null; project_path: string };
 
-export type FilesRoot = { path: string; name: string; kind: "project" | "workspace" };
+export type FilesRoot = { path: string; name: string; kind: "project" | "workspace"; worktree?: { branch: string; missing: boolean } };
 
 export type DirEntry = { name: string; path: string; kind: "file" | "dir" };
 

@@ -48,14 +48,14 @@ const start_files_watch = async (scope: FilesScope) => {
   if (ticket !== generation) {
     return;
   }
-  if (watching && root && watching.root === root.path) {
+  if (watching && root && !root.worktree?.missing && watching.root === root.path) {
     watching.chat_id = scope.chat_id;
     git_service.bind(root);
     return;
   }
   watching?.watcher.close();
   watching = null;
-  if (!root) {
+  if (!root || root.worktree?.missing) {
     git_service.stop();
     return;
   }

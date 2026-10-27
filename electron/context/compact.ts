@@ -14,8 +14,15 @@ const recent_fraction = 0.3;
 
 export const compact_threshold = (model: ModelEntry): number => model.compact_at ?? compact_fraction;
 
-export const compaction_due = (tokens: number, floor: number, model: ModelEntry): boolean =>
-  model.context_length > 0 && tokens > model.context_length * compact_threshold(model) && tokens >= floor + model.context_length * regrow_fraction;
+export const next_compaction = (floor: number, model: ModelEntry): number | null =>
+  model.context_length > 0
+    ? Math.max(Math.floor(model.context_length * compact_threshold(model)) + 1, Math.ceil(floor + model.context_length * regrow_fraction))
+    : null;
+
+export const compaction_due = (tokens: number, floor: number, model: ModelEntry): boolean => {
+  const at = next_compaction(floor, model);
+  return at !== null && tokens >= at;
+};
 
 export const compaction_floor = (tokens: number, model: ModelEntry): number => (tokens > model.context_length * compact_threshold(model) ? tokens : 0);
 

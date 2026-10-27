@@ -3,7 +3,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { error_text } from "../storage/coerce.ts";
 import { path_key } from "../storage/paths.ts";
-import { is_inside, is_secret_path, project_real_root, to_posix } from "./scope.ts";
+import { is_secret_path } from "../../shared/secret-path.ts";
+import { is_inside, project_real_root, to_posix } from "./scope.ts";
 
 export type IndexEntry = { path: string; size: number };
 

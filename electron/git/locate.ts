@@ -18,6 +18,8 @@ export const minimum_git: GitVersion = [2, 33, 0];
 
 export const partial_clone_git: GitVersion = [2, 45, 0];
 
+export const sparse_add_git: GitVersion = [2, 34, 0];
+
 export const absolute_windows = /^(?:[a-z]:[\\/]|\\\\)/i;
 
 export const parse_git_version = (text: string): GitVersion | null => {

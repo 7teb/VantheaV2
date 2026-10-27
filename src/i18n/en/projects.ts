@@ -13,4 +13,12 @@ export const projects = {
   "projects.rename_label": "Project name",
   "projects.delete_title": "Delete this project?",
   "projects.new_chat": "New chat in this project",
+  "projects.create_title": "Create project",
+  "projects.name_placeholder": "Project name",
+  "projects.folder_label": "Folder",
+  "projects.folder_empty": "Without a folder, VantheaX creates Documents\\VantheaX\\{name} and sets up Git in it if Git is installed.",
+  "projects.folder_add": "Add folder",
+  "projects.folder_remove": "Remove folder",
+  "projects.create_submit": "Create project",
+  "projects.create_failed": "The project could not be created: {error}",
 };

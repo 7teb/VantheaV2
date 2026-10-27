@@ -34,6 +34,18 @@ const command_of = (value: unknown): CommandOrigin => {
   return command;
 };
 
+const pull_request_number = /^[1-9]\d{0,8}$/;
+
+const argument_of = (command: CommandOrigin, value: unknown): string | null => {
+  if (value === null) {
+    return null;
+  }
+  if (command === "review" && typeof value === "string" && pull_request_number.test(value)) {
+    return value;
+  }
+  throw new Error(`invalid argument for the ${command} command turn: ${String(value).slice(0, 40)}`);
+};
+
 const parse_send = (value: unknown): SendRequest => {
   const raw = require_record(value, "send request");
   return {
@@ -85,7 +97,10 @@ export const register_turn_ipc = () => {
   handle("turn:continue", (chat_id) => continue_turn(chat_id_of(chat_id)));
   handle("turn:accept_plan", (chat_id, message_id) => accept_plan(chat_id_of(chat_id), require_string(message_id, "message id", 200)));
   handle("turn:undo", (chat_id, message_id) => undo_turn(chat_id_of(chat_id), require_string(message_id, "message id", 200)));
-  handle("turn:init", (chat_id, command) => init_turn(chat_id_of(chat_id), command_of(command)));
+  handle("turn:init", (chat_id, command, argument) => {
+    const parsed = command_of(command);
+    return init_turn(chat_id_of(chat_id), parsed, argument_of(parsed, argument));
+  });
   handle("turn:stop", (chat_id) => stop_turn(chat_id_of(chat_id)));
   handle("turn:hold_events", (chat_ids) => hold_events_for(as_array(chat_ids).map(chat_id_of)));
   handle("turn:steer", (chat_id, text, attachment_ids, steer_id) =>

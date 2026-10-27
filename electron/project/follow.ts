@@ -5,6 +5,7 @@ import { move_project_artifacts } from "../media/artifacts.ts";
 import { memory_loaded, move_project_memories } from "../memory/store.ts";
 import { find_project, get_settings, set_project_folder } from "../settings/store.ts";
 import { error_code, error_text, require_string } from "../storage/coerce.ts";
+import { repair_worktrees } from "../worktrees/repair.ts";
 import { find_renamed, read_folder_id } from "./folder.ts";
 
 let chain: Promise<unknown> = Promise.resolve();
@@ -17,9 +18,14 @@ const serialize = <T>(work: () => Promise<T>): Promise<T> => {
 
 const relocate = async (old_path: string, next_path: string, folder_id: string) => {
   await set_project_folder(old_path, { path: next_path, folder_id });
+  const worktrees: string[] = [];
   for (const chat_id of project_chat_ids(old_path)) {
-    await update_meta(chat_id, { project_path: next_path });
+    const moved = await update_meta(chat_id, { project_path: next_path });
+    if (moved.worktree) {
+      worktrees.push(moved.worktree.path);
+    }
   }
+  await repair_worktrees(next_path, worktrees);
   if (memory_loaded()) {
     await move_project_memories(old_path, next_path);
   }

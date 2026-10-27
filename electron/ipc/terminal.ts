@@ -6,6 +6,7 @@ import type { FilesScope } from "../../shared/ipc/files.ts";
 import type { TerminalCreate } from "../../shared/ipc/panels.ts";
 import { main_window } from "../app/window.ts";
 import { chat_meta } from "../chats/store.ts";
+import { worktree_missing } from "../chats/workspace.ts";
 import { files_root, parse_scope } from "../project/files-root.ts";
 import { spawn_shell } from "../terminal/pty.ts";
 import { create_terminal_registry } from "../terminal/sessions.ts";
@@ -58,6 +59,9 @@ const terminal_cwd = async (scope: FilesScope) => {
   const root = await files_root(scope);
   if (!root) {
     return os.homedir();
+  }
+  if (root.worktree?.missing) {
+    throw worktree_missing(root.path);
   }
   const stat = await fs.stat(root.path).catch((error: unknown) => {
     throw new Error(`terminal cwd ${root.path} is not accessible: ${error instanceof Error ? error.message : String(error)}`);

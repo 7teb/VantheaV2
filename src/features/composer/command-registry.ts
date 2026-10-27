@@ -5,6 +5,7 @@ import {
   ChartPieIcon,
   ClipboardListIcon,
   FilePenIcon,
+  FileSearchIcon,
   FoldVerticalIcon,
   ForkIcon,
   GitBranchPlusIcon,
@@ -17,12 +18,13 @@ import {
 } from "../../components/icons.tsx";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { fork_chat } from "../../state/chat-actions.ts";
+import { start_command_turn } from "../../state/chat-create.ts";
 import { visualize_chip } from "../../state/chat-drafts.ts";
 import { set_chat_archived, set_chat_pinned } from "../../state/chats.ts";
-import { compact_now, start_init, toggle_draft_chip, toggle_plan } from "../../state/composer.ts";
+import { compact_now, set_draft_text, toggle_draft_chip, toggle_plan } from "../../state/composer.ts";
 import { open_panel } from "../../state/composer-panel.ts";
 import { set_auto_compact, set_context_limit } from "../../state/settings.ts";
-import type { ComposerCommand } from "./command-menu.ts";
+import { command_row, type CommandContext, type ComposerCommand } from "./command-menu.ts";
 import { auto_compact_options, chosen_hint, command_options, context_limit_options } from "./context-options.ts";
 
 const compact_notes: Record<Exclude<CompactResult["status"], "done">, { key: MessageKey; tone: "note" | "error" }> = {
@@ -129,7 +131,7 @@ export const composer_commands: ComposerCommand[] = [
     keywords: ["agents.md", "setup"],
     hint: ({ t }) => t("commands.init_hint"),
     blocked: ({ t, compacting }) => (compacting ? t("commands.compacting") : null),
-    run: ({ chat_id, project_path }) => start_init(chat_id, project_path, "init"),
+    run: ({ chat_id, project_path }) => start_command_turn(chat_id, project_path, "init"),
   },
   {
     id: "git_init",
@@ -139,7 +141,17 @@ export const composer_commands: ComposerCommand[] = [
     keywords: ["gitinit", "git", "github", "repository", "publish"],
     hint: ({ t }) => t("commands.git_init_hint"),
     blocked: ({ t, compacting }) => (compacting ? t("commands.compacting") : null),
-    run: ({ chat_id, project_path }) => start_init(chat_id, project_path, "git_init"),
+    run: ({ chat_id, project_path }) => start_command_turn(chat_id, project_path, "git_init"),
+  },
+  {
+    id: "review",
+    needs: "project",
+    icon: () => FileSearchIcon,
+    label: ({ t }) => t("commands.review"),
+    keywords: ["review", "pr", "pull request", "diff", "prüfen"],
+    hint: ({ t }) => t("commands.review_hint"),
+    blocked: ({ t, compacting }) => (compacting ? t("commands.compacting") : null),
+    run: ({ chat_id, project_path }) => start_command_turn(chat_id, project_path, "review"),
   },
   {
     id: "plan",
@@ -162,3 +174,18 @@ export const composer_commands: ComposerCommand[] = [
     run: ({ draft_key }) => toggle_draft_chip(draft_key, visualize_chip),
   },
 ];
+
+export const start_typed_review = (context: CommandContext, pr: number | null): boolean => {
+  const review = composer_commands.find((command) => command.id === "review");
+  if (!review) {
+    return false;
+  }
+  const row = command_row(review, context);
+  if (row.disabled) {
+    context.report(row.hint ?? "", "note");
+    return true;
+  }
+  set_draft_text(context.draft_key, "");
+  void start_command_turn(context.chat_id, context.project_path, "review", pr === null ? null : String(pr));
+  return true;
+};

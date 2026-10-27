@@ -1,8 +1,7 @@
-import type { AssistantMessage, Message, UserMessage, UserOrigin } from "../../shared/chat.ts";
+import type { AssistantMessage, Message, UserMessage } from "../../shared/chat.ts";
+import { joins_turn } from "../../shared/turn-span.ts";
 
 export type TurnSegment = { kind: "user"; message: UserMessage } | { kind: "turn"; members: AssistantMessage[]; messages: Message[] };
-
-const joins_turn = (origin: UserOrigin) => origin === "agent_report" || origin === "agent_update";
 
 export const turn_segments = (messages: Message[]): TurnSegment[] => {
   const segments: TurnSegment[] = [];

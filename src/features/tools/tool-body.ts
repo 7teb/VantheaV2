@@ -9,7 +9,7 @@ import { compact_command, is_active_status } from "./tool-meta.ts";
 
 const output_views = new Set<ToolViewKind>(["command", "mcp", "text"]);
 
-const inline_tools = new Set(["datetime", "view_image"]);
+const inline_tools = new Set(["datetime", "view_image", "context_status"]);
 
 const notice_views = new Set<ToolViewKind>(["command", "background", "mcp"]);
 

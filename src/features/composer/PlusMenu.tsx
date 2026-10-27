@@ -15,6 +15,7 @@ import { step_enabled } from "./command-menu.ts";
 import { ComposerPopover } from "./ComposerPopover.tsx";
 import { MenuRow } from "./MenuRow.tsx";
 import { SourceList, usable_skills, type SourceTab } from "./PlusSources.tsx";
+import { WorktreeRow } from "./WorktreeRow.tsx";
 
 type PlusMenuProps = {
   open: boolean;
@@ -150,6 +151,7 @@ export const PlusMenu = ({ open, keep, chat_id, project_path, draft_key, draft, 
           index={2}
           on_select={() => toggle_plan(draft_key)}
         />
+        <WorktreeRow open={open} chat_id={chat_id} project_path={project_path} draft_key={draft_key} index={3} />
       </div>
       <div className="composer-popover-divider" role="separator" />
       <div className="composer-popover-tabs" role="tablist" aria-label={t("commands.sources")}>

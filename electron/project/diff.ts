@@ -71,7 +71,7 @@ const middle_rows = (a: string[], b: string[], a_start: number, a_end: number, b
 
 const gap: DiffLine = { kind: "gap", text: "", old_line: null, new_line: null };
 
-const hunks = (rows: DiffLine[]): DiffLine[] => {
+const hunks = (rows: DiffLine[], max_lines: number | null): DiffLine[] => {
   const keep = new Uint8Array(rows.length);
   rows.forEach((row, index) => {
     if (row.kind !== "context") {
@@ -85,7 +85,7 @@ const hunks = (rows: DiffLine[]): DiffLine[] => {
       skipped = true;
       continue;
     }
-    if (lines.length >= max_output_lines) {
+    if (max_lines !== null && lines.length >= max_lines) {
       lines.push(gap);
       return lines;
     }
@@ -101,7 +101,7 @@ const hunks = (rows: DiffLine[]): DiffLine[] => {
   return lines;
 };
 
-export const line_diff = (old_text: string | null, new_text: string | null): LineDiff => {
+export const line_diff = (old_text: string | null, new_text: string | null, max_lines: number | null = max_output_lines): LineDiff => {
   const a = split_lines(old_text);
   const b = split_lines(new_text);
   let prefix = 0;
@@ -124,5 +124,5 @@ export const line_diff = (old_text: string | null, new_text: string | null): Lin
   }
   const added = rows.filter((row) => row.kind === "add").length;
   const removed = rows.filter((row) => row.kind === "remove").length;
-  return { added, removed, lines: hunks(rows) };
+  return { added, removed, lines: hunks(rows, max_lines) };
 };

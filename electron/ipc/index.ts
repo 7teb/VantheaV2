@@ -5,6 +5,7 @@ import { register_browser_ipc } from "./browser.ts";
 import { register_chats_ipc } from "./chats.ts";
 import { register_extensions_ipc } from "./extensions.ts";
 import { register_files_ipc } from "./files.ts";
+import { register_git_actions_ipc } from "./git-actions.ts";
 import { register_git_ipc } from "./git.ts";
 import { register_github_ipc } from "./github.ts";
 import { register_mcp_ipc } from "./mcp.ts";
@@ -13,7 +14,9 @@ import { register_models_ipc } from "./models.ts";
 import { register_questions_ipc } from "./questions.ts";
 import { register_settings_ipc } from "./settings.ts";
 import { register_turn_ipc } from "./turn.ts";
+import { register_turn_diff_ipc } from "./turn-diff.ts";
 import { register_terminal_ipc } from "./terminal.ts";
+import { register_worktrees_ipc } from "./worktrees.ts";
 
 export const register_ipc = () => {
   register_app_ipc();
@@ -32,4 +35,7 @@ export const register_ipc = () => {
   register_files_ipc();
   register_git_ipc();
   register_github_ipc();
+  register_git_actions_ipc();
+  register_worktrees_ipc();
+  register_turn_diff_ipc();
 };

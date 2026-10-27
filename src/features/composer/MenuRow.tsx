@@ -4,7 +4,7 @@ import type { IconComponent } from "../../components/icons.tsx";
 type MenuRowProps = {
   icon: IconComponent | null;
   label: ReactNode;
-  hint?: string | null;
+  hint?: ReactNode;
   trail?: ReactNode;
   disabled?: boolean;
   active?: boolean;

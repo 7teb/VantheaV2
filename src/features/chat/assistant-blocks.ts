@@ -16,6 +16,8 @@ export type Block =
 
 const hidden_notices: ReadonlySet<NoticeKind> = new Set(["peer_digest", "agent_roster", "todos_carried", "update_reminder"]);
 
+const work_notices: ReadonlySet<NoticeKind> = new Set(["agent_report", "agent_update", "peer_message", "peer_status"]);
+
 const plain_block = (step: TextStep | SteerStep | NoticeStep | CompactionStep): Block | null => {
   switch (step.kind) {
     case "text":
@@ -42,15 +44,28 @@ const separate_block = (step: ToolStep): Block | null => {
   return null;
 };
 
+const lone_block = (step: WorkStep): Block => {
+  switch (step.kind) {
+    case "tool":
+      return { kind: "work", id: step.id, steps: [step] };
+    case "reasoning":
+      return { kind: "reasoning", id: step.id, step };
+    case "notice":
+      return { kind: "notice", id: step.id, step };
+    case "steer":
+      return { kind: "steer", id: step.id, step };
+  }
+};
+
 const stretch_blocks = (stretch: WorkStep[]): Block[] => {
   const first = stretch[0];
   if (first && work_tools(stretch).length > 0 && stretch.filter(shown_step).length > 1) {
     return [{ kind: "work", id: first.id, steps: stretch }];
   }
-  return stretch.map((step): Block => (step.kind === "tool" ? { kind: "work", id: step.id, steps: [step] } : { kind: "reasoning", id: step.id, step }));
+  return stretch.map(lone_block);
 };
 
-export const build_blocks = (steps: Step[]): Block[] => {
+export const build_blocks = (steps: Step[], parent_steers = false): Block[] => {
   const blocks: Block[] = [];
   const stretch: WorkStep[] = [];
   const close_stretch = () => blocks.push(...stretch_blocks(stretch.splice(0)));
@@ -70,6 +85,10 @@ export const build_blocks = (steps: Step[]): Block[] => {
       }
       close_stretch();
       blocks.push(separate);
+      continue;
+    }
+    if ((step.kind === "notice" && work_notices.has(step.notice)) || (step.kind === "steer" && parent_steers)) {
+      stretch.push(step);
       continue;
     }
     const block = plain_block(step);

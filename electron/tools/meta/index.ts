@@ -1,6 +1,6 @@
 import type { Todo } from "../../../shared/chat.ts";
 import { require_string } from "../browser/common.ts";
-import { define_tool, ToolArgumentError, type Tool } from "../types.ts";
+import { define_tool, ToolArgumentError, type ContextReading, type Tool } from "../types.ts";
 import { ask_user_tool } from "./ask-user.ts";
 
 const max_todos = 20;
@@ -30,7 +30,7 @@ const parse_todo = (value: unknown, index: number): Todo => {
 const todos_text = (todos: Todo[]): string => {
   const list = `Todos updated:\n${todos.map((todo) => `${todo_marks[todo.status]} ${todo.text}`).join("\n")}`;
   const open = todos.filter((todo) => todo.status !== "done").length;
-  return open === 0 ? list : `${list}\n${open} of ${todos.length} still open. Before your final answer, call update_todos again: finished items done, unfinished items pending.`;
+  return open === 0 ? list : `${list}\n${open} of ${todos.length} still open. When the step in_progress is finished, mark it done right away, together with the first tool call of the next step. Before your final answer, call update_todos again: finished items done, unfinished items pending.`;
 };
 
 const parse_todos = (raw: Record<string, unknown>): Todo[] => {
@@ -46,7 +46,7 @@ const parse_todos = (raw: Record<string, unknown>): Todo[] => {
 export const update_todos_tool = define_tool<Todo[]>({
   spec: {
     name: "update_todos",
-    description: `Show the user the step list for the current task. It stays visible above the input box until every item is done or the list is cleared. Call it before the first edit with every step pending, then whenever a step starts (in_progress) or finishes (done). Before your final answer, call it once more so finished items are done and unfinished ones are pending; never end a turn with an item in_progress. Pass the whole list each time, at most ${max_todos} steps.`,
+    description: `Show the user the step list for the current task. It stays visible above the input box until every item is done or the list is cleared. Call it before the first edit with the first step in_progress and the rest pending. Then keep it live: the moment a step is finished, call it with that step done and the next one in_progress, in the same response as the first tool call of the next step. Never finish several steps and mark them done together in one later call. Before your final answer, call it once more so finished items are done and unfinished ones are pending; never end a turn with an item in_progress. Pass the whole list each time, at most ${max_todos} steps.`,
     parameters: {
       type: "object",
       properties: {
@@ -119,4 +119,34 @@ export const datetime_tool = define_tool<Record<string, never>>({
   },
 });
 
-export const meta_tools: Tool[] = [update_todos_tool, present_plan_tool, datetime_tool, ask_user_tool];
+const token_count = (tokens: number) => `${tokens.toLocaleString("en-US")} tokens`;
+
+const share = (tokens: number, limit: number) => `${Math.round((tokens / limit) * 100)}%`;
+
+export const context_text = ({ used, limit, compact_at }: ContextReading): string => {
+  if (compact_at === null) {
+    return `In use: ${token_count(used)}. The model's context window is unknown, so the app does not compact this conversation automatically.`;
+  }
+  const facts = [`Context window: ${token_count(limit)}.`, `In use: ${token_count(used)} (${share(used, limit)}).`];
+  if (used >= compact_at) {
+    return [...facts, `Automatic compaction is due: the app compacts the conversation before your next model call (threshold ${token_count(compact_at)}, ${share(compact_at, limit)}).`].join(" ");
+  }
+  return [...facts, `Automatic compaction runs before the next model call once the context reaches ${token_count(compact_at)} (${share(compact_at, limit)}), ${token_count(compact_at - used)} from now.`].join(" ");
+};
+
+export const context_status_tool = define_tool<Record<string, never>>({
+  spec: {
+    name: "context_status",
+    description:
+      "Get your context window size, how many tokens this conversation uses right now (including your current response) and at which size the app compacts it automatically. Use it before a large read or a long run of tool calls when you need to know how much room is left.",
+    parameters: { type: "object", properties: {}, additionalProperties: false },
+  },
+  profiles: ["main", "plan", "explore", "worker"],
+  parse: () => ({}),
+  run: async (ctx) => {
+    const text = context_text(ctx.context());
+    return { status: "done", text, view: { kind: "text", text } };
+  },
+});
+
+export const meta_tools: Tool[] = [update_todos_tool, present_plan_tool, datetime_tool, context_status_tool, ask_user_tool];

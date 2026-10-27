@@ -29,7 +29,11 @@
   }
 
   .assistant-actions {
-    margin: 6px 0 0 -6px;
+    margin: 5px 0 0 -3px;
+  }
+
+  .assistant-message > .turn-fold-item:has(+ .assistant-actions) > .turn-fold-clip > .assistant-text:last-child {
+    margin-bottom: 0;
   }
 
   .reasoning-row {
@@ -258,8 +262,9 @@
 
   .file-changes-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-2);
+    gap: 0 var(--space-2);
     min-height: var(--size-control);
     font-size: var(--font-size-body);
     color: var(--text-secondary);
@@ -271,10 +276,14 @@
 
   .file-changes-title {
     color: var(--text-primary);
+    white-space: nowrap;
   }
 
-  .file-changes-spacer {
-    flex: 1;
+  .file-changes-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: auto;
   }
 
   .file-changes-list {
@@ -306,6 +315,17 @@
     font-size: var(--font-size-ui);
     color: var(--text-secondary);
     transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .file-changes-row[data-deleted="true"] .file-changes-path {
+    color: var(--text-tertiary);
+    text-decoration: line-through;
+  }
+
+  .file-changes-meta {
+    flex: none;
+    color: var(--text-detail);
+    white-space: nowrap;
   }
 
   .file-changes .output-block-more {

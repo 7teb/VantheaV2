@@ -6,6 +6,7 @@ import { Skeleton } from "../../../../components/Skeleton.tsx";
 import { Tooltip } from "../../../../components/Tooltip.tsx";
 import { use_t, type MessageKey, type Translate } from "../../../../i18n/index.ts";
 import { open_external } from "../../../../state/chat-actions.ts";
+import { GitActions } from "./GitActions.tsx";
 import { GitLocalRow } from "./GitLocalRow.tsx";
 import { FetchNotice, GitNotice } from "./GitNotice.tsx";
 import { GithubRow } from "./GithubRow.tsx";
@@ -71,6 +72,7 @@ const repo_rows = (t: Translate, view: GitRepoView): ReactNode => (
     <FetchNotice fetch={view.fetch} />
     {view.watch_failed && <GitNotice icon={<EyeOffIcon size={16} />} title={t("git.watch_failed")} />}
     <GithubRow git={view} />
+    <GitActions view={view} />
   </>
 );
 

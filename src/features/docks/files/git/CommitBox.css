@@ -1,0 +1,59 @@
+.commit-box {
+  display: grid;
+  flex: none;
+  gap: 6px;
+  padding: var(--space-2);
+  border-top: 1px solid var(--divider);
+  background: var(--surface-main);
+}
+
+.commit-well {
+  position: relative;
+  min-width: 0;
+}
+
+.commit-input.text-area {
+  padding: 7px 34px 7px 10px;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-ui);
+  line-height: 19.5px;
+}
+
+.commit-input.text-area:disabled {
+  color: var(--text-secondary);
+}
+
+.commit-writing {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  height: 53px;
+  padding: 12px 34px 12px 10px;
+  border-radius: var(--radius-lg);
+}
+
+.commit-retry.icon-button-sm {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  color: var(--text-tertiary);
+}
+
+.commit-button.button {
+  width: 100%;
+  min-width: 0;
+}
+
+.commit-note {
+  min-width: 0;
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+  overflow-wrap: anywhere;
+}
+
+.commit-note:focus-visible {
+  border-radius: var(--radius-xs);
+}

@@ -4,13 +4,16 @@ import type { Emit, Invoke, Send } from "./channel.ts";
 import { chats_channels } from "./chats.ts";
 import { extensions_channels } from "./extensions.ts";
 import { files_channels } from "./files.ts";
+import { git_actions_channels } from "./git-actions.ts";
 import { git_channels } from "./git.ts";
 import { github_channels } from "./github.ts";
 import { media_channels } from "./media.ts";
 import { panels_channels } from "./panels.ts";
 import { questions_channels } from "./questions.ts";
 import { settings_channels } from "./settings.ts";
+import { turn_diff_channels } from "./turn-diff.ts";
 import { work_channels } from "./work.ts";
+import { worktrees_channels } from "./worktrees.ts";
 
 export const channels = {
   ...app_channels,
@@ -25,6 +28,9 @@ export const channels = {
   ...files_channels,
   ...git_channels,
   ...github_channels,
+  ...git_actions_channels,
+  ...worktrees_channels,
+  ...turn_diff_channels,
 } as const;
 
 export type Channels = typeof channels;

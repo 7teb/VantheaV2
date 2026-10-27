@@ -16,6 +16,10 @@
     scrollbar-gutter: stable both-edges;
   }
 
+  .chat-scroll::-webkit-scrollbar-track {
+    margin-top: var(--radius-xl);
+  }
+
   .chat-column {
     display: flex;
     flex-direction: column;

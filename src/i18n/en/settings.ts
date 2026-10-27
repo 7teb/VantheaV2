@@ -19,6 +19,7 @@ export const settings = {
   "settings.tab_mcp": "MCP servers",
   "settings.tab_web_search": "Web search",
   "settings.tab_personalization": "Personalization",
+  "settings.tab_privacy": "Privacy",
   "settings.tab_image_gen": "Image generation",
   "settings.tab_skills": "Skills",
   "settings.balance_no_key": "Save a key to see its balance",

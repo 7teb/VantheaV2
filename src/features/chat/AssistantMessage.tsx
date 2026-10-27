@@ -57,7 +57,14 @@ export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_p
   const finished = last.status !== "streaming" && !fold.holding;
   const own_changes = members.slice(0, -1).every((member) => file_changes(member.steps).length === 0);
   const file_card = finished && (
-    <FileChanges chat_id={chat_id} steps={members.flatMap((member) => member.steps)} undo_id={own_changes && undoable_id === last.id ? last.id : null} busy={busy} />
+    <FileChanges
+      chat_id={chat_id}
+      steps={members.flatMap((member) => member.steps)}
+      from_id={leader.id}
+      to_id={last.id}
+      undo_id={own_changes && undoable_id === last.id ? last.id : null}
+      busy={busy}
+    />
   );
   return (
     <div ref={frame} className="assistant-message enter-fade-up" data-last={last.id === last_id}>

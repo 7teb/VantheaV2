@@ -36,7 +36,7 @@ The owner ran 60 tasks in three categories of 20 tasks each, 200 points in total
 | GPT OSS 120B | medium | 63% | 126/200 | 0.49 |
 | Claude Opus 5.5 | max | 59% | 118/200 | 4.38 |
 
-Not in this run: Kimi K3, Qwen 3.8 Max, MiniMax M3.1 Flash, Grok 4.7, Muse Wonder, Gemini 3.8 Flash and its Flex entry, MiMo V2.6 Pro Ultraspeed, GLM 5.3 Fast. GPT 6.1 Sol, GPT 6 Astra and Gemini 4 Argon without "Flex" are the same models on the standard route: the score is the same, they answer faster and cost twice as much per token.
+Not in this run: Kimi K3, Qwen 3.8 Max, MiniMax M3.1 Flash, Grok 4.7, GPT 6.1 Terra and its Flex entry, Muse Wonder, Gemini 3.8 Flash and its Flex entry, MiMo V2.6 Pro Ultraspeed, GLM 5.3 Fast. GPT 6.1 Sol, GPT 6 Astra and Gemini 4 Argon without "Flex" are the same models on the standard route: the score is the same, they answer faster and cost twice as much per token.
 
 ## Public benchmarks
 
@@ -79,7 +79,7 @@ The owner's benchmark and the public ones do not always agree. Claude Opus 5.5 l
 
 A model whose label ends in "Flex" (its catalog id ends in `:floor`) is the same model as the entry without "Flex", sent first to the provider's Flex tier:
 
-- GPT 6.1 Sol Flex and GPT 6 Astra Flex use OpenAI's Flex processing. Gemini 4 Argon Flex uses the Flex tier of Google AI Studio (the Gemini API). Gemini 3.8 Flash Flex uses the Flex tiers of Google Vertex and Google AI Studio.
+- GPT 6.1 Sol Flex, GPT 6.1 Terra Flex and GPT 6 Astra Flex use OpenAI's Flex processing. Gemini 4 Argon Flex uses the Flex tier of Google AI Studio (the Gemini API). Gemini 3.8 Flash Flex uses the Flex tiers of Google Vertex and Google AI Studio.
 - Price: half the standard price per token.
 - Speed: slower. Requests run on spare capacity and can wait in a queue; Google states a latency target of 1 to 15 minutes per request on its Flex tier, OpenAI gives no number.
 - Availability: when the Flex tier has no capacity, the provider refuses the request (OpenAI: 429 Resource Unavailable, Google: 503). VantheaX lists the standard route of the same provider second, so OpenRouter then sends the request there and it costs the standard price.

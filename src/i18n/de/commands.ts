@@ -41,6 +41,8 @@ export const commands: Record<keyof typeof en, string> = {
   "commands.init_hint": "AGENTS.md anlegen oder aktualisieren",
   "commands.git_init": "GitHub-Repository erstellen",
   "commands.git_init_hint": "Fragt Name, Sichtbarkeit und Mitwirkende ab und pusht dann",
+  "commands.review": "Review",
+  "commands.review_hint": "Aktuelle Änderungen, oder /review 123 für einen Pull Request",
   "commands.plan_hint": "Nur lesen, legt einen Plan zur Freigabe vor",
   "commands.fork": "Chat verzweigen",
   "commands.fork_hint": "Ab der letzten Nachricht",

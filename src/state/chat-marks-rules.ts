@@ -45,6 +45,8 @@ export const mark_event = (marks: ChatMarks, event: TurnEvent, viewing: boolean)
 
 export const mark_seen = (marks: ChatMarks, chat_id: string): ChatMarks => patch(marks, chat_id, (mark) => ({ ...mark, asking: false, unread: false }));
 
+export const mark_all_read = (marks: ChatMarks): ChatMarks => Object.keys(marks).reduce((next, chat_id) => mark_seen(next, chat_id), marks);
+
 export const row_status = (mark: ChatMark | undefined, streaming: boolean): RowStatus => {
   if (mark && (mark.pending.length > 0 || mark.asking)) {
     return "waiting";

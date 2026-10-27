@@ -25,6 +25,10 @@ export const max_buffered = 4000;
 
 export const empty_chat_view: ChatViewState = { entries: {}, recent: [] };
 
+const no_messages: Message[] = [];
+
+export const chat_messages = (state: ChatViewState, chat_id: string | null): Message[] => (chat_id === null ? no_messages : (state.entries[chat_id]?.chat?.messages ?? no_messages));
+
 const omit_key = <T>(record: Record<string, T>, key: string): Record<string, T> => {
   const copy = { ...record };
   delete copy[key];

@@ -1,11 +1,12 @@
-import type { GitEntry, GitView } from "../../shared/git-view.ts";
+import type { GitEntry, GitRepoView, GitView } from "../../shared/git-view.ts";
 import { git_decorations, type GitDecorations } from "../../shared/git/decorations.ts";
 import type { GitChange } from "../../shared/ipc/git.ts";
+import { is_secret_path } from "../../shared/secret-path.ts";
 import { api } from "../api/bridge.ts";
 import { create_store } from "./create-store.ts";
 import { files_store, shown_view, type FilesState } from "./files.ts";
 
-export type GitSurface = "files" | "changes" | "history";
+export type GitSurface = "files" | "changes" | "history" | "diff";
 
 export type ViewerMode = "file" | "diff";
 
@@ -43,6 +44,15 @@ export const changed_entries = (view: GitView): GitEntry[] => {
   listed.set(view, entries);
   return entries;
 };
+
+const left_out_of_commit = (view: GitRepoView, entry: GitEntry): boolean => {
+  if (entry.nested_repo) return true;
+  if (entry.status !== "untracked" && entry.status !== "added") return false;
+  const { prefix } = view.repo;
+  return is_secret_path(prefix && entry.path.startsWith(`${prefix}/`) ? entry.path.slice(prefix.length + 1) : entry.path);
+};
+
+export const commit_count = (view: GitRepoView): number => changed_entries(view).filter((entry) => !left_out_of_commit(view, entry)).length;
 
 const decorations = new WeakMap<GitView, GitDecorations>();
 

@@ -20,13 +20,14 @@ export type Attachment = {
   source_path?: string;
 };
 
-export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "git_init" | "continue" | "background" | "agent_report" | "agent_update";
+export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "git_init" | "review" | "continue" | "background" | "agent_report" | "agent_update";
 
-export type CommandOrigin = Extract<UserOrigin, "init" | "git_init">;
+export type CommandOrigin = Extract<UserOrigin, "init" | "git_init" | "review">;
 
-export const command_origins: readonly CommandOrigin[] = ["init", "git_init"];
+export const command_origins: readonly CommandOrigin[] = ["init", "git_init", "review"];
 
-export const human_origin = (origin: UserOrigin): boolean => origin === "user" || origin === "plan_accept" || origin === "undo" || origin === "init" || origin === "git_init";
+export const human_origin = (origin: UserOrigin): boolean =>
+  origin === "user" || origin === "plan_accept" || origin === "undo" || origin === "init" || origin === "git_init" || origin === "review";
 
 export const instruction_origin = (origin: UserOrigin): boolean => human_origin(origin) || origin === "continue";
 
@@ -36,6 +37,7 @@ export type UserMessage = {
   text: string;
   attachments: Attachment[];
   origin: UserOrigin;
+  command_arg?: string;
   created_at: string;
 };
 
@@ -195,11 +197,14 @@ export const message_attachments = (message: Message): Attachment[] =>
 
 export type ChatSummary = { text: string; through_message_id: string; through_round?: number; facts?: string };
 
+export type ChatWorktree = { path: string; prefix: string; branch: string; base: string; created_at: string };
+
 export type ChatMeta = {
   id: string;
   title: string;
   project_path: string;
   workspace: string;
+  worktree?: ChatWorktree;
   pinned: boolean;
   archived?: boolean;
   created_at: string;

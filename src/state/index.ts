@@ -12,14 +12,19 @@ import { init_event_hold } from "./event-hold.ts";
 import { init_extensions } from "./extensions.ts";
 import { init_files } from "./files.ts";
 import { init_full_window } from "./full-window.ts";
+import { init_git_actions } from "./git-actions.ts";
 import { init_git_diff } from "./git-diff.ts";
+import { init_git_pr } from "./git-pr.ts";
 import { init_git } from "./git.ts";
 import { init_github } from "./github.ts";
 import { load_keep_awake } from "./keep-awake.ts";
 import { init_models } from "./models.ts";
 import { init_settings } from "./settings.ts";
 import { init_terminal } from "./terminal.ts";
+import { init_turn_diff_ui } from "./turn-diff-ui.ts";
+import { init_turn_diff } from "./turn-diff.ts";
 import { init_window } from "./window.ts";
+import { init_worktree } from "./worktree.ts";
 
 export const init_state = (): (() => void) => {
   void load_keep_awake();
@@ -43,8 +48,13 @@ export const init_state = (): (() => void) => {
     init_files(),
     init_git(),
     init_git_diff(),
+    init_git_actions(),
+    init_git_pr(),
     init_github(),
+    init_turn_diff(),
+    init_turn_diff_ui(),
     init_models(),
+    init_worktree(),
   ];
   return () => {
     for (const stop of stops) {

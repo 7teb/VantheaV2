@@ -7,6 +7,7 @@ import { Popover } from "./Popover.tsx";
 import { ProgressRing } from "./ProgressRing.tsx";
 import { compact_tokens } from "./token-count.ts";
 import { use_t, type MessageKey } from "../i18n/index.ts";
+import { WorkingLetters } from "./WorkingLetters.tsx";
 import "./ContextRing.css";
 
 export const result_keys: Record<CompactResult["status"], MessageKey> = {
@@ -67,7 +68,7 @@ export const ContextRing = ({ usage, compact, mark, placement = "top-end" }: Con
         )}
         {compact && (
           <Button className={running ? "is-working" : undefined} disabled={compact.busy || running} onClick={() => void run_compact(compact)}>
-            {running ? t("context.compacting") : t("context.compact_now")}
+            {running ? <WorkingLetters text={t("context.compacting")} /> : t("context.compact_now")}
           </Button>
         )}
       </Popover>

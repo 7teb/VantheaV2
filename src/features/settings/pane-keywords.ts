@@ -1,6 +1,6 @@
 import type { MessageKey } from "../../i18n/translate.ts";
 
-export type PaneId = "personalization" | "web_search" | "image_gen" | "mcp" | "skills";
+export type PaneId = "personalization" | "privacy" | "web_search" | "image_gen" | "mcp" | "skills";
 
 export type PaneSearch = { label: MessageKey; keywords: MessageKey[] };
 
@@ -20,6 +20,10 @@ export const pane_search: Record<PaneId, PaneSearch> = {
       "personalization.mem_review",
       "personalization.mem_saved",
     ],
+  },
+  privacy: {
+    label: "settings.tab_privacy",
+    keywords: ["privacy.archive_chats", "privacy.delete_chats", "privacy.remove_projects"],
   },
   web_search: {
     label: "settings.tab_web_search",

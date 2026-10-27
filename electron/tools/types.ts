@@ -45,6 +45,8 @@ export type TextGate = { kind: "pass" } | { kind: "denied"; text: string; reason
 
 export type PeerSend = (request: PeerRequest) => Promise<ToolResult>;
 
+export type ContextReading = { used: number; limit: number; compact_at: number | null };
+
 export type ToolContext = {
   chat_id: string;
   turn_id: string;
@@ -66,6 +68,7 @@ export type ToolContext = {
   review: Reviewer;
   message_main: ((text: string) => boolean) | null;
   send_peer: PeerSend | null;
+  context: () => ContextReading;
 };
 
 export type ToolImage = { bytes: Buffer; mime: string; label: string };

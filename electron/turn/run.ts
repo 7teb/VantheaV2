@@ -3,6 +3,7 @@ import type { AssistantMessage, Attachment, Message, UserMessage } from "../../s
 import { file_changes, undoable_turn } from "../../shared/file-changes.ts";
 import type { CompactResult, SendRequest, TurnStarted } from "../../shared/ipc/chats.ts";
 import type { CommandOrigin, UserOrigin } from "../../shared/chat.ts";
+import type { ModelEntry } from "../../shared/models.ts";
 import { wake_idle } from "../agents/reports.ts";
 import { attachment_ids, hold_ids, release_ids } from "../chats/refs.ts";
 import { append_message, flush_chat, get_chat, set_streaming, truncate_after, unarchive_chat, update_message } from "../chats/store.ts";
@@ -17,6 +18,7 @@ import { context_model } from "../settings/model-context.ts";
 import { get_settings } from "../settings/store.ts";
 import { describe_attachment_image } from "../side/vision.ts";
 import { start_title } from "../side/title.ts";
+import { turn_diffs } from "../turn-diff/index.ts";
 import {
   abort_turn,
   active_turn,
@@ -35,6 +37,7 @@ import { create_emitter, type EmitDeps } from "./emit.ts";
 import { uncompacted_work } from "./history.ts";
 import { git_init_request_text } from "./git-init-request.ts";
 import { init_request_text } from "./init-request.ts";
+import { review_request_text } from "./review-request.ts";
 import { undo_request_text } from "./undo-request.ts";
 import { note_images } from "./vision-notes.ts";
 
@@ -52,7 +55,7 @@ const iso = () => new Date().toISOString();
 
 type Trigger = { kind: "new"; text: string; attachments: Attachment[] } | { kind: "existing"; message_id: string; text: string } | { kind: "compact" };
 
-type BeginInput = { chat_id: string; model_id: string; effort: string; mode: SendRequest["mode"]; plan: boolean; origin: UserOrigin; trigger: Trigger };
+type BeginInput = { chat_id: string; model_id: string; effort: string; mode: SendRequest["mode"]; plan: boolean; origin: UserOrigin; command_arg?: string; trigger: Trigger };
 
 const with_reservation = async <T>(chat_id: string, work: () => Promise<T>): Promise<T> => {
   if (!reserve_chat(chat_id)) {
@@ -69,6 +72,14 @@ type Launched = { started: TurnStarted; finished: Promise<void> };
 
 const last_request = (messages: Message[]): string => messages.findLast((message): message is UserMessage => message.role === "user" && message.origin === "user")?.text ?? "";
 
+const turn_model = async (model_id: string): Promise<ModelEntry> => {
+  const listed = find_model(await model_catalog(), model_id);
+  if (!listed) {
+    throw new Error(`model ${model_id} is not in the catalog`);
+  }
+  return context_model(listed);
+};
+
 const launch = async (input: BeginInput): Promise<Launched> => {
   const chat = await get_chat(input.chat_id);
   if (!chat) {
@@ -77,12 +88,7 @@ const launch = async (input: BeginInput): Promise<Launched> => {
   if (chat.streaming) {
     throw new Error(`chat ${input.chat_id} is already streaming`);
   }
-  const catalog = await model_catalog();
-  const listed = find_model(catalog, input.model_id);
-  if (!listed) {
-    throw new Error(`model ${input.model_id} is not in the catalog`);
-  }
-  const model = context_model(listed);
+  const model = await turn_model(input.model_id);
   const effort = resolve_effort(model, input.effort);
   const project_root = await chat_root(chat);
   await unarchive_chat(input.chat_id);
@@ -90,7 +96,15 @@ const launch = async (input: BeginInput): Promise<Launched> => {
   let user_request: string;
   if (input.trigger.kind === "new") {
     const first_user = !chat.messages.some((message) => message.role === "user");
-    const user: UserMessage = { id: randomUUID(), role: "user", text: input.trigger.text, attachments: input.trigger.attachments, origin: input.origin, created_at: iso() };
+    const user: UserMessage = {
+      id: randomUUID(),
+      role: "user",
+      text: input.trigger.text,
+      attachments: input.trigger.attachments,
+      origin: input.origin,
+      ...(input.command_arg === undefined ? {} : { command_arg: input.command_arg }),
+      created_at: iso(),
+    };
     await append_message(input.chat_id, user);
     user_message_id = user.id;
     user_request = input.trigger.text;
@@ -125,6 +139,7 @@ const launch = async (input: BeginInput): Promise<Launched> => {
   await append_message(input.chat_id, placeholder);
   set_streaming(input.chat_id, true);
   const turn = register_active(input.chat_id, message_id, create_emitter(input.chat_id, message_id, emit_deps), model, effort);
+  if (input.trigger.kind !== "compact") turn_diffs.begin(input.chat_id, message_id, project_root);
   const turn_plan: TurnPlan = {
     chat_id: input.chat_id,
     message_id,
@@ -256,11 +271,16 @@ export const undo_turn = (chat_id: string, message_id: string): Promise<TurnStar
     return (await launch({ chat_id, model_id, effort, mode, plan: false, origin: "undo", trigger: { kind: "new", text, attachments: [] } })).started;
   });
 
-const command_texts: Record<CommandOrigin, string> = { init: init_request_text, git_init: git_init_request_text };
+const command_texts: Record<CommandOrigin, (argument: string | null, model: ModelEntry) => string> = {
+  init: () => init_request_text,
+  git_init: () => git_init_request_text,
+  review: review_request_text,
+};
 
-export const init_turn = (chat_id: string, command: CommandOrigin): Promise<TurnStarted> => {
+export const init_turn = async (chat_id: string, command: CommandOrigin, argument: string | null): Promise<TurnStarted> => {
   const { model_id, effort, mode } = settings_request();
-  return begin({ chat_id, model_id, effort, mode, plan: false, origin: command, trigger: { kind: "new", text: command_texts[command], attachments: [] } });
+  const text = command_texts[command](argument, await turn_model(model_id));
+  return begin({ chat_id, model_id, effort, mode, plan: false, origin: command, ...(argument === null ? {} : { command_arg: argument }), trigger: { kind: "new", text, attachments: [] } });
 };
 
 export const compact_turn = async (chat_id: string): Promise<CompactResult> => {

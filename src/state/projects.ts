@@ -17,8 +17,10 @@ export const choose_project = async (): Promise<ProjectEntry | null> => {
   return entry;
 };
 
-export const create_project = async () => {
-  await adopt(await api.invoke("projects:create"));
+export const pick_project_folder = () => api.invoke("projects:pick_folder");
+
+export const create_project = async (name: string, folder: string | null) => {
+  await adopt(await api.invoke("projects:create", { name, folder }));
 };
 
 export const rename_project = async (path: string, name: string) => {
@@ -27,6 +29,10 @@ export const rename_project = async (path: string, name: string) => {
 
 export const set_project_pinned = async (path: string, pinned: boolean) => {
   settings_store.set(await api.invoke("projects:update", path, { pinned }));
+};
+
+export const remove_all_projects = async () => {
+  settings_store.set(await api.invoke("projects:remove_all"));
 };
 
 export const remove_project = async (path: string) => {

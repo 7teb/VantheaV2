@@ -6,11 +6,11 @@ import { use_t } from "../../../i18n/index.ts";
 import type { RunRef, Transcript } from "../../../state/agents-reduce.ts";
 import { build_blocks, shows_thinking, thinks_in_group, type Block } from "../../chat/assistant-blocks.ts";
 import { ReasoningRow } from "../../chat/ReasoningRow.tsx";
+import { MainMessageRow } from "../../chat/MainMessageRow.tsx";
 import { CompactionRow, NoticeRow } from "../../chat/StepRows.tsx";
 import { ErrorCard, RetryBanner } from "../../chat/TurnStatus.tsx";
 import { WorkGroup } from "../../tools/WorkGroup.tsx";
-import { MainMessageRow } from "./MainMessageRow.tsx";
-import { PeerMessageRow } from "./PeerMessageRow.tsx";
+import { WorkingLetters } from "../../../components/WorkingLetters.tsx";
 
 export const TranscriptSkeleton = () => (
   <div className="agent-transcript" aria-busy="true">
@@ -49,7 +49,7 @@ const BlockView = ({ block, chat_id, run, streaming, tail, pending }: BlockViewP
     case "steer":
       return <MainMessageRow chat_id={chat_id} />;
     case "notice":
-      return block.step.notice === "peer_message" ? <PeerMessageRow step={block.step} /> : <NoticeRow step={block.step} />;
+      return <NoticeRow step={block.step} />;
     case "compaction":
       return <CompactionRow step={block.step} />;
   }
@@ -66,7 +66,7 @@ export const AgentTranscript = memo(({ transcript, chat_id, report }: AgentTrans
   const t = use_t();
   const streaming = transcript.status === "streaming";
   const final_report = streaming ? "" : report.trim();
-  const blocks = useMemo(() => without_report_echo(build_blocks(transcript.steps), final_report), [transcript.steps, final_report]);
+  const blocks = useMemo(() => without_report_echo(build_blocks(transcript.steps, true), final_report), [transcript.steps, final_report]);
   const run = useMemo(() => ({ agent_id: transcript.agent_id, run_id: transcript.run_id }), [transcript.agent_id, transcript.run_id]);
   const grouped_thinking = thinks_in_group(streaming, transcript.retry !== null, blocks);
   const empty = !streaming && blocks.length === 0 && !final_report && !transcript.error;
@@ -84,7 +84,7 @@ export const AgentTranscript = memo(({ transcript, chat_id, report }: AgentTrans
       ))}
       {shows_thinking(streaming, transcript.retry !== null, blocks) && !grouped_thinking && (
         <div className="assistant-pending">
-          <span className="is-working">{t("chat.thinking")}</span>
+          <span className="is-working"><WorkingLetters text={t("chat.thinking")} /></span>
         </div>
       )}
       {transcript.retry && <RetryBanner retry={transcript.retry} />}

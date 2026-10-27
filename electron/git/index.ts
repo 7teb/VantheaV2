@@ -1,18 +1,25 @@
 import type { BrowserWindow } from "electron";
-import type { CommitDetail, GitFileDiff, GitView, HistoryPage, HistoryRequest, LineCount } from "../../shared/git-view.ts";
+import type { CommitDetail, GitFileDiff, GitRepoView, GitView, HistoryPage, HistoryRequest, LineCount } from "../../shared/git-view.ts";
 import type { FilesRoot } from "../../shared/ipc/files.ts";
+import type { CommitResult, PushResult, WriteGuard } from "../../shared/ipc/git-actions.ts";
 import { main_window } from "../app/window.ts";
 import type { TreeTap } from "../project/watch.ts";
 import { path_key } from "../storage/paths.ts";
 import { create_repo_busy, type RepoBusy, type WorkSources } from "./busy.ts";
+import { collect_change_text } from "./change-text.ts";
+import { commit_changes } from "./commit-changes.ts";
 import { create_commit_reader, type CommitReader } from "./commit.ts";
-import { read_file_diff, read_line_counts } from "./diff.ts";
+import { read_file_diff, read_line_counts, type GitReadAccess } from "./diff.ts";
 import { create_fetcher, type Fetcher, type GitWindow, type RemoteHead } from "./fetch.ts";
 import { create_history, type GitHistory } from "./history.ts";
 import { git_tool } from "./locate.ts";
+import { read_pr_base, type PrBase } from "./pr-base.ts";
+import { push_branch } from "./push.ts";
 import { default_readers } from "./readers.ts";
 import type { GitRef } from "./refs.ts";
+import { write_hooks } from "./run.ts";
 import { create_git_session, type GitSession } from "./session.ts";
+import { read_write_guard } from "./write-guard.ts";
 
 export type GitEvent =
   | { kind: "view"; root: string; view: GitView; refs: GitRef[] }
@@ -47,12 +54,14 @@ export const app_window: GitWindow = {
   },
 };
 
-const current_fetcher = (): Fetcher => {
+const current_work = () => {
   if (!work) {
     throw new Error("the git view was used before init_git");
   }
-  return work.fetcher;
+  return work;
 };
+
+const current_fetcher = (): Fetcher => current_work().fetcher;
 
 const notify = (event: GitEvent) => {
   for (const listener of listeners) {
@@ -86,6 +95,18 @@ const bound_to = (root: string): BoundGit => {
     throw new Error("git session is bound to another folder");
   }
   return bound;
+};
+
+const checkout_busy = (access: GitReadAccess): Promise<boolean> => current_work().busy.checkout_in_use(access.view.repo.root);
+
+const after_write = async <T>(root: string, remote: boolean, write: (access: GitReadAccess, session: GitSession) => Promise<T>): Promise<T> => {
+  const { session } = bound_to(root);
+  try {
+    return await write(await session.read_access(), session);
+  } finally {
+    session.refresh();
+    if (remote) notify({ kind: "refresh", root: session.root });
+  }
 };
 
 export const git_service = {
@@ -126,6 +147,29 @@ export const git_service = {
     if (target) current_fetcher().request_head(target, head);
   },
   work_changed: () => work?.busy.changed(),
+  write_guard: async (root: string): Promise<WriteGuard> => {
+    const access = await bound_to(root).session.read_access();
+    const guard = await read_write_guard(access.tool, access.root, access.signal);
+    return { hooks_off: guard.hooks && !write_hooks, commit_block: guard.commit_block, push_block: guard.push_block };
+  },
+  change_material: async (root: string, room: number): Promise<string> => collect_change_text(await bound_to(root).session.read_access(), { kind: "working" }, room),
+  commit_changes: (root: string, message: string): Promise<CommitResult> =>
+    after_write(root, false, async (access) =>
+      (await checkout_busy(access)) ? { kind: "busy" } : commit_changes(access, await read_write_guard(access.tool, access.root, access.signal), message),
+    ),
+  push: (root: string): Promise<PushResult> =>
+    after_write(root, true, async (access, session) => {
+      if (await checkout_busy(access)) return { kind: "busy" };
+      const target = session.fetch_target();
+      return target ? push_branch(target, access.view, await read_write_guard(access.tool, access.root, access.signal)) : { kind: "blocked", reason: "no_remote" };
+    }),
+  checkout_busy: async (root: string): Promise<boolean> => checkout_busy(await bound_to(root).session.read_access()),
+  pr_base: async (root: string, remote: string, base: string): Promise<PrBase | null> => read_pr_base(await bound_to(root).session.read_access(), remote, base),
+  branch_material: async (root: string, base_ref: string, room: number): Promise<string> => collect_change_text(await bound_to(root).session.read_access(), { kind: "branch", base_ref }, room),
+  repo_view: (root: string): GitRepoView | null => {
+    const view = bound_to(root).session.view();
+    return view.kind === "repo" ? view : null;
+  },
   listen: (listener: GitListener) => {
     listeners.add(listener);
     return () => {

@@ -158,12 +158,13 @@ const reset_view = (key: string, scope: FilesScope, root: RootLoad) => {
 };
 
 const settle_root = (key: string, scope: FilesScope, root: FilesRoot | null) => {
-  if (root !== null && view_of(key)?.root.root?.path === root.path) {
+  const before = view_of(key)?.root.root;
+  if (root !== null && before?.path === root.path && before.worktree?.missing === root.worktree?.missing) {
     update_view(key, (view) => ({ ...view, scope, root: { status: "ready", root } }));
     return;
   }
   reset_view(key, scope, root ? { status: "ready", root } : { status: "none", root: null });
-  if (root) {
+  if (root && !root.worktree?.missing) {
     void load_dir(key, scope, "");
   }
 };
@@ -259,6 +260,11 @@ export const sync_files = async () => {
   if (root && view && root.path === shown_root) {
     reload(key, view, { paths: [], overflow: true });
   }
+};
+
+export const reload_files_root = async () => {
+  const scope = shown_scope();
+  await load_root(view_key(scope), scope);
 };
 
 export const watch_files = () => {

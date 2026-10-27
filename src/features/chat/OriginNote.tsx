@@ -29,7 +29,7 @@ const agent_notes_of = (message: UserMessage): AgentNote[] => {
 export const OriginNote = ({ message }: { message: UserMessage }) => {
   const t = use_t();
   const [open, set_open] = useState(false);
-  if (message.origin === "user" || message.origin === "init" || message.origin === "git_init") {
+  if (message.origin === "user" || message.origin === "init" || message.origin === "git_init" || message.origin === "review") {
     return null;
   }
   const agent_notes = agent_notes_of(message);

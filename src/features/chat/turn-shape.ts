@@ -1,6 +1,7 @@
 import { manual_compaction_only, type AssistantMessage } from "../../../shared/chat.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
 import { started_run } from "../tools/tool-meta.ts";
+import { timed_steps } from "../tools/work-steps.ts";
 import type { Block } from "./assistant-blocks.ts";
 
 export type HeadState = { kind: "working" } | { kind: "worked"; ms: number } | { kind: "stopped"; ms: number } | { kind: "activity" };
@@ -38,7 +39,7 @@ const step_ends = (block: Block): number[] => {
     case "visual":
       return block.step.ended_at === null ? [] : [block.step.ended_at];
     case "work":
-      return block.steps.flatMap((step) => (step.ended_at === null ? [] : [step.ended_at]));
+      return timed_steps(block.steps).flatMap((step) => (step.ended_at === null ? [] : [step.ended_at]));
     default:
       return [];
   }
