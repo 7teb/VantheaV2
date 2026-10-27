@@ -56,9 +56,13 @@ When you say no, that sticks: the review sees your earlier answers and refuses t
 
 A short list of truly destructive commands (formatting a drive, deleting Windows or System32, wiping boot settings, deleting or moving VantheaX's own chats, media or settings) is blocked in every mode and can't be approved, whether the agent writes it for PowerShell or for Git Bash. If such a command is hidden inside a script the agent wants to run, you are asked first, even when the review would let it through.
 
+## Download
+
+Every release on the [Releases page](https://github.com/7teb/VantheaV2/releases) has a `VantheaX-<version>-win-x64.zip`. Unzip it anywhere and start `VantheaX.exe`; nothing is installed and the folder can be moved later. You still need an OpenRouter API key (see below), and Git for Windows and the GitHub CLI stay optional. The exe is not code-signed, so the first start may show "Windows protected your PC": choose More info, then Run anyway. The zip is built by a GitHub Actions workflow from the code in this repository, on GitHub's own Windows machine.
+
 ## Building it
 
-You need:
+To build it yourself instead, you need:
 
 - Windows (built and used on Windows 10)
 - Node.js 22.18 or newer (I use 24)

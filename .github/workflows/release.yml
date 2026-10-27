@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version without the leading v, for example 0.3.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    if: github.repository == '7teb/VantheaV2'
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.event_name == 'push' && github.ref_name || format('v{0}', inputs.version) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Set the version
+        run: npm version $env:TAG.TrimStart('v') --no-git-tag-version --allow-same-version
+
+      - name: Build
+        run: npm run build
+
+      - name: Package the zip
+        run: npx electron-builder --win zip --x64 --publish never
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = $env:TAG.TrimStart('v')
+          $zip = Get-ChildItem outputs/electron/*.zip | Select-Object -First 1
+          $asset = Join-Path $zip.DirectoryName "VantheaX-$version-win-x64.zip"
+          Move-Item $zip.FullName $asset
+          git log -1 --format=%B | Out-File -Encoding utf8 notes.md
+          gh release create $env:TAG $asset --title "VantheaX $version" --notes-file notes.md --target $env:GITHUB_SHA
