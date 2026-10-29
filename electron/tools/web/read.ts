@@ -2,11 +2,10 @@ import type { WebFailure } from "../../../shared/tool-view.ts";
 import { estimate_tokens, result_cap_tokens, token_prefix } from "../../context/estimate.ts";
 import { error_text } from "../../storage/coerce.ts";
 import type { ToolResult } from "../types.ts";
-import { source_heading } from "./answer.ts";
-import { untrusted_note, view_sources, type WebSearchDeps } from "./search.ts";
-import { extract_body, failed_extracts, map_extract_results, tavily_post, type SearchDepth, type SourceText } from "./tavily.ts";
+import { source_heading, untrusted_note, view_sources, type WebSearchDeps } from "./search.ts";
+import { extract_body, failed_extracts, map_extract_results, tavily_post, type SourceText } from "./tavily.ts";
 
-export type PageReadInput = { query: string; urls: string[]; depth: SearchDepth; offset: number };
+export type PageReadInput = { query: string; urls: string[]; offset: number };
 
 export type PageWindow = { source: SourceText; start: number; end: number };
 
@@ -58,10 +57,10 @@ const failure_lines = (failed: WebFailure[]) => failed.map((entry) => `${entry.u
 
 export const read_pages = async (input: PageReadInput, deps: WebSearchDeps): Promise<ToolResult> => {
   const view = (sources: SourceText[], failed: WebFailure[]) =>
-    ({ kind: "web_search", query: input.query, depth: input.depth, answer: "", sources: view_sources(sources), urls: input.urls, failed }) as const;
+    ({ kind: "web_search", query: input.query, depth: "basic", answer: "", sources: view_sources(sources), urls: input.urls, failed }) as const;
   let data: unknown;
   try {
-    data = await tavily_post(deps.fetch, deps.key, "/extract", extract_body(input.urls, input.depth), deps.signal);
+    data = await tavily_post(deps.fetch, deps.key, "/extract", extract_body(input.urls), deps.signal);
   } catch (error) {
     if (deps.signal.aborted) {
       throw error;
@@ -80,8 +79,8 @@ export const read_pages = async (input: PageReadInput, deps: WebSearchDeps): Pro
     return { status: "failed", text: `offset ${input.offset} is past the end of ${first.url}, which has ${first.content.length} characters.`, view: view(pages, failed) };
   }
   const windows = page_windows(pages, input.offset, result_cap_tokens - reserve_tokens);
-  const subject = input.urls.length === 1 ? input.urls[0] : `${input.urls.length} pages`;
-  const header = `Read ${subject} (${input.depth} extract). ${untrusted_note}`;
+  const subject = pages.length === 1 ? first.url : `${pages.length} pages`;
+  const header = `Read ${subject}. ${untrusted_note}`;
   const notes = failed.length ? [`These pages could not be read: ${failure_lines(failed).join("; ")}`] : [];
   const blocks = windows.map((window, index) => `${source_heading(window.source, index)}\n${range_line(window)}\n\n${window.source.content.slice(window.start, window.end)}`);
   return { status: "done", text: [header, ...notes, blocks.join("\n\n---\n\n")].join("\n\n"), view: view(pages, failed) };

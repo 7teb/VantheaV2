@@ -107,7 +107,7 @@ The main agent receives a notification with the agent id, run id, status, durati
 ## How updates and reports reach the main agent
 
 - While the main turn is running: updates and reports are added at the start of its next model round. A report replaces pending updates of the same run.
-- After the main turn has ended: an update or a finished report starts a new turn in the chat by itself, using the current model, effort and permission mode from the settings. These turns are marked in the chat as coming from an agent, not from the user. While you have a message waiting in the queue above the message box, reports, updates and finished background tasks wait: your message is sent first, and they follow when its turn ends.
+- After the main turn has ended: an update or a finished report starts a new turn in the chat by itself, using the chat's own model, effort and Pro setting and the permission mode from the settings. These turns are marked in the chat as coming from an agent, not from the user. While you have a message waiting in the queue above the message box, reports, updates and finished background tasks wait: your message is sent first, and they follow when its turn ends.
 
 ## Stop
 

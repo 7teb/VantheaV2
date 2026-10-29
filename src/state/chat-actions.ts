@@ -99,6 +99,10 @@ export const open_external = (url: string) => {
   api.invoke("shell:open_external", url).catch((error) => console.error(`[chat] shell:open_external failed for ${url}`, error));
 };
 
+export const reveal_path = (path: string) => {
+  api.invoke("shell:reveal_path", path).catch((error) => console.error(`[chat] shell:reveal_path failed for ${path}`, error));
+};
+
 export const copy_text = async (text: string): Promise<boolean> => {
   try {
     await navigator.clipboard.writeText(text);

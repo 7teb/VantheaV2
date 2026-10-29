@@ -63,7 +63,6 @@ export const build_system_prompt = async (input: BuildPromptInput): Promise<stri
     custom_instructions: input.settings.custom_instructions,
     tool_names,
     user_attachments: input.user_attachments,
-    web_depth: input.settings.web_search.depth,
   });
   const major = input.effort === major_effort && tool_names.has("deploy_agent") ? [major_review()] : [];
   return render_sections([...sections, ...major, ...extra]);

@@ -7,6 +7,7 @@ import { composer_store, set_sending } from "./composer.ts";
 import { adopt_files } from "./files.ts";
 import { adopt_git } from "./git.ts";
 import { adopt_terminals } from "./terminal.ts";
+import { set_choice, take_new_chat_choice } from "./model-choice.ts";
 import { open_chat } from "./ui.ts";
 import { clear_worktree_choice, worktree_choice } from "./worktree.ts";
 
@@ -16,6 +17,10 @@ export const create_chat = async (project_path: string, key: string, message: Ou
   set_sending(key, true);
   try {
     const meta = worktree ? await api.invoke("worktrees:create_chat", project_path, message?.text ?? "") : await api.invoke("chats:create", project_path);
+    const choice = take_new_chat_choice();
+    if (choice) {
+      await set_choice(meta.id, choice);
+    }
     composer_store.update((state) => move_draft(state, key, meta.id));
     if (!worktree) {
       adopt_terminals(key, meta.id);

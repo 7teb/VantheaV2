@@ -96,7 +96,7 @@ export const deploy_agent_tool = define_tool<DeployArgs>({
         throw new Error("Agents can only be deployed from a running turn of this chat.");
       }
       ensure_capacity(ctx.chat_id);
-      const model = args.model ? await find_agent_model(args.model) : parent.model;
+      const model = await find_agent_model(args.model ?? parent.model.id);
       const effort = resolve_effort(model, args.effort ?? parent.effort);
       const without_tools = validate_without_tools(args.profile, args.without_tools, ctx.settings, model);
       const scope = args.scope.map((entry) => scope_entry(ctx.project_root, entry));

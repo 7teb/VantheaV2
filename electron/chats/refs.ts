@@ -1,10 +1,15 @@
-import { message_attachments, type Message } from "../../shared/chat.ts";
+import { message_attachments, type Message, type ToolStep } from "../../shared/chat.ts";
 import { refs } from "./state.ts";
 
 const held = new Map<string, number>();
 
+const step_image_ids = (step: ToolStep): string[] => [
+  ...(step.images ?? []).map((image) => image.id),
+  ...(step.view?.kind === "shown_images" ? step.view.images.map((image) => image.id) : []),
+];
+
 const message_image_ids = (message: Message): string[] =>
-  message.role === "assistant" ? message.steps.flatMap((step) => (step.kind === "tool" ? (step.images ?? []).map((image) => image.id) : [])) : [];
+  message.role === "assistant" ? message.steps.flatMap((step) => (step.kind === "tool" ? step_image_ids(step) : [])) : [];
 
 export const attachment_ids = (messages: Message[]): Set<string> => {
   const ids = new Set<string>();

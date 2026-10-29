@@ -2,12 +2,12 @@ import { useState, type MouseEvent } from "react";
 import { CircleAlertIcon, GlobeIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_language, use_t } from "../../i18n/index.ts";
-import { open_external } from "../../state/chat-actions.ts";
+import { open_external, reveal_path } from "../../state/chat-actions.ts";
 import { Lightbox, type LightboxImage } from "../chat/Lightbox.tsx";
-import { favicon_src, image_src } from "../chat/media.ts";
+import { favicon_src, image_src, tool_image_src } from "../chat/media.ts";
 import { MediaImage } from "../chat/MediaImage.tsx";
 import type { BodyProps } from "./body-types.ts";
-import { page_address } from "./tool-meta.ts";
+import { base_name, page_address } from "./tool-meta.ts";
 import "./bodies-web.css";
 
 const visible_sources = 4;
@@ -100,6 +100,29 @@ export const ImageBody = ({ view }: BodyProps<"image">) => {
           })}
         </div>
       )}
+      <Lightbox image={open} on_close={() => set_open(null)} />
+    </div>
+  );
+};
+
+export const ShownImagesBody = ({ view }: BodyProps<"shown_images">) => {
+  const t = use_t();
+  const [open, set_open] = useState<LightboxImage | null>(null);
+  return (
+    <div className="shown-images">
+      {view.images.map((image) => {
+        const src = tool_image_src(image.id);
+        const name = base_name(image.path);
+        const ratio = image.width && image.height ? image.width / image.height : null;
+        return (
+          <figure key={image.id} className="shown-image" style={ratio ? { width: `min(100%, calc(320px * ${ratio}))` } : undefined}>
+            <MediaImage src={src} alt={name} ratio={ratio} on_open={() => set_open({ src, alt: name })} />
+            <button type="button" className="shown-image-reveal" onClick={() => reveal_path(image.path)}>
+              {t("chat.open_in_explorer")}
+            </button>
+          </figure>
+        );
+      })}
       <Lightbox image={open} on_close={() => set_open(null)} />
     </div>
   );

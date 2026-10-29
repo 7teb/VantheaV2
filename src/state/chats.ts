@@ -1,4 +1,5 @@
 import type { ChatMeta } from "../../shared/chat.ts";
+import type { ModelChoice } from "../../shared/models.ts";
 import { api } from "../api/bridge.ts";
 import { create_store } from "./create-store.ts";
 import { start_new_chat, ui_store } from "./ui.ts";
@@ -74,6 +75,10 @@ export const rename_chat = async (chat_id: string, title: string) => {
 
 export const set_chat_pinned = async (chat_id: string, pinned: boolean) => {
   receive({ kind: "changed", meta: await api.invoke("chats:update", chat_id, { pinned }) });
+};
+
+export const set_chat_choice = async (chat_id: string, choice: ModelChoice) => {
+  receive({ kind: "changed", meta: await api.invoke("chats:update", chat_id, { choice }) });
 };
 
 export const set_chat_archived = async (chat_id: string, archived: boolean) => {

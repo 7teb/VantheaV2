@@ -14,6 +14,8 @@ export type WebFailure = { url: string; error: string };
 
 export type GeneratedImage = { id: string; width: number | null; height: number | null };
 
+export type ShownImage = { id: string; path: string; width: number | null; height: number | null };
+
 export type ModelPrice = {
   id: string;
   label: string;
@@ -54,6 +56,7 @@ export type ToolView =
   | { kind: "plan"; text: string }
   | { kind: "web_search"; query: string; depth: "basic" | "advanced"; answer: string; sources: WebSource[]; urls?: string[]; failed?: WebFailure[] }
   | { kind: "image"; prompt: string; images: GeneratedImage[] }
+  | { kind: "shown_images"; images: ShownImage[] }
   | { kind: "browser"; action: string; url: string; title: string; detail: string }
   | { kind: "mcp"; server: string; tool: string; text: string; is_error: boolean }
   | { kind: "memory"; action: "remember" | "forget" | "list"; text: string }

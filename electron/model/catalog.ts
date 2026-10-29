@@ -1,10 +1,10 @@
-import { verbosity_levels, type ImageModelEntry, type ModelCatalog, type ModelEntry, type SideModelEntry, type SideModelRole, type Verbosity } from "../../shared/models.ts";
+import { find_model, verbosity_levels, type ImageModelEntry, type ModelCatalog, type ModelEntry, type ProVariant, type SideModelEntry, speed_tiers, type SpeedTier, type SideModelRole, type Verbosity } from "../../shared/models.ts";
 
 export const major_effort = "major";
 
 const effort_rank = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
 
-const side_roles: SideModelRole[] = ["title", "overseer", "vision", "web_answer", "memory", "reasoning_status", "transcription", "git_text"];
+const side_roles: SideModelRole[] = ["title", "overseer", "vision", "memory", "reasoning_status", "transcription", "git_text"];
 
 type Raw = Record<string, unknown>;
 
@@ -45,6 +45,23 @@ const parse_efforts = (value: unknown, where: string): string[] => {
 const parse_verbosity = (value: unknown, where: string): Verbosity =>
   verbosity_levels.find((level) => level === value) ?? fail(where, `must be one of ${verbosity_levels.join(", ")}`);
 
+const parse_pro = (value: unknown, where: string): ProVariant => {
+  const raw = as_record(value, where);
+  return { id: as_text(raw.id, `${where}.id`), label: as_text(raw.label, `${where}.label`) };
+};
+
+const parse_tiers = (value: unknown, where: string): Partial<Record<SpeedTier, string>> => {
+  const tiers: Partial<Record<SpeedTier, string>> = {};
+  for (const [key, route] of Object.entries(as_record(value, where))) {
+    const tier = speed_tiers.find((entry) => entry === key);
+    if (!tier) {
+      return fail(`${where}.${key}`, `must be one of ${speed_tiers.join(", ")}`);
+    }
+    tiers[tier] = as_text(route, `${where}.${key}`);
+  }
+  return tiers;
+};
+
 const parse_model = (value: unknown, index: number): ModelEntry => {
   const where = `models[${index}]`;
   const raw = as_record(value, where);
@@ -68,6 +85,8 @@ const parse_model = (value: unknown, index: number): ModelEntry => {
     reasoning_passback: raw.reasoning_passback === undefined ? false : as_flag(raw.reasoning_passback, `${named}.reasoning_passback`),
     ...(raw.verbosity === undefined ? {} : { verbosity: parse_verbosity(raw.verbosity, `${named}.verbosity`) }),
     ...(raw.note === undefined ? {} : { note: as_text(raw.note, `${named}.note`) }),
+    ...(raw.pro === undefined ? {} : { pro: parse_pro(raw.pro, `${named}.pro`) }),
+    ...(raw.tiers === undefined ? {} : { tiers: parse_tiers(raw.tiers, `${named}.tiers`) }),
   };
 };
 
@@ -134,7 +153,7 @@ export const parse_catalog = (value: unknown): ModelCatalog => {
   const side_list = raw.side_models === undefined ? [] : Array.isArray(raw.side_models) ? raw.side_models : fail("side_models", "must be an array");
   const side_models = side_list.map(parse_side_model);
   unique_ids(
-    models.map((model) => model.id),
+    models.flatMap((model) => (model.pro ? [model.id, model.pro.id] : [model.id])),
     "models",
   );
   unique_ids(
@@ -147,8 +166,6 @@ export const parse_catalog = (value: unknown): ModelCatalog => {
   );
   return { models, side: parse_side(raw.side), side_models, image_models };
 };
-
-export const find_model = (catalog: ModelCatalog, id: string): ModelEntry | null => catalog.models.find((model) => model.id === id) ?? null;
 
 export const side_window = (catalog: ModelCatalog, role: SideModelRole): SideModelEntry => {
   const id = catalog.side[role];

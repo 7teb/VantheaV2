@@ -8,7 +8,7 @@ export type Block =
   | { kind: "text"; id: string; step: TextStep }
   | { kind: "work"; id: string; steps: WorkStep[] }
   | { kind: "plan"; id: string; step: ToolStep; text: string }
-  | { kind: "image"; id: string; step: ToolStep; view: Extract<ToolView, { kind: "image" }> }
+  | { kind: "image"; id: string; step: ToolStep; view: Extract<ToolView, { kind: "image" | "shown_images" }> }
   | { kind: "visual"; id: string; step: ToolStep; view: Extract<ToolView, { kind: "visual" }> }
   | { kind: "steer"; id: string; step: SteerStep }
   | { kind: "notice"; id: string; step: NoticeStep }
@@ -35,7 +35,7 @@ const separate_block = (step: ToolStep): Block | null => {
   if (step.view?.kind === "plan") {
     return { kind: "plan", id: step.id, step, text: step.view.text };
   }
-  if (step.view?.kind === "image" && step.view.images.length > 0) {
+  if ((step.view?.kind === "image" || step.view?.kind === "shown_images") && step.view.images.length > 0) {
     return { kind: "image", id: step.id, step, view: step.view };
   }
   if (step.status === "done" && step.view?.kind === "visual") {

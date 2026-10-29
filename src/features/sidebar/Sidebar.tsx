@@ -134,7 +134,9 @@ export const Sidebar = () => {
         </nav>
         <div className="sidebar-scroll">{body()}</div>
         <div className="sidebar-footer">
-          <NavButton icon={<SettingsIcon size={16} />} label={t("sidebar.settings")} hint={shortcut_hint("settings")} on_click={() => open_settings()} />
+          <IconButton label={t("sidebar.settings")} hint={shortcut_hint("settings")} onClick={() => open_settings()}>
+            <SettingsIcon size={14} />
+          </IconButton>
           {chats.status === "ready" && archived.length > 0 && (
             <Tooltip label={t("sidebar.archived")}>
               <button type="button" className="sidebar-archive" aria-label={t("sidebar.archived")} onClick={() => set_archive_open(true)}>

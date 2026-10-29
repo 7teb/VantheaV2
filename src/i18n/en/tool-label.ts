@@ -72,6 +72,8 @@ export const tool_label = {
   "tool_label.read_pages": "Read {n} pages",
   "tool_label.generating_image": "Generating image",
   "tool_label.generated_image": "Generated image",
+  "tool_label.showing_images": "Showing {x}",
+  "tool_label.showed_images": "Showed {x}",
   "tool_label.visualizing": "Creating visualization",
   "tool_label.visualizing_named": "Creating visualization: {x}",
   "tool_label.visualized": "Created visualization",

@@ -272,13 +272,8 @@
   align-items: center;
   gap: 2px;
   margin: 0 -10px;
-  padding: var(--space-2) 10px 0;
+  padding: var(--space-2) 12px 0;
   border-top: 1px solid var(--divider);
-}
-
-.sidebar-footer .sidebar-nav-button {
-  flex: 1;
-  min-width: 0;
 }
 
 .sidebar-archive {

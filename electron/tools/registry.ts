@@ -6,6 +6,7 @@ import { browser_tools } from "./browser/index.ts";
 import { check_page_tool } from "./check/index.ts";
 import { fs_tools } from "./fs/index.ts";
 import { generate_image_tool } from "./image/index.ts";
+import { show_images_tool } from "./image/show.ts";
 import { add_mcp_server_tool } from "./mcp/add-server.ts";
 import { memory_tools } from "./memory/index.ts";
 import { meta_tools } from "./meta/index.ts";
@@ -26,7 +27,7 @@ const groups: Tool[][] = [
   browser_tools,
   [add_mcp_server_tool],
   [web_search_tool],
-  [generate_image_tool],
+  [generate_image_tool, show_images_tool],
   [visualize_tool],
   [read_attachment_tool],
   memory_tools,

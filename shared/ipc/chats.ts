@@ -1,6 +1,7 @@
 import type { Chat, ChatMeta, ChatSearchHit, CommandOrigin, ContextUsage, Message, PermissionMode, UserOrigin } from "../chat.ts";
 import type { ApprovalDecision } from "../approval.ts";
 import type { TurnEvent } from "../events.ts";
+import type { SpeedTier } from "../models.ts";
 import { emit, invoke } from "./channel.ts";
 
 export type SendRequest = {
@@ -9,6 +10,8 @@ export type SendRequest = {
   attachment_ids: string[];
   model: string;
   effort: string;
+  pro: boolean;
+  tier?: SpeedTier;
   mode: PermissionMode;
   plan: boolean;
   origin: UserOrigin;
@@ -24,7 +27,7 @@ export const chats_channels = {
   "chats:list": invoke<[], ChatMeta[]>(),
   "chats:get": invoke<[chat_id: string], Chat | null>(),
   "chats:create": invoke<[project_path: string], ChatMeta>(),
-  "chats:update": invoke<[chat_id: string, patch: Partial<Pick<ChatMeta, "title" | "pinned" | "archived">>], ChatMeta>(),
+  "chats:update": invoke<[chat_id: string, patch: Partial<Pick<ChatMeta, "title" | "pinned" | "archived" | "choice">>], ChatMeta>(),
   "chats:delete": invoke<[chat_id: string], void>(),
   "chats:archive_all": invoke<[], { archived: number; skipped: number }>(),
   "chats:delete_all": invoke<[], number>(),

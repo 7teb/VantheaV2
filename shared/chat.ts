@@ -1,4 +1,5 @@
 import type { ApprovalRequest, HumanDecision } from "./approval.ts";
+import type { ModelChoice } from "./models.ts";
 import type { QuestionStates } from "./questions.ts";
 import type { ReviewRecord } from "./review.ts";
 import type { ToolView } from "./tool-view.ts";
@@ -205,6 +206,7 @@ export type ChatMeta = {
   project_path: string;
   workspace: string;
   worktree?: ChatWorktree;
+  choice?: ModelChoice;
   pinned: boolean;
   archived?: boolean;
   created_at: string;

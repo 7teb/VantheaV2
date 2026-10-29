@@ -6,7 +6,7 @@ import { Markdown } from "../../components/Markdown.tsx";
 import { CopyButton } from "../../components/MarkdownCopy.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { fork_chat } from "../../state/chat-actions.ts";
-import { ImageBody } from "../tools/bodies-web.tsx";
+import { ImageBody, ShownImagesBody } from "../tools/bodies-web.tsx";
 import { tool_icon } from "../tools/registry.tsx";
 import { tool_label } from "../tools/tool-meta.ts";
 import { WorkGroup } from "../tools/WorkGroup.tsx";
@@ -33,6 +33,9 @@ type BlockViewProps = {
 
 const ImageStep = ({ block }: { block: Extract<Block, { kind: "image" }> }) => {
   const t = use_t();
+  if (block.view.kind === "shown_images") {
+    return <ShownImagesBody view={block.view} step={block.step} />;
+  }
   const Icon = tool_icon(block.step);
   return (
     <div className="image-step">

@@ -3,6 +3,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { brotliCompress, brotliCompressSync, brotliDecompress, constants as zlib_constants } from "node:zlib";
 import type { Chat, ChatMeta, ChatSummary, Message, RoundReasoning, Step, StepImage, ToolStep } from "../../shared/chat.ts";
+import { speed_tiers, type ModelChoice } from "../../shared/models.ts";
 import { coerce_context_usage } from "../context/calibration.ts";
 import { is_media_id } from "../media/files.ts";
 import { coerce_reviews } from "../permissions/review-coerce.ts";
@@ -32,6 +33,13 @@ export const encode_chat_sync = (meta: ChatMeta, body: ChatBody): Buffer => brot
 
 const decode_chat = async (packed: Buffer): Promise<unknown> => JSON.parse((await decompress(packed)).toString("utf8"));
 
+export const parse_choice = (value: unknown): ModelChoice | null => {
+  const raw = as_record(value);
+  const model = as_string(raw.model).slice(0, 300);
+  const tier = speed_tiers.find((entry) => entry === raw.tier);
+  return model ? { model, effort: as_string(raw.effort).slice(0, 40), pro: as_boolean(raw.pro, false), ...(tier ? { tier } : {}) } : null;
+};
+
 export const parse_meta = (value: unknown, fallback_time: string): ChatMeta | null => {
   const raw = as_record(value);
   const id = as_string(raw.id);
@@ -40,12 +48,14 @@ export const parse_meta = (value: unknown, fallback_time: string): ChatMeta | nu
   }
   const created_at = as_iso(raw.created_at, fallback_time);
   const worktree = parse_worktree(raw.worktree);
+  const choice = parse_choice(raw.choice);
   return {
     id,
     title: as_string(raw.title).slice(0, 200),
     project_path: as_string(raw.project_path),
     workspace: as_string(raw.workspace),
     ...(worktree ? { worktree } : {}),
+    ...(choice ? { choice } : {}),
     pinned: as_boolean(raw.pinned, false),
     ...(as_boolean(raw.archived, false) ? { archived: true } : {}),
     created_at,

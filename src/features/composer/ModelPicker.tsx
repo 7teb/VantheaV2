@@ -1,30 +1,32 @@
 import { useState } from "react";
+import { with_choice } from "../../../shared/models.ts";
 import { ChevronDownIcon, GaugeIcon } from "../../components/icons.tsx";
 import { Menu, type MenuSection } from "../../components/Menu.tsx";
 import { Skeleton } from "../../components/Skeleton.tsx";
 import { use_t } from "../../i18n/index.ts";
-import { effective_effort, find_model, models_store, select_model } from "../../state/models.ts";
-import { settings_store, update_settings } from "../../state/settings.ts";
+import { set_choice } from "../../state/model-choice.ts";
+import { effective_effort, models_store } from "../../state/models.ts";
 import { use_store } from "../../state/use-store.ts";
-import { effort_label } from "./composer-hooks.ts";
+import { effort_label, use_model_choice } from "./composer-hooks.ts";
 
-export const ModelPicker = () => {
+export const ModelPicker = ({ chat_id }: { chat_id: string | null }) => {
   const t = use_t();
   const [anchor, set_anchor] = useState<HTMLButtonElement | null>(null);
   const [open, set_open] = useState(false);
   const models = use_store(models_store, (state) => state);
-  const settings = use_store(settings_store, (state) => state);
+  const choice = use_model_choice(chat_id);
 
   if (models.status === "failed") {
     return <span className="composer-note">{t("composer.models_failed")}</span>;
   }
-  if (!models.catalog || !settings) {
+  if (!models.catalog || !choice) {
     return <Skeleton width={128} height="var(--size-control)" radius={9} />;
   }
 
   const catalog = models.catalog;
-  const model = find_model(catalog, settings.model);
-  const effort = model ? effective_effort(model, settings.effort) : settings.effort;
+  const base = catalog.models.find((entry) => entry.id === choice.model) ?? null;
+  const model = base ? with_choice(base, choice) : null;
+  const effort = base ? effective_effort(base, choice.effort) : choice.effort;
 
   const sections: MenuSection[] = [
     {
@@ -33,8 +35,8 @@ export const ModelPicker = () => {
       items: catalog.models.map((entry) => ({
         id: entry.id,
         label: entry.label,
-        checked: entry.id === settings.model,
-        on_select: () => select_model(entry),
+        checked: entry.id === choice.model,
+        on_select: () => void set_choice(chat_id, { ...choice, model: entry.id, effort: effective_effort(entry, choice.effort) }),
       })),
     },
   ];
@@ -47,7 +49,7 @@ export const ModelPicker = () => {
         label: effort_label(t, entry),
         icon: <GaugeIcon size={15} />,
         checked: entry === effort,
-        on_select: () => void update_settings({ effort: entry }),
+        on_select: () => void set_choice(chat_id, { ...choice, effort: entry }),
       })),
     });
   }

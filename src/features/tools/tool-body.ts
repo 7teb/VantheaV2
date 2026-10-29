@@ -45,6 +45,8 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
       return view.sources.length > 0 || view.answer !== "" || (view.failed?.length ?? 0) > 0;
     case "image":
       return view.images.length > 0 || view.prompt !== "";
+    case "shown_images":
+      return view.images.length > 0;
     case "models":
       return view.models.length > 0;
     case "text":

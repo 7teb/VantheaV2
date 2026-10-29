@@ -39,6 +39,7 @@ import {
 import { last_assistant } from "./chat-view-reduce.ts";
 import { chat_view_store, compact_chat_now, on_steer_taken, on_turn_end } from "./chat-view.ts";
 import { create_store } from "./create-store.ts";
+import { choice_for } from "./model-choice.ts";
 import { model_source } from "./model-source.ts";
 import { settings_store } from "./settings.ts";
 import { worktree_choice } from "./worktree.ts";
@@ -144,7 +145,8 @@ export const attach_files = async (key: string, files: File[]) => {
 
 const send_now = async (chat_id: string, message: OutgoingMessage) => {
   const settings = settings_store.get();
-  if (!settings) {
+  const choice = choice_for(chat_id);
+  if (!settings || !choice) {
     composer_store.update((state) => set_error(restore_draft(state, chat_id, message), chat_id, t("composer.settings_missing")));
     return;
   }
@@ -154,8 +156,10 @@ const send_now = async (chat_id: string, message: OutgoingMessage) => {
       chat_id,
       text: message.text,
       attachment_ids: message.attachments.map((attachment) => attachment.id),
-      model: settings.model,
-      effort: settings.effort,
+      model: choice.model,
+      effort: choice.effort,
+      pro: choice.pro,
+      ...(choice.tier ? { tier: choice.tier } : {}),
       mode: settings.mode,
       plan: message.plan,
       origin: "user",

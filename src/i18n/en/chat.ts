@@ -16,6 +16,7 @@ export const chat = {
   "chat.copy": "Copy",
   "chat.edit": "Edit",
   "chat.fork": "Fork chat from here",
+  "chat.open_in_explorer": "Open in Explorer",
   "chat.edit_cancel": "Cancel",
   "chat.edit_resend": "Resend",
   "chat.changes_undo": "Undo",

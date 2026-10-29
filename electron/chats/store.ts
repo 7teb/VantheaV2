@@ -15,7 +15,7 @@ export { search_chats } from "./search.ts";
 
 export type ChatsInit = { dirs: ChatDirs; legacy_root: string; events: ChatEvents };
 
-export type MetaPatch = Partial<Pick<ChatMeta, "title" | "pinned" | "archived" | "workspace" | "project_path">>;
+export type MetaPatch = Partial<Pick<ChatMeta, "title" | "pinned" | "archived" | "workspace" | "project_path" | "choice">>;
 
 const max_cached_chats = 16;
 
@@ -175,6 +175,7 @@ export const update_meta = async (chat_id: string, patch: MetaPatch): Promise<Ch
     ...(archived ? { archived } : {}),
     workspace: patch.workspace ?? meta.workspace,
     project_path: patch.project_path ?? meta.project_path,
+    ...(patch.choice ? { choice: patch.choice } : {}),
   };
   metas.set(chat_id, next);
   if (bodies.has(chat_id)) {

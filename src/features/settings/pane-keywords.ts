@@ -27,7 +27,7 @@ export const pane_search: Record<PaneId, PaneSearch> = {
   },
   web_search: {
     label: "settings.tab_web_search",
-    keywords: ["web.enable", "web.key", "web.results", "web.depth", "web.topic", "web.topic_news"],
+    keywords: ["web.enable", "web.key", "web.results", "web.topic", "web.topic_news"],
   },
   image_gen: {
     label: "settings.tab_image_gen",

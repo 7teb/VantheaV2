@@ -1,3 +1,4 @@
+import type { SpeedTier } from "../../shared/models.ts";
 import { create_store } from "./create-store.ts";
 
 export type DockKind = "terminal" | "browser" | "background" | "artifacts" | "files";
@@ -19,6 +20,8 @@ export type UiState = {
   search_open: boolean;
   collapsed_projects: string[];
   collapsed_task_sections: TaskSection[];
+  new_chat_pro: boolean;
+  new_chat_tier: SpeedTier | null;
 };
 
 export const dock_min_width = 320;
@@ -79,6 +82,8 @@ export const ui_store = create_store<UiState>({
   search_open: false,
   collapsed_projects: remembered_strings(collapsed_projects_key),
   collapsed_task_sections: remembered_strings(collapsed_task_sections_key).filter(is_task_section),
+  new_chat_pro: false,
+  new_chat_tier: null,
 });
 
 export const set_sidebar_collapsed = (collapsed: boolean) => ui_store.update((state) => ({ ...state, sidebar_collapsed: collapsed }));
@@ -111,7 +116,7 @@ export const on_active_chat = (listener: (chat_id: string | null) => void): (() 
 
 export const start_new_chat = (project_path: string) => {
   write_storage(active_chat_key, null);
-  ui_store.update((state) => ({ ...state, active_chat_id: null, project_path, settings_open: false, search_open: false }));
+  ui_store.update((state) => ({ ...state, active_chat_id: null, project_path, settings_open: false, search_open: false, new_chat_pro: false, new_chat_tier: null }));
 };
 
 export const toggle_dock = (kind: DockKind) =>

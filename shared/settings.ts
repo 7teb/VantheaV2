@@ -33,7 +33,7 @@ export type Settings = {
   custom_instructions: string;
   notification_sound: boolean;
   memory: { enabled: boolean; exclude_tool_chats: boolean };
-  web_search: { enabled: boolean; max_results: number; depth: "basic" | "advanced"; topic: "general" | "news" };
+  web_search: { enabled: boolean; max_results: number; topic: "general" | "news" };
   image_gen: { enabled: boolean; model: string; quality: "auto" | "low" | "medium" | "high" };
   mcp_servers: Record<string, McpServerConfig>;
   mcp_tools: Record<string, McpToolOverride>;

@@ -1,10 +1,10 @@
 import type { ApprovalDecision, GrantScope } from "../../shared/approval.ts";
 import { command_origins, type AssistantMessage, type CommandOrigin, type ContextUsage, type PermissionMode, type UserOrigin } from "../../shared/chat.ts";
 import type { SendRequest } from "../../shared/ipc/chats.ts";
+import { model_listing, speed_tiers, with_pro } from "../../shared/models.ts";
 import { get_chat } from "../chats/store.ts";
 import { estimate_messages } from "../context/usage.ts";
 import { uploaded } from "../media/uploads.ts";
-import { find_model } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { hold_decision, open_chat_window, resolve_decision } from "../permissions/approvals.ts";
 import { close_full_window, full_window_until, on_full_window } from "../permissions/full-window.ts";
@@ -48,12 +48,15 @@ const argument_of = (command: CommandOrigin, value: unknown): string | null => {
 
 const parse_send = (value: unknown): SendRequest => {
   const raw = require_record(value, "send request");
+  const tier = speed_tiers.find((entry) => entry === raw.tier);
   return {
     chat_id: chat_id_of(raw.chat_id),
     text: require_string(raw.text, "message text", 200_000),
     attachment_ids: parse_ids(raw.attachment_ids),
     model: require_string(raw.model, "model id", 300),
     effort: as_string(raw.effort).slice(0, 40),
+    pro: raw.pro === true,
+    ...(tier ? { tier } : {}),
     mode: pick(raw.mode, modes, "ask"),
     plan: raw.plan === true,
     origin: pick(raw.origin, origins, "user"),
@@ -67,7 +70,8 @@ export const parse_decision = (value: unknown): ApprovalDecision => {
 
 const resolve_model = async (model_id: string) => {
   const catalog = await model_catalog();
-  return context_model(find_model(catalog, model_id) ?? catalog.models[0]);
+  const listed = model_listing(catalog.models, model_id) ?? { entry: catalog.models[0], pro: false };
+  return with_pro(context_model(listed.entry), listed.pro);
 };
 
 const current_context = async (chat_id: string): Promise<ContextUsage> => {

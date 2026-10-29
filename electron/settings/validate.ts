@@ -8,7 +8,6 @@ import { folder_name, path_key } from "../storage/paths.ts";
 const languages: readonly Language[] = ["en", "de"];
 const modes: readonly PermissionMode[] = ["ask", "auto", "full"];
 const personalities: readonly Personality[] = ["pragmatic", "friendly", "cynical"];
-const search_depths = ["basic", "advanced"] as const;
 const search_topics = ["general", "news"] as const;
 const image_qualities = ["auto", "low", "medium", "high"] as const;
 const mcp_tiers: readonly McpTier[] = ["readonly", "state_change", "dangerous", "shell_system"];
@@ -30,7 +29,7 @@ export const default_settings = (): Settings => ({
   custom_instructions: "",
   notification_sound: true,
   memory: { enabled: false, exclude_tool_chats: false },
-  web_search: { enabled: false, max_results: 5, depth: "basic", topic: "general" },
+  web_search: { enabled: false, max_results: 5, topic: "general" },
   image_gen: { enabled: false, model: "google/gemini-3.1-flash-image", quality: "auto" },
   mcp_servers: {},
   mcp_tools: {},
@@ -175,7 +174,6 @@ export const normalize_settings = (value: unknown, base: Settings): Settings => 
     web_search: {
       enabled: as_boolean(web.enabled, base.web_search.enabled),
       max_results: clamp_int(web.max_results, 1, 20, base.web_search.max_results),
-      depth: pick(web.depth, search_depths, base.web_search.depth),
       topic: pick(web.topic, search_topics, base.web_search.topic),
     },
     image_gen: {

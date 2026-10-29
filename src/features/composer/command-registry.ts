@@ -8,6 +8,7 @@ import {
   FileSearchIcon,
   FoldVerticalIcon,
   ForkIcon,
+  GaugeIcon,
   GitBranchPlusIcon,
   LayersIcon,
   PercentIcon,
@@ -15,6 +16,7 @@ import {
   PinOffIcon,
   RulerIcon,
   WormIcon,
+  ZapIcon,
 } from "../../components/icons.tsx";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { fork_chat } from "../../state/chat-actions.ts";
@@ -23,6 +25,7 @@ import { visualize_chip } from "../../state/chat-drafts.ts";
 import { set_chat_archived, set_chat_pinned } from "../../state/chats.ts";
 import { compact_now, set_draft_text, toggle_draft_chip, toggle_plan } from "../../state/composer.ts";
 import { open_panel } from "../../state/composer-panel.ts";
+import { toggle_pro, toggle_tier } from "../../state/model-choice.ts";
 import { set_auto_compact, set_context_limit } from "../../state/settings.ts";
 import { command_row, type CommandContext, type ComposerCommand } from "./command-menu.ts";
 import { auto_compact_options, chosen_hint, command_options, context_limit_options } from "./context-options.ts";
@@ -162,6 +165,39 @@ export const composer_commands: ComposerCommand[] = [
     hint: ({ t }) => t("commands.plan_hint"),
     toggled: ({ plan }) => plan,
     run: ({ draft_key }) => toggle_plan(draft_key),
+  },
+  {
+    id: "pro",
+    needs: "model",
+    icon: () => GaugeIcon,
+    label: ({ t }) => t("commands.pro"),
+    keywords: ["gpt", "reasoning"],
+    hint: ({ t }) => t("commands.pro_hint"),
+    shown: ({ model }) => Boolean(model?.pro),
+    toggled: ({ pro }) => pro,
+    run: ({ chat_id }) => toggle_pro(chat_id),
+  },
+  {
+    id: "fast",
+    needs: "model",
+    icon: () => ZapIcon,
+    label: ({ t }) => t("commands.fast"),
+    keywords: ["gpt", "speed", "schnell"],
+    hint: ({ t }) => t("commands.fast_hint"),
+    shown: ({ model }) => Boolean(model?.tiers?.fast),
+    toggled: ({ tier }) => tier === "fast",
+    run: ({ chat_id }) => toggle_tier(chat_id, "fast"),
+  },
+  {
+    id: "ultrafast",
+    needs: "model",
+    icon: () => ZapIcon,
+    label: ({ t }) => t("commands.ultrafast"),
+    keywords: ["gpt", "speed", "schnell"],
+    hint: ({ t }) => t("commands.ultrafast_hint"),
+    shown: ({ model }) => Boolean(model?.tiers?.ultrafast),
+    toggled: ({ tier }) => tier === "ultrafast",
+    run: ({ chat_id }) => toggle_tier(chat_id, "ultrafast"),
   },
   {
     id: "visualize",

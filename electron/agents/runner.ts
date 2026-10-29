@@ -1,6 +1,6 @@
 import type { PermissionMode } from "../../shared/chat.ts";
 import type { AgentProfile, AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
-import type { ModelEntry } from "../../shared/models.ts";
+import { model_listing, with_pro, type ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
 import { no_stored_context, type StoredContext } from "../context/calibration.ts";
 import type { ApiMessage } from "../model/types.ts";
@@ -82,11 +82,11 @@ export const init_agents = async (options: AgentDeps): Promise<void> => {
 
 export const find_agent_model = async (id: string): Promise<ModelEntry> => {
   const models = await current_deps().models();
-  const found = models.find((model) => model.id === id);
-  if (!found) {
+  const listed = model_listing(models, id);
+  if (!listed) {
     throw new Error(`Unknown model ${id}. Available models: ${models.map((model) => model.id).join(", ")}`);
   }
-  return found;
+  return with_pro(listed.entry, listed.pro);
 };
 
 export const validate_without_tools = (profile: AgentProfile, names: string[], settings: Settings, model: ModelEntry): string[] => {

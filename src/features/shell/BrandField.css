@@ -9,7 +9,8 @@
   pointer-events: none;
   mask-image:
     linear-gradient(to bottom, var(--mask) 0, var(--mask) 34px, transparent 100%),
-    linear-gradient(to right, var(--mask) 0, var(--mask) 80%, transparent 100%);
+    linear-gradient(to right, var(--mask) calc(100% - 120px), transparent 100%),
+    linear-gradient(to right, var(--mask) calc(100% - 60px), transparent 100%);
   mask-composite: intersect;
   transition: height var(--duration-slower) var(--ease-out);
 }
@@ -41,7 +42,7 @@
 .brand-blob {
   position: absolute;
   border-radius: var(--radius-full);
-  animation: var(--ease-in-out) infinite alternate;
+  animation: brand-drift var(--ease-in-out) infinite alternate;
 }
 
 .brand-blob.is-violet {
@@ -50,18 +51,17 @@
   width: 200px;
   height: 96px;
   background: radial-gradient(closest-side, var(--brand-violet), transparent);
-  animation-name: brand-violet;
-  animation-duration: 22s;
+  animation-duration: 18s;
 }
 
 .brand-blob.is-indigo {
   top: -44px;
   left: 120px;
-  width: 170px;
+  width: 210px;
   height: 84px;
   background: radial-gradient(closest-side, var(--brand-indigo), transparent);
-  animation-name: brand-indigo;
-  animation-duration: 27s;
+  animation-duration: 23s;
+  animation-delay: -8s;
 }
 
 .brand-blob.is-lilac {
@@ -70,24 +70,13 @@
   width: 120px;
   height: 64px;
   background: radial-gradient(closest-side, var(--brand-lilac), transparent);
-  animation-name: brand-lilac;
-  animation-duration: 17s;
+  animation-duration: 14s;
+  animation-delay: -5s;
 }
 
-@keyframes brand-violet {
+@keyframes brand-drift {
   to {
-    transform: translate(90px, 10px);
-  }
-}
-
-@keyframes brand-indigo {
-  to {
-    transform: translate(-110px, 6px);
-  }
-}
-
-@keyframes brand-lilac {
-  to {
-    transform: translate(150px, -4px);
+    opacity: 0.45;
+    transform: translate(18px, 10px);
   }
 }

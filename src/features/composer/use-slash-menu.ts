@@ -54,7 +54,7 @@ export const use_slash_menu = (text: string, context: CommandContext, replace_te
     set_stored(state);
   }
 
-  const rows = composer_commands.map((command) => command_row(command, context));
+  const rows = composer_commands.filter((command) => command.shown?.(context) ?? true).map((command) => command_row(command, context));
   const parent = state.parent === null ? null : (rows.find((row) => row.id === state.parent && row.options) ?? null);
   const entries: SlashEntry[] = parent?.options
     ? parent.options().map((option) => ({

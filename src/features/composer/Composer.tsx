@@ -10,7 +10,7 @@ import { cancel_dictation, dictation_store, finish_dictation } from "../../state
 import { insert_dictation } from "../../state/dictation-text.ts";
 import { use_store } from "../../state/use-store.ts";
 import { start_typed_review } from "./command-registry.ts";
-import { use_chat_busy, use_model_context, use_shown_context } from "./composer-hooks.ts";
+import { use_chat_busy, use_model_choice, use_model_context, use_shown_context } from "./composer-hooks.ts";
 import { ComposerMedia } from "./ComposerMedia.tsx";
 import { DictationButton } from "./DictationButton.tsx";
 import { DraftChips } from "./DraftChips.tsx";
@@ -51,7 +51,10 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
   const compacting = use_store(composer_store, (state) => Boolean(state.compacting[draft_key]));
   const error = use_store(composer_store, (state) => state.errors[draft_key] ?? "");
   const dictating = use_store(dictation_store, (state) => (state?.draft_key === draft_key ? state.phase : null));
-  const { model, setting: context_setting } = use_model_context();
+  const { model, setting: context_setting } = use_model_context(chat_id);
+  const choice = use_model_choice(chat_id);
+  const pro = choice?.pro ?? false;
+  const tier = choice?.tier ?? null;
   const busy = use_chat_busy(chat_id);
 
   const { usage: shown_usage } = use_shown_context(chat_id);
@@ -78,6 +81,8 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     usage: shown_usage,
     model,
     model_context: context_setting,
+    pro,
+    tier,
     report,
   });
   const slash = use_slash_menu(draft.text, context, (text, caret) => {
@@ -288,7 +293,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
             void attach_files(draft_key, files);
           }}
         />
-        <ModelPicker />
+        <ModelPicker chat_id={chat_id} />
         <ModePicker chat_id={chat_id} />
         {draft.plan && (
           <button

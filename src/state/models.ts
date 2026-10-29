@@ -1,4 +1,4 @@
-import type { ModelCatalog, ModelEntry } from "../../shared/models.ts";
+import { find_model, type ModelCatalog, type ModelEntry } from "../../shared/models.ts";
 import { api } from "../api/bridge.ts";
 import { create_store } from "./create-store.ts";
 import { settings_store, update_settings } from "./settings.ts";
@@ -16,9 +16,6 @@ const load_models = async () => {
     models_store.set({ status: "failed", catalog: null });
   }
 };
-
-export const find_model = (catalog: ModelCatalog | null, id: string): ModelEntry | null =>
-  catalog?.models.find((model) => model.id === id) ?? null;
 
 export const effective_effort = (model: ModelEntry, effort: string) => (model.efforts.includes(effort) ? effort : model.default_effort);
 

@@ -60,18 +60,6 @@ export const WebSearchPane = () => {
         <SettingsRow label={t("web.results")}>
           <ResultsSlider saved={web.max_results} />
         </SettingsRow>
-        <SettingsRow label={t("web.depth")} hint={t("web.depth_sub")}>
-          <Segmented
-            className="pane-segmented"
-            options={[
-              { id: "basic", label: t("web.depth_basic") },
-              { id: "advanced", label: t("web.depth_advanced") },
-            ]}
-            value={web.depth}
-            label={t("web.depth")}
-            on_change={(depth) => patch({ depth })}
-          />
-        </SettingsRow>
         <SettingsRow label={t("web.topic")}>
           <Segmented
             className="pane-segmented"

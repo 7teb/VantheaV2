@@ -6,7 +6,8 @@ import { ChevronRightIcon, CircleStopIcon, CritterIcon } from "../../../componen
 import { use_t } from "../../../i18n/index.ts";
 import { agent_approvals_store, is_waiting } from "../../../state/agent-approvals.ts";
 import { cancel_agent, select_agent_run } from "../../../state/agents.ts";
-import { find_model, models_store } from "../../../state/models.ts";
+import { find_model } from "../../../../shared/models.ts";
+import { models_store } from "../../../state/models.ts";
 import { use_store } from "../../../state/use-store.ts";
 import { agent_status_keys } from "../../tools/background-status.ts";
 import { first_line, profile_labels, run_duration, status_icons } from "./agent-meta.ts";

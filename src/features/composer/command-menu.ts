@@ -1,5 +1,5 @@
 import type { ChatMeta } from "../../../shared/chat.ts";
-import type { ModelEntry } from "../../../shared/models.ts";
+import type { ModelEntry, SpeedTier } from "../../../shared/models.ts";
 import type { ModelContext } from "../../../shared/settings.ts";
 import type { ReactNode } from "react";
 import type { Translate } from "../../i18n/translate.ts";
@@ -19,6 +19,8 @@ export type CommandContext = {
   usage_percent: number | null;
   model: ModelEntry | null;
   model_context: ModelContext | undefined;
+  pro: boolean;
+  tier: SpeedTier | null;
   t: Translate;
   report: (text: string, tone: "note" | "error") => void;
 };
@@ -38,6 +40,7 @@ type Shown = {
   icon: (context: CommandContext) => CommandIcon;
   label: (context: CommandContext) => string;
   keywords?: string[];
+  shown?: (context: CommandContext) => boolean;
   toggled?: (context: CommandContext) => boolean;
 };
 

@@ -87,6 +87,7 @@ export const view_kinds = [
   "plan",
   "web_search",
   "image",
+  "shown_images",
   "browser",
   "mcp",
   "memory",
@@ -155,6 +156,12 @@ const listed_label: Label = (t, step) => {
 
 const viewed_image = (step: ToolStep) => base_name(view_of(step, "text")?.text || step_path(step));
 
+const shown_name = (step: ToolStep) => {
+  const paths: unknown[] = view_of(step, "shown_images")?.images.map((image) => image.path) ?? (Array.isArray(step.args.paths) ? step.args.paths : []);
+  const first = typeof paths[0] === "string" ? base_name(paths[0]) : "";
+  return paths.length > 1 ? `${first} +${paths.length - 1}` : first;
+};
+
 const visual_title = (step: ToolStep) => view_of(step, "visual")?.title || text_arg(step, "title");
 
 const titled = (plain: MessageKey, named_key: MessageKey): Label => (t, step) => {
@@ -209,7 +216,8 @@ const read_urls = (step: ToolStep): string[] => {
 };
 
 const web_label = (search: Label, one_page: MessageKey, pages: MessageKey): Label => (t, step) => {
-  const urls = read_urls(step);
+  const failed = view_of(step, "web_search")?.failed?.map((entry) => entry.url) ?? [];
+  const urls = read_urls(step).filter((url, _, all) => !failed.includes(url) || failed.length >= all.length);
   if (urls.length > 1) {
     return t(pages, { n: urls.length });
   }
@@ -241,6 +249,7 @@ const named: Record<string, ToolMeta> = {
     web_label(with_x("tool_label.searched_web", (step) => view_of(step, "web_search")?.query || text_arg(step, "query")), "tool_label.read", "tool_label.read_pages"),
   ),
   generate_image: entry("image", "images", fixed("tool_label.generating_image"), fixed("tool_label.generated_image")),
+  show_images: entry("image", "images", with_x("tool_label.showing_images", shown_name), with_x("tool_label.showed_images", shown_name)),
   analyze_image: entry("image", "other", fixed("tool_label.analyze_image"), fixed("tool_label.analyzed_image")),
   view_image: entry("image", "reads", with_x("tool_label.viewing_image", file_name), with_x("tool_label.viewed_image", viewed_image)),
   [visual_tool_name]: entry("visual", "visuals", titled("tool_label.visualizing", "tool_label.visualizing_named"), titled("tool_label.visualized", "tool_label.visualized_named")),
@@ -341,6 +350,7 @@ const by_kind: Record<ToolViewKind, ToolMeta> = {
   plan: named.present_plan,
   web_search: named.web_search,
   image: named.generate_image,
+  shown_images: named.show_images,
   browser: entry("browser", "browser", with_x("tool_label.browser_action", (step) => view_of(step, "browser")?.action ?? "")),
   mcp: mcp_meta,
   memory: named.list_memories,

@@ -60,7 +60,7 @@ export const convert_legacy_settings = (value: unknown): LegacySettingsImport =>
       personality: raw.personality,
       custom_instructions: raw.customInstructions,
       memory: { enabled: memory.enabled, exclude_tool_chats: memory.excludeToolChats },
-      web_search: { enabled: web.enabled, max_results: web.maxResults, depth: web.searchDepth, topic: web.topic },
+      web_search: { enabled: web.enabled, max_results: web.maxResults, topic: web.topic },
       image_gen: { enabled: image.enabled, model: image.model, quality: image.quality },
       mcp_servers: legacy_mcp_servers(raw.mcpServers),
       mcp_tools: legacy_mcp_tools(raw.mcpServers),

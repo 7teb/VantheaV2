@@ -7,13 +7,11 @@ export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
 
 export type SourceText = { title: string; url: string; content: string; published_date: string };
 
-export type SearchDepth = "basic" | "advanced";
-
 export type TimeRange = "day" | "week" | "month" | "year";
 
 export const time_ranges: readonly TimeRange[] = ["day", "week", "month", "year"];
 
-export type SearchOptions = { query: string; depth: SearchDepth; topic: "general" | "news"; max_results: number; time_range: TimeRange | null };
+export type SearchOptions = { query: string; topic: "general" | "news"; max_results: number; time_range: TimeRange | null };
 
 export const tavily_base = "https://api.tavily.com";
 
@@ -36,7 +34,7 @@ const clean_title = (value: unknown, url: string) => as_string(value).replace(/\
 
 export const search_body = (options: SearchOptions) => ({
   query: options.query,
-  search_depth: options.depth,
+  search_depth: "basic",
   topic: options.topic,
   max_results: Math.min(20, Math.max(1, Math.round(options.max_results))),
   include_answer: false,
@@ -45,9 +43,9 @@ export const search_body = (options: SearchOptions) => ({
   ...(options.time_range ? { time_range: options.time_range } : {}),
 });
 
-export const extract_body = (urls: string[], depth: SearchDepth) => ({
+export const extract_body = (urls: string[]) => ({
   urls,
-  extract_depth: depth,
+  extract_depth: "basic",
   format: "markdown",
 });
 

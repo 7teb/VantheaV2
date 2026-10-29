@@ -36,4 +36,41 @@
     white-space: nowrap;
     color: var(--text-danger);
   }
+
+  .shown-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .shown-image {
+    position: relative;
+    width: min(100%, 427px);
+    margin: 0;
+  }
+
+  .shown-image .media-image {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+  }
+
+  .shown-image-reveal {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    padding: 4px 9px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-tooltip);
+    backdrop-filter: var(--filter-tooltip);
+    box-shadow: var(--shadow-tooltip);
+    color: var(--text-primary);
+    font-size: var(--font-size-caption);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .shown-image:hover .shown-image-reveal,
+  .shown-image:focus-within .shown-image-reveal {
+    opacity: 1;
+  }
 }

@@ -1,4 +1,4 @@
-import { find_model } from "../model/catalog.ts";
+import { find_model } from "../../shared/models.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { review_completion } from "../model/review-call.ts";
 import type { ReviewModelCall } from "../tools/types.ts";

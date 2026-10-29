@@ -85,6 +85,8 @@
     {
       "id": "openai/gpt-6.1-sol",
       "label": "GPT 6.1 Sol",
+      "pro": { "id": "openai/gpt-6.1-sol-pro", "label": "GPT 6.1 Sol Pro" },
+      "tiers": { "fast": "openai/fast", "ultrafast": "openai/ultrafast" },
       "provider": "OpenAI",
       "verbosity": "low",
       "provider_order": ["openai"],
@@ -97,6 +99,7 @@
     {
       "id": "openai/gpt-6.1-sol:floor",
       "label": "GPT 6.1 Sol Flex",
+      "pro": { "id": "openai/gpt-6.1-sol-pro:floor", "label": "GPT 6.1 Sol Pro Flex" },
       "provider": "OpenAI",
       "verbosity": "low",
       "provider_order": ["openai/flex", "openai"],
@@ -109,6 +112,8 @@
     {
       "id": "openai/gpt-6.1-terra",
       "label": "GPT 6.1 Terra",
+      "pro": { "id": "openai/gpt-6.1-terra-pro", "label": "GPT 6.1 Terra Pro" },
+      "tiers": { "fast": "openai/fast" },
       "provider": "OpenAI",
       "verbosity": "low",
       "provider_order": ["openai"],
@@ -121,6 +126,7 @@
     {
       "id": "openai/gpt-6.1-terra:floor",
       "label": "GPT 6.1 Terra Flex",
+      "pro": { "id": "openai/gpt-6.1-terra-pro:floor", "label": "GPT 6.1 Terra Pro Flex" },
       "provider": "OpenAI",
       "verbosity": "low",
       "provider_order": ["openai/flex", "openai"],
@@ -133,6 +139,8 @@
     {
       "id": "openai/gpt-6-luna",
       "label": "GPT 6 Luna",
+      "pro": { "id": "openai/gpt-6-luna-pro", "label": "GPT 6 Luna Pro" },
+      "tiers": { "fast": "openai/fast" },
       "provider": "OpenAI",
       "verbosity": "low",
       "provider_order": ["openai"],
@@ -145,6 +153,8 @@
     {
       "id": "openai/gpt-6-astra",
       "label": "GPT 6 Astra",
+      "pro": { "id": "openai/gpt-6-astra-pro", "label": "GPT 6 Astra Pro" },
+      "tiers": { "fast": "openai/fast", "ultrafast": "openai/ultrafast" },
       "provider": "OpenAI",
       "verbosity": "low",
       "provider_order": ["openai"],
@@ -157,6 +167,7 @@
     {
       "id": "openai/gpt-6-astra:floor",
       "label": "GPT 6 Astra Flex",
+      "pro": { "id": "openai/gpt-6-astra-pro:floor", "label": "GPT 6 Astra Pro Flex" },
       "provider": "OpenAI",
       "verbosity": "low",
       "provider_order": ["openai/flex", "openai"],
@@ -345,7 +356,6 @@
     "title": "google/gemini-3.1-flash-lite",
     "overseer": "openai/gpt-6-luna",
     "vision": "google/gemini-3.1-flash-lite",
-    "web_answer": "google/gemini-3.5-flash-lite",
     "memory": "deepseek/deepseek-v4-flash",
     "reasoning_status": "google/gemini-3.5-flash-lite",
     "transcription": "elevenlabs/scribe-v2",
