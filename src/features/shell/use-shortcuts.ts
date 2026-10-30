@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { remote_client } from "../../api/bridge.ts";
 import { close_top_layer } from "../../components/layers.ts";
 import { chats_store } from "../../state/chats.ts";
 import { choose_project } from "../../state/projects.ts";
@@ -20,15 +21,22 @@ const step_chat = (direction: 1 | -1) => {
   open_chat(next.id, next.project_path);
 };
 
+const pc_only = (run: () => void) => () => {
+  if (remote_client) {
+    return false;
+  }
+  run();
+  return true;
+};
+
 const actions: Record<ShortcutId, () => boolean> = {
   new_chat: () => {
     start_new_chat(ui_store.get().project_path);
     return true;
   },
-  open_project: () => {
+  open_project: pc_only(() => {
     choose_project().catch((error) => console.error("[shortcuts] choosing a project failed", error));
-    return true;
-  },
+  }),
   toggle_sidebar: () => {
     toggle_sidebar();
     return true;
@@ -49,22 +57,10 @@ const actions: Record<ShortcutId, () => boolean> = {
     step_chat(1);
     return true;
   },
-  zoom_in: () => {
-    zoom_window(1);
-    return true;
-  },
-  zoom_out: () => {
-    zoom_window(-1);
-    return true;
-  },
-  zoom_reset: () => {
-    zoom_window(0);
-    return true;
-  },
-  fullscreen: () => {
-    toggle_fullscreen();
-    return true;
-  },
+  zoom_in: pc_only(() => zoom_window(1)),
+  zoom_out: pc_only(() => zoom_window(-1)),
+  zoom_reset: pc_only(() => zoom_window(0)),
+  fullscreen: pc_only(toggle_fullscreen),
   close_layer: close_top_layer,
 };
 

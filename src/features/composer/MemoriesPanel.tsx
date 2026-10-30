@@ -12,7 +12,7 @@ import { settings_store } from "../../state/settings.ts";
 import { use_store } from "../../state/use-store.ts";
 import { base_name } from "../tools/tool-meta.ts";
 import { ipc_error_text } from "../settings/panes/ipc-error.ts";
-import { focus_composer_input } from "./composer-hooks.ts";
+import { return_focus_to_composer } from "./composer-hooks.ts";
 import "./MemoriesPanel.css";
 
 const MemoryRow = ({ record }: { record: MemoryRecord }) => {
@@ -71,7 +71,7 @@ const MemoriesCard = ({ panel_key, presence }: { panel_key: string; presence: Pr
       queueMicrotask(() => {
         const idle = document.activeElement === null || document.activeElement === document.body;
         if (idle && slot.isConnected) {
-          focus_composer_input(slot);
+          return_focus_to_composer(slot);
         }
       });
     };

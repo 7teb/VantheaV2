@@ -138,4 +138,18 @@
   .icon-button:disabled {
     color: var(--text-disabled);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .button-sm {
+      height: var(--size-control);
+      padding: 0 12px;
+      border-radius: var(--radius-md);
+    }
+
+    .icon-button-sm {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+    }
+  }
 }

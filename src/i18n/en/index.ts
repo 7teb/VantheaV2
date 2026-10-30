@@ -21,6 +21,7 @@ import { plan } from "./plan.ts";
 import { privacy } from "./privacy.ts";
 import { projects } from "./projects.ts";
 import { questions } from "./questions.ts";
+import { remote } from "./remote.ts";
 import { review } from "./review.ts";
 import { search } from "./search.ts";
 import { settings } from "./settings.ts";
@@ -35,6 +36,7 @@ import { tool_label } from "./tool-label.ts";
 import { tools } from "./tools.ts";
 import { turn_diff } from "./turn-diff.ts";
 import { web } from "./web.ts";
+import { workflow } from "./workflow.ts";
 import { worktree } from "./worktree.ts";
 
 export const en = {
@@ -61,6 +63,7 @@ export const en = {
   ...privacy,
   ...projects,
   ...questions,
+  ...remote,
   ...review,
   ...search,
   ...settings,
@@ -75,6 +78,7 @@ export const en = {
   ...tools,
   ...turn_diff,
   ...web,
+  ...workflow,
   ...worktree,
 };
 

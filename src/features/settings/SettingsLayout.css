@@ -75,3 +75,22 @@
   font-size: var(--font-size-caption);
   overflow-wrap: anywhere;
 }
+
+@media (max-width: 600px) {
+  .settings-row:not(.is-stacked) {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .settings-row:not(.is-stacked) .settings-row-text {
+    flex: 1 1 160px;
+  }
+
+  .settings-row:not(.is-stacked) .settings-row-control {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 100%;
+    margin-left: auto;
+  }
+}

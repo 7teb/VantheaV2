@@ -49,10 +49,19 @@ export const use_follow_bottom = (jump_key: string | number) => {
       return;
     }
     let held: { target: Element; top: number; timer: number; breakers: string[] } | null = null;
-    const on_scroll = () => {
+    let last_top = node.scrollTop;
+    const settle = () => {
       const near = node.scrollHeight - node.scrollTop - node.clientHeight < near_bottom_px;
       pinned.current = near;
       set_away(!near);
+    };
+    const on_scroll = () => {
+      const rising = node.scrollTop < last_top;
+      last_top = node.scrollTop;
+      if (pinned.current && !rising && !held) {
+        return;
+      }
+      settle();
     };
     const hold = () => {
       if (!held) {
@@ -76,7 +85,7 @@ export const use_follow_bottom = (jump_key: string | number) => {
     const release = () => {
       if (held) {
         drop_hold();
-        on_scroll();
+        settle();
       }
     };
     anchors.set(node, (target, mode) => {

@@ -15,7 +15,7 @@ import { as_array, as_string, pick, require_record, require_string } from "../st
 import { build_api_messages } from "../turn/history.ts";
 import { accept_plan, compact_turn, continue_turn, edit_turn, init_turn, start_turn, steer_turn, stop_turn, undo_turn } from "../turn/run.ts";
 import { counted_image } from "../turn/user-input.ts";
-import { emit, handle } from "./handle.ts";
+import { emit, handle, handle_client } from "./handle.ts";
 import { parse_ids } from "./media.ts";
 
 const modes: readonly PermissionMode[] = ["ask", "auto", "full"];
@@ -106,7 +106,7 @@ export const register_turn_ipc = () => {
     return init_turn(chat_id_of(chat_id), parsed, argument_of(parsed, argument));
   });
   handle("turn:stop", (chat_id) => stop_turn(chat_id_of(chat_id)));
-  handle("turn:hold_events", (chat_ids) => hold_events_for(as_array(chat_ids).map(chat_id_of)));
+  handle_client("turn:hold_events", (client, chat_ids) => hold_events_for(client, as_array(chat_ids).map(chat_id_of)));
   handle("turn:steer", (chat_id, text, attachment_ids, steer_id) =>
     steer_turn(
       chat_id_of(chat_id),

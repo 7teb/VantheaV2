@@ -95,4 +95,25 @@
     border-radius: 6px;
     font-size: var(--font-size-caption);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .segment {
+      min-width: 42px;
+      height: 34px;
+    }
+
+    .segment::after {
+      content: "";
+      position: absolute;
+      inset: -3px 0;
+    }
+
+    .segmented[data-size="sm"] .segment {
+      height: 36px;
+    }
+
+    .segmented[data-size="sm"] .segment::after {
+      inset: -2px 0;
+    }
+  }
 }

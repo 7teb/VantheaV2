@@ -180,4 +180,40 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    html {
+      touch-action: manipulation;
+      overscroll-behavior: none;
+    }
+
+    body {
+      overscroll-behavior: none;
+    }
+
+    input,
+    textarea,
+    select {
+      font-size: max(16px, 1em) !important;
+    }
+
+    a,
+    [role="button"] {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .titlebar,
+    .sidebar-row,
+    .composer-bar,
+    .menu,
+    .composer-popover-row {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .sidebar-row :is(input, textarea) {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+  }
 }

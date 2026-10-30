@@ -40,6 +40,7 @@ import { init_request_text } from "./init-request.ts";
 import { review_request_text } from "./review-request.ts";
 import { undo_request_text } from "./undo-request.ts";
 import { note_images } from "./vision-notes.ts";
+import { stop_chat_workflows } from "../workflows/runtime.ts";
 
 const app_closed_message = "The app was closed while this turn was still running.";
 
@@ -313,6 +314,7 @@ export const stop_turn = (chat_id: string): void => {
   }
   abort_turn(chat_id, new Error("the user stopped the turn"));
   cancel_chat(chat_id);
+  stop_chat_workflows(chat_id, "user");
 };
 
 export const steer_turn = async (chat_id: string, text: string, attachments: Attachment[], steer_id: string): Promise<string | null> => {

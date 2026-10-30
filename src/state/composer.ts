@@ -1,6 +1,7 @@
 import type { CompactResult } from "../../shared/ipc/chats.ts";
 import { attachment_limits } from "../../shared/ipc/media.ts";
 import { api } from "../api/bridge.ts";
+import { random_id } from "../api/random-id.ts";
 import { t } from "../i18n/index.ts";
 import { chat_busy } from "./chat-busy.ts";
 import { create_chat } from "./chat-create.ts";
@@ -107,7 +108,7 @@ const upload_one = async (key: string, file: File) => {
     composer_store.update((state) => set_error(state, key, t("composer.too_large", { name, limit: megabytes(limit) })));
     return;
   }
-  const upload_key = crypto.randomUUID();
+  const upload_key = random_id();
   const base: DraftUpload = { key: upload_key, name, size: file.size, image, status: "uploading", attachment: null, preview: image ? URL.createObjectURL(file) : null };
   composer_store.update((state) => put_upload(state, key, base));
   try {
@@ -175,11 +176,11 @@ const send_now = async (chat_id: string, message: OutgoingMessage) => {
 const dispatch = async (chat_id: string, message: OutgoingMessage) => {
   const current = composer_store.get();
   if (current.compacting[chat_id]) {
-    composer_store.update((state) => enqueue(state, chat_id, { ...message, id: crypto.randomUUID(), steering: false, after_compaction: true }));
+    composer_store.update((state) => enqueue(state, chat_id, { ...message, id: random_id(), steering: false, after_compaction: true }));
     return;
   }
   if (chat_busy(chat_id) || current.sending[chat_id]) {
-    composer_store.update((state) => enqueue(state, chat_id, { ...message, id: crypto.randomUUID(), steering: false }));
+    composer_store.update((state) => enqueue(state, chat_id, { ...message, id: random_id(), steering: false }));
     return;
   }
   await send_now(chat_id, message);
@@ -253,7 +254,7 @@ export const steer_queued = async (chat_id: string, id: string) => {
     composer_store.update((state) => mark_after_compaction(state, chat_id, id));
     return;
   }
-  const steer_id = crypto.randomUUID();
+  const steer_id = random_id();
   const chat = chat_view_store.get().entries[chat_id]?.chat;
   const turn_id = chat ? last_assistant(chat)?.id : undefined;
   composer_store.update((state) => set_steering(state, chat_id, id, true, steer_id, turn_id));

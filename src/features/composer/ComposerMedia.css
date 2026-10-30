@@ -141,4 +141,23 @@
   .composer-media-remove svg * {
     color: var(--text-on-primary);
   }
+
+  @media (max-width: 600px) {
+    .composer-media {
+      margin: -4px -6px -2px;
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .composer-media-remove {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .composer-media-remove::after {
+      content: "";
+      position: absolute;
+      inset: -2px -2px -22px -22px;
+    }
+  }
 }

@@ -1,4 +1,5 @@
 import { api } from "../api/bridge.ts";
+import { random_id } from "../api/random-id.ts";
 import { draft_key } from "./chat-drafts.ts";
 import { create_store } from "./create-store.ts";
 import { drop_group, drop_tab, find_terminal_tab, move_group, patch_tab, pick_tab, put_tab, terminal_group, type TerminalState, type TerminalTab } from "./terminal-groups.ts";
@@ -22,7 +23,7 @@ const find_tab = (tab_id: string) => find_terminal_tab(terminal_store.get(), tab
 const error_text = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 export const add_terminal_tab = (chat_id: string | null, project_path: string): string => {
-  const id = crypto.randomUUID();
+  const id = random_id();
   const tab: TerminalTab = { id, chat_id, project_path, status: "starting", exit_code: null, error: "" };
   terminal_store.update((state) => put_tab(state, draft_key(chat_id, project_path), tab));
   return id;

@@ -2,7 +2,7 @@ import { IconButton } from "../../components/Button.tsx";
 import { CircleSpinnerIcon, MicIcon, StopIcon } from "../../components/icons.tsx";
 import { Tooltip } from "../../components/Tooltip.tsx";
 import { use_t } from "../../i18n/index.ts";
-import { cancel_dictation, dictation_store, start_dictation } from "../../state/dictation.ts";
+import { cancel_dictation, dictation_store, dictation_supported, start_dictation } from "../../state/dictation.ts";
 import { use_store } from "../../state/use-store.ts";
 import { DictationWave } from "./DictationWave.tsx";
 import "./DictationButton.css";
@@ -18,6 +18,9 @@ export const DictationButton = ({ draft_key, on_stop }: DictationButtonProps) =>
     return state.draft_key === draft_key ? state.phase : "elsewhere";
   });
 
+  if (!dictation_supported()) {
+    return null;
+  }
   if (phase === "recording") {
     return (
       <Tooltip label={t("dictation.stop")}>

@@ -13,6 +13,11 @@ const targets = [
     banner: { js: require_shim },
   },
   {
+    entryPoints: ["electron/workflows/sandbox-worker.ts"],
+    outfile: "dist-electron/workflow-sandbox.cjs",
+    format: "cjs",
+  },
+  {
     entryPoints: ["electron/preload.ts"],
     outfile: "dist-electron/preload.cjs",
     format: "cjs",

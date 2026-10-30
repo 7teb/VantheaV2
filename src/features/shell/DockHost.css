@@ -68,3 +68,68 @@
 .dock-resize:focus-visible::after {
   background: var(--focus-ring);
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .dock-resize {
+    width: 14px;
+  }
+}
+
+@media (max-width: 860px) {
+  .dock-host,
+  .dock-host[data-state="closed"] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-dock);
+    width: min(560px, 100vw);
+    max-width: none;
+  }
+
+  .dock-host {
+    box-shadow: var(--shadow-overlay-end);
+    transform: translateX(0);
+    transition:
+      transform var(--duration-slower) var(--ease-out),
+      visibility 0s;
+  }
+
+  .dock-host[data-state="closed"] {
+    box-shadow: none;
+    transform: translateX(100%);
+    transition:
+      transform var(--duration-slower) var(--ease-out),
+      visibility 0s linear var(--duration-slower);
+  }
+
+  .dock-inner {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+  }
+
+  .dock-inner .dock-panel {
+    padding: 0 var(--safe-right) var(--safe-bottom) 0;
+  }
+
+  .dock-resize {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .dock-host,
+  .dock-host[data-state="closed"] {
+    left: 0;
+    width: 100%;
+  }
+
+  .dock-host {
+    box-shadow: none;
+  }
+
+  .dock-inner .dock-panel {
+    padding-left: var(--safe-left);
+  }
+}

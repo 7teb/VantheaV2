@@ -41,4 +41,10 @@
     height: 1px;
     background: var(--rule-turn);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .turn-toggle {
+      min-height: var(--size-control);
+    }
+  }
 }

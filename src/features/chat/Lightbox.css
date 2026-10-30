@@ -15,4 +15,16 @@
     object-fit: contain;
     cursor: zoom-out;
   }
+
+  @media (max-width: 600px) {
+    .lightbox-backdrop {
+      padding: max(var(--space-3), var(--safe-top)) max(var(--space-3), var(--safe-right)) max(var(--space-3), var(--safe-bottom))
+        max(var(--space-3), var(--safe-left));
+    }
+
+    .lightbox-image {
+      max-width: calc(100vw - var(--safe-left) - var(--safe-right) - 2 * var(--space-3));
+      max-height: calc(var(--viewport-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - 2 * var(--space-3));
+    }
+  }
 }

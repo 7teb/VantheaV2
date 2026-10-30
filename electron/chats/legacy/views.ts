@@ -227,7 +227,7 @@ const work_views = (name: string, args: Raw, result: Raw, ctx: ViewContext): Too
     case "generate_image": {
       const names = as_array(result.images).map((entry) => as_string(as_record(entry).name)).filter(Boolean);
       return names.length
-        ? { kind: "image", prompt: as_string(result.prompt, as_string(args.prompt)), images: names.map((image) => ({ id: ctx.image(image), width: null, height: null })) }
+        ? { kind: "image", images: names.map((image) => ({ id: ctx.image(image), width: null, height: null })) }
         : null;
     }
     case "remember":

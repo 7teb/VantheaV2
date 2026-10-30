@@ -65,4 +65,28 @@
     gap: var(--space-2);
     margin-top: var(--space-6);
   }
+
+  @media (max-width: 600px) {
+    .dialog-backdrop {
+      padding: max(var(--space-3), var(--safe-top)) max(var(--space-3), var(--safe-right)) max(var(--space-3), var(--safe-bottom))
+        max(var(--space-3), var(--safe-left));
+    }
+
+    .dialog-panel {
+      width: 100%;
+      max-height: calc(var(--viewport-height, 100dvh) - var(--safe-top) - var(--safe-bottom) - var(--space-6));
+    }
+
+    .confirm-dialog {
+      padding: var(--space-5) var(--space-5) var(--space-4);
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .dialog-backdrop {
+      top: var(--viewport-top, 0px);
+      bottom: auto;
+      height: var(--viewport-height, 100dvh);
+    }
+  }
 }

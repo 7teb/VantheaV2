@@ -1,10 +1,11 @@
 import { Fragment, memo, useRef } from "react";
-import type { AssistantMessage as AssistantMessageData, Message } from "../../../shared/chat.ts";
+import type { AssistantMessage as AssistantMessageData, Message, NoticeStep } from "../../../shared/chat.ts";
 import { file_changes } from "../../../shared/file-changes.ts";
 import { build_blocks } from "./assistant-blocks.ts";
 import { summary_line_step } from "./compaction-line.ts";
 import { FileChanges } from "./FileChanges.tsx";
 import { OriginNote } from "./OriginNote.tsx";
+import { turn_layout } from "./origin-steps.ts";
 import { CompactionRow } from "./StepRows.tsx";
 import { TurnBody } from "./TurnBody.tsx";
 import { FoldItem, use_turn_folded } from "./TurnFold.tsx";
@@ -21,6 +22,22 @@ const facts_of = (message: AssistantMessageData): MemberFacts => {
   }
   const facts = member_facts(message, build_blocks(message.steps));
   facts_cache.set(message, facts);
+  return facts;
+};
+
+const lead_cache = new WeakMap<AssistantMessageData, { key: string; facts: MemberFacts }>();
+
+const facts_with = (message: AssistantMessageData, lead: NoticeStep[] | undefined): MemberFacts => {
+  if (!lead) {
+    return facts_of(message);
+  }
+  const key = lead.map((step) => `${step.id}\n${step.text}`).join("\n\n");
+  const cached = lead_cache.get(message);
+  if (cached?.key === key) {
+    return cached.facts;
+  }
+  const facts = member_facts(message, build_blocks([...lead, ...message.steps]));
+  lead_cache.set(message, { key, facts });
   return facts;
 };
 
@@ -47,7 +64,8 @@ const same_turn = (before: AssistantMessageProps, after: AssistantMessageProps) 
 
 export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_plan_id, accepted, undoable_id, summary_after }: AssistantMessageProps) => {
   const members = messages.filter((message): message is AssistantMessageData => message.role === "assistant");
-  const facts = members.map(facts_of);
+  const layout = turn_layout(messages);
+  const facts = members.map((member) => facts_with(member, layout.lead.get(member.id)));
   const shape = turn_shape(facts);
   const frame = useRef<HTMLDivElement>(null);
   const leader = members[0] as AssistantMessageData;
@@ -74,9 +92,11 @@ export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_p
         if (message.role === "user") {
           return (
             <Fragment key={message.id}>
-              <FoldItem folded={fold.folded}>
-                <OriginNote message={message} />
-              </FoldItem>
+              {!layout.absorbed.has(message.id) && (
+                <FoldItem folded={fold.folded}>
+                  <OriginNote message={message} />
+                </FoldItem>
+              )}
               {summary}
             </Fragment>
           );

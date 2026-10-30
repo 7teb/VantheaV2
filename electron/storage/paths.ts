@@ -18,6 +18,7 @@ export type StoragePaths = {
   retired_snapshots: string;
   background: string;
   agents: string;
+  workflows: string;
   memories: string;
   skills: string;
   workspaces: string;
@@ -49,6 +50,7 @@ const storage_paths_for = (user_data: string): StoragePaths => {
     retired_snapshots: path.join(root, "snapshots"),
     background: path.join(root, "background.json"),
     agents: path.join(root, "agents"),
+    workflows: path.join(root, "workflows"),
     memories: path.join(root, "memories.json"),
     skills: path.join(root, "skills"),
     workspaces: path.join(root, "workspaces"),
@@ -72,6 +74,7 @@ export const storage_dirs = (paths: StoragePaths): string[] => [
   paths.favicons,
   paths.skills,
   paths.agents,
+  paths.workflows,
   paths.worktrees,
   paths.turn_diffs,
 ];

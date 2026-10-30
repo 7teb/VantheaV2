@@ -1,0 +1,14 @@
+[
+  {
+    "id": "meta/muse-wonder",
+    "label": "Muse Wonder",
+    "provider": "Meta",
+    "provider_order": ["meta"],
+    "efforts": ["minimal", "low", "medium", "high", "xhigh", "max"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1048576,
+    "max_output": 943718,
+    "note": "Meta's frontier reasoning model for agentic work, served only by Meta. Reads images, 1M window. Expensive: 4 USD per million input tokens and 20 USD per million output tokens. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
+  }
+]

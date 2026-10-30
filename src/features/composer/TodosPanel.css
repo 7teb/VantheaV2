@@ -87,4 +87,10 @@
   .todos-panel .todo-mark {
     height: calc(var(--font-size-ui) * var(--leading-ui));
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .todos-panel-head {
+      min-height: var(--size-control);
+    }
+  }
 }

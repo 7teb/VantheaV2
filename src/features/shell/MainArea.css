@@ -47,3 +47,31 @@
 .composer-dock .composer-slot {
   pointer-events: auto;
 }
+
+@media (max-width: 600px) {
+  .main-area,
+  .shell-body:has(> .dock-host[data-state="open"]) > .main-area {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .content-column {
+    padding: 0 var(--space-3);
+  }
+
+  .empty-state {
+    padding-bottom: 6vh;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .composer-dock {
+    --dock-bottom: max(var(--space-2), var(--safe-bottom));
+    padding-bottom: var(--dock-bottom);
+    background: linear-gradient(to top, var(--surface-main) max(var(--space-2), calc(var(--dock-bottom) - 12px)), transparent var(--dock-bottom));
+  }
+
+  :root[data-keyboard="open"] .composer-dock {
+    --dock-bottom: var(--space-2);
+  }
+}

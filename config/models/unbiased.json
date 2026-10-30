@@ -1,0 +1,14 @@
+[
+  {
+    "id": "unbiased/pareto-26.9",
+    "label": "Pareto 26.9",
+    "provider": "Unbiased",
+    "provider_order": ["unbiased"],
+    "efforts": [],
+    "default_effort": "",
+    "vision": true,
+    "context_length": 262144,
+    "max_output": 131072,
+    "note": "Unbiased's composite multimodal model for research, coding and agentic work, served only by Unbiased. Reads images, 262k window, no reasoning effort setting. 2.50 USD per million input tokens and 7.50 USD per million output tokens. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
+  }
+]

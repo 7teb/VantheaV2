@@ -215,6 +215,7 @@
       0 1px 2px rgba(0, 0, 0, 0.6);
     --shadow-edge-left: inset 1px 0 0 rgba(255, 255, 255, 0.035);
     --shadow-overlay: 24px 0 64px rgba(0, 0, 0, 0.6);
+    --shadow-overlay-end: -24px 0 64px rgba(0, 0, 0, 0.6);
 
     --filter-dock: blur(10px) saturate(1.5);
     --filter-popover: blur(10px) saturate(1.5);
@@ -251,7 +252,7 @@
     --gradient-dock-fade: linear-gradient(to top, var(--surface-main) 8px, transparent var(--space-5));
 
     --font-ui: "Segoe UI", system-ui, sans-serif;
-    --font-mono: Consolas, "Cascadia Mono", monospace;
+    --font-mono: Consolas, "Cascadia Mono", ui-monospace, Menlo, monospace;
     --font-display: "Inter Variable", "Segoe UI", system-ui, sans-serif;
     --font-size-caption: 12px;
     --font-size-ui: 13px;
@@ -302,11 +303,16 @@
     --size-sidebar: 272px;
     --size-content: 768px;
 
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+
     --z-base: 0;
     --z-sticky: 5;
     --z-dock: 10;
-    --z-sidebar-overlay: 30;
     --z-settings: 40;
+    --z-sidebar-overlay: 45;
     --z-dialog: 60;
     --z-floating: 70;
     --z-tooltip: 80;
@@ -323,5 +329,21 @@
     --ease-expand: cubic-bezier(0.19, 1, 0.22, 1);
     --ease-collapse: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-linear: linear;
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    :root {
+      --size-control: 40px;
+      --size-control-composer: 36px;
+      --size-row: 44px;
+      --size-field: 44px;
+      --size-titlebar: 44px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    :root {
+      --font-size-hero: 40px;
+    }
   }
 }

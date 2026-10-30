@@ -79,15 +79,16 @@ const running_line = (entry: RosterEntry, self: AgentRecord | null, now: number)
   return `${parts.join(", ")}. Task: ${task_of(entry)}.${written}${questions}${held ? ` Messages ${held}.` : ""}`;
 };
 
-const ended_line = (entry: RosterEntry): string => {
+const ended_line = (entry: RosterEntry, now: number | null = null): string => {
   const ended = Date.parse(entry.run?.ended_at ?? "");
   const status = entry.run?.status ?? "not started";
   const held = held_text(entry.agent);
   const limited = entry.agent.without_tools.length ? `, ${profile_text(entry.agent)}` : "";
-  return `${label_of(entry.agent)}, topic ${entry.agent.topic || "none"}${limited}, ${status}${Number.isFinite(ended) ? ` at ${clock(ended)}` : ""}${held ? `, ${held}` : ""}`;
+  const age = now === null ? "" : ` (${minutes_since(ended, now)} min ago)`;
+  return `${label_of(entry.agent)}, topic ${entry.agent.topic || "none"}${limited}, ${status}${Number.isFinite(ended) ? ` at ${clock(ended)}${age}` : ""}${held ? `, ${held}` : ""}`;
 };
 
-const entry_line = (entry: RosterEntry, self: AgentRecord | null, now: number) => (entry.running ? running_line(entry, self, now) : ended_line(entry));
+const entry_line = (entry: RosterEntry, self: AgentRecord | null, now: number) => (entry.running ? running_line(entry, self, now) : ended_line(entry, now));
 
 export const roster_text = (entries: RosterEntry[], self_id: string | null, now = Date.now()): string => {
   const self = entries.find((entry) => entry.agent.agent_id === self_id)?.agent ?? null;

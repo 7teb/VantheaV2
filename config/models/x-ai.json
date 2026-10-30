@@ -1,0 +1,14 @@
+[
+  {
+    "id": "x-ai/grok-4.7",
+    "label": "Grok 4.7",
+    "provider": "xAI",
+    "provider_order": ["xai"],
+    "efforts": ["low", "medium", "high", "xhigh"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 500000,
+    "max_output": 450000,
+    "note": "xAI's flagship for coding and agentic work. 2 USD per million input tokens and 6 USD per million output tokens; above 200k prompt tokens xAI charges 4 and 12 USD, so the Context limit command can keep a chat at 200k to stay below that tier."
+  }
+]

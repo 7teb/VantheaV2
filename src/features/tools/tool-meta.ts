@@ -4,74 +4,7 @@ import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
 import { visual_tool_name } from "../../../shared/visual.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
-
-export type ToolIconName =
-  | "terminal"
-  | "bash"
-  | "background"
-  | "file"
-  | "files"
-  | "search"
-  | "outline"
-  | "edit"
-  | "todos"
-  | "plan"
-  | "web"
-  | "image"
-  | "agent"
-  | "memory"
-  | "skill"
-  | "browser"
-  | "browser_tabs"
-  | "browser_navigate"
-  | "browser_snapshot"
-  | "browser_console"
-  | "browser_eval"
-  | "browser_click"
-  | "browser_type"
-  | "browser_key"
-  | "browser_scroll"
-  | "browser_wait"
-  | "browser_screenshot"
-  | "browser_look"
-  | "page_check"
-  | "mcp"
-  | "clock"
-  | "gauge"
-  | "models"
-  | "question"
-  | "visual"
-  | "text";
-
-export type ToolCategory =
-  | "commands"
-  | "reads"
-  | "listings"
-  | "searches"
-  | "edits"
-  | "browser"
-  | "mcp"
-  | "agents"
-  | "agent_runs"
-  | "agent_checks"
-  | "agent_stops"
-  | "task_checks"
-  | "task_stops"
-  | "skill_installs"
-  | "mcp_servers"
-  | "messages"
-  | "skills"
-  | "todos"
-  | "web"
-  | "memory"
-  | "images"
-  | "questions"
-  | "visuals"
-  | "other";
-
-type Label = (t: Translate, step: ToolStep) => string;
-
-export type ToolMeta = { icon: ToolIconName; category: ToolCategory; active: Label; done: Label };
+import type { Label, ToolCategory, ToolIconName, ToolMeta } from "./tool-meta-types.ts";
 
 export const view_kinds = [
   "files",
@@ -82,11 +15,13 @@ export const view_kinds = [
   "command",
   "background",
   "agent",
+  "workflow",
   "peer_message",
   "todos",
   "plan",
   "web_search",
   "image",
+  "generated_images",
   "shown_images",
   "browser",
   "mcp",
@@ -224,6 +159,24 @@ const web_label = (search: Label, one_page: MessageKey, pages: MessageKey): Labe
   return urls[0] ? t(one_page, { x: page_address(urls[0]) }) : search(t, step);
 };
 
+const script_name = /\bname\s*:\s*(['"`])([^'"`\n]+)\1/;
+
+const workflow_name = (step: ToolStep): string => {
+  const view = view_of(step, "workflow");
+  if (view) {
+    return view.name;
+  }
+  if (step.approval?.kind === "agent_message" && step.approval.tool === "run_workflow") {
+    return step.approval.to_name;
+  }
+  return text_arg(step, "name") || (script_name.exec(text_arg(step, "script"))?.[2] ?? "") || base_name(text_arg(step, "script_path")) || text_arg(step, "run_id") || text_arg(step, "resume_from");
+};
+
+const workflow_label = (named_key: MessageKey, plain: MessageKey): Label => (t, step) => {
+  const name = workflow_name(step);
+  return name ? t(named_key, { x: name }) : t(plain);
+};
+
 const entry = (icon: ToolIconName, category: ToolCategory, active: Label, done: Label = active): ToolMeta => ({ icon, category, active, done });
 
 const named: Record<string, ToolMeta> = {
@@ -249,6 +202,7 @@ const named: Record<string, ToolMeta> = {
     web_label(with_x("tool_label.searched_web", (step) => view_of(step, "web_search")?.query || text_arg(step, "query")), "tool_label.read", "tool_label.read_pages"),
   ),
   generate_image: entry("image", "images", fixed("tool_label.generating_image"), fixed("tool_label.generated_image")),
+  present_images: entry("image", "other", fixed("tool_label.presenting_images"), fixed("tool_label.presented_images")),
   show_images: entry("image", "images", with_x("tool_label.showing_images", shown_name), with_x("tool_label.showed_images", shown_name)),
   analyze_image: entry("image", "other", fixed("tool_label.analyze_image"), fixed("tool_label.analyzed_image")),
   view_image: entry("image", "reads", with_x("tool_label.viewing_image", file_name), with_x("tool_label.viewed_image", viewed_image)),
@@ -257,6 +211,8 @@ const named: Record<string, ToolMeta> = {
   continue_agent: entry("agent", "agent_runs", with_x("tool_label.continuing_agent", agent_name), with_x("tool_label.continued_agent", agent_name)),
   get_agent_status: entry("agent", "agent_checks", with_x("tool_label.agent_status", agent_name), with_x("tool_label.checked_agent", agent_name)),
   cancel_agent: entry("agent", "agent_stops", with_x("tool_label.cancel_agent", agent_name), with_x("tool_label.stopped_agent", agent_name)),
+  run_workflow: entry("workflow", "workflows", workflow_label("workflow.label_starting", "workflow.label_starting_plain"), workflow_label("workflow.label_completed", "workflow.label_completed_plain")),
+  stop_workflow: entry("workflow", "workflow_stops", workflow_label("workflow.label_stopping", "workflow.label_stopping_plain"), workflow_label("workflow.label_stopped", "workflow.label_stopped_plain")),
   message_agent: entry("agent", "messages", with_x("tool_label.message_agent", agent_name), with_x("tool_label.messaged_agent", agent_name)),
   message_main_agent: entry("agent", "messages", fixed("tool_label.message_main"), fixed("tool_label.messaged_main")),
   message_peer: entry("agent", "messages", with_x("tool_label.message_peer", peer_name), with_x("tool_label.messaged_peer", peer_name)),
@@ -345,11 +301,13 @@ const by_kind: Record<ToolViewKind, ToolMeta> = {
   command: named.run_command,
   background: named.get_background_task,
   agent: named.get_agent_status,
+  workflow: named.run_workflow,
   peer_message: named.message_peer,
   todos: named.update_todos,
   plan: named.present_plan,
   web_search: named.web_search,
-  image: named.generate_image,
+  image: named.present_images,
+  generated_images: named.generate_image,
   shown_images: named.show_images,
   browser: entry("browser", "browser", with_x("tool_label.browser_action", (step) => view_of(step, "browser")?.action ?? "")),
   mcp: mcp_meta,

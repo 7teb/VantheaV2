@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { remote_client } from "../../api/bridge.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
 import { Dialog } from "../../components/Dialog.tsx";
 import { CloseIcon, FolderIcon, FolderPlusIcon } from "../../components/icons.tsx";
@@ -90,9 +91,11 @@ export const CreateProjectDialog = ({ open, on_close }: CreateProjectDialogProps
           ) : (
             <>
               <p className="create-project-hint">{t("projects.folder_empty", { name: trimmed || t("projects.name_placeholder") })}</p>
-              <Button size="sm" icon={<FolderPlusIcon size={15} />} onClick={() => void pick()}>
-                {t("projects.folder_add")}
-              </Button>
+              {!remote_client && (
+                <Button size="sm" icon={<FolderPlusIcon size={15} />} onClick={() => void pick()}>
+                  {t("projects.folder_add")}
+                </Button>
+              )}
             </>
           )}
         </div>

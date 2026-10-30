@@ -1,3 +1,4 @@
+import { remote_client } from "../../api/bridge.ts";
 import { IconButton } from "../../components/Button.tsx";
 import { PanelLeftIcon, SearchIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
@@ -7,6 +8,8 @@ import { use_store } from "../../state/use-store.ts";
 import { ActivityBell } from "../sidebar/ActivityBell.tsx";
 import { chat_label } from "../sidebar/sidebar-model.ts";
 import { dock_toggles, titlebar_docks } from "./docks.ts";
+import { RemoteConnection } from "./RemoteConnection.tsx";
+import { RemoteToggle } from "./RemoteToggle.tsx";
 import { shortcut_hint } from "./shortcuts.ts";
 import { TitleBranch } from "./TitleBranch.tsx";
 import { TitlebarMenu } from "./TitlebarMenu.tsx";
@@ -28,13 +31,14 @@ export const Titlebar = () => {
         <span className="titlebar-brand">{wordmark}</span>
         <span className="titlebar-actions">
           <ActivityBell />
-          <IconButton label={t("sidebar.search")} hint={shortcut_hint("search")} onClick={open_search}>
+          <IconButton label={t("sidebar.search")} hint={shortcut_hint("search")} className="titlebar-search" onClick={open_search}>
             <SearchIcon size={16} />
           </IconButton>
           <IconButton
             label={collapsed ? t("shell.sidebar_open") : t("shell.sidebar_close")}
             hint={shortcut_hint("toggle_sidebar")}
             aria-expanded={!collapsed}
+            className="titlebar-sidebar-toggle"
             onClick={toggle_sidebar}
           >
             <PanelLeftIcon size={18} />
@@ -44,21 +48,35 @@ export const Titlebar = () => {
       <div className="titlebar-title">
         <span className="titlebar-title-text">{title}</span>
         <TitleBranch chat_id={active_chat_id} />
+        <RemoteConnection />
       </div>
       <div className="titlebar-end">
         <div className="titlebar-docks">
           {titlebar_docks.map((kind) => {
             const { label, icon: DockIcon } = dock_toggles[kind];
             return (
-              <IconButton key={kind} label={t(label)} active={open_dock === kind} aria-pressed={open_dock === kind} onClick={() => toggle_dock(kind)}>
+              <IconButton
+                key={kind}
+                label={t(label)}
+                active={open_dock === kind}
+                aria-pressed={open_dock === kind}
+                className="titlebar-dock"
+                data-dock={kind}
+                onClick={() => toggle_dock(kind)}
+              >
                 <DockIcon size={17} />
               </IconButton>
             );
           })}
+          {!remote_client && <RemoteToggle />}
           <TitlebarMenu />
         </div>
-        <span className="titlebar-divider" aria-hidden="true" />
-        <WindowControls />
+        {!remote_client && (
+          <>
+            <span className="titlebar-divider" aria-hidden="true" />
+            <WindowControls />
+          </>
+        )}
       </div>
     </header>
   );

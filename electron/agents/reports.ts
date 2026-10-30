@@ -3,6 +3,8 @@ import type { AgentRunStatus } from "../../shared/ipc/work.ts";
 import { peer_alert_intro, peer_alert_text, type PeerAlertCause } from "../../shared/peer-notes.ts";
 import { has_steers, is_active, user_stopped } from "../turn/active.ts";
 import type { TurnNote } from "../turn/session.ts";
+import { workflow_note_content, type WorkflowReport } from "../workflows/notice.ts";
+import { running_workflows_in_chat } from "../workflows/store.ts";
 import { running_in_chat } from "./store.ts";
 
 export type AgentReport = {
@@ -24,7 +26,11 @@ export type AgentUpdate = { chat_id: string; agent_id: string; run_id: string; n
 
 export type AgentAlert = { chat_id: string; agent_id: string; run_id: string; name: string; cause: PeerAlertCause; body: string };
 
-export type AgentNotice = { kind: "report"; report: AgentReport } | { kind: "update"; update: AgentUpdate } | { kind: "alert"; alert: AgentAlert };
+export type AgentNotice =
+  | { kind: "report"; report: AgentReport }
+  | { kind: "update"; update: AgentUpdate }
+  | { kind: "alert"; alert: AgentAlert }
+  | { kind: "workflow"; workflow: WorkflowReport };
 
 export const major_wait_ms = 30 * 60 * 1000;
 
@@ -65,6 +71,8 @@ const notice_source = (notice: AgentNotice): { chat_id: string; run_id: string }
       return notice.update;
     case "alert":
       return notice.alert;
+    case "workflow":
+      return notice.workflow;
   }
 };
 
@@ -109,6 +117,15 @@ export const deliver_alert = (alert: AgentAlert): void => {
   wake_idle(alert.chat_id);
 };
 
+export const deliver_workflow = (workflow: WorkflowReport): void => {
+  if (workflow.held || is_active(workflow.chat_id)) {
+    set_pending(workflow.chat_id, [...(pending.get(workflow.chat_id) ?? []), { kind: "workflow", workflow }]);
+  } else {
+    continue_with({ kind: "workflow", workflow });
+  }
+  wake_idle(workflow.chat_id);
+};
+
 export const queue_digest = (chat_id: string, line: string): void => {
   digests.set(chat_id, [...(digests.get(chat_id) ?? []), line]);
 };
@@ -142,6 +159,9 @@ export const digest_note_content = (text: string): string =>
   `[Internal app event, not a user message and not a task. A short line about messages between your sub-agents; get_agent_status shows the full texts. It needs no reply and no action unless it changes your plan.]\n\n${text}`;
 
 const turn_note = (note: AgentNotice, agent_tools: boolean): TurnNote => {
+  if (note.kind === "workflow") {
+    return { kind: "notice", notice: "workflow_result", text: note.workflow.text, content: workflow_note_content(note.workflow.text) };
+  }
   if (note.kind === "alert") {
     const text = alert_text(note.alert);
     return { kind: "notice", notice: "agent_update", text, content: alert_note_content(text) };
@@ -170,7 +190,8 @@ export const flush_reports = (chat_id: string): void => {
   if (!queue || is_active(chat_id)) {
     return;
   }
-  const kept: AgentNotice[] = user_stopped(chat_id) ? queue.filter((note) => note.kind === "update") : [];
+  const stopped = user_stopped(chat_id);
+  const kept: AgentNotice[] = queue.filter((note) => (stopped && note.kind === "update") || (note.kind === "workflow" && note.workflow.held));
   const due = queue.filter((note) => !kept.includes(note));
   set_pending(chat_id, kept);
   for (const [at, note] of due.entries()) {
@@ -210,7 +231,7 @@ const has_input = (chat_id: string) => has_agent_notes(chat_id) || has_steers(ch
 
 export const wait_for_input = async (chat_id: string, max_ms: number, signal: AbortSignal): Promise<boolean> => {
   const deadline = Date.now() + max_ms;
-  while (!has_input(chat_id) && running_in_chat(chat_id) > 0 && !signal.aborted) {
+  while (!has_input(chat_id) && running_in_chat(chat_id) + running_workflows_in_chat(chat_id) > 0 && !signal.aborted) {
     const left = deadline - Date.now();
     if (left <= 0) {
       break;

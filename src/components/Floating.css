@@ -39,4 +39,14 @@
     pointer-events: none;
     animation: pop-out var(--duration-fast) var(--ease-in) forwards;
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .floating {
+      max-height: calc(var(--viewport-height, 100vh) - var(--space-4) - var(--safe-top) - var(--safe-bottom));
+    }
+
+    :root[data-keyboard="open"] .floating {
+      max-height: calc(var(--viewport-height, 100vh) - var(--space-4) - var(--safe-top));
+    }
+  }
 }

@@ -1,0 +1,21 @@
+.remote-connection {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--radius-full);
+  background: var(--surface-button);
+  color: var(--text-detail);
+  font-size: var(--font-size-caption);
+  white-space: nowrap;
+}
+
+.remote-connection[data-state="offline"] {
+  color: var(--text-warning);
+}
+
+.remote-connection .dot-spinner {
+  margin-left: -3px;
+}

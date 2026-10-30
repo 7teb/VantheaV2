@@ -1,0 +1,14 @@
+[
+  {
+    "id": "deepseek/deepseek-v4.1-flash-1017",
+    "label": "DeepSeek V4.1 Flash",
+    "provider": "DeepSeek",
+    "provider_order": ["deepseek"],
+    "efforts": ["low", "high", "max"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1048576,
+    "max_output": 393216,
+    "reasoning_passback": true
+  }
+]

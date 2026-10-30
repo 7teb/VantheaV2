@@ -137,3 +137,19 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+@media (max-width: 600px) {
+  .artifact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .artifact-actions {
+    opacity: 1;
+  }
+
+  .artifact-caption {
+    min-height: var(--size-control);
+  }
+}

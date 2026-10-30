@@ -13,6 +13,7 @@ import type { AgentRecord, RunRecord } from "./records.ts";
 import { deliver_update } from "./reports.ts";
 import { overlaps, roster_delta, roster_entries, roster_facts } from "./roster.ts";
 import type { AgentDeps, RunContext } from "./runner.ts";
+import { result_reminder, wants_result, workflow_agent_tools, type WorkflowAgentLink } from "./workflow-agent.ts";
 
 export const reminder_interval = 15;
 
@@ -35,15 +36,25 @@ const update_reminder = (agent: AgentRecord, live: LiveRun): TurnNote[] => {
   return [reminder_note(silent)];
 };
 
+const inbox_notes = (taken: LiveRun["inbox"]): TurnNote[] => [
+  ...taken.flatMap((entry) => (entry.from === "main" ? [inbox_note(entry.text)] : [])),
+  ...taken.flatMap((entry) => (entry.from === "peer" ? [peer_note(entry)] : [])),
+  ...taken.flatMap((entry) => (entry.from === "app" ? [peer_status_note(entry.text)] : [])),
+];
+
+const workflow_notes = (live: LiveRun, link: WorkflowAgentLink): TurnNote[] => {
+  const taken = live.inbox;
+  live.inbox = [];
+  return [...inbox_notes(taken), ...result_reminder(link)];
+};
+
 const take_notes = (agent: AgentRecord, live: LiveRun): TurnNote[] => {
   const taken = live.inbox;
   live.inbox = [];
   const entries = roster_entries(live.chat_id);
   const roster = roster_delta(live, entries);
   return [
-    ...taken.flatMap((entry) => (entry.from === "main" ? [inbox_note(entry.text)] : [])),
-    ...taken.flatMap((entry) => (entry.from === "peer" ? [peer_note(entry)] : [])),
-    ...taken.flatMap((entry) => (entry.from === "app" ? [peer_status_note(entry.text)] : [])),
+    ...inbox_notes(taken),
     ...(roster ? [roster_note(roster)] : []),
     ...overlaps(live, entries).map(roster_note),
     ...update_reminder(agent, live),
@@ -86,7 +97,10 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
       live.finish_reason = result.finish_reason;
       return result;
     },
-    resolve_tools: (profile) => allowed_tools(resolve_tools(profile, request.settings, model), agent),
+    resolve_tools: (profile) => {
+      const offered = allowed_tools(resolve_tools(profile, request.settings, model), agent);
+      return request.workflow ? workflow_agent_tools(offered, request.workflow) : offered;
+    },
     without_tools: agent.without_tools,
     side_model,
     wait_decision: (call_id, request, on_hold) =>
@@ -107,13 +121,17 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
     mirror_decision: (decision) => mirror_decision(agent.chat_id, request.parent_message_id, request.parent_call_id, decision),
     profile: agent.profile,
     call_scope: run.run_id,
-    take_notes: () => take_notes(agent, live),
+    take_notes: () => (request.workflow ? workflow_notes(live, request.workflow) : take_notes(agent, live)),
     idle: async () => {
-      if (!live.inbox.length) {
-        return false;
+      if (live.inbox.length) {
+        keep_report(live);
+        return true;
       }
-      keep_report(live);
-      return true;
+      if (request.workflow && wants_result(request.workflow) && !live.controller.signal.aborted) {
+        request.workflow.reminder_due = true;
+        return true;
+      }
+      return false;
     },
     message_main: (text) => message_main(agent, run, live, text),
     send_peer: (peer_request) => send_peer({ agent, run, live }, peer_request),

@@ -1,5 +1,6 @@
 import type { SpeedTier } from "../../shared/models.ts";
 import { create_store } from "./create-store.ts";
+import { layout_store } from "./layout.ts";
 
 export type DockKind = "terminal" | "browser" | "background" | "artifacts" | "files";
 
@@ -72,7 +73,7 @@ export const max_dock_width = () =>Math.max(dock_min_width, Math.round(window.in
 export const clamp_dock_width = (width: number) => Math.min(max_dock_width(), Math.max(dock_min_width, Math.round(width)));
 
 export const ui_store = create_store<UiState>({
-  sidebar_collapsed: false,
+  sidebar_collapsed: layout_store.get().drawer,
   sidebar_view: "lists",
   active_chat_id: read_storage(active_chat_key),
   project_path: "",
@@ -85,6 +86,8 @@ export const ui_store = create_store<UiState>({
   new_chat_pro: false,
   new_chat_tier: null,
 });
+
+const collapsed_after_choice = (collapsed: boolean) => collapsed || layout_store.get().drawer;
 
 export const set_sidebar_collapsed = (collapsed: boolean) => ui_store.update((state) => ({ ...state, sidebar_collapsed: collapsed }));
 
@@ -99,7 +102,14 @@ export const toggle_activity_view = () =>
 
 export const open_chat = (chat_id: string, project_path: string) => {
   write_storage(active_chat_key, chat_id);
-  ui_store.update((state) => ({ ...state, active_chat_id: chat_id, project_path, settings_open: false, search_open: false }));
+  ui_store.update((state) => ({
+    ...state,
+    active_chat_id: chat_id,
+    project_path,
+    settings_open: false,
+    search_open: false,
+    sidebar_collapsed: collapsed_after_choice(state.sidebar_collapsed),
+  }));
 };
 
 export const on_active_chat = (listener: (chat_id: string | null) => void): (() => void) => {
@@ -116,7 +126,16 @@ export const on_active_chat = (listener: (chat_id: string | null) => void): (() 
 
 export const start_new_chat = (project_path: string) => {
   write_storage(active_chat_key, null);
-  ui_store.update((state) => ({ ...state, active_chat_id: null, project_path, settings_open: false, search_open: false, new_chat_pro: false, new_chat_tier: null }));
+  ui_store.update((state) => ({
+    ...state,
+    active_chat_id: null,
+    project_path,
+    settings_open: false,
+    search_open: false,
+    new_chat_pro: false,
+    new_chat_tier: null,
+    sidebar_collapsed: collapsed_after_choice(state.sidebar_collapsed),
+  }));
 };
 
 export const toggle_dock = (kind: DockKind) =>
@@ -130,13 +149,19 @@ export const set_dock_width = (width: number) =>
 export const toggle_dock_expanded = () => ui_store.update((state) => ({ ...state, dock: { ...state.dock, expanded: !state.dock.expanded } }));
 
 export const open_settings = (section?: string) =>
-  ui_store.update((state) => ({ ...state, settings_open: true, search_open: false, settings_section: section ?? state.settings_section }));
+  ui_store.update((state) => ({
+    ...state,
+    settings_open: true,
+    search_open: false,
+    settings_section: section ?? state.settings_section,
+    sidebar_collapsed: collapsed_after_choice(state.sidebar_collapsed),
+  }));
 
 export const select_settings_section = (section: string) => ui_store.update((state) => ({ ...state, settings_section: section }));
 
 export const close_settings = () => ui_store.update((state) => ({ ...state, settings_open: false }));
 
-export const open_search = () => ui_store.update((state) => ({ ...state, search_open: true }));
+export const open_search = () => ui_store.update((state) => ({ ...state, search_open: true, sidebar_collapsed: collapsed_after_choice(state.sidebar_collapsed) }));
 
 export const close_search = () => ui_store.update((state) => ({ ...state, search_open: false }));
 

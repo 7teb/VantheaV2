@@ -1,0 +1,60 @@
+{
+  "model_files": [
+    "deepseek.json",
+    "moonshotai.json",
+    "xiaomi.json",
+    "minimax.json",
+    "qwen.json",
+    "openai.json",
+    "google.json",
+    "x-ai.json",
+    "z-ai.json",
+    "inclusionai.json",
+    "anthropic.json",
+    "meta.json",
+    "unbiased.json"
+  ],
+  "side": {
+    "title": "google/gemini-3.1-flash-lite",
+    "overseer": "openai/gpt-6-luna",
+    "vision": "google/gemini-3.1-flash-lite",
+    "memory": "deepseek/deepseek-v4-flash",
+    "reasoning_status": "google/gemini-3.5-flash-lite",
+    "transcription": "elevenlabs/scribe-v2",
+    "git_text": "google/gemini-3.5-flash-lite"
+  },
+  "side_models": [
+    {
+      "id": "google/gemini-3.5-flash-lite",
+      "context_length": 1048576,
+      "max_output": 65536
+    }
+  ],
+  "image_models": [
+    {
+      "id": "openai/gpt-image-2",
+      "label": "GPT Image 2",
+      "quality": true
+    },
+    {
+      "id": "qwen/qwen-image-3-pro",
+      "label": "Qwen Image 3 Pro",
+      "quality": false
+    },
+    {
+      "id": "google/gemini-3.1-flash-image",
+      "label": "Nano Banana 2",
+      "quality": false
+    },
+    {
+      "id": "microsoft/mai-image-2.5-pro",
+      "label": "MAI Image 2.5 Pro",
+      "quality": false
+    },
+    {
+      "id": "google/gemini-3.1-flash-lite-image",
+      "label": "Nano Banana 2 Lite",
+      "quality": false
+    }
+  ]
+}

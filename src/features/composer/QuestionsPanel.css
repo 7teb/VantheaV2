@@ -45,4 +45,12 @@
     color: var(--text-detail);
     white-space: nowrap;
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .questions-nav-button {
+      width: var(--size-control);
+      height: var(--size-control);
+      border-radius: var(--radius-md);
+    }
+  }
 }

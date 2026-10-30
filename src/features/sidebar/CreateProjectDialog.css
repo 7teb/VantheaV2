@@ -60,3 +60,9 @@
   font-size: var(--font-size-ui);
   overflow-wrap: anywhere;
 }
+
+@media (max-width: 600px) {
+  .create-project-dialog {
+    padding: var(--space-5) var(--space-4) var(--space-4);
+  }
+}

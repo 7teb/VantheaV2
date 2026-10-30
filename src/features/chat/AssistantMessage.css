@@ -333,21 +333,34 @@
   }
 
   .image-step {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
     margin: 2px 0 14px;
   }
 
-  .image-step-head {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--font-size-body);
-    color: var(--text-secondary);
+  @media (max-width: 600px) {
+    .plan-card {
+      padding: var(--space-4);
+    }
+
+    .error-card {
+      padding: var(--space-3);
+    }
+
+    .interrupted-text {
+      min-width: 0;
+    }
   }
 
-  .image-step-head svg {
-    color: var(--text-tertiary);
+  @media (hover: none) and (pointer: coarse) {
+    .reasoning-head {
+      height: var(--size-control);
+    }
+
+    .assistant-actions {
+      margin-left: -10px;
+    }
+
+    .file-changes-row {
+      height: var(--size-control);
+    }
   }
 }

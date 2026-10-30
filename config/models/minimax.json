@@ -1,0 +1,15 @@
+[
+  {
+    "id": "minimax/minimax-m3.1-flash",
+    "label": "MiniMax M3.1 Flash",
+    "provider": "MiniMax",
+    "provider_order": ["parasail/fp8", "novita/fp16"],
+    "efforts": ["low", "medium", "high", "xhigh", "max"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1000000,
+    "max_output": 524288,
+    "reasoning_passback": true,
+    "note": "Runs on Parasail (fp8, about 260 to 370 output tokens per second, first token after about 0.7 s, measured) with Novita (fp16, about 125 tokens per second) as fallback. MiniMax ships the weights in MXFP8 with NVFP4 experts, so both serve the full release quality. 0.15 USD per million input tokens and 0.60 USD per million output tokens."
+  }
+]

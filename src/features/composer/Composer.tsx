@@ -8,6 +8,7 @@ import { draft_of, draft_sendable, has_chip, visualize_chip } from "../../state/
 import { attach_files, composer_store, dismiss_error, queue_draft, set_composer_error, set_draft_text, stop_turn, submit, toggle_plan } from "../../state/composer.ts";
 import { cancel_dictation, dictation_store, finish_dictation } from "../../state/dictation.ts";
 import { insert_dictation } from "../../state/dictation-text.ts";
+import { layout_store } from "../../state/layout.ts";
 import { use_store } from "../../state/use-store.ts";
 import { start_typed_review } from "./command-registry.ts";
 import { use_chat_busy, use_model_choice, use_model_context, use_shown_context } from "./composer-hooks.ts";
@@ -22,8 +23,6 @@ import { SlashMenu, slash_option_id } from "./SlashMenu.tsx";
 import { use_command_context } from "./use-command-context.ts";
 import { use_slash_menu } from "./use-slash-menu.ts";
 import { WorktreeChip } from "./WorktreeChip.tsx";
-
-const max_area_px = 240;
 
 const has_files = (event: DragEvent<HTMLDivElement>) => [...event.dataTransfer.types].includes("Files");
 
@@ -104,11 +103,11 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     if (draft.text === "") {
       return;
     }
-    node.style.height = `${Math.min(node.scrollHeight, max_area_px)}px`;
+    node.style.height = `${Math.min(node.scrollHeight, parseFloat(window.getComputedStyle(node).maxHeight))}px`;
   }, [draft.text]);
 
   useEffect(() => {
-    if (layer_count() > 0) {
+    if (layer_count() > 0 || layout_store.get().touch) {
       return;
     }
     area.current?.focus({ preventScroll: true });
@@ -186,6 +185,10 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
       return;
     }
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) {
+      return;
+    }
+    const layout = layout_store.get();
+    if (layout.touch && !layout.fine_pointer) {
       return;
     }
     event.preventDefault();

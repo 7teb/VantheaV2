@@ -27,6 +27,7 @@ const agent_questions: Record<AgentTextTool, MessageKey> = {
   message_agent: "approval.question_agent_message",
   deploy_agent: "approval.question_agent_deploy",
   continue_agent: "approval.question_agent_continue",
+  run_workflow: "approval.question_workflow",
 };
 
 export const grant_options = (request: ApprovalRequest): GrantOption[] => {

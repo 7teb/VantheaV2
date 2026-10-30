@@ -57,3 +57,12 @@
 .commit-note:focus-visible {
   border-radius: var(--radius-xs);
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .commit-retry.icon-button-sm {
+    top: 0;
+    right: 0;
+    width: 36px;
+    height: 36px;
+  }
+}

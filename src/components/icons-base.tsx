@@ -21,3 +21,7 @@ export const Icon = ({ size = 16, children, ...rest }: IconProps & { children: R
     {children}
   </svg>
 );
+
+export const codicon = { viewBox: "0 0 16 16", fill: "currentColor", strokeWidth: 0.15 } as const;
+
+export const phosphor = { viewBox: "11 11 234 234", fill: "currentColor", strokeWidth: 0.64 } as const;

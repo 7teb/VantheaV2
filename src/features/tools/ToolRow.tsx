@@ -17,6 +17,8 @@ import { has_body, is_agent_message, opens_by_itself } from "./tool-body.ts";
 import { is_active_status, started_run, tool_label, tool_meta } from "./tool-meta.ts";
 import { step_hint } from "./tool-summary.ts";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
+import { workflow_view } from "./workflow-model.ts";
+import { WorkflowRow } from "./WorkflowRow.tsx";
 import "./tools.css";
 import "./tool-motion.css";
 
@@ -45,7 +47,7 @@ const StatusMark = ({ step }: { step: ToolStep }) => {
 
 type ToolRowProps = { chat_id: string; step: ToolStep; running?: boolean; main_chat?: boolean };
 
-export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false }: ToolRowProps) => {
+const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: ToolRowProps) => {
   const t = use_t();
   const [chosen, set_chosen] = useState<boolean | null>(null);
   const [seen, set_seen] = useState(false);
@@ -72,7 +74,7 @@ export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false
         onClick={() => (run ? open_agent_run({ agent_id: run.agent_id, run_id: run.run_id }) : set_chosen(!open))}
       >
         <span className="tool-row-icon">
-          {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter chat_id={chat_id} step={step} /> : <Icon size={14} />}
+          {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter chat_id={chat_id} step={step} /> : <Icon size={16} />}
         </span>
         <span className={class_names("tool-row-label", active && step.status !== "queued" && !reviewing && "is-working")}>
           {reviewing ? <ReviewingLabel step={step} /> : <WorkingLetters text={tool_label(t, step)} active={active && step.status !== "queued"} />}
@@ -94,4 +96,9 @@ export const ToolRow = memo(({ chat_id, step, running = false, main_chat = false
       )}
     </div>
   );
+};
+
+export const ToolRow = memo((props: ToolRowProps) => {
+  const view = workflow_view(props.step);
+  return view ? <WorkflowRow chat_id={props.chat_id} view={view} /> : <PlainToolRow {...props} />;
 });

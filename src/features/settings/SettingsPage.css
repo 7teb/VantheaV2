@@ -4,6 +4,7 @@
   z-index: var(--z-settings);
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
+  padding: 0 var(--safe-right) 0 var(--safe-left);
   background: var(--surface-shell);
   outline: none;
   --pop-shift: 8px;
@@ -125,7 +126,7 @@
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  padding: var(--space-10) var(--space-8) var(--space-12);
+  padding: var(--space-10) var(--space-8) calc(var(--space-12) + var(--safe-bottom));
 }
 
 .settings-heading {
@@ -137,7 +138,7 @@
 
 @media (max-width: 720px) {
   .settings-page {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
   }
 
@@ -147,6 +148,45 @@
   }
 
   .settings-column {
-    padding: var(--space-6) var(--space-4) var(--space-8);
+    padding: var(--space-6) var(--space-4) calc(var(--space-8) + var(--safe-bottom));
+  }
+}
+
+@media (max-width: 600px) {
+  .settings-rail {
+    gap: var(--space-2);
+    padding-bottom: var(--space-2);
+  }
+
+  .settings-nav {
+    gap: 2px;
+    scrollbar-width: none;
+  }
+
+  .settings-nav-group {
+    flex: none;
+    flex-direction: row;
+    gap: 2px;
+  }
+
+  .settings-nav-label {
+    display: none;
+  }
+
+  .settings-nav-item {
+    flex: none;
+  }
+
+  .settings-content {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .settings-back,
+  .settings-search {
+    flex: none;
+    height: var(--size-control);
   }
 }

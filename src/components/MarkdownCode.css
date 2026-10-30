@@ -112,4 +112,11 @@
   .hljs-strong {
     font-weight: var(--weight-semibold);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .code-block-head {
+      height: 48px;
+      padding-right: var(--space-1);
+    }
+  }
 }

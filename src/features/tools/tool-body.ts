@@ -44,7 +44,7 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
     case "web_search":
       return view.sources.length > 0 || view.answer !== "" || (view.failed?.length ?? 0) > 0;
     case "image":
-      return view.images.length > 0 || view.prompt !== "";
+      return view.images.length > 0;
     case "shown_images":
       return view.images.length > 0;
     case "models":
@@ -64,6 +64,8 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
     case "todos":
     case "questions":
     case "visual":
+    case "generated_images":
+    case "workflow":
       return false;
   }
 };

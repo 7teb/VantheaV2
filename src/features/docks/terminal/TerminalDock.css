@@ -64,3 +64,9 @@
   font-size: var(--font-size-code);
   overflow-wrap: anywhere;
 }
+
+@media (max-width: 600px) {
+  .terminal-surface {
+    margin: 0 var(--space-2) var(--space-2);
+  }
+}

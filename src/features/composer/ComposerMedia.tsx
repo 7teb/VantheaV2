@@ -24,7 +24,7 @@ const RemoveButton = ({ name, on_remove }: { name: string; on_remove: () => void
         on_remove();
       }}
     >
-      <CloseIcon size={10} strokeWidth={3} />
+      <CloseIcon size={10} strokeWidth={1} />
     </button>
   );
 };

@@ -2,6 +2,8 @@ import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject, type
 import { agents_store } from "../../state/agents.ts";
 import { turn_folds_store } from "../../state/turn-folds.ts";
 import { use_store } from "../../state/use-store.ts";
+import { holds_turn } from "../../state/workflows-reduce.ts";
+import { workflows_store } from "../../state/workflows.ts";
 import type { TurnShape } from "./turn-shape.ts";
 import { keep_in_view } from "./use-follow-bottom.ts";
 import "./TurnFold.css";
@@ -19,7 +21,9 @@ export type TurnFoldState = { folded: boolean; foldable: boolean; holding: boole
 
 export const use_turn_folded = (chat_id: string, leader_id: string, shape: TurnShape, frame: RefObject<HTMLDivElement | null>): TurnFoldState => {
   const chosen = use_store(turn_folds_store, (state) => state[chat_id]?.[leader_id]);
-  const holding = use_store(agents_store, (state) => shape.runs.some((ref) => state.known_runs[ref.run_id]?.status === "running"));
+  const agents_running = use_store(agents_store, (state) => shape.runs.some((ref) => state.known_runs[ref.run_id]?.status === "running"));
+  const workflow_running = use_store(workflows_store, (state) => holds_turn(state, shape.workflows));
+  const holding = agents_running || workflow_running;
   const foldable = shape.foldable && !holding;
   const folded_before = useRef(foldable);
   useLayoutEffect(() => {

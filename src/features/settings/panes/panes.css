@@ -194,3 +194,9 @@ section + .pane-note {
     width: 180px;
   }
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .pane-item-actions {
+    opacity: 1;
+  }
+}

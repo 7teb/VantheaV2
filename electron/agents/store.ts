@@ -7,6 +7,7 @@ import type { ApiMessage } from "../model/types.ts";
 import { as_array, error_text, is_record } from "../storage/coerce.ts";
 import { keep_corrupt, read_json, write_json, write_json_sync } from "../storage/json-file.ts";
 import { path_key } from "../storage/paths.ts";
+import { get_run } from "../workflows/store.ts";
 import type { HeldEntry } from "./inbox.ts";
 import { drop_journal } from "./journal.ts";
 import { mark_task_prompts } from "./legacy-context.ts";
@@ -23,7 +24,7 @@ import {
   type RunRecord,
 } from "./records.ts";
 
-export type NewAgent = Pick<AgentRecord, "chat_id" | "name" | "description" | "topic" | "scope" | "model" | "effort" | "profile" | "without_tools" | "project_root">;
+export type NewAgent = Pick<AgentRecord, "chat_id" | "name" | "description" | "topic" | "scope" | "model" | "effort" | "profile" | "without_tools" | "project_root" | "workflow">;
 
 export type AgentLookup = { agent: AgentRecord } | { agent: null; error: string };
 
@@ -150,7 +151,8 @@ export const remove_agents = async (agent_ids: string[]): Promise<void> => {
 };
 
 const prune = () => {
-  const idle = [...agents.values()].filter((record) => !is_running(record)).sort(newest_first);
+  const in_running_workflow = (record: AgentRecord) => record.workflow !== undefined && get_run(record.workflow.run_id)?.summary.status === "running";
+  const idle = [...agents.values()].filter((record) => !is_running(record) && !in_running_workflow(record)).sort(newest_first);
   const excess = agents.size - max_stored_agents;
   if (excess > 0) {
     void remove_agents(idle.slice(-excess).map((record) => record.agent_id));

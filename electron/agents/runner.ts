@@ -23,6 +23,7 @@ import { label_of, profile_text, question_line } from "./roster.ts";
 import { write_report_file } from "./report-file.ts";
 import { deliver_report, drop_agent_notes, wake_idle } from "./reports.ts";
 import { agent_approval_key, agent_session, allowed_tools } from "./session.ts";
+import { workflow_role_section, workflow_agent_tools, type WorkflowAgentLink } from "./workflow-agent.ts";
 import {
   begin_run,
   chat_agents,
@@ -58,6 +59,7 @@ export type RunContext = {
   mode: PermissionMode;
   settings: Settings;
   prompt: string;
+  workflow?: WorkflowAgentLink;
 };
 
 export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description" | "topic" | "scope" | "profile" | "without_tools" | "effort"> & { model: ModelEntry };
@@ -104,8 +106,13 @@ export const running_agent_roots = (): string[] =>
     return agent && is_running(agent) ? [agent.project_root] : [];
   });
 
+const in_workflow_run = (agent: AgentRecord): boolean => {
+  const run = current_run(agent);
+  return run?.status === "running" && Boolean(live_run(run.run_id)?.workflow_run_id);
+};
+
 export const ensure_capacity = (chat_id: string): void => {
-  if (running_in_chat(chat_id) >= max_running_agents) {
+  if (running_in_chat(chat_id) - chat_agents(chat_id).filter(in_workflow_run).length >= max_running_agents) {
     throw new Error(`At most ${max_running_agents} agents can run at once in this chat; wait for one to finish or cancel one.`);
   }
 };
@@ -177,9 +184,18 @@ const close_open_calls = (messages: ApiMessage[]): ApiMessage[] => {
   return [...messages, ...missing];
 };
 
-const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_messages: ApiMessage[]) => {
+const settle_link = (link: WorkflowAgentLink, status: Exclude<AgentRunStatus, "running">, live: LiveRun) => {
   try {
-    const status = final_status(live);
+    link.on_end({ status, report: final_report(live), error: live.transcript.error?.message ?? "" });
+  } catch (error) {
+    console.error(`[agents] handing the end of run ${live.run_id} to workflow ${link.run_id} failed:`, error);
+  }
+};
+
+const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_messages: ApiMessage[], link: WorkflowAgentLink | undefined) => {
+  let status: Exclude<AgentRunStatus, "running"> = "failed";
+  try {
+    status = final_status(live);
     const report = with_open_questions(agent, ended_report(live, status));
     let report_path: string | null = null;
     let report_error = "";
@@ -202,6 +218,11 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
     forget_live(run.run_id);
     if (ended) {
       on_peer_ended(agent);
+      status = ended.status === "running" ? status : ended.status;
+    }
+    if (link) {
+      wake_idle(agent.chat_id);
+      return;
     }
     if (!ended || live.stop_reason === "cancelled" || live.stop_reason === "app_closed") {
       wake_idle(agent.chat_id);
@@ -223,13 +244,18 @@ const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_mes
     });
   } catch (error) {
     console.error(`[agents] finishing run ${run.run_id} of agent ${agent.agent_id} failed:`, error);
+  } finally {
+    if (link) {
+      settle_link(link, status, live);
+    }
   }
 };
 
 const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request: RunContext, model: ModelEntry, context: ApiMessage[], stored: StoredContext): Promise<void> => {
   const api_messages: ApiMessage[] = [];
   try {
-    const tools = allowed_tools(current_deps().resolve_tools(agent.profile, request.settings, model), agent);
+    const offered = allowed_tools(current_deps().resolve_tools(agent.profile, request.settings, model), agent);
+    const tools = request.workflow ? workflow_agent_tools(offered, request.workflow) : offered;
     const system = await build_system_prompt({
       model,
       settings: request.settings,
@@ -244,7 +270,8 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
       effort: agent.effort,
     });
     const held = take_held(agent.agent_id).map((entry) => (entry.from === "main" ? kept_instruction_note(entry.text) : peer_note(entry)));
-    api_messages.push({ role: "system", content: `${system}\n\n${render_section(agent_role_section(agent))}` }, ...context);
+    const role = request.workflow ? workflow_role_section(agent, request.workflow) : agent_role_section(agent);
+    api_messages.push({ role: "system", content: `${system}\n\n${render_section(role)}` }, ...context);
     push_notes(live.emit, held, 0, api_messages);
     api_messages.push({ role: "user", instruction: true, content: request.prompt });
     await run_turn_loop(agent_session(current_deps(), agent, run, live, request, model, stored), api_messages);
@@ -252,20 +279,22 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
     console.error(`[agents] run ${run.run_id} of agent ${agent.agent_id} failed to start:`, error);
     live.emit({ type: "end", status: "failed", error: { kind: "internal", message: error_text(error) } });
   } finally {
-    await finish(agent, run, live, api_messages);
+    await finish(agent, run, live, api_messages, request.workflow);
   }
 };
 
 const launch = (agent: AgentRecord, request: RunContext, model: ModelEntry, context: ApiMessage[], stored: StoredContext): StartedRun => {
   const run = begin_run(agent, request.prompt, request.parent_message_id, request.parent_call_id);
   sync_open_questions(agent.agent_id);
-  const live = create_live(agent.agent_id, run.run_id, agent.chat_id);
+  const live = create_live(agent.agent_id, run.run_id, agent.chat_id, request.workflow?.run_id ?? null);
   live.done = drive(agent, run, live, request, model, context, stored);
   return { agent: public_summary(agent), run: public_run(run) };
 };
 
 export const deploy_agent = (request: DeployRequest): StartedRun => {
-  ensure_capacity(request.chat_id);
+  if (!request.workflow) {
+    ensure_capacity(request.chat_id);
+  }
   const agent = create_agent({
     chat_id: request.chat_id,
     name: request.name,
@@ -277,6 +306,7 @@ export const deploy_agent = (request: DeployRequest): StartedRun => {
     profile: request.profile,
     without_tools: request.without_tools,
     project_root: request.project_root,
+    ...(request.workflow ? { workflow: { run_id: request.workflow.run_id, index: request.workflow.index } } : {}),
   });
   return launch(agent, request, request.model, [], no_stored_context);
 };

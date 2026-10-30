@@ -21,7 +21,7 @@ export type Attachment = {
   source_path?: string;
 };
 
-export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "git_init" | "review" | "continue" | "background" | "agent_report" | "agent_update";
+export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "git_init" | "review" | "continue" | "background" | "agent_report" | "agent_update" | "workflow";
 
 export type CommandOrigin = Extract<UserOrigin, "init" | "git_init" | "review">;
 
@@ -109,7 +109,8 @@ export type NoticeKind =
   | "agent_roster"
   | "peer_message"
   | "peer_status"
-  | "peer_digest";
+  | "peer_digest"
+  | "workflow_result";
 
 export type NoticeStep = { id: string; round: number; kind: "notice"; notice: NoticeKind; text: string };
 

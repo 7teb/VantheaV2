@@ -35,4 +35,12 @@
   .toggle[data-checked="true"] .toggle-thumb {
     transform: translateX(12px);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    button.toggle::after {
+      content: "";
+      position: absolute;
+      inset: -13px -7px;
+    }
+  }
 }

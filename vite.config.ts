@@ -40,7 +40,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    target: "chrome140",
+    target: ["chrome140", "safari16.4"],
   },
   server: {
     host: "127.0.0.1",

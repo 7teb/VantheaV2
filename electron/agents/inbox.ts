@@ -3,7 +3,7 @@ import { as_record, as_string } from "../storage/coerce.ts";
 
 export type MainEntry = { from: "main"; text: string };
 
-export type PeerEntry = { from: "peer" } & PeerMessage;
+export type PeerEntry = { from: "peer"; sent_at?: number } & PeerMessage;
 
 export type StatusEntry = { from: "app"; text: string };
 
@@ -27,6 +27,7 @@ const parse_peer = (raw: Record<string, unknown>): PeerEntry | null => {
     summary: as_string(raw.summary),
     text: as_string(raw.text),
     in_reply_to: as_string(raw.in_reply_to) || null,
+    ...(typeof raw.sent_at === "number" && Number.isFinite(raw.sent_at) ? { sent_at: raw.sent_at } : {}),
   };
 };
 

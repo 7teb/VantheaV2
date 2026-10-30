@@ -111,3 +111,15 @@
   line-height: 16px;
   overflow-wrap: anywhere;
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .pr-close.icon-button-sm {
+    width: var(--size-control);
+    height: var(--size-control);
+    margin-right: -8px;
+  }
+
+  .pr-title.text-field {
+    height: var(--size-control);
+  }
+}

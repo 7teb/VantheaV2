@@ -30,7 +30,7 @@ const serve_favicon = async (request: Request, host: string): Promise<Response> 
   }
 };
 
-const serve_media = async (request: Request): Promise<Response> => {
+export const serve_media = async (request: Request): Promise<Response> => {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response(null, { status: 405 });
   }

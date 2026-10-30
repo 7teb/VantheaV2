@@ -23,4 +23,12 @@
   .copy-button:active {
     background: var(--fill-active);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .copy-button {
+      height: var(--size-control);
+      padding: 0 var(--space-3);
+      border-radius: var(--radius-md);
+    }
+  }
 }

@@ -9,37 +9,34 @@ import { resolve_inside } from "../project/scope.ts";
 import { read_for_view } from "../project/view-read.ts";
 import { watch_tree, type TreeWatcher } from "../project/watch.ts";
 import { require_string } from "../storage/coerce.ts";
-import { emit, handle } from "./handle.ts";
+import { client_connected, on_client_gone, on_client_presence, window_client, type ClientId } from "./clients.ts";
+import { emit, handle, handle_client } from "./handle.ts";
+
+export type FilesClaim = { scope: FilesScope; at: number };
 
 let watching: { root: string; chat_id: string | null; watcher: TreeWatcher } | null = null;
 let generation = 0;
 let hooked: WebContents | null = null;
+const claims = new Map<ClientId, FilesClaim>();
+let claim_clock = 0;
+let applied: FilesClaim | null = null;
+
+export const newest_claim = (entries: Iterable<[ClientId, FilesClaim]>, connected: (client: ClientId) => boolean): FilesClaim | null => {
+  let newest: FilesClaim | null = null;
+  for (const [client, claim] of entries) {
+    if (connected(client) && (!newest || claim.at > newest.at)) {
+      newest = claim;
+    }
+  }
+  return newest;
+};
 
 export const stop_files_watch = () => {
   generation += 1;
+  applied = null;
   watching?.watcher.close();
   watching = null;
   git_service.stop();
-};
-
-export const stop_chat_files_watch = (chat_id: string) => {
-  if (watching?.chat_id === chat_id) {
-    stop_files_watch();
-  }
-};
-
-const hook_renderer = () => {
-  const contents = main_window()?.webContents;
-  if (!contents || contents === hooked) {
-    return;
-  }
-  hooked = contents;
-  contents.on("did-start-navigation", (details) => {
-    if (details.isMainFrame && !details.isSameDocument) {
-      stop_files_watch();
-    }
-  });
-  contents.on("destroyed", stop_files_watch);
 };
 
 const start_files_watch = async (scope: FilesScope) => {
@@ -73,6 +70,66 @@ const start_files_watch = async (scope: FilesScope) => {
   watching = { root: root.path, chat_id: scope.chat_id, watcher };
 };
 
+const apply_claims = async () => {
+  const claim = newest_claim(claims, client_connected);
+  if (claim === applied) {
+    return;
+  }
+  if (!claim) {
+    stop_files_watch();
+    return;
+  }
+  applied = claim;
+  await start_files_watch(claim.scope);
+};
+
+const reapply = (reason: string) => {
+  apply_claims().catch((error) => console.error(`[files] switching the watched folder after ${reason} failed:`, error));
+};
+
+const drop_claim = (client: ClientId, reason: string) => {
+  if (claims.delete(client)) {
+    reapply(reason);
+  }
+};
+
+const hook_renderer = () => {
+  const contents = main_window()?.webContents;
+  if (!contents || contents === hooked) {
+    return;
+  }
+  hooked = contents;
+  contents.on("did-start-navigation", (details) => {
+    if (details.isMainFrame && !details.isSameDocument) {
+      drop_claim(window_client, "a reload of the main window");
+    }
+  });
+  contents.on("destroyed", () => drop_claim(window_client, "the main window closed"));
+};
+
+export const stop_chat_files_watch = (chat_id: string) => {
+  let dropped = false;
+  for (const [client, claim] of [...claims]) {
+    if (claim.scope.chat_id === chat_id) {
+      claims.delete(client);
+      dropped = true;
+    }
+  }
+  if (dropped) {
+    reapply(`chat ${chat_id} was removed`);
+  }
+};
+
+const watch_files = (client: ClientId, scope: FilesScope) => {
+  claim_clock += 1;
+  claims.set(client, { scope, at: claim_clock });
+  return apply_claims();
+};
+
+on_client_presence((client, connected) => reapply(`${client} ${connected ? "connected" : "disconnected"}`));
+
+on_client_gone((client) => drop_claim(client, `${client} left`));
+
 const entry_path = (value: unknown) => require_string(value, "file path", 4000);
 
 export const register_files_ipc = () => {
@@ -84,6 +141,9 @@ export const register_files_ipc = () => {
     const scoped = await resolve_inside(await require_root(parse_scope(scope)), tree_path(entry_path(relative)) || ".");
     shell.showItemInFolder(scoped.target);
   });
-  handle("files:watch", (scope) => start_files_watch(parse_scope(scope)));
-  handle("files:unwatch", () => stop_files_watch());
+  handle_client("files:watch", (client, scope) => watch_files(client, parse_scope(scope)));
+  handle_client("files:unwatch", (client) => {
+    claims.delete(client);
+    return apply_claims();
+  });
 };

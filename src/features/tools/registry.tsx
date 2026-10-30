@@ -38,6 +38,7 @@ import {
   SquareTerminalIcon,
   SummaryIcon,
   TextCursorInputIcon,
+  WorkflowIcon,
   WormIcon,
   type IconComponent,
 } from "../../components/icons.tsx";
@@ -56,7 +57,8 @@ import { is_reviewing } from "./review-phase.ts";
 import { ReviewNotice } from "./ReviewNote.tsx";
 import { ReviewBody } from "./ReviewPending.tsx";
 import { denial_note, live_command, shown_error, view_content } from "./tool-body.ts";
-import { tool_meta, type ToolIconName } from "./tool-meta.ts";
+import { tool_meta } from "./tool-meta.ts";
+import type { ToolIconName } from "./tool-meta-types.ts";
 
 export const tool_icons: Record<ToolIconName, IconComponent> = {
   terminal: SquareTerminalIcon,
@@ -72,6 +74,7 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   web: GlobeCheckIcon,
   image: ImageIcon,
   agent: CritterMark,
+  workflow: WorkflowIcon,
   memory: WormIcon,
   skill: BookOpenIcon,
   browser: GlobeIcon,

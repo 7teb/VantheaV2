@@ -74,6 +74,8 @@ export const tool_label: Record<keyof typeof en, string> = {
   "tool_label.read_pages": "{n} Seiten gelesen",
   "tool_label.generating_image": "Erzeugt Bild",
   "tool_label.generated_image": "Bild erzeugt",
+  "tool_label.presenting_images": "Zeigt Bilder",
+  "tool_label.presented_images": "Bilder gezeigt",
   "tool_label.showing_images": "Zeigt {x}",
   "tool_label.showed_images": "{x} gezeigt",
   "tool_label.visualizing": "Erstellt Visualisierung",

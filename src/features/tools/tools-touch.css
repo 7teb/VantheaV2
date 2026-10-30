@@ -1,0 +1,26 @@
+@layer components {
+  @media (max-width: 600px) {
+    .tool-row-detail {
+      flex-shrink: 100;
+    }
+
+    .generated-images {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .work-group-head,
+    .tool-row-head {
+      min-height: var(--size-control);
+    }
+
+    .output-block-more {
+      height: var(--size-control);
+    }
+
+    .web-source {
+      height: var(--size-control);
+    }
+  }
+}

@@ -3,8 +3,8 @@
   top: 0;
   left: 0;
   z-index: -1;
-  width: var(--size-sidebar);
-  height: 104px;
+  width: calc(var(--size-sidebar) + var(--safe-left));
+  height: calc(104px + var(--safe-top));
   overflow: hidden;
   pointer-events: none;
   mask-image:
@@ -16,7 +16,7 @@
 }
 
 .brand-field[data-state="closed"] {
-  height: var(--size-titlebar);
+  height: calc(var(--size-titlebar) + var(--safe-top));
 }
 
 .brand-aurora,
@@ -78,5 +78,11 @@
   to {
     opacity: 0.45;
     transform: translate(18px, 10px);
+  }
+}
+
+@media (max-width: 600px) {
+  .brand-field {
+    display: none;
   }
 }

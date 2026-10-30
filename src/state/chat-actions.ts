@@ -103,8 +103,33 @@ export const reveal_path = (path: string) => {
   api.invoke("shell:reveal_path", path).catch((error) => console.error(`[chat] shell:reveal_path failed for ${path}`, error));
 };
 
+const copy_through_selection = (text: string): boolean => {
+  const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.readOnly = true;
+  area.setAttribute("aria-hidden", "true");
+  Object.assign(area.style, { position: "fixed", top: "0", left: "0", width: "1px", height: "1px", opacity: "0", pointerEvents: "none" });
+  document.body.append(area);
+  try {
+    area.select();
+    area.setSelectionRange(0, text.length);
+    return document.execCommand("copy");
+  } finally {
+    area.remove();
+    focused?.focus({ preventScroll: true });
+  }
+};
+
 export const copy_text = async (text: string): Promise<boolean> => {
   try {
+    if (navigator.clipboard === undefined) {
+      const copied = copy_through_selection(text);
+      if (!copied) {
+        console.error(`[chat] copying ${text.length} chars through the selection was refused by the browser`);
+      }
+      return copied;
+    }
     await navigator.clipboard.writeText(text);
     return true;
   } catch (error) {

@@ -294,4 +294,28 @@
       transform: scaleX(1);
     }
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .question-option,
+    .question-other {
+      min-height: 44px;
+    }
+
+    .question-index {
+      display: none;
+    }
+
+    .question-icon-button {
+      padding: 11px;
+    }
+
+    .question-head-side {
+      margin: -10px -7px 0 0;
+    }
+
+    .question-button {
+      height: var(--size-control);
+      padding: 0 14px;
+    }
+  }
 }

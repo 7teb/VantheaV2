@@ -147,3 +147,15 @@
 .commit-detail > .skeleton:last-child {
   display: block;
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .commit-detail-head .icon-button {
+    margin-block: -9px;
+  }
+
+  .commit-detail-hash .icon-button {
+    width: 32px;
+    height: 32px;
+    margin-block: -8px;
+  }
+}

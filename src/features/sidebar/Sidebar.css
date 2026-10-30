@@ -305,11 +305,13 @@
 
 @media (max-width: 860px) {
   .sidebar {
-    position: fixed;
-    top: var(--size-titlebar);
+    --drawer-width: calc(var(--size-sidebar) + var(--safe-left));
+    position: absolute;
+    top: 0;
     bottom: 0;
     left: 0;
     z-index: var(--z-sidebar-overlay);
+    width: var(--drawer-width);
     background: var(--surface-modal);
     backdrop-filter: var(--filter-modal);
     box-shadow: var(--shadow-overlay);
@@ -324,5 +326,55 @@
 
   .sidebar[data-state="closed"] {
     box-shadow: none;
+  }
+
+  .sidebar-inner {
+    width: var(--drawer-width);
+    padding-left: calc(10px + var(--safe-left));
+    padding-bottom: calc(10px + var(--safe-bottom));
+  }
+}
+
+@media (max-width: 600px) {
+  .sidebar {
+    --drawer-width: min(320px, calc(100vw - 48px));
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .sidebar-nav-button,
+  .sidebar-row,
+  .sidebar-archive {
+    height: var(--size-row);
+  }
+
+  .chat-row[data-detail] {
+    height: 52px;
+  }
+
+  .sidebar-section-head {
+    height: var(--size-control);
+  }
+
+  .sidebar-nav-hint {
+    display: none;
+  }
+
+  .sidebar-row-main {
+    padding-right: 40px;
+  }
+
+  .sidebar-row-more {
+    right: 2px;
+  }
+
+  .sidebar-row .sidebar-row-more,
+  .sidebar .chat-row .chat-row-time,
+  .sidebar .chat-row .chat-row-status {
+    opacity: 1;
+  }
+
+  .inline-rename {
+    height: 36px;
   }
 }

@@ -12,6 +12,7 @@
   display: flex;
   flex: 1;
   min-height: 0;
+  padding-inline: var(--safe-left) var(--safe-right);
 }
 
 .sidebar-scrim {
@@ -19,12 +20,13 @@
 }
 
 @media (max-width: 860px) {
+  .shell-body {
+    overflow: clip;
+  }
+
   .sidebar-scrim {
-    position: fixed;
-    top: var(--size-titlebar);
-    right: 0;
-    bottom: 0;
-    left: 0;
+    position: absolute;
+    inset: 0;
     z-index: calc(var(--z-sidebar-overlay) - 1);
     display: block;
     background: var(--scrim-modal);
@@ -36,5 +38,15 @@
   .sidebar-scrim[data-open="true"] {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .shell {
+    position: fixed;
+    top: var(--viewport-top, 0px);
+    left: 0;
+    width: 100%;
+    height: var(--viewport-height, 100dvh);
   }
 }

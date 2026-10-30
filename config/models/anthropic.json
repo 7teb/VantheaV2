@@ -1,0 +1,35 @@
+[
+  {
+    "id": "anthropic/claude-haiku-5.5",
+    "label": "Claude Haiku 5.5",
+    "provider": "Anthropic",
+    "provider_order": ["anthropic"],
+    "efforts": ["low", "medium", "high", "xhigh", "max"],
+    "default_effort": "medium",
+    "vision": true,
+    "context_length": 1000000,
+    "max_output": 128000
+  },
+  {
+    "id": "anthropic/claude-sonnet-5.5",
+    "label": "Claude Sonnet 5.5",
+    "provider": "Anthropic",
+    "provider_order": ["anthropic"],
+    "efforts": ["low", "medium", "high", "xhigh", "max"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1000000,
+    "max_output": 128000
+  },
+  {
+    "id": "anthropic/claude-opus-5.5",
+    "label": "Claude Opus 5.5",
+    "provider": "Anthropic",
+    "provider_order": ["anthropic"],
+    "efforts": ["low", "medium", "high", "xhigh", "max"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1000000,
+    "max_output": 128000
+  }
+]

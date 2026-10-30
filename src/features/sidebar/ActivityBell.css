@@ -4,8 +4,8 @@
 
 .activity-bell-dot {
   position: absolute;
-  top: 6px;
-  left: 7px;
+  top: calc(50% - 10px);
+  left: calc(50% - 9px);
   width: 6px;
   height: 6px;
   border-radius: var(--radius-full);

@@ -8,7 +8,7 @@ import { chat_view_store } from "../../state/chat-view.ts";
 import { current_index, empty_draft, shown_answer } from "../../state/question-drafts.ts";
 import { dismiss_open, question_drafts_store, record_answer, record_text, show_question, submit_answers } from "../../state/questions.ts";
 import { use_store } from "../../state/use-store.ts";
-import { focus_composer_input } from "./composer-hooks.ts";
+import { return_focus_to_composer } from "./composer-hooks.ts";
 import "./QuestionsPanel.css";
 
 type QuestionsCardProps = { chat_id: string; open: OpenQuestion[] };
@@ -31,7 +31,7 @@ const QuestionsCard = ({ chat_id, open }: QuestionsCardProps) => {
       queueMicrotask(() => {
         const idle = document.activeElement === null || document.activeElement === document.body;
         if (idle && slot.isConnected) {
-          focus_composer_input(slot);
+          return_focus_to_composer(slot);
         }
       });
     };

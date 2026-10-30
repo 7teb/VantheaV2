@@ -1,0 +1,18 @@
+export const remote = {
+  "remote.title": "Phone access",
+  "remote.toggle": "Phone access on the local network",
+  "remote.scan": "Scan with a phone on the same Wi-Fi",
+  "remote.address": "Address",
+  "remote.connected_none": "No device connected",
+  "remote.connected_one": "1 device connected",
+  "remote.connected_other": "{n} devices connected",
+  "remote.new_link": "New link",
+  "remote.new_link_hint": "Makes a new QR code and unpairs every device",
+  "remote.firewall_hint": "If Windows asks, allow VantheaX on private networks",
+  "remote.failed_no_network": "No local network found",
+  "remote.failed_no_port": "No free port found",
+  "remote.failed_secret_storage": "Secure storage is not available, so the pairing key cannot be saved",
+  "remote.failed": "Could not start: {detail}",
+  "remote.connecting": "Connecting to the PC",
+  "remote.offline": "No connection to the PC",
+};

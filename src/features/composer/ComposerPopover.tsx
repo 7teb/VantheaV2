@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { use_layer, use_presence } from "../../components/use-layer.ts";
-import { focus_composer_input } from "./composer-hooks.ts";
+import { return_focus_to_composer } from "./composer-hooks.ts";
 import { fit_popover } from "./popover-room.ts";
 import "./ComposerPopover.css";
 
@@ -72,7 +72,7 @@ export const ComposerPopover = ({ open, label, focus, keep, on_close, on_key_dow
     return () => {
       const active = document.activeElement;
       if (node.contains(active) || active === null || active === document.body) {
-        focus_composer_input(node);
+        return_focus_to_composer(node);
       }
     };
   }, [open, focus, presence.mounted]);

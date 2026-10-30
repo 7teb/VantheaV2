@@ -3,7 +3,8 @@ import { is_shell_run } from "../../../shared/shell.ts";
 import type { PeerOutcome, ToolView } from "../../../shared/tool-view.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import { agent_status_label, background_status_label, row_status_label, unknown_status, type LiveStatus } from "./background-status.ts";
-import { tool_meta, type ToolCategory } from "./tool-meta.ts";
+import { tool_meta } from "./tool-meta.ts";
+import type { ToolCategory } from "./tool-meta-types.ts";
 
 export const format_seconds = (total: number): string => {
   if (total < 60) {
@@ -122,6 +123,8 @@ const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
   agent_runs: ["tools.combine_agent_runs_one", "tools.combine_agent_runs_other"],
   agent_checks: ["tools.combine_agent_checks_one", "tools.combine_agent_checks_other"],
   agent_stops: ["tools.combine_agent_stops_one", "tools.combine_agent_stops_other"],
+  workflows: ["workflow.combine_runs_one", "workflow.combine_runs_other"],
+  workflow_stops: ["workflow.combine_stops_one", "workflow.combine_stops_other"],
   task_checks: ["tools.combine_task_checks_one", "tools.combine_task_checks_other"],
   task_stops: ["tools.combine_task_stops_one", "tools.combine_task_stops_other"],
   skill_installs: ["tools.combine_skill_installs_one", "tools.combine_skill_installs_other"],

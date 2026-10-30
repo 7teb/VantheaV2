@@ -1,6 +1,7 @@
 import { memo, useState, type CSSProperties } from "react";
 import { parse_agent_notice } from "../../../shared/agent-notes.ts";
 import { parse_peer_alerts, parse_peer_notice } from "../../../shared/peer-notes.ts";
+import { parse_workflow_notice } from "../../../shared/workflow-notes.ts";
 import type { CompactionStep, NoticeKind, NoticeStep, SteerStep } from "../../../shared/chat.ts";
 import { InfoIcon, TextSelectIcon } from "../../components/icons.tsx";
 import { use_clock } from "../../components/use-clock.ts";
@@ -10,6 +11,7 @@ import { AgentNoteRow } from "./AgentNoteRow.tsx";
 import { compaction_text, compaction_wait_text, slow_notice_delay } from "./compaction-line.ts";
 import { PeerMessageRow } from "./PeerMessageRow.tsx";
 import { UserAttachments } from "./UserAttachments.tsx";
+import { WorkflowNoteRow } from "./WorkflowNoteRow.tsx";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./UserMessage.css";
 
@@ -32,6 +34,7 @@ const notice_titles: Record<NoticeKind, MessageKey> = {
   peer_message: "chat.notice_peer_message",
   peer_status: "chat.notice_peer_status",
   peer_digest: "chat.notice_peer_digest",
+  workflow_result: "chat.notice_workflow_result",
 };
 
 const agent_note_of = (step: NoticeStep) => {
@@ -50,6 +53,10 @@ export const NoticeRow = memo(({ step }: { step: NoticeStep }) => {
   const peer = step.notice === "peer_message" ? parse_peer_notice(step.text) : null;
   if (peer) {
     return <PeerMessageRow message={peer} />;
+  }
+  const workflow = step.notice === "workflow_result" ? parse_workflow_notice(step.text) : null;
+  if (workflow) {
+    return <WorkflowNoteRow note={workflow} />;
   }
   return (
     <div className="notice-row enter-fade-up" data-notice={step.notice}>

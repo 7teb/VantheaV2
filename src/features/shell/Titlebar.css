@@ -5,7 +5,8 @@
   grid-template-columns: minmax(max-content, 1fr) minmax(0, auto) minmax(max-content, 1fr);
   column-gap: var(--space-3);
   align-items: center;
-  height: var(--size-titlebar);
+  height: calc(var(--size-titlebar) + var(--safe-top));
+  padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
   user-select: none;
   -webkit-app-region: drag;
 }
@@ -88,8 +89,8 @@
 
 .titlebar-wait {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: calc(50% - 11px);
+  right: calc(50% - 11px);
   width: 6px;
   height: 6px;
 }
@@ -140,4 +141,61 @@
 
 .caption-button:focus-visible {
   outline-offset: -2px;
+}
+
+.titlebar-end:not(:has(.window-controls)) {
+  padding-right: var(--space-2);
+}
+
+@media (max-width: 860px) {
+  .titlebar-start,
+  .titlebar[data-sidebar="closed"] .titlebar-start {
+    width: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .titlebar {
+    display: flex;
+    gap: 0;
+    padding: var(--safe-top) calc(var(--space-1) + var(--safe-right)) 0 calc(var(--space-1) + var(--safe-left));
+  }
+
+  .titlebar-start,
+  .titlebar-actions,
+  .titlebar-end,
+  .titlebar-docks {
+    display: contents;
+  }
+
+  .titlebar-brand,
+  .titlebar-dock,
+  .titlebar-title .title-branch {
+    display: none;
+  }
+
+  .titlebar-sidebar-toggle {
+    order: 0;
+  }
+
+  .titlebar-title {
+    flex: 1;
+    order: 1;
+    justify-content: flex-start;
+    max-width: none;
+    padding: 0 var(--space-1);
+    color: var(--text-primary);
+  }
+
+  .titlebar-search {
+    order: 2;
+  }
+
+  .activity-bell {
+    order: 3;
+  }
+
+  .titlebar-more {
+    order: 4;
+  }
 }

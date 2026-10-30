@@ -270,4 +270,105 @@
       display: none;
     }
   }
+
+  @media (max-width: 600px) {
+    .composer {
+      padding: 12px 6px 6px;
+    }
+
+    .composer-input,
+    .composer-feedback {
+      padding: 0 6px;
+    }
+
+    .composer-input {
+      min-height: 40px;
+      max-height: calc(var(--viewport-height, 100dvh) * 0.3);
+    }
+
+    .composer-bar .composer-chip {
+      flex-shrink: 0;
+    }
+
+    .composer-bar .composer-chip:has(> .composer-chip-model) {
+      flex-shrink: 1;
+    }
+
+    .composer-chip-label.composer-chip-model {
+      display: block;
+      max-width: 112px;
+    }
+
+    .composer-dock-card {
+      max-height: min(420px, 55dvh, var(--composer-card-cap, 420px));
+    }
+
+    .composer-slot:has(.composer-dock-card ~ .composer-dock-card) .composer-dock-card {
+      max-height: min(420px, 27.5dvh, var(--composer-card-cap, 420px));
+    }
+  }
+
+  @media (max-height: 500px) {
+    .composer-input {
+      max-height: 96px;
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .composer-menu {
+      max-height: min(520px, calc(var(--viewport-height, 100vh) - var(--space-12) - var(--safe-top)));
+    }
+
+    :root[data-keyboard="open"] .composer-dock-card {
+      max-height: min(420px, calc(var(--viewport-height, 100dvh) * 0.35), var(--composer-card-cap, 420px));
+    }
+
+    :root[data-keyboard="open"] .composer-slot:has(.composer-dock-card ~ .composer-dock-card) .composer-dock-card {
+      max-height: min(420px, calc(var(--viewport-height, 100dvh) * 0.175), var(--composer-card-cap, 420px));
+    }
+
+    .composer-bar {
+      container: composer-bar / inline-size;
+      margin-right: -2px;
+      padding-right: 2px;
+    }
+
+    .composer-bar :is(.composer-plus, .composer-chip, .button-primary) {
+      position: relative;
+    }
+
+    .composer-bar :is(.composer-plus, .composer-chip, .button-primary)::after {
+      content: "";
+      position: absolute;
+      inset: -2px 0;
+    }
+
+    .composer-bar :is(.composer-plus, .button-primary)::after {
+      inset: -2px;
+    }
+
+    .composer-bar .composer-plus {
+      margin-right: 2px;
+    }
+
+    @container composer-bar (max-width: 556px) {
+      .composer-chip-label,
+      .composer-chip-hint {
+        display: none;
+      }
+
+      .composer-bar .composer-chip {
+        flex-shrink: 0;
+      }
+
+      .composer-bar .composer-chip:has(> .composer-chip-model) {
+        flex-shrink: 1;
+      }
+
+      .composer-chip-label.composer-chip-model {
+        display: block;
+        max-width: 112px;
+      }
+    }
+  }
 }

@@ -18,6 +18,8 @@ export type AgentRunSummary = {
   open_questions: number;
 };
 
+export type AgentWorkflowLink = { run_id: string; index: number };
+
 export type AgentSummary = {
   agent_id: string;
   chat_id: string;
@@ -28,6 +30,7 @@ export type AgentSummary = {
   profile: AgentProfile;
   without_tools: string[];
   runs: AgentRunSummary[];
+  workflow?: AgentWorkflowLink;
 };
 
 export type AgentRun = AgentRunSummary &

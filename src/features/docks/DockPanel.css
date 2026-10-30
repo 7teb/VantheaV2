@@ -158,3 +158,33 @@
 .dock-tab:focus-within .dock-tab-close {
   opacity: 1;
 }
+
+@media (max-width: 600px) {
+  .dock-panel {
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .dock-header {
+    height: 52px;
+  }
+
+  .dock-tab {
+    height: var(--size-control);
+  }
+
+  .dock-tab-close.icon-button-sm {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    opacity: 1;
+  }
+
+  .dock-tab-close.icon-button-sm::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+}

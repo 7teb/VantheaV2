@@ -70,6 +70,7 @@ export const public_summary = (record: AgentRecord): AgentSummary => ({
   profile: record.profile,
   without_tools: record.without_tools,
   runs: record.runs.map(public_run),
+  ...(record.workflow ? { workflow: record.workflow } : {}),
 });
 
 export const current_run = (record: AgentRecord): RunRecord | null => record.runs.at(-1) ?? null;
@@ -103,6 +104,11 @@ const parse_run = (value: unknown, now: string): RunRecord | null => {
   };
 };
 
+const parse_workflow_link = (value: unknown): Pick<AgentRecord, "workflow"> => {
+  const raw = as_record(value);
+  return typeof raw.run_id === "string" && typeof raw.index === "number" ? { workflow: { run_id: raw.run_id, index: raw.index } } : {};
+};
+
 const parse_agent = (value: unknown, now: string): AgentRecord | null => {
   const raw = as_record(value);
   const agent_id = as_string(raw.agent_id);
@@ -131,6 +137,7 @@ const parse_agent = (value: unknown, now: string): AgentRecord | null => {
     held: as_array(raw.held)
       .map(parse_held)
       .filter((entry): entry is HeldEntry => entry !== null),
+    ...parse_workflow_link(raw.workflow),
   };
 };
 

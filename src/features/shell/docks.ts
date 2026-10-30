@@ -1,3 +1,4 @@
+import { remote_client } from "../../api/bridge.ts";
 import { FolderIcon, GlobeIcon, ImageIcon, LayersIcon, SquareTerminalIcon, type IconComponent } from "../../components/icons.tsx";
 import type { MessageKey } from "../../i18n/translate.ts";
 import type { DockKind } from "../../state/ui.ts";
@@ -12,4 +13,4 @@ export const dock_toggles: Record<DockKind, DockToggle> = {
   files: { label: "files.open", icon: FolderIcon },
 };
 
-export const titlebar_docks: DockKind[] = ["terminal", "browser", "files"];
+export const titlebar_docks: DockKind[] = remote_client ? ["terminal", "files"] : ["terminal", "browser", "files"];

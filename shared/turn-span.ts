@@ -1,7 +1,7 @@
 import { manual_compaction_only, type AssistantMessage, type Message, type UserOrigin } from "./chat.ts";
 import type { TurnSpan } from "./turn-diff.ts";
 
-export const joins_turn = (origin: UserOrigin): boolean => origin === "agent_report" || origin === "agent_update";
+export const joins_turn = (origin: UserOrigin): boolean => origin === "agent_report" || origin === "agent_update" || origin === "workflow";
 
 const turn_groups = (messages: Message[]): AssistantMessage[][] => {
   const groups: AssistantMessage[][] = [];

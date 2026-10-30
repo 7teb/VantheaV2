@@ -9,7 +9,7 @@ const side_roles: SideModelRole[] = ["title", "overseer", "vision", "memory", "r
 type Raw = Record<string, unknown>;
 
 const fail = (where: string, problem: string): never => {
-  throw new Error(`models.json: ${where}: ${problem}`);
+  throw new Error(`model catalog: ${where}: ${problem}`);
 };
 
 const as_record = (value: unknown, where: string): Raw =>
@@ -171,7 +171,7 @@ export const side_window = (catalog: ModelCatalog, role: SideModelRole): SideMod
   const id = catalog.side[role];
   const known = find_model(catalog, id) ?? catalog.side_models.find((model) => model.id === id);
   if (!known) {
-    throw new Error(`models.json: side.${role} names ${id}, which has no entry in models or side_models, so its context window is unknown`);
+    throw new Error(`model catalog: side.${role} names ${id}, which has no entry in models or side_models, so its context window is unknown`);
   }
   return { id, context_length: known.context_length, max_output: known.max_output };
 };

@@ -284,3 +284,27 @@
     box-shadow: none;
   }
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .files-bar {
+    height: 52px;
+  }
+
+  .files-filter.text-field {
+    height: var(--size-control);
+  }
+
+  .files-filter-clear.icon-button-sm {
+    width: 32px;
+    height: 32px;
+  }
+
+  .files-row,
+  .files-note-row {
+    height: var(--size-control);
+  }
+
+  .files-path {
+    height: var(--size-control);
+  }
+}

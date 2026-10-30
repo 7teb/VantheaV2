@@ -110,3 +110,19 @@
   color: var(--text-tertiary);
   font-size: var(--font-size-ui);
 }
+
+@media (max-width: 600px) {
+  .search-backdrop {
+    padding-top: max(var(--space-3), var(--safe-top));
+  }
+
+  .search-dialog {
+    width: 100%;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .search-panel {
+    max-height: min(560px, calc(var(--viewport-height, 100dvh) - var(--safe-top) - var(--space-6)));
+  }
+}

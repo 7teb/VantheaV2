@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { class_names } from "./class-names.ts";
-import { place, type Align, type Placed, type Placement, type Side } from "./placement.ts";
+import { place, type Align, type Placed, type Placement, type Side, type Size } from "./placement.ts";
 import { use_layer, use_presence } from "./use-layer.ts";
 import "./Floating.css";
 
@@ -26,6 +26,29 @@ const vertical_align: Record<Align, string> = { start: "top", center: "center", 
 const transform_origin = (side: Side, align: Align) => {
   const cross = side === "top" || side === "bottom" ? horizontal_align : vertical_align;
   return `${opposite_edge[side]} ${cross[align]}`;
+};
+
+const safe_inset = (styles: CSSStyleDeclaration, side: "top" | "right" | "bottom" | "left") => Number.parseFloat(styles.getPropertyValue(`--safe-${side}`)) || 0;
+
+const visible_viewport = () => {
+  const visual = window.visualViewport;
+  const view = visual
+    ? { left: visual.offsetLeft, top: visual.offsetTop, width: visual.width, height: visual.height }
+    : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+  const root = document.documentElement;
+  const styles = window.getComputedStyle(root);
+  const top = safe_inset(styles, "top");
+  const right = safe_inset(styles, "right");
+  const bottom = root.dataset.keyboard === "open" ? 0 : safe_inset(styles, "bottom");
+  const left = safe_inset(styles, "left");
+  return { left: view.left + left, top: view.top + top, width: view.width - left - right, height: view.height - top - bottom };
+};
+
+export const place_visible = (anchor: DOMRect, size: Size, placement: Placement): Placed => {
+  const view = visible_viewport();
+  const shifted = { left: anchor.left - view.left, top: anchor.top - view.top, width: anchor.width, height: anchor.height };
+  const placed = place(shifted, size, placement, view);
+  return { ...placed, left: placed.left + view.left, top: placed.top + view.top };
 };
 
 const opened_later = (own: HTMLElement, target: Node) => {
@@ -60,15 +83,17 @@ export const Floating = ({
     }
     const update = () => {
       const size = { width: node.offsetWidth, height: node.offsetHeight };
-      set_placed(place(anchor.getBoundingClientRect(), size, placement, { width: window.innerWidth, height: window.innerHeight }));
+      set_placed(place_visible(anchor.getBoundingClientRect(), size, placement));
     };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(node);
     window.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("resize", update);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("resize", update);
     };
   }, [open, anchor, placement, presence.mounted]);
 

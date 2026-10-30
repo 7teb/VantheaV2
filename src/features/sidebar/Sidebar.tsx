@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
+import { remote_client } from "../../api/bridge.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
 import { ArchiveIcon, ComposeIcon, FolderOpenIcon, FolderPlusIcon, PlusIcon, SettingsIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
@@ -158,7 +159,9 @@ export const Sidebar = () => {
           {
             id: "add",
             items: [
-              { id: "existing", label: t("projects.add_existing"), icon: <FolderOpenIcon size={15} />, on_select: () => choose_project().catch(report("choosing a project")) },
+              ...(remote_client
+                ? []
+                : [{ id: "existing", label: t("projects.add_existing"), icon: <FolderOpenIcon size={15} />, on_select: () => choose_project().catch(report("choosing a project")) }]),
               { id: "create", label: t("projects.create"), icon: <FolderPlusIcon size={15} />, on_select: () => set_create_open(true) },
             ],
           },

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { remote_client } from "../../api/bridge.ts";
 import { BookOpenIcon, ClipboardListIcon, FolderOpenIcon, PaperclipIcon, PlugIcon, type IconComponent } from "../../components/icons.tsx";
 import { ToggleTrack } from "../../components/Toggle.tsx";
 import { use_t } from "../../i18n/index.ts";
@@ -53,6 +54,8 @@ const move_focus = (container: HTMLElement, step: Step) => {
 };
 
 const error_text = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+const plan_index = remote_client ? 1 : 2;
 
 export const PlusMenu = ({ open, keep, chat_id, project_path, draft_key, draft, on_close, on_files }: PlusMenuProps) => {
   const t = use_t();
@@ -132,26 +135,28 @@ export const PlusMenu = ({ open, keep, chat_id, project_path, draft_key, draft, 
             on_files();
           }}
         />
-        <MenuRow
-          icon={FolderOpenIcon}
-          label={t("commands.project")}
-          hint={project ? project_label(project) : t("commands.no_project")}
-          index={1}
-          on_select={() => {
-            on_close();
-            void work_in_project();
-          }}
-        />
+        {!remote_client && (
+          <MenuRow
+            icon={FolderOpenIcon}
+            label={t("commands.project")}
+            hint={project ? project_label(project) : t("commands.no_project")}
+            index={1}
+            on_select={() => {
+              on_close();
+              void work_in_project();
+            }}
+          />
+        )}
         <MenuRow
           icon={ClipboardListIcon}
           label={t("commands.plan")}
           trail={<ToggleTrack checked={draft.plan} />}
           role="menuitemcheckbox"
           checked={draft.plan}
-          index={2}
+          index={plan_index}
           on_select={() => toggle_plan(draft_key)}
         />
-        <WorktreeRow open={open} chat_id={chat_id} project_path={project_path} draft_key={draft_key} index={3} />
+        <WorktreeRow open={open} chat_id={chat_id} project_path={project_path} draft_key={draft_key} index={plan_index + 1} />
       </div>
       <div className="composer-popover-divider" role="separator" />
       <div className="composer-popover-tabs" role="tablist" aria-label={t("commands.sources")}>

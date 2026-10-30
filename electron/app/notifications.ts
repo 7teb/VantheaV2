@@ -4,15 +4,18 @@ import type { BackgroundTask } from "../../shared/ipc/work.ts";
 import { alert_note_content, alert_text, hold_update, report_seconds, type AgentNotice, type AgentReport, type AgentUpdate } from "../agents/reports.ts";
 import { background_event_text } from "../background/event-text.ts";
 import { result_was_read } from "../background/manager.ts";
+import { client_connected, on_client_gone, on_client_presence, type ClientId } from "../ipc/clients.ts";
 import type { OutputView } from "../shell/output.ts";
 import { user_stopped } from "../turn/active.ts";
 import { start_internal_turn } from "../turn/run.ts";
 
-type PendingEvent = { origin: Extract<UserOrigin, "background" | "agent_report" | "agent_update">; text: string; task_id?: string; update?: AgentUpdate };
+type PendingEvent = { origin: Extract<UserOrigin, "background" | "agent_report" | "agent_update" | "workflow">; text: string; task_id?: string; update?: AgentUpdate };
 
 const pending = new Map<string, PendingEvent[]>();
 
 const delivering = new Set<string>();
+
+const holds = new Map<ClientId, string[]>();
 
 let held = new Set<string>();
 
@@ -112,6 +115,9 @@ export const notify_agent = (notice: AgentNotice): void => {
       return;
     case "alert":
       queue_event(notice.alert.chat_id, { origin: "agent_update", text: alert_note_content(alert_text(notice.alert)) });
+      return;
+    case "workflow":
+      queue_event(notice.workflow.chat_id, { origin: "workflow", text: notice.workflow.text });
   }
 };
 
@@ -119,13 +125,36 @@ export const deliver_pending_events = (chat_id: string): void => {
   void deliver(chat_id);
 };
 
-export const hold_events_for = (chat_ids: string[]): void => {
-  const released = [...held].filter((chat_id) => !chat_ids.includes(chat_id));
-  held = new Set(chat_ids);
+export const held_union = (entries: Iterable<[ClientId, string[]]>, connected: (client: ClientId) => boolean): Set<string> => {
+  const union = new Set<string>();
+  for (const [client, chat_ids] of entries) {
+    if (connected(client)) {
+      chat_ids.forEach((chat_id) => union.add(chat_id));
+    }
+  }
+  return union;
+};
+
+const apply_holds = () => {
+  const next = held_union(holds, client_connected);
+  const released = [...held].filter((chat_id) => !next.has(chat_id));
+  held = next;
   for (const chat_id of released) {
     void deliver(chat_id);
   }
 };
+
+export const hold_events_for = (client: ClientId, chat_ids: string[]): void => {
+  holds.set(client, chat_ids);
+  apply_holds();
+};
+
+on_client_presence(apply_holds);
+
+on_client_gone((client) => {
+  holds.delete(client);
+  apply_holds();
+});
 
 export const drop_pending_events = (chat_id: string): void => {
   pending.delete(chat_id);

@@ -31,6 +31,7 @@ export const approval = {
   "approval.question_agent_message": "May I send this message to {x}?",
   "approval.question_agent_deploy": "May I start the agent {x} with this task?",
   "approval.question_agent_continue": "May I continue {x} with this task?",
+  "approval.question_workflow": "May I run the workflow {x}?",
   "approval.agent_about": "About {x}",
   "approval.agent_without": "Without: {x}",
   "approval.question_secret_read": "May I read {x}? It can contain keys or credentials.",

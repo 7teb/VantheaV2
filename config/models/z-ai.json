@@ -1,0 +1,37 @@
+[
+  {
+    "id": "z-ai/glm-5.3",
+    "label": "GLM 5.3",
+    "provider": "Z.ai",
+    "provider_order": ["gmicloud/fp8", "baidu/fp8"],
+    "efforts": ["low", "high", "max"],
+    "default_effort": "high",
+    "vision": false,
+    "context_length": 1048576,
+    "max_output": 131072
+  },
+  {
+    "id": "z-ai/glm-5.3:nitro",
+    "label": "GLM 5.3 Fast",
+    "provider": "Z.ai",
+    "provider_order": ["baseten/fast"],
+    "efforts": ["low", "high", "max"],
+    "default_effort": "high",
+    "vision": false,
+    "context_length": 1048576,
+    "max_output": 131072,
+    "fallback": "z-ai/glm-5.3"
+  },
+  {
+    "id": "z-ai/glm-5.3-flash",
+    "label": "GLM 5.3 Flash",
+    "provider": "Z.ai",
+    "provider_order": ["coreweave/nvfp4"],
+    "efforts": ["low", "high", "max"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1048576,
+    "max_output": 131072,
+    "note": "Fast and cheap (about 150 to 240 output tokens per second). Reliable on ordinary coding tasks; weaker on long exact counting or mental arithmetic, where it can spend its whole output budget reasoning. Good for workers and simple to medium tasks."
+  }
+]

@@ -3,7 +3,11 @@ import { as_array, as_iso, as_record } from "../storage/coerce.ts";
 import { keep_corrupt, read_json, write_json } from "../storage/json-file.ts";
 import { path_key, storage_paths } from "../storage/paths.ts";
 
-export type LedgerEntry = { path: string; project_path: string; state: "creating" | "removing"; at: string };
+export type LedgerBranch = { name: string; base: string; repo_dir: string };
+
+export type LedgerEntry = { path: string; project_path: string; state: "creating" | "removing" | "agent"; at: string; branch?: LedgerBranch };
+
+const ledger_states: readonly LedgerEntry["state"][] = ["creating", "removing", "agent"];
 
 let chain: Promise<unknown> = Promise.resolve();
 
@@ -13,13 +17,25 @@ const serialize = <T>(work: () => Promise<T>): Promise<T> => {
   return run;
 };
 
+const parse_branch = (value: unknown): LedgerBranch | null => {
+  const raw = as_record(value);
+  if (typeof raw.name !== "string" || !raw.name || typeof raw.base !== "string" || !raw.base || typeof raw.repo_dir !== "string" || !path.isAbsolute(raw.repo_dir)) {
+    return null;
+  }
+  return { name: raw.name, base: raw.base, repo_dir: raw.repo_dir };
+};
+
 const parse_entry = (value: unknown, now: string): LedgerEntry[] => {
   const raw = as_record(value);
-  const state = raw.state === "creating" || raw.state === "removing" ? raw.state : null;
+  const state = ledger_states.find((entry) => entry === raw.state) ?? null;
   if (typeof raw.path !== "string" || !path.isAbsolute(raw.path) || typeof raw.project_path !== "string" || state === null) {
     return [];
   }
-  return [{ path: raw.path, project_path: raw.project_path, state, at: as_iso(raw.at, now) }];
+  const branch = parse_branch(raw.branch);
+  if (state === "agent" && !branch) {
+    return [];
+  }
+  return [{ path: raw.path, project_path: raw.project_path, state, at: as_iso(raw.at, now), ...(branch ? { branch } : {}) }];
 };
 
 const write_entries = (entries: LedgerEntry[]) => write_json(storage_paths().worktree_ledger, { version: 1, entries });

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "qwen/qwen3.8-max-0902",
+    "label": "Qwen 3.8 Max",
+    "provider": "Qwen",
+    "provider_order": ["alibaba"],
+    "efforts": ["low", "medium", "high", "xhigh"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1000000,
+    "max_output": 131072
+  }
+]

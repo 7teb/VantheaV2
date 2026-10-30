@@ -10,9 +10,11 @@ import { github_channels } from "./github.ts";
 import { media_channels } from "./media.ts";
 import { panels_channels } from "./panels.ts";
 import { questions_channels } from "./questions.ts";
+import { remote_channels } from "./remote.ts";
 import { settings_channels } from "./settings.ts";
 import { turn_diff_channels } from "./turn-diff.ts";
 import { work_channels } from "./work.ts";
+import { workflows_channels } from "./workflows.ts";
 import { worktrees_channels } from "./worktrees.ts";
 
 export const channels = {
@@ -21,6 +23,7 @@ export const channels = {
   ...chats_channels,
   ...media_channels,
   ...work_channels,
+  ...workflows_channels,
   ...extensions_channels,
   ...panels_channels,
   ...browser_channels,
@@ -31,6 +34,7 @@ export const channels = {
   ...git_actions_channels,
   ...worktrees_channels,
   ...turn_diff_channels,
+  ...remote_channels,
 } as const;
 
 export type Channels = typeof channels;

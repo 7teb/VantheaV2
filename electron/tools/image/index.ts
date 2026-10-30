@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import type { GeneratedImage, ToolView } from "../../../shared/tool-view.ts";
+import type { GeneratedImage } from "../../../shared/tool-view.ts";
 import { chat_meta } from "../../chats/store.ts";
 import { save_generated_image } from "../../media/artifacts.ts";
 import { is_media_id, media_exists, resolve_media_file, sniff_image } from "../../media/files.ts";
@@ -17,9 +17,7 @@ type ImageArgs = { prompt: string; source_images: string[] };
 
 const max_source_images = 4;
 
-const image_view = (prompt: string, images: GeneratedImage[]): ToolView => ({ kind: "image", prompt, images });
-
-const failed = (prompt: string, text: string): ToolResult => ({ status: "failed", text, view: image_view(prompt, []) });
+const failed = (text: string): ToolResult => ({ status: "failed", text, view: null });
 
 const read_source = async (chat_id: string, id: string): Promise<string> => {
   if (!is_media_id(id) || !id.startsWith("img_")) {
@@ -41,7 +39,7 @@ export const generate_image_tool = define_tool<ImageArgs>({
   spec: {
     name: "generate_image",
     description:
-      "Generate or edit an image with a dedicated image model; the result is shown to the user directly in the chat. WHEN to call: ONLY when the user explicitly asked for an image (a logo, artwork, mockup, photo edit, 'generate/draw/make me a picture of ...'), or when you offered it and the user said yes. If an image would merely be nice but was NOT requested, ASK the user in plain text first and do NOT call this tool. Never generate images unprompted and never as decoration. To EDIT or transform an image, pass its id in source_images: an image the user attached (the id attribute of its <image> tag) or one you generated earlier in this chat (the id this tool returned). Write prompt as one complete, self-contained visual description in English (subject, style, composition, colors, any text to render); the image model sees nothing of this chat except the prompt and the source images. The user sees the result automatically, you only get back the saved image id.",
+      "Generate or edit an image with a dedicated image model. The result is saved and listed in the Generated images panel, but not shown in the chat: the user sees it once you pass its id to present_images. WHEN to call: ONLY when the user explicitly asked for an image (a logo, artwork, mockup, photo edit, 'generate/draw/make me a picture of ...'), or when you offered it and the user said yes. If an image would merely be nice but was NOT requested, ASK the user in plain text first and do NOT call this tool. Never generate images unprompted and never as decoration. To EDIT or transform an image, pass its id in source_images: an image the user attached (the id attribute of its <image> tag) or one you generated earlier in this chat (the id this tool returned). Write prompt as one complete, self-contained visual description in English (subject, style, composition, colors, any text to render); the image model sees nothing of this chat except the prompt and the source images. You get back the saved image id.",
     parameters: {
       type: "object",
       properties: {
@@ -69,7 +67,7 @@ export const generate_image_tool = define_tool<ImageArgs>({
     const catalog = await model_catalog();
     const model = catalog.image_models.find((entry) => entry.id === ctx.settings.image_gen.model) ?? catalog.image_models[0];
     if (!model) {
-      return failed(args.prompt, "The model catalog lists no image models, so no image can be generated.");
+      return failed("The model catalog lists no image models, so no image can be generated.");
     }
     const references: string[] = [];
     for (const id of args.source_images) {
@@ -77,17 +75,17 @@ export const generate_image_tool = define_tool<ImageArgs>({
         references.push(await read_source(ctx.chat_id, id));
       } catch (error) {
         console.warn(`[image] source image ${id.slice(0, 80)} could not be read: ${error_text(error)}`);
-        return failed(args.prompt, `No readable image with the id "${id.slice(0, 80)}" was found. Use the id exactly as shown in the id attribute of its <image> tag or in the earlier generate_image result.`);
+        return failed(`No readable image with the id "${id.slice(0, 80)}" was found. Use the id exactly as shown in the id attribute of its <image> tag or in the earlier generate_image result.`);
       }
     }
     if (references.length && (await image_input_support(model.id)) === false) {
-      return failed(args.prompt, `The selected image model ${model.label} cannot take images as input, so it cannot edit. Ask the user to pick another image model in Settings > Image generation.`);
+      return failed(`The selected image model ${model.label} cannot take images as input, so it cannot edit. Ask the user to pick another image model in Settings > Image generation.`);
     }
     try {
       const body = image_body({ model, prompt: args.prompt, quality: ctx.settings.image_gen.quality, references });
       const decoded = await request_images(body, ctx.signal);
       if (!decoded.length) {
-        return failed(args.prompt, `The image model ${model.label} returned no image. It may have declined the prompt.`);
+        return failed(`The image model ${model.label} returned no image. It may have declined the prompt.`);
       }
       const images: GeneratedImage[] = [];
       const project_path = chat_meta(ctx.chat_id)?.project_path ?? "";
@@ -96,14 +94,14 @@ export const generate_image_tool = define_tool<ImageArgs>({
         images.push({ id: saved.id, ...image_size(image.bytes) });
       }
       const ids = images.map((image) => image.id).join(", ");
-      const text = `Generated ${images.length} image${images.length === 1 ? "" : "s"} with ${model.label}: ${ids}. The user already sees it in the chat. To edit it later, pass its id in source_images.`;
-      return { status: "done", text, view: image_view(args.prompt, images) };
+      const text = `Generated ${images.length} image${images.length === 1 ? "" : "s"} with ${model.label}: ${ids}. The user does not see it yet: pass the id to present_images where the image belongs in your answer. To edit it, pass the id in source_images.`;
+      return { status: "done", text, view: { kind: "generated_images", images } };
     } catch (error) {
       if (ctx.signal.aborted) {
         throw error;
       }
       console.warn(`[image] generation with ${model.id} failed: ${error_text(error)}`);
-      return failed(args.prompt, `Image generation with ${model.label} failed: ${error_text(error)}`);
+      return failed(`Image generation with ${model.label} failed: ${error_text(error)}`);
     }
   },
 });

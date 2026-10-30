@@ -8,6 +8,7 @@ import { files_store, open_file, set_tree_open, shown_view, sync_files, toggle_t
 import { reload_git_diffs } from "../../../state/git-diff.ts";
 import { reload_git_history } from "../../../state/git-history.ts";
 import { changed_entries, drop_git_session, git_store, git_ui_of, refresh_git, set_surface, set_viewer_mode, type GitSurface, type ViewerMode } from "../../../state/git.ts";
+import { layout_store } from "../../../state/layout.ts";
 import { refresh_turn_diff } from "../../../state/turn-diff.ts";
 import { toggle_dock_expanded, ui_store } from "../../../state/ui.ts";
 import { use_store } from "../../../state/use-store.ts";
@@ -76,6 +77,7 @@ export const FilesDock = ({ visible, chat_id, project_path }: DockViewProps) => 
   const tree_open = use_store(files_store, (state) => shown_view(state).tree_open);
   const active = use_store(files_store, (state) => shown_view(state).active);
   const expanded = use_store(ui_store, (state) => state.dock.expanded);
+  const sheet = use_store(layout_store, (state) => state.drawer);
   const stored_surface = use_store(git_store, (state) => git_ui_of(state, key).surface);
   const git = use_shown_git();
   const [narrow, measure] = use_narrow();
@@ -196,9 +198,11 @@ export const FilesDock = ({ visible, chat_id, project_path }: DockViewProps) => 
               <PanelLeftIcon size={16} />
             </IconButton>
           )}
-          <IconButton label={expanded ? t("files.shrink") : t("files.expand")} aria-pressed={expanded} onClick={toggle_dock_expanded}>
-            {expanded ? <ShrinkIcon size={16} /> : <ExpandIcon size={16} />}
-          </IconButton>
+          {!sheet && (
+            <IconButton label={expanded ? t("files.shrink") : t("files.expand")} aria-pressed={expanded} onClick={toggle_dock_expanded}>
+              {expanded ? <ShrinkIcon size={16} /> : <ExpandIcon size={16} />}
+            </IconButton>
+          )}
         </>
       }
     >

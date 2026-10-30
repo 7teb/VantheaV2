@@ -1,5 +1,6 @@
 import type { Artifact } from "../../shared/ipc/media.ts";
 import { api } from "../api/bridge.ts";
+import { media_url } from "../api/media-url.ts";
 import { create_store } from "./create-store.ts";
 
 export type ArtifactsState = { project_path: string | null; status: "idle" | "loading" | "ready" | "failed"; list: Artifact[] };
@@ -13,7 +14,7 @@ const path_key = (value: string) => value.trim().replace(/[\\/]+/g, "/").replace
 const sorted = (list: Artifact[]) =>
   [...list].sort((a, b) => Number(b.pinned) - Number(a.pinned) || Date.parse(b.created_at) - Date.parse(a.created_at));
 
-export const artifact_url = (artifact_id: string) => `vx-media://image/${encodeURIComponent(artifact_id)}`;
+export const artifact_url = (artifact_id: string) => media_url("image", artifact_id);
 
 const fetch_artifacts = async (project_path: string, quiet: boolean) => {
   const ticket = ++request;

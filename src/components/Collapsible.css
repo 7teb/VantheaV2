@@ -49,4 +49,10 @@
     min-height: 0;
     overflow: hidden;
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .collapsible-header {
+      min-height: var(--size-control);
+    }
+  }
 }

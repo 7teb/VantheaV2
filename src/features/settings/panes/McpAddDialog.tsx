@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { remote_client } from "../../../api/bridge.ts";
 import { Button } from "../../../components/Button.tsx";
 import { Dialog } from "../../../components/Dialog.tsx";
 import { FolderOpenIcon } from "../../../components/icons.tsx";
@@ -90,10 +91,14 @@ export const McpAddDialog = ({ open, existing, on_close }: McpAddDialogProps) =>
     <Dialog open={open} on_close={close} label={t("mcp.add_title")} className="mcp-dialog">
       <form className="mcp-form" onSubmit={save}>
         <h2 className="mcp-dialog-title">{t("mcp.add_title")}</h2>
-        <Button icon={<FolderOpenIcon size={15} />} disabled={busy} onClick={() => void detect()}>
-          {t("mcp.choose_plugin")}
-        </Button>
-        <div className="mcp-divider">{t("mcp.or_paste")}</div>
+        {!remote_client && (
+          <>
+            <Button icon={<FolderOpenIcon size={15} />} disabled={busy} onClick={() => void detect()}>
+              {t("mcp.choose_plugin")}
+            </Button>
+            <div className="mcp-divider">{t("mcp.or_paste")}</div>
+          </>
+        )}
         <TextArea className="mcp-paste" value={paste} rows={4} placeholder={t("mcp.paste_placeholder")} aria-label={t("mcp.or_paste")} on_change={apply_paste} />
         {note && <p className="mcp-note">{note}</p>}
         <div className="mcp-divider">{t("mcp.or_manual")}</div>

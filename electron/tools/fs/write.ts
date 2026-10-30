@@ -9,6 +9,7 @@ import { turn_diffs } from "../../turn-diff/index.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool, ToolArgumentError, type ToolContext, type ToolProfile, type ToolResult } from "../types.ts";
 import { denied, guarded, read_int_arg, read_text_arg } from "./common.ts";
+import { style_check } from "./style-check.ts";
 
 const write_profiles: ToolProfile[] = ["main", "worker"];
 
@@ -69,7 +70,12 @@ export const write_file_tool = define_tool<{ path: string; content: string }>({
         return { status: "done", text: `${prepared.target.relative} already has exactly this content; nothing was written.`, view: edit_view(prepared) };
       }
       const verb = prepared.previous === null ? "Created" : "Overwrote";
-      return apply_edit(ctx, "write_file", prepared, `${verb} ${prepared.target.relative} (${Buffer.byteLength(args.content, "utf8")} bytes)`);
+      const result = await apply_edit(ctx, "write_file", prepared, `${verb} ${prepared.target.relative} (${Buffer.byteLength(args.content, "utf8")} bytes)`);
+      if (result.status !== "done") {
+        return result;
+      }
+      const note = await style_check(ctx, prepared.target.relative, prepared.previous, args.content);
+      return note ? { ...result, text: `${result.text}\n\n${note}` } : result;
     }),
 });
 

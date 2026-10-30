@@ -1,4 +1,5 @@
 import { useState, type MouseEvent } from "react";
+import { remote_client } from "../../api/bridge.ts";
 import { CircleAlertIcon, GlobeIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_language, use_t } from "../../i18n/index.ts";
@@ -85,21 +86,16 @@ export const WebSearchBody = ({ view }: BodyProps<"web_search">) => {
 };
 
 export const ImageBody = ({ view }: BodyProps<"image">) => {
+  const t = use_t();
   const [open, set_open] = useState<LightboxImage | null>(null);
+  const alt = t("tool_label.generated_image");
   return (
-    <div className="tool-body-stack">
-      {view.prompt && <div className="tool-body-quote">{view.prompt}</div>}
-      {view.images.length > 0 && (
-        <div className="generated-images">
-          {view.images.map((image) => {
-            const src = image_src(image.id);
-            const ratio = image.width && image.height ? image.width / image.height : null;
-            return (
-              <MediaImage key={image.id} src={src} alt={view.prompt} ratio={ratio} className="generated-image" on_open={() => set_open({ src, alt: view.prompt })} />
-            );
-          })}
-        </div>
-      )}
+    <div className="generated-images">
+      {view.images.map((image) => {
+        const src = image_src(image.id);
+        const ratio = image.width && image.height ? image.width / image.height : null;
+        return <MediaImage key={image.id} src={src} alt={alt} ratio={ratio} className="generated-image" on_open={() => set_open({ src, alt })} />;
+      })}
       <Lightbox image={open} on_close={() => set_open(null)} />
     </div>
   );
@@ -117,9 +113,11 @@ export const ShownImagesBody = ({ view }: BodyProps<"shown_images">) => {
         return (
           <figure key={image.id} className="shown-image" style={ratio ? { width: `min(100%, calc(320px * ${ratio}))` } : undefined}>
             <MediaImage src={src} alt={name} ratio={ratio} on_open={() => set_open({ src, alt: name })} />
-            <button type="button" className="shown-image-reveal" onClick={() => reveal_path(image.path)}>
-              {t("chat.open_in_explorer")}
-            </button>
+            {!remote_client && (
+              <button type="button" className="shown-image-reveal" onClick={() => reveal_path(image.path)}>
+                {t("chat.open_in_explorer")}
+              </button>
+            )}
           </figure>
         );
       })}

@@ -19,10 +19,12 @@ import { is_active_status, tool_meta } from "./tool-meta.ts";
 import { ToolRow } from "./ToolRow.tsx";
 import { format_duration } from "./tool-summary.ts";
 import { use_held_label } from "./use-held-label.ts";
+import { use_live_workflow } from "./use-live-workflow.ts";
 import { use_pinned_bottom } from "./use-pinned-bottom.ts";
 import { group_span, group_start, shown_step, work_tools, type WorkStep } from "./work-steps.ts";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./tools.css";
+import "./tools-touch.css";
 import "./tool-motion.css";
 import "./WorkGroup.css";
 
@@ -51,8 +53,8 @@ const SingleStep = ({ chat_id, step, streaming, tail, run }: SingleStepProps) =>
   </div>
 );
 
-const GroupMeta = ({ steps, running }: { steps: WorkStep[]; running: boolean }) => {
-  const start = group_start(steps);
+const GroupMeta = ({ steps, running, live_start }: { steps: WorkStep[]; running: boolean; live_start: number | null }) => {
+  const start = live_start ?? group_start(steps);
   if (running) {
     return start === null ? null : <Elapsed started_at={start} />;
   }
@@ -63,14 +65,14 @@ const GroupMeta = ({ steps, running }: { steps: WorkStep[]; running: boolean }) 
 const GroupIcon = ({ chat_id, steps }: { chat_id: string; steps: WorkStep[] }) => {
   const first = work_tools(steps)[0];
   if (!first) {
-    return <SquareTerminalIcon size={14} />;
+    return <SquareTerminalIcon size={16} />;
   }
   const icon = tool_meta(first).icon;
   if (icon === "agent" && first.status !== "denied") {
     return <AgentCritter chat_id={chat_id} step={first} />;
   }
   const Icon = tool_icons[icon];
-  return <Icon size={14} />;
+  return <Icon size={16} />;
 };
 
 type GroupRowProps = { chat_id: string; step: WorkStep; streaming: boolean; main_chat: boolean };
@@ -93,7 +95,8 @@ type StepGroupProps = { chat_id: string; steps: WorkStep[]; streaming: boolean; 
 const StepGroup = ({ chat_id, steps, streaming, pending, run }: StepGroupProps) => {
   const t = use_t();
   const [open, set_open] = useState(false);
-  const latest = group_head(t, steps, streaming, pending);
+  const live = use_live_workflow(steps);
+  const latest = group_head(t, steps, streaming, pending, live);
   const head = use_held_label(latest.key, latest);
   const { scroller, content } = use_pinned_bottom(streaming);
   const running = head.kind !== "done";
@@ -105,7 +108,7 @@ const StepGroup = ({ chat_id, steps, streaming, pending, run }: StepGroupProps) 
         <span className={class_names("tool-row-label", running && !reviewing && "is-working")}>
           {head.kind === "review" ? <ReviewingLabel step={head.step} /> : <WorkingLetters text={head.label} active={running} />}
         </span>
-        <GroupMeta steps={steps} running={running} />
+        <GroupMeta steps={steps} running={running} live_start={head.kind === "workflow" ? head.started_at : null} />
         <ChevronRightIcon size={12} className="tool-row-chevron" />
       </button>
       <CollapsibleBody open={open}>

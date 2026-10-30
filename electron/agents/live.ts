@@ -15,6 +15,7 @@ export type LiveRun = {
   agent_id: string;
   run_id: string;
   chat_id: string;
+  workflow_run_id: string | null;
   controller: AbortController;
   transcript: TranscriptState;
   inbox: InboxEntry[];
@@ -72,13 +73,14 @@ const publish = (event: AgentEvent) => {
   }
 };
 
-export const create_live = (agent_id: string, run_id: string, chat_id: string): LiveRun => {
+export const create_live = (agent_id: string, run_id: string, chat_id: string, workflow_run_id: string | null = null): LiveRun => {
   const file = run_file(agent_id, run_id);
   let seq = 0;
   const live: LiveRun = {
     agent_id,
     run_id,
     chat_id,
+    workflow_run_id,
     controller: new AbortController(),
     transcript: fresh_transcript(),
     inbox: [],

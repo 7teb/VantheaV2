@@ -130,4 +130,14 @@
   .memories-input {
     flex: 1;
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .memories-head {
+      min-height: var(--size-control);
+    }
+
+    .memories-row-remove {
+      opacity: 1;
+    }
+  }
 }

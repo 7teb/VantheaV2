@@ -21,9 +21,10 @@
   }
 
   .chat-column {
+    --chat-gap: var(--space-8);
     display: flex;
     flex-direction: column;
-    gap: var(--space-8);
+    gap: var(--chat-gap);
     width: 100%;
     max-width: var(--size-content);
     margin: 0 auto;
@@ -41,11 +42,11 @@
   .chat-column
     > :is(.assistant-message, .agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"]))
     + :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])) {
-    margin-top: calc(2px - var(--space-8));
+    margin-top: calc(2px - var(--chat-gap));
   }
 
   .chat-column > :is(.agent-note, .origin-note:is([data-origin="background"], [data-origin="agent_report"], [data-origin="agent_update"])) + .assistant-message {
-    margin-top: calc(-1 * var(--space-8));
+    margin-top: calc(-1 * var(--chat-gap));
   }
 
   .chat-column
@@ -103,5 +104,19 @@
   .jump-latest:hover {
     background: linear-gradient(var(--raised-fill-hover), var(--raised-fill-hover)), var(--surface-dock);
     color: var(--text-primary);
+  }
+
+  @media (max-width: 600px) {
+    .chat-column {
+      --chat-gap: var(--space-6);
+      padding: var(--space-5) var(--space-4) calc(var(--composer-dock-height) + var(--space-6));
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .jump-latest {
+      height: var(--size-control);
+      padding: 0 var(--space-4);
+    }
   }
 }

@@ -9,12 +9,16 @@ import { agents_store, load_agents } from "../../../state/agents.ts";
 import { background_store, clear_finished_tasks, load_background } from "../../../state/background.ts";
 import { toggle_task_section, ui_store, type TaskSection } from "../../../state/ui.ts";
 import { use_store } from "../../../state/use-store.ts";
+import { list_status } from "../../../state/workflows-reduce.ts";
+import { workflows_store } from "../../../state/workflows.ts";
 import { AgentEntry } from "../agents/AgentEntry.tsx";
 import { TranscriptPanel } from "../agents/TranscriptPanel.tsx";
 import type { DockViewProps } from "../dock-view.ts";
 import { DockEmpty, DockPanel, DockTitle } from "../DockPanel.tsx";
 import { BackgroundTaskRow } from "./BackgroundTaskRow.tsx";
 import { group_tasks, type TaskEntry } from "./task-groups.ts";
+import { WorkflowEntry } from "./WorkflowEntry.tsx";
+import { WorkflowPanel } from "./WorkflowPanel.tsx";
 import "./BackgroundDock.css";
 
 const BackgroundSkeleton = () => (
@@ -56,13 +60,16 @@ const TaskSectionList = ({ section, label, entries, now }: TaskSectionListProps)
       }
     >
       <div className="bg-section-list">
-        {entries.map((entry) =>
-          entry.kind === "agent" ? (
-            <AgentEntry key={entry.agent.agent_id} agent={entry.agent} now={now} />
-          ) : (
-            <BackgroundTaskRow key={entry.task.id} task={entry.task} now={now} />
-          ),
-        )}
+        {entries.map((entry) => {
+          switch (entry.kind) {
+            case "agent":
+              return <AgentEntry key={entry.agent.agent_id} agent={entry.agent} now={now} />;
+            case "workflow":
+              return <WorkflowEntry key={entry.summary.run_id} summary={entry.summary} now={now} />;
+            case "shell":
+              return <BackgroundTaskRow key={entry.task.id} task={entry.task} now={now} />;
+          }
+        })}
       </div>
     </Collapsible>
   );
@@ -75,7 +82,11 @@ export const BackgroundDock = ({ visible, chat_id }: DockViewProps) => {
   const entry = use_store(agents_store, (state) => state.transcript);
   const tasks_status = use_store(background_store, (state) => state.status);
   const tasks = use_store(background_store, (state) => state.tasks);
-  const groups = useMemo(() => group_tasks(agents, tasks), [agents, tasks]);
+  const runs = use_store(workflows_store, (state) => state.runs);
+  const open_run = use_store(workflows_store, (state) => state.open);
+  const workflows_failed = use_store(workflows_store, (state) => chat_id !== null && list_status(state, chat_id) === "failed");
+  const workflows = useMemo(() => Object.values(runs), [runs]);
+  const groups = useMemo(() => group_tasks(agents, tasks, workflows), [agents, tasks, workflows]);
   const live = entry?.status === "ready" && entry.transcript.status === "streaming";
   const now = use_clock(visible && (groups.running.length > 0 || live));
   const clearable = tasks.some((task) => task.status !== "running");
@@ -89,6 +100,10 @@ export const BackgroundDock = ({ visible, chat_id }: DockViewProps) => {
 
   if (entry !== null) {
     return <TranscriptPanel entry={entry} agents={agents} now={now} />;
+  }
+
+  if (open_run !== null) {
+    return <WorkflowPanel summary={runs[open_run] ?? null} failed={workflows_failed} now={now} />;
   }
 
   const body = () => {

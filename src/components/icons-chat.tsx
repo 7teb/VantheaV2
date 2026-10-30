@@ -1,20 +1,14 @@
-import { Icon, type IconProps } from "./icons-base.tsx";
+import { codicon, Icon, type IconProps } from "./icons-base.tsx";
 
 export const ArrowDownIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M12 5v14" />
-    <path d="m19 12-7 7-7-7" />
+  <Icon {...codicon} viewBox="-0.9 -1.4 18.7 18.7" strokeWidth={0.342} {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M3.147 9l5 5h.707l5-5-.707-.707L9 12.439V2H8v10.44L3.854 8.292 3.147 9z" />
   </Icon>
 );
 
 export const ClipboardListIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <rect x="8" y="2" width="8" height="4" rx="1" />
-    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-    <path d="M12 11h4" />
-    <path d="M12 16h4" />
-    <path d="M8 11h.01" />
-    <path d="M8 16h.01" />
+  <Icon {...codicon} strokeWidth={0} {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M3.75 4.48h-.71L2 3.43l.71-.7.69.68L4.81 2l.71.71-1.77 1.77zM6.99 3h8v1h-8V3zm0 3h8v1h-8V6zm8 3h-8v1h8V9zm-8 3h8v1h-8v-1zM3.04 7.48h.71l1.77-1.77-.71-.7L3.4 6.42l-.69-.69-.71.71 1.04 1.04zm.71 3.01h-.71L2 9.45l.71-.71.69.69 1.41-1.42.71.71-1.77 1.77zm-.71 3.01h.71l1.77-1.77-.71-.71-1.41 1.42-.69-.69-.71.7 1.04 1.05z" />
   </Icon>
 );
 
@@ -32,10 +26,8 @@ export const FoldVerticalIcon = (props: IconProps) => (
 );
 
 export const InfoIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 16v-4" />
-    <path d="M12 8h.01" />
+  <Icon {...codicon} {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M8.568 1.031A6.8 6.8 0 0 1 12.76 3.05a7.06 7.06 0 0 1 .46 9.39 6.85 6.85 0 0 1-8.58 1.74 7 7 0 0 1-3.12-3.5 7.12 7.12 0 0 1-.23-4.71 7 7 0 0 1 2.77-3.79 6.8 6.8 0 0 1 4.508-1.149zM9.04 13.88a5.89 5.89 0 0 0 3.41-2.07 6.07 6.07 0 0 0-.4-8.06 5.82 5.82 0 0 0-7.43-.74 6.06 6.06 0 0 0 .5 10.29 5.81 5.81 0 0 0 3.92.58zM7.375 6h1.25V5h-1.25v1zm1.25 1v4h-1.25V7h1.25z" />
   </Icon>
 );
 
@@ -58,19 +50,13 @@ export const ArchiveRestoreIcon = (props: IconProps) => (
 );
 
 export const PercentIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M19 5 5 19" />
-    <circle cx="6.5" cy="6.5" r="2.5" />
-    <circle cx="17.5" cy="17.5" r="2.5" />
+  <Icon {...codicon} viewBox="-1.7 -1.7 19.4 19.4" strokeWidth={0.373} {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M11 1v4h4v1h-4v4h4v1h-4v4h-1v-4H6v4H5v-4H1v-1h4V6H1V5h4V1h1v4h4V1h1zM6 6v4h4V6H6z" />
   </Icon>
 );
 
 export const RulerIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" />
-    <path d="m14.5 12.5 2-2" />
-    <path d="m11.5 9.5 2-2" />
-    <path d="m8.5 6.5 2-2" />
-    <path d="m17.5 15.5 2-2" />
+  <Icon {...codicon} {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M4 1L3 2v12l1 1h8l1-1V2l-1-1H4zm0 2V2h8v12H4v-1h2v-1H4v-2h4V9H4V7h2V6H4V4h4V3H4z" />
   </Icon>
 );

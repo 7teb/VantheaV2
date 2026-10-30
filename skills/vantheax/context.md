@@ -6,7 +6,7 @@ The composer has no context indicator of its own. The "/" command Context ("Kont
 
 The model itself can call the tool context_status (main agent, plan mode and every sub-agent). It returns the window size, the tokens in use at that moment including the response that made the call, and the token point at which the next automatic compaction runs, with the same raised threshold after a compaction that left the context above the point. Its row reads "Checked the context" ("Kontext geprüft") with a gauge icon and does not open.
 
-Every catalog model has its own `context_length` in `config/models.json`; all thresholds below are fractions of that window, not fixed token counts.
+Every catalog model has its own `context_length` in its file under `config/models`; all thresholds below are fractions of that window, not fixed token counts.
 
 ## When it compacts
 

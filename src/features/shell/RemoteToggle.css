@@ -1,0 +1,141 @@
+.titlebar-remote {
+  position: relative;
+}
+
+.remote-dot {
+  position: absolute;
+  top: calc(50% - 11px);
+  right: calc(50% - 11px);
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--text-positive);
+}
+
+.remote-popover {
+  width: 320px;
+  font-size: var(--font-size-ui);
+  line-height: 18px;
+}
+
+.remote-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.remote-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 32px;
+  padding: 2px 8px;
+}
+
+.remote-title {
+  font-weight: var(--weight-semibold);
+}
+
+.remote-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 12px;
+}
+
+.remote-qr {
+  display: block;
+  border-radius: 12px;
+  background: var(--surface-solid);
+}
+
+.remote-qr-modules {
+  fill: var(--text-on-primary);
+}
+
+.remote-caption,
+.remote-hint {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+}
+
+.remote-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.remote-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: var(--radius-item);
+  color: var(--text-menu-item);
+  text-align: left;
+}
+
+button.remote-link {
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+button.remote-link:hover,
+button.remote-link:focus-visible {
+  background: var(--fill-hover);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.remote-link-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.remote-link-url {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-caption);
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remote-link-check {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+}
+
+.remote-hint {
+  padding: 4px 8px 8px;
+}
+
+.remote-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: 2px;
+  padding: 8px 2px 2px 8px;
+  box-shadow: inset 0 1px 0 var(--divider);
+}
+
+.remote-count {
+  min-width: 0;
+  color: var(--text-detail);
+}
+
+.remote-failure {
+  padding: 4px 8px 8px;
+  color: var(--text-danger);
+}

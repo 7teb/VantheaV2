@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { SkillEntry } from "../../../../shared/ipc/extensions.ts";
+import { remote_client } from "../../../api/bridge.ts";
 import { Button, IconButton } from "../../../components/Button.tsx";
 import { CollapsibleBody } from "../../../components/Collapsible.tsx";
 import { ConfirmDialog } from "../../../components/Dialog.tsx";
@@ -138,9 +139,11 @@ export const SkillsPane = () => {
           <IconButton label={t("skills.reload")} onClick={() => void load_skills()}>
             <RetryIcon size={15} />
           </IconButton>
-          <Button icon={<FolderOpenIcon size={15} />} onClick={() => void open_folder()}>
-            {t("skills.open")}
-          </Button>
+          {!remote_client && (
+            <Button icon={<FolderOpenIcon size={15} />} onClick={() => void open_folder()}>
+              {t("skills.open")}
+            </Button>
+          )}
         </SettingsRow>
       </SettingsGroup>
       {status === "loading" && (

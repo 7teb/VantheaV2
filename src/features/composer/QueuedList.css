@@ -200,4 +200,20 @@
   .queued-actions .icon-button:disabled {
     color: var(--text-disabled);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .queued-lead {
+      min-height: 44px;
+    }
+
+    .queued-steer {
+      height: var(--size-control);
+      padding: 0 12px;
+    }
+
+    .queued-actions .icon-button {
+      width: var(--size-control);
+      height: var(--size-control);
+    }
+  }
 }

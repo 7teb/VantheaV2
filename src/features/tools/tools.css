@@ -53,7 +53,7 @@
     flex: none;
     place-items: center;
     width: 16px;
-    color: var(--text-tertiary);
+    color: inherit;
   }
 
   .tool-row-agent {

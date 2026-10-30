@@ -146,7 +146,7 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
         if (await inject_steers(session, round + 1, api_messages)) {
           continue;
         }
-        if (session.idle && (await session.idle())) {
+        if (outcome.finish_reason !== "content_filter" && session.idle && (await session.idle())) {
           continue;
         }
         session.emit({ type: "end", status: session.signal.aborted ? "stopped" : "done", error: null });

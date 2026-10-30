@@ -60,3 +60,18 @@
 .project-chats .collapsible-clip > :first-child {
   margin-top: 1px;
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .project-toggle {
+    width: 40px;
+  }
+
+  .project-row:hover .project-chevron {
+    opacity: 0;
+  }
+
+  .project-row:hover .project-folder,
+  .sidebar-row.project-row .project-pin {
+    opacity: 1;
+  }
+}

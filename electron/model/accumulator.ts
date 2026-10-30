@@ -149,7 +149,7 @@ export const create_accumulator = (): Accumulator => {
         out.drafted.push(index);
       }
     }
-    out.finish_reason = as_string(choice.finish_reason);
+    out.finish_reason = as_string(choice.native_finish_reason) === "refusal" ? "content_filter" : as_string(choice.finish_reason);
     finish_reason = out.finish_reason || finish_reason;
     return out;
   };

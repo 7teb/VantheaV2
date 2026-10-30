@@ -7,8 +7,6 @@ import { CopyButton } from "../../components/MarkdownCopy.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { fork_chat } from "../../state/chat-actions.ts";
 import { ImageBody, ShownImagesBody } from "../tools/bodies-web.tsx";
-import { tool_icon } from "../tools/registry.tsx";
-import { tool_label } from "../tools/tool-meta.ts";
 import { WorkGroup } from "../tools/WorkGroup.tsx";
 import { answer_text, shows_thinking, thinks_in_group, type Block } from "./assistant-blocks.ts";
 import { PlanCard } from "./PlanCard.tsx";
@@ -32,17 +30,11 @@ type BlockViewProps = {
 };
 
 const ImageStep = ({ block }: { block: Extract<Block, { kind: "image" }> }) => {
-  const t = use_t();
   if (block.view.kind === "shown_images") {
     return <ShownImagesBody view={block.view} step={block.step} />;
   }
-  const Icon = tool_icon(block.step);
   return (
     <div className="image-step">
-      <div className="image-step-head">
-        <Icon size={14} />
-        <span>{tool_label(t, block.step)}</span>
-      </div>
       <ImageBody view={block.view} step={block.step} />
     </div>
   );

@@ -138,6 +138,7 @@ export const send_peer = async (sender: PeerSender, request: PeerRequest): Promi
     summary: request.summary,
     text: request.text,
     in_reply_to: answer ? request.in_reply_to : null,
+    sent_at: Date.now(),
   };
   const answered = answer && request.in_reply_to ? answer_question(request.in_reply_to, target.agent_id, sender.agent.agent_id) : null;
   if (!live) {

@@ -26,6 +26,7 @@ import { stream_round } from "../model/stream.ts";
 import { mcp_command_gate } from "../permissions/mcp-gate.ts";
 import { check_project_folders } from "../project/follow.ts";
 import { set_prompt_sections } from "../prompts/index.ts";
+import { shutdown_remote } from "../remote/server.ts";
 import { forget_answers, settle_answers } from "../questions/answers.ts";
 import { get_secret, get_settings, update_settings } from "../settings/store.ts";
 import { side_model } from "../side/model.ts";
@@ -53,6 +54,9 @@ import { set_turn_finished_hook } from "../turn/drive.ts";
 import { interrupt_all_turns, stop_turn } from "../turn/run.ts";
 import { release_worktree } from "../worktrees/remove.ts";
 import { sweep_worktree_ledger } from "../worktrees/sweep.ts";
+import { saved_workflows_section } from "../workflows/prompt.ts";
+import { clear_chat_workflows, init_workflows, shutdown_workflows_sync } from "../workflows/runtime.ts";
+import { record_swept_worktrees } from "../workflows/store.ts";
 import { deliver_pending_events, drop_pending_events, notify_agent, notify_background_finished } from "./notifications.ts";
 
 let shutting_down = false;
@@ -91,7 +95,7 @@ const wire_hooks = () => {
   set_command_gate(mcp_command_gate);
   set_settings_access({ get: get_settings, update: update_settings });
   set_prompt_sections(async ({ chat_id, user_text, tool_names }) => {
-    const sections = await Promise.all([memory_prompt_section(await chat_home_of(chat_id), user_text, tool_names), skills_prompt_section()]);
+    const sections = await Promise.all([memory_prompt_section(await chat_home_of(chat_id), user_text, tool_names), skills_prompt_section(), saved_workflows_section(chat_id, tool_names)]);
     return sections.filter((section) => section !== null);
   });
   set_agent_continuation(notify_agent);
@@ -117,6 +121,8 @@ const wire_hooks = () => {
     }
   });
   on_chat_removed((chat_id, meta) => {
+    const workflows_cleared = clear_chat_workflows(chat_id);
+    workflows_cleared.catch((error) => console.error(`[workflows] removing the workflows of chat ${chat_id} failed:`, error));
     stop_turn(chat_id);
     const agents_cleared = clear_chat_agents(chat_id);
     agents_cleared.then(() => git_service.work_changed()).catch((error) => console.error(`[agents] removing the agents of chat ${chat_id} failed:`, error));
@@ -137,7 +143,7 @@ const wire_hooks = () => {
     turn_diffs.remove_chat(chat_id).catch((error) => console.error(`[turn-diff] removing the turn snapshots of the deleted chat ${chat_id} failed:`, error));
     const { worktree } = meta;
     if (worktree) {
-      release_worktree({ chat_id, project_path: meta.project_path, worktree, settled: Promise.all([turn_settled(chat_id), agents_cleared]) }).catch((error) =>
+      release_worktree({ chat_id, project_path: meta.project_path, worktree, settled: Promise.all([turn_settled(chat_id), agents_cleared, workflows_cleared]) }).catch((error) =>
         console.error(`[worktrees] removing the worktree ${worktree.path} of the deleted chat ${chat_id} failed, it is retried at the next start:`, error),
       );
     }
@@ -147,7 +153,10 @@ const wire_hooks = () => {
 export const init_services = async (): Promise<void> => {
   wire_hooks();
   await run_step("storage", init_persistence);
-  sweep_worktree_ledger().catch((error) => console.error("[worktrees] finishing worktree steps left over from the last run failed:", error));
+  const swept = sweep_worktree_ledger().catch((error: unknown) => {
+    console.error("[worktrees] finishing worktree steps left over from the last run failed:", error);
+    return [];
+  });
   sweep_attachments().catch((error) => console.error("[media] attachment sweep failed:", error));
   remove_retired_snapshots(storage_paths()).catch((error) => console.error("[storage] removing the retired undo snapshot folder failed:", error));
   await run_step("git bash", () => init_git_bash(system_probe));
@@ -180,6 +189,8 @@ export const init_services = async (): Promise<void> => {
       reasoning_status: reasoning_status_call,
     }),
   );
+  await run_step("workflows", () => init_workflows(storage_paths().workflows));
+  swept.then(record_swept_worktrees).catch((error: unknown) => console.error("[workflows] recording the agent worktrees the startup sweep settled failed:", error));
   await run_step("memory and skills", init_extensions);
   await run_step("project folders", check_project_folders);
   await run_step("browser", init_browser);
@@ -188,8 +199,10 @@ export const init_services = async (): Promise<void> => {
 
 export const shutdown_services = (): void => {
   shutting_down = true;
+  shutdown_remote();
   interrupt_all_turns();
   turn_diffs.shutdown();
+  shutdown_workflows_sync();
   shutdown_agents_sync();
   kill_all_terminals();
   shutdown_browser();

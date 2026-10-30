@@ -5,6 +5,7 @@ import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import { chats_store } from "../../state/chats.ts";
 import { entry_streaming, last_assistant } from "../../state/chat-view-reduce.ts";
 import { chat_view_store } from "../../state/chat-view.ts";
+import { layout_store } from "../../state/layout.ts";
 import { resolve_choice } from "../../state/model-choice.ts";
 import { models_store } from "../../state/models.ts";
 import { settings_store } from "../../state/settings.ts";
@@ -19,6 +20,12 @@ export const use_chat_busy = (chat_id: string | null): boolean => {
 
 export const focus_composer_input = (node: Element) =>
   node.closest(".composer-slot")?.querySelector<HTMLElement>("textarea.composer-input")?.focus({ preventScroll: true });
+
+export const return_focus_to_composer = (node: Element) => {
+  if (!layout_store.get().touch) {
+    focus_composer_input(node);
+  }
+};
 
 export const use_context_usage = (chat_id: string | null): ContextUsage | null =>
   use_store(chat_view_store, (state) => {

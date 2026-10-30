@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { layout_store } from "../../state/layout.ts";
 import { set_sidebar_collapsed, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
 import { SettingsPage } from "../settings/SettingsPage.tsx";
@@ -9,27 +10,26 @@ import { MainArea } from "./MainArea.tsx";
 import { SearchOverlay } from "./SearchOverlay.tsx";
 import { Titlebar } from "./Titlebar.tsx";
 import { use_shortcuts } from "./use-shortcuts.ts";
+import { use_visual_viewport } from "./use-visual-viewport.ts";
 import "./Shell.css";
 
-const narrow_query = "(max-width: 860px)";
-
-const use_narrow_sidebar = () => {
+const use_drawer_sidebar = () => {
   useEffect(() => {
-    const media = window.matchMedia(narrow_query);
-    const sync = () => {
-      if (media.matches) {
+    let drawer = layout_store.get().drawer;
+    return layout_store.subscribe(() => {
+      const next = layout_store.get().drawer;
+      if (next && !drawer) {
         set_sidebar_collapsed(true);
       }
-    };
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
+      drawer = next;
+    });
   }, []);
 };
 
 export const Shell = () => {
   use_shortcuts();
-  use_narrow_sidebar();
+  use_drawer_sidebar();
+  use_visual_viewport();
   const sidebar_open = use_store(ui_store, (state) => !state.sidebar_collapsed);
 
   return (

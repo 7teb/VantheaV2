@@ -1,0 +1,14 @@
+[
+  {
+    "id": "inclusionai/ling-3.1-flash",
+    "label": "Ling 3.1 Flash",
+    "provider": "inclusionAI",
+    "provider_order": ["novita"],
+    "efforts": ["none", "high"],
+    "default_effort": "high",
+    "vision": false,
+    "context_length": 262144,
+    "max_output": 235929,
+    "note": "Free on OpenRouter, served only by Novita. Hybrid reasoning mixture of experts (25B active of 560B parameters). Text only, it cannot read images, and its window is 262k tokens, so its context compacts earlier than on the 1M models. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
+  }
+]

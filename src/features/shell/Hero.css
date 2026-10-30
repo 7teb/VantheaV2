@@ -67,3 +67,15 @@
     background-position: -260% 50%;
   }
 }
+
+@media (max-width: 600px) {
+  .hero-stage {
+    padding: var(--space-5) 0 var(--space-7);
+  }
+}
+
+@media (max-height: 500px) {
+  .hero-stage {
+    display: none;
+  }
+}

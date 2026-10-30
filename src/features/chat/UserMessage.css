@@ -192,9 +192,23 @@
     overflow-wrap: anywhere;
   }
 
-  @media (hover: none) {
+  @media (max-width: 600px) {
+    .user-message {
+      max-width: 88%;
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
     .message-actions {
       opacity: 1;
+    }
+
+    .user-message > .message-actions {
+      margin-right: -7px;
+    }
+
+    .origin-note-head {
+      height: var(--size-control);
     }
   }
 }

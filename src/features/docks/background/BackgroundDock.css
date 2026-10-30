@@ -108,3 +108,9 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .bg-section > .collapsible-header {
+    min-height: var(--size-row);
+  }
+}

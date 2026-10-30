@@ -135,3 +135,24 @@
 .archived-delete:hover {
   color: var(--text-danger);
 }
+
+@media (max-width: 600px) {
+  .archived-backdrop {
+    padding-top: max(var(--space-3), var(--safe-top));
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .archived-actions {
+    right: var(--space-1);
+    opacity: 1;
+  }
+
+  .archived-time {
+    display: none;
+  }
+
+  .archived-open {
+    padding-right: 92px;
+  }
+}

@@ -1,3 +1,4 @@
+import { remote_client } from "../api/bridge.ts";
 import { init_agent_approvals } from "./agent-approvals.ts";
 import { init_agents } from "./agents.ts";
 import { init_artifacts } from "./artifacts.ts";
@@ -19,11 +20,14 @@ import { init_git } from "./git.ts";
 import { init_github } from "./github.ts";
 import { load_keep_awake } from "./keep-awake.ts";
 import { init_models } from "./models.ts";
+import { init_remote_connection } from "./remote-connection.ts";
+import { init_remote } from "./remote.ts";
 import { init_settings } from "./settings.ts";
 import { init_terminal } from "./terminal.ts";
 import { init_turn_diff_ui } from "./turn-diff-ui.ts";
 import { init_turn_diff } from "./turn-diff.ts";
 import { init_window } from "./window.ts";
+import { init_workflows } from "./workflows.ts";
 import { init_worktree } from "./worktree.ts";
 
 export const init_state = (): (() => void) => {
@@ -41,6 +45,7 @@ export const init_state = (): (() => void) => {
     init_browser(),
     init_background(),
     init_agents(),
+    init_workflows(),
     init_agent_approvals(),
     init_full_window(),
     init_artifacts(),
@@ -55,6 +60,7 @@ export const init_state = (): (() => void) => {
     init_turn_diff_ui(),
     init_models(),
     init_worktree(),
+    remote_client ? init_remote_connection() : init_remote(),
   ];
   return () => {
     for (const stop of stops) {

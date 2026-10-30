@@ -16,7 +16,7 @@
 
 !/config/
 /config/*
-!/config/models.json
+!/config/models/
 
 !/scripts/
 /scripts/*

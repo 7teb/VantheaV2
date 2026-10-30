@@ -5,7 +5,7 @@ The main agent can start sub-agents that work in the background of the same chat
 ## Tools of the main agent
 
 - `deploy_agent`: starts a new agent and returns at once. Arguments: `name` (shown to the user), `description` (one line), `topic` (required, one word or short phrase for the area of work, for example `parser`), optional `scope` (list of project paths the agent owns or works in), `prompt` (complete standalone task, the agent knows nothing else about the chat), `profile` (`explore` or `worker`), optional `without_tools` (list of tool names taken away from the chosen profile for this agent, for example `["run_command", "run_bash"]` for a worker that may only read and edit files; it can only remove tools the profile has, and an unknown name fails with the list of the profile's tools), optional `model` (exact id from `list_models`, default is the main agent's model) and optional `effort` (default is the main agent's effort). The result names the agents that are already running, with their topics.
-- `continue_agent`: starts another run of an existing agent on its kept context. The agent keeps its name, topic, scope, profile and model. Answers other agents sent it after it finished arrive at the start of this run. Tools removed with `without_tools` stay removed, also after an app restart.
+- `continue_agent`: starts another run of an existing agent on its kept context. The agent keeps its name, topic, scope, profile and model. Answers other agents sent it after it finished arrive at the start of this run. Tools removed with `without_tools` stay removed, also after an app restart. The main agent is told to prefer it over a new deploy_agent when a finished agent already worked on the same files or question, especially when it finished within about the last hour, because its kept context saves reading everything again and the provider has probably still cached it; a new agent is for unrelated work, another profile or model, or when the earlier run went wrong or its context is already long.
 - `list_agents`: the roster of the chat (see below).
 - `message_agent`: sends an instruction to a running agent. It arrives at the start of the agent's next round. It fails if the agent is not running; use continue_agent then.
 - `get_agent_status`: detail of one agent's latest run (see below). It never waits; do not poll it.
@@ -15,6 +15,8 @@ The main agent can start sub-agents that work in the background of the same chat
 Agent ids can be given as the full id, as the short form `Name#xxxxxxxx` or `xxxxxxxx` that the roster shows, or as a unique leading part of the full id.
 
 Limits: at most 20 agents can run at once in one chat. There is no limit on the number or length of messages between agents or to the main agent.
+
+Agents of a workflow do not count against these 20 and have no limit of their own (see Agents of a workflow); the 20 apply to agents started with deploy_agent or continue_agent.
 
 Agents work under the permission mode the main turn had when it deployed them (continue_agent: the mode of the current turn). Switching the mode picker later does not change a running agent; a 10-minute "allow everything" window of the chat does apply to its agents. Their approval requests appear at the composer as "<name> requests permission" ("<name> benötigt eine Freigabe"), and the More button in the titlebar and its "Background tasks" item show a yellow dot while an agent waits for approval.
 
@@ -26,7 +28,7 @@ Agents work under the permission mode the main turn had when it deployed them (c
 
 ## Agents in one chat
 
-Every agent knows the other agents of its chat through a roster: one line per agent. Running agents show their short id (`Name#xxxxxxxx`), topic, scope, profile, model, start time ("running since 13:05 (12 min)"), one-line task, the files they wrote in their current run and the questions they have open. Finished agents show their status and end time. Any agent with messages kept for its next run shows them, with "continue_agent delivers them". The first line names the main agent, which sub-agents reach with message_main_agent.
+Every agent knows the other agents of its chat through a roster: one line per agent. Running agents show their short id (`Name#xxxxxxxx`), topic, scope, profile, model, start time ("running since 13:05 (12 min)"), one-line task, the files they wrote in their current run and the questions they have open. Finished agents show their status, end time and how long ago that was ("completed at 12:40 (37 min ago)"). Any agent with messages kept for its next run shows them, with "continue_agent delivers them". The first line names the main agent, which sub-agents reach with message_main_agent.
 
 - A sub-agent gets the full roster at the start of each run. Later, at each of its round boundaries, it gets a short notice when an agent starts, runs again or ends. Files a peer writes do not produce a notice on their own.
 - `list_agents` shows the current roster at any time, to the main agent and to sub-agents.
@@ -54,6 +56,7 @@ Delivery:
 - `info` and `question` only reach a running agent; to a finished agent they fail with its status and the hint that get_agent_status gives its report.
 - The app does not deliver a message that repeats an earlier one from the same sender to the same recipient in the same run: same type, subject, question it answers and text. The sender is told it already arrived. A message that came back unread is not a repeat and can be sent again, and neither is a question that closed without an answer because the asked agent ended.
 - The recipient sees the message as information, not as an instruction: it cannot change its task, grant permissions or approve anything. Only the main agent gives sub-agents instructions.
+- The note also says how long ago the message was sent ("sent you this 6 min 12 s ago"), because it waits in the inbox until the recipient's next round boundary, and tells the recipient to check it against what it has done and found since, use what still applies and not redo or undo work only because of an outdated message. A kept message without a stored send time shows no age.
 - When a run ends before it read an info or a question, the sender is told once ("ended before it read your message"), or the main agent gets a short line when the sender has finished too. An unread answer is not sent back: it is kept for the recipient's next run like any answer to a finished agent. Unread instructions from the main agent come back to it as a short line. When the app is closed, the notices to running senders are written into their transcripts first, and unread instructions from the main agent are kept with the agent like answers, because a short line would not survive the restart: list_agents and get_agent_status show them, and continue_agent delivers them at the start of the next run, before its task.
 
 Questions never block. No agent ever waits for another:
@@ -109,9 +112,22 @@ The main agent receives a notification with the agent id, run id, status, durati
 - While the main turn is running: updates and reports are added at the start of its next model round. A report replaces pending updates of the same run.
 - After the main turn has ended: an update or a finished report starts a new turn in the chat by itself, using the chat's own model, effort and Pro setting and the permission mode from the settings. These turns are marked in the chat as coming from an agent, not from the user. While you have a message waiting in the queue above the message box, reports, updates and finished background tasks wait: your message is sent first, and they follow when its turn ends.
 
+## Agents of a workflow
+
+A workflow (run_workflow, see the workflows document) starts its agents through the same agent system. Each one is an ordinary agent record with a transcript and a report file, under the permission mode of the run_workflow call, with its own approval cards and the automatic review of its tool calls. The differences:
+
+- Its name is the label the script gave it, or "<workflow name> #<n>", and its topic is the workflow's name.
+- Its task is the prompt the script wrote. It is told that its final message is the return value of agent() in the script, not a message to a person.
+- It has no message_main_agent and no message_peer, gets no roster, overlap or update-reminder notes, and its report does not reach the main agent: the script receives it, and the main agent gets the workflow's result instead.
+- Any number of workflow agents can run at once; they do not count against the 20 of deploy_agent.
+
+In the Background Tasks panel they are not listed as separate agents: they sit inside their workflow's entry, grouped by phase. A click on one opens its transcript in the panel, and its skip button ends that one agent, whose agent() call then returns null.
+
 ## Stop
 
 Pressing Stop ends the main turn. It does not stop running sub-agents; stop those in the Background Tasks panel (the stop button on the agent row, or open a run, then "Stop" ("Stoppen")) or with cancel_agent.
+
+Workflows are the exception: pressing Stop also stops the chat's running workflows with all their agents. Sub-agents started with deploy_agent or continue_agent keep running.
 
 After the user pressed Stop, updates from still running agents no longer start a new turn; they are held and delivered with the next turn. Finished reports still start a new turn. The hold ends as soon as any new turn starts.
 

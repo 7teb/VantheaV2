@@ -75,4 +75,17 @@
   .slider-stop[data-filled="true"] {
     background: var(--surface-shell);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .slider,
+    .slider-input {
+      height: 40px;
+    }
+
+    .slider-input::-webkit-slider-thumb {
+      width: 20px;
+      height: 20px;
+      margin-top: -8px;
+    }
+  }
 }

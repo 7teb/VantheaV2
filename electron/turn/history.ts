@@ -13,6 +13,7 @@ import { carried_todos_content } from "./carried-todos.ts";
 import { carrier, not_shown_note, unreadable_note, type CarrierImage } from "./carriers.ts";
 import { api_call_id } from "./round.ts";
 import { counted_image, steer_message, user_content, type ImageReader } from "./user-input.ts";
+import { workflow_note_content } from "../workflows/notice.ts";
 
 export type HistoryInput = {
   system: string;
@@ -54,10 +55,17 @@ const split_region = (messages: Message[], summary: ChatSummary): Region | null 
 export const uncompacted_work = (messages: Message[], summary: ChatSummary | null): boolean =>
   (summary ? (split_region(messages, summary)?.rest ?? messages) : messages).some(has_work);
 
+const event_text = (message: UserMessage, agent_tools: boolean): string => {
+  if (message.origin === "agent_report") {
+    return report_event_context(message.text, agent_tools);
+  }
+  return message.origin === "workflow" ? workflow_note_content(message.text) : message.text;
+};
+
 const build_user = async (message: UserMessage, model: ModelEntry, read_image: ImageReader, agent_tools: boolean): Promise<ApiMessage> => ({
   role: "user",
   ...(instruction_origin(message.origin) ? { instruction: true as const } : {}),
-  content: await user_content(message.origin === "agent_report" ? report_event_context(message.text, agent_tools) : message.text, message.attachments, model, read_image),
+  content: await user_content(event_text(message, agent_tools), message.attachments, model, read_image),
 });
 
 const rounds_of = (steps: Step[]): number[] => {
@@ -129,6 +137,8 @@ const lead_messages = async (steps: Step[], { model, read_image, agent_tools }: 
       out.push({ role: "user", content: parse_peer_alerts(step.text).length ? alert_note_content(step.text) : update_note_content(step.text) });
     } else if (step.notice === "peer_digest") {
       out.push({ role: "user", content: digest_note_content(step.text) });
+    } else if (step.notice === "workflow_result") {
+      out.push({ role: "user", content: workflow_note_content(step.text) });
     } else if (step.notice === "todos_carried") {
       out.push({ role: "user", content: carried_todos_content(step.text) });
     }

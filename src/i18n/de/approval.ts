@@ -33,6 +33,7 @@ export const approval: Record<keyof typeof en, string> = {
   "approval.question_agent_message": "Darf ich diese Nachricht an {x} senden?",
   "approval.question_agent_deploy": "Darf ich den Agenten {x} mit dieser Aufgabe starten?",
   "approval.question_agent_continue": "Darf ich {x} mit dieser Aufgabe fortsetzen?",
+  "approval.question_workflow": "Darf ich den Workflow {x} ausführen?",
   "approval.agent_about": "Zu {x}",
   "approval.agent_without": "Ohne: {x}",
   "approval.question_secret_read": "Darf ich {x} lesen? Es kann Schlüssel oder Zugangsdaten enthalten.",

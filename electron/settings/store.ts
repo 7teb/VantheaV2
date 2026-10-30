@@ -10,7 +10,9 @@ export type SettingsFiles = { settings: string; secrets: string; legacy_settings
 
 export type SettingsInit = { files: SettingsFiles; codec: SecretCodec; on_change: (view: SettingsView) => void };
 
-type Ciphers = Record<SecretName, string | null>;
+type InternalSecretName = "remote_token";
+
+type Ciphers = Record<SecretName | InternalSecretName, string | null>;
 
 export const secret_names: readonly SecretName[] = ["openrouter", "tavily"];
 
@@ -18,8 +20,9 @@ let files: SettingsFiles | null = null;
 let codec: SecretCodec | null = null;
 let on_change: (view: SettingsView) => void = () => undefined;
 let current: Settings = default_settings();
-let ciphers: Ciphers = { openrouter: null, tavily: null };
-const decrypted = new Map<SecretName, string>();
+const empty_ciphers: Ciphers = { openrouter: null, tavily: null, remote_token: null };
+let ciphers: Ciphers = empty_ciphers;
+const decrypted = new Map<SecretName | InternalSecretName, string>();
 
 const settings_files = (): SettingsFiles => {
   if (!files) {
@@ -30,23 +33,23 @@ const settings_files = (): SettingsFiles => {
 
 const parse_ciphers = (value: unknown): Ciphers => {
   const raw = as_record(value);
-  return { openrouter: as_string(raw.openrouter) || null, tavily: as_string(raw.tavily) || null };
+  return { openrouter: as_string(raw.openrouter) || null, tavily: as_string(raw.tavily) || null, remote_token: as_string(raw.remote_token) || null };
 };
 
-const load_ciphers = async (file: string, legacy: Ciphers | null): Promise<Ciphers> => {
+const load_ciphers = async (file: string, legacy: Record<SecretName, string | null> | null): Promise<Ciphers> => {
   const stored = await read_json(file);
   if (stored.status === "ok") {
     return parse_ciphers(stored.value);
   }
   if (stored.status === "corrupt") {
     console.error(`[settings] ${file} is not valid JSON (${stored.error}), keeping a copy at ${await keep_corrupt(file)}`);
-    return { openrouter: null, tavily: null };
+    return empty_ciphers;
   }
   if (!legacy) {
-    return { openrouter: null, tavily: null };
+    return empty_ciphers;
   }
   await write_json(file, { version: 1, ...legacy });
-  return legacy;
+  return { ...empty_ciphers, ...legacy };
 };
 
 const load_legacy = async (file: string) => {
@@ -83,7 +86,7 @@ export const init_settings = async (options: SettingsInit) => {
 
 export const get_settings = (): Settings => current;
 
-export const get_secret = (name: SecretName): string => {
+const read_cipher = (name: SecretName | InternalSecretName): string => {
   const cached = decrypted.get(name);
   if (cached !== undefined) {
     return cached;
@@ -103,6 +106,12 @@ export const get_secret = (name: SecretName): string => {
   }
 };
 
+export const get_secret = (name: SecretName): string => read_cipher(name);
+
+export const get_internal_secret = (name: InternalSecretName): string => read_cipher(name);
+
+export const secret_storage_available = (): boolean => Boolean(codec?.available());
+
 export const settings_view = (): SettingsView => ({
   ...current,
   secrets: { openrouter: Boolean(get_secret("openrouter")), tavily: Boolean(get_secret("tavily")) },
@@ -120,7 +129,7 @@ export const update_settings = async (patch: SettingsPatch | Record<string, unkn
   return view;
 };
 
-export const set_secret = async (name: SecretName, value: string): Promise<SettingsView> => {
+const store_cipher = async (name: SecretName | InternalSecretName, value: string) => {
   if (!codec) {
     throw new Error("settings used before init_settings");
   }
@@ -129,6 +138,12 @@ export const set_secret = async (name: SecretName, value: string): Promise<Setti
   ciphers = { ...ciphers, [name]: cipher };
   decrypted.set(name, plain);
   await write_json(settings_files().secrets, { version: 1, ...ciphers });
+};
+
+export const set_internal_secret = (name: InternalSecretName, value: string): Promise<void> => store_cipher(name, value);
+
+export const set_secret = async (name: SecretName, value: string): Promise<SettingsView> => {
+  await store_cipher(name, value);
   const view = settings_view();
   on_change(view);
   return view;

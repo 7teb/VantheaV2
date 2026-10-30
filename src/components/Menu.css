@@ -114,4 +114,15 @@
     background: var(--fill-danger);
     color: var(--text-danger);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .menu-item {
+      min-height: 40px;
+      padding: 8px 10px;
+    }
+
+    .menu-item-hint {
+      display: none;
+    }
+  }
 }

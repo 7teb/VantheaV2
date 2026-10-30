@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { remote_client } from "../../../api/bridge.ts";
 import { IconButton } from "../../../components/Button.tsx";
 import { FolderOpenIcon } from "../../../components/icons.tsx";
 import { CopyButton } from "../../../components/MarkdownCopy.tsx";
@@ -15,7 +16,7 @@ export const PathBar = ({ path, meta, on_disk = true }: PathBarProps) => {
       <span className="files-path-text">{path}</span>
       <span className="files-path-meta">{meta}</span>
       <CopyButton text={path} label={t("files.copy_path")} />
-      {on_disk && (
+      {on_disk && !remote_client && (
         <IconButton label={t("files.reveal")} size="sm" onClick={() => void reveal_file(path)}>
           <FolderOpenIcon size={14} />
         </IconButton>

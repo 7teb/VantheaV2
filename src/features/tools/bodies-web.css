@@ -73,4 +73,14 @@
   .shown-image:focus-within .shown-image-reveal {
     opacity: 1;
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .shown-image-reveal {
+      opacity: 1;
+    }
+
+    .web-failure {
+      height: var(--size-control);
+    }
+  }
 }

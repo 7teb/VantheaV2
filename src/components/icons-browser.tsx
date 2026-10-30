@@ -1,4 +1,4 @@
-import { Icon, type IconProps } from "./icons-base.tsx";
+import { codicon, Icon, phosphor, type IconProps } from "./icons-base.tsx";
 
 const scan_corners = (
   <>
@@ -35,20 +35,14 @@ export const ScanTextIcon = (props: IconProps) => (
 );
 
 export const ScanEyeIcon = (props: IconProps) => (
-  <Icon {...props}>
-    {scan_corners}
-    <circle cx="12" cy="12" r="1" />
-    <path d="M18.944 12.33a1 1 0 0 0 0-.66 7.5 7.5 0 0 0-13.888 0 1 1 0 0 0 0 .66 7.5 7.5 0 0 0 13.888 0" />
+  <Icon {...codicon} {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M1 3l1-1h12l1 1v6h-1V3H2v8h5v1H2l-1-1V3zm14.707 9.707L9 6v9.414l2.707-2.707h4zM10 13V8.414l3.293 3.293h-2L10 13z" />
   </Icon>
 );
 
 export const MousePointerClickIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M14 4.1 12 6" />
-    <path d="m5.1 8-2.9-.8" />
-    <path d="m6 12-1.9 2" />
-    <path d="M7.2 2.2 8 5.1" />
-    <path d="M9.037 9.69a.498.498 0 0 1 .653-.653l11 4.5a.5.5 0 0 1-.074.949l-4.349 1.041a1 1 0 0 0-.74.739l-1.04 4.35a.5.5 0 0 1-.95.074z" />
+  <Icon {...phosphor} viewBox="-1.6 -1.6 236.8 236.8" strokeWidth={1.988} {...props}>
+    <path d="M88,24V16a8,8,0,0,1,16,0v8a8,8,0,0,1-16,0ZM16,104h8a8,8,0,0,0,0-16H16a8,8,0,0,0,0,16ZM124.42,39.16a8,8,0,0,0,10.74-3.58l8-16a8,8,0,0,0-14.31-7.16l-8,16A8,8,0,0,0,124.42,39.16Zm-96,81.69-16,8a8,8,0,0,0,7.16,14.31l16-8a8,8,0,1,0-7.16-14.31ZM219.31,184a16,16,0,0,1,0,22.63l-12.68,12.68a16,16,0,0,1-22.63,0L132.7,168,115,214.09c0,.1-.08.21-.13.32a15.83,15.83,0,0,1-14.6,9.59l-.79,0a15.83,15.83,0,0,1-14.41-11L32.8,52.92A16,16,0,0,1,52.92,32.8L213,85.07a16,16,0,0,1,1.41,29.8l-.32.13L168,132.69ZM208,195.31,156.69,144h0a16,16,0,0,1,4.93-26l.32-.14,45.95-17.64L48,48l52.2,159.86,17.65-46c0-.11.08-.22.13-.33a16,16,0,0,1,11.69-9.34,16.72,16.72,0,0,1,3-.28,16,16,0,0,1,11.3,4.69L195.31,208Z" />
   </Icon>
 );
 
@@ -63,16 +57,8 @@ export const TextCursorInputIcon = (props: IconProps) => (
 );
 
 export const KeyboardIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M10 8h.01" />
-    <path d="M12 12h.01" />
-    <path d="M14 8h.01" />
-    <path d="M16 12h.01" />
-    <path d="M18 8h.01" />
-    <path d="M6 8h.01" />
-    <path d="M7 16h10" />
-    <path d="M8 12h.01" />
-    <rect x="2" y="4" width="20" height="16" rx="2" />
+  <Icon {...codicon} strokeWidth={0} {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M14 3H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zm0 8H3V4h11v7zm-3-6h-1v1h1V5zm-1 2H9v1h1V7zm2-2h1v1h-1V5zm1 4h-1v1h1V9zM6 9h5v1H6V9zm7-2h-2v1h2V7zM8 5h1v1H8V5zm0 2H7v1h1V7zM4 9h1v1H4V9zm0-4h1v1H4V5zm3 0H6v1h1V5zM4 7h2v1H4V7z" />
   </Icon>
 );
 
@@ -93,9 +79,8 @@ export const HourglassIcon = (props: IconProps) => (
 );
 
 export const CameraIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-    <circle cx="12" cy="13" r="3" />
+  <Icon {...codicon} {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M10.707 3H14.5l.5.5v9l-.5.5h-13l-.5-.5v-9l.5-.5h3.793l.853-.854L6.5 2h3l.354.146.853.854zM2 12h12V4h-3.5l-.354-.146L9.293 3H6.707l-.853.854L5.5 4H2v8zm1.5-7a.5.5 0 1 0 0 1 .5.5 0 0 0 0-1zM8 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm0-1a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
   </Icon>
 );
 

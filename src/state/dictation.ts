@@ -10,11 +10,16 @@ type Session = { recorder: MediaRecorder; stream: MediaStream; context: AudioCon
 
 const shortest_ms = 250;
 
+const recording_mime = "audio/webm;codecs=opus";
+
 export const dictation_store = create_store<DictationState>(null);
 
 let session: Session | null = null;
 
 let attempt = 0;
+
+export const dictation_supported = () =>
+  typeof navigator.mediaDevices?.getUserMedia === "function" && typeof MediaRecorder === "function" && MediaRecorder.isTypeSupported(recording_mime);
 
 export const dictation_analyser = (): AnalyserNode | null => session?.analyser ?? null;
 
@@ -43,7 +48,7 @@ const open_session = (stream: MediaStream): Session => {
   analyser.fftSize = 1024;
   analyser.smoothingTimeConstant = 0.6;
   context.createMediaStreamSource(stream).connect(analyser);
-  const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 32000 });
+  const recorder = new MediaRecorder(stream, { mimeType: recording_mime, audioBitsPerSecond: 32000 });
   const chunks: Blob[] = [];
   recorder.ondataavailable = (event) => chunks.push(event.data);
   const done = new Promise<Blob>((resolve) => {

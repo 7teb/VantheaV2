@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { place, type Placed, type Placement } from "./placement.ts";
+import { place_visible } from "./Floating.tsx";
+import type { Placed, Placement } from "./placement.ts";
 import "./Tooltip.css";
 
 type TooltipProps = {
@@ -39,15 +40,19 @@ export const Tooltip = ({ label, hint, placement = "bottom-center", children }: 
       return;
     }
     const size = { width: node.offsetWidth, height: node.offsetHeight };
-    set_placed(place(target.getBoundingClientRect(), size, placement, { width: window.innerWidth, height: window.innerHeight }));
+    set_placed(place_visible(target.getBoundingClientRect(), size, placement));
   }, [visible, placement, label, hint]);
 
   return (
     <span
       ref={anchor}
       className="tooltip-anchor"
-      onMouseEnter={() => show(show_delay_ms)}
-      onMouseLeave={hide}
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") {
+          show(show_delay_ms);
+        }
+      }}
+      onPointerLeave={hide}
       onFocus={(event) => {
         if (event.target.matches(":focus-visible")) {
           show(0);

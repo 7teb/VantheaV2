@@ -1,6 +1,7 @@
 import { manual_compaction_only, type AssistantMessage } from "../../../shared/chat.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
 import { started_run } from "../tools/tool-meta.ts";
+import { started_workflow } from "../tools/workflow-model.ts";
 import { timed_steps } from "../tools/work-steps.ts";
 import type { Block } from "./assistant-blocks.ts";
 
@@ -8,7 +9,7 @@ export type HeadState = { kind: "working" } | { kind: "worked"; ms: number } | {
 
 export type MemberFacts = { message: AssistantMessage; blocks: Block[]; last: number; started: boolean; folds: ReadonlySet<string> };
 
-export type TurnShape = { head: HeadState | null; folds: ReadonlySet<string>[]; foldable: boolean; runs: RunRef[] };
+export type TurnShape = { head: HeadState | null; folds: ReadonlySet<string>[]; foldable: boolean; runs: RunRef[]; workflows: string[] };
 
 const activity = (block: Block) => block.kind === "reasoning" || block.kind === "work" || block.kind === "notice" || block.kind === "compaction";
 
@@ -61,6 +62,8 @@ const work_end = (member: MemberFacts, alone: boolean): number => {
 
 const turn_runs = (message: AssistantMessage): RunRef[] => message.steps.flatMap((step) => (step.kind === "tool" ? (started_run(step) ?? []) : []));
 
+const turn_workflows = (message: AssistantMessage): string[] => message.steps.flatMap((step) => (step.kind === "tool" ? (started_workflow(step) ?? []) : []));
+
 const no_folds: ReadonlySet<string> = new Set();
 
 export const member_facts = (message: AssistantMessage, blocks: Block[]): MemberFacts => {
@@ -107,7 +110,8 @@ export const turn_shape = (members: MemberFacts[]): TurnShape => {
   const leader = members[0];
   const last = members.at(-1);
   const runs = members.flatMap((member) => turn_runs(member.message));
-  const none: TurnShape = { head: null, folds: members.map(() => no_folds), foldable: false, runs };
+  const workflows = members.flatMap((member) => turn_workflows(member.message));
+  const none: TurnShape = { head: null, folds: members.map(() => no_folds), foldable: false, runs, workflows };
   if (!leader || !last || (members.length === 1 && manual_compaction_only(leader.message))) {
     return none;
   }
@@ -124,5 +128,6 @@ export const turn_shape = (members: MemberFacts[]): TurnShape => {
     folds: [...earlier.map(whole_member), last.folds],
     foldable: last.message.status === "done" && answered && worked,
     runs,
+    workflows,
   };
 };

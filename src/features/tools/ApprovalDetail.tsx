@@ -4,6 +4,7 @@ import { Collapsible } from "../../components/Collapsible.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { ApprovalEnv } from "./ApprovalEnv.tsx";
 import { EditCard } from "./bodies-files.tsx";
+import { WorkflowApproval } from "./WorkflowApproval.tsx";
 
 const Command = ({ text }: { text: string }) => <pre className="approval-command inset-surface">{text}</pre>;
 
@@ -76,6 +77,9 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
     case "memory":
       return <div className="tool-body-quote">{request.text}</div>;
     case "agent_message": {
+      if (request.tool === "run_workflow") {
+        return <WorkflowApproval request={request} />;
+      }
       const without = request.without_tools ?? [];
       return (
         <>

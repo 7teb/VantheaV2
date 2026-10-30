@@ -269,15 +269,32 @@ export const escape_currency = (text: string): string => {
   return out + text.slice(from);
 };
 
+const display_line_pattern = /^([ \t]*)\$\$((?:(?!\$\$).)*\S(?:(?!\$\$).)*)\$\$[ \t]*$/;
+
+const fence_display_lines = (part: string, starts_line: boolean, ends_line: boolean): string => {
+  const lines = part.split("\n");
+  return lines
+    .map((line, at) => {
+      const whole = (at > 0 || starts_line) && (at < lines.length - 1 || ends_line);
+      const match = whole ? display_line_pattern.exec(line) : null;
+      return match ? `${match[1]}$$\n${match[1]}${match[2].trim()}\n${match[1]}$$` : line;
+    })
+    .join("\n");
+};
+
 export const normalize_math = (text: string): string =>
   split_code(text)
-    .map((part, index) =>
+    .map((part, index, parts) =>
       index % 2 === 1
         ? part
-        : escape_currency(
-            part
-              .replace(/\\\[([\s\S]+?)\\\]/g, (...groups: string[]) => `$$${groups[1]}$$`)
-              .replace(/\\\(([\s\S]+?)\\\)/g, (...groups: string[]) => `$${groups[1]?.trim()}$`),
+        : fence_display_lines(
+            escape_currency(
+              part
+                .replace(/\\\[([\s\S]+?)\\\]/g, (...groups: string[]) => `$$${groups[1]}$$`)
+                .replace(/\\\(([\s\S]+?)\\\)/g, (...groups: string[]) => `$${groups[1]?.trim()}$`),
+            ),
+            index === 0 || parts[index - 1].endsWith("\n"),
+            index === parts.length - 1,
           ),
     )
     .join("");

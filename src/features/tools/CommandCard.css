@@ -227,4 +227,18 @@
   .command-card-footer .command-card-action:disabled {
     color: var(--text-disabled);
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .command-card-toggle {
+      top: 2px;
+      right: 0;
+      width: 32px;
+      height: 32px;
+    }
+
+    .command-card-footer .command-card-action {
+      height: 32px;
+      padding: 0 10px 0 8px;
+    }
+  }
 }

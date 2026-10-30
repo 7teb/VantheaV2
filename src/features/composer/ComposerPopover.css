@@ -253,4 +253,19 @@
   .composer-slot[data-placement="docked"]:has(> .composer > .composer-popover[data-state="open"])::before {
     top: calc(-1 * var(--composer-popover-lift, 0px));
   }
+
+  @media (hover: none) and (pointer: coarse) {
+    .composer-popover-row {
+      min-height: 40px;
+    }
+
+    .composer-popover-tab {
+      height: var(--size-control);
+      padding: 0 14px 0 12px;
+    }
+
+    .composer-popover-label {
+      min-height: 36px;
+    }
+  }
 }

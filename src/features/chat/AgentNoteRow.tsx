@@ -31,9 +31,9 @@ const NoteIcon = ({ note }: { note: AgentNote }) => {
     return <CritterIcon name={note.name || note.agent_id} />;
   }
   if (note.kind === "update") {
-    return <MessageSquareIcon size={14} />;
+    return <MessageSquareIcon size={16} />;
   }
-  return note.status === "loop" ? <RetryIcon size={14} /> : <ShieldAlertIcon size={14} />;
+  return note.status === "loop" ? <RetryIcon size={16} /> : <ShieldAlertIcon size={16} />;
 };
 
 export const AgentNoteRow = memo(({ note }: { note: AgentNote }) => {
