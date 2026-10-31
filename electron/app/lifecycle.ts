@@ -25,6 +25,7 @@ import { set_key_source } from "../model/key.ts";
 import { stream_round } from "../model/stream.ts";
 import { mcp_command_gate } from "../permissions/mcp-gate.ts";
 import { check_project_folders } from "../project/follow.ts";
+import { forget_chat_reads } from "../project/read-ledger.ts";
 import { set_prompt_sections } from "../prompts/index.ts";
 import { shutdown_remote } from "../remote/server.ts";
 import { forget_answers, settle_answers } from "../questions/answers.ts";
@@ -132,6 +133,7 @@ const wire_hooks = () => {
     forget_instruction_files(chat_id);
     clear_review_chat(chat_id);
     forget_chat_writes(chat_id);
+    forget_chat_reads(chat_id).catch((error) => console.error(`[reads] removing the read ledger of the deleted chat ${chat_id} failed:`, error));
     close_full_window(chat_id);
     forget_chat_approvals(chat_id);
     clear_mcp_chat(chat_id);

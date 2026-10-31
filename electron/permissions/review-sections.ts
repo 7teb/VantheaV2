@@ -27,7 +27,7 @@ export type ChatView = {
   snapshot: InstructionSnapshot;
 };
 
-export type AgentView = { actor: ReviewActor; profile: string | null; delegated_task: string | null; earlier_commands: number };
+export type AgentView = { actor: ReviewActor; model: { id: string; label: string }; profile: string | null; delegated_task: string | null; earlier_commands: number };
 
 export const section = (header: string, lines: string[]): string => (lines.length ? `${header}:\n${lines.join("\n")}\n\n` : "");
 
@@ -86,8 +86,10 @@ export const chat_part = (view: ChatView, tag: string, level: TrimLevel, dropped
     section(review_headers.human_messages, human_lines(view.humans, level, dropped_humans)),
   ].join("");
 
-const reviewed_agent = (view: AgentView): string =>
-  view.actor.kind === "main" ? "main agent" : `sub-agent ${view.actor.name} (${view.profile ?? "worker"} profile, id ${view.actor.id}), deployed by the main agent`;
+const reviewed_agent = (view: AgentView): string => {
+  const model = `model ${view.model.label} (${view.model.id})`;
+  return view.actor.kind === "main" ? `main agent, ${model}` : `sub-agent ${view.actor.name} (${view.profile ?? "worker"} profile, id ${view.actor.id}, ${model}), deployed by the main agent`;
+};
 
 export const decision_lines = (feed: FeedLine[], level: TrimLevel): string[] => {
   const cap = cap_bytes(section_caps.earlier_decisions);

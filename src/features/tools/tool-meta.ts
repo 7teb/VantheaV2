@@ -25,6 +25,7 @@ export const view_kinds = [
   "shown_images",
   "browser",
   "mcp",
+  "tool_load",
   "memory",
   "skill",
   "models",
@@ -226,6 +227,7 @@ const named: Record<string, ToolMeta> = {
   context_status: entry("gauge", "other", fixed("tool_label.context_status"), fixed("tool_label.checked_context")),
   list_models: entry("models", "other", fixed("tool_label.list_models"), fixed("tool_label.listed_models")),
   add_mcp_server: entry("mcp", "mcp_servers", with_x("tool_label.adding_mcp", (step) => text_arg(step, "name")), with_x("tool_label.added_mcp", (step) => text_arg(step, "name"))),
+  load_mcp_tools: entry("mcp", "tool_loads", fixed("tool_label.loading_tools"), fixed("tool_label.loaded_tools")),
   check_page: entry("page_check", "other", with_x("tool_label.check_page", (step) => base_name(text_arg(step, "path"))), with_x("tool_label.check_page_done", (step) => base_name(text_arg(step, "path")))),
 };
 
@@ -286,7 +288,8 @@ const mcp_parts = (step: ToolStep) => {
   if (view) {
     return { server: view.server, tool: view.tool };
   }
-  const [server = "", ...tool] = step.name.slice("mcp__".length).split("__");
+  const name = step.name === "call_mcp_tool" ? text_arg(step, "name") : step.name;
+  const [server = "", ...tool] = name.slice("mcp__".length).split("__");
   return { server, tool: tool.join("__") };
 };
 
@@ -311,6 +314,7 @@ const by_kind: Record<ToolViewKind, ToolMeta> = {
   shown_images: named.show_images,
   browser: entry("browser", "browser", with_x("tool_label.browser_action", (step) => view_of(step, "browser")?.action ?? "")),
   mcp: mcp_meta,
+  tool_load: named.load_mcp_tools,
   memory: named.list_memories,
   skill: named.read_skill,
   models: named.list_models,
@@ -322,7 +326,7 @@ const by_kind: Record<ToolViewKind, ToolMeta> = {
 const fallback = entry("clock", "other", (t, step) => (step.name ? t("tool_label.running", { x: step.name }) : t("tool_label.working")), (t, step) => t("tool_label.ran", { x: step.name }));
 
 export const tool_meta = (step: ToolStep): ToolMeta => {
-  if (step.name.startsWith("mcp__")) {
+  if (step.name.startsWith("mcp__") || step.name === "call_mcp_tool") {
     return mcp_meta;
   }
   return named[step.name] ?? browser[step.name] ?? (step.view ? by_kind[step.view.kind] : fallback);

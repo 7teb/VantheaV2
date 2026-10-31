@@ -1,5 +1,6 @@
 import type { HumanDecision } from "../../shared/approval.ts";
 import type { ToolStep } from "../../shared/chat.ts";
+import type { ModelEntry } from "../../shared/models.ts";
 import type { ReviewActor, ReviewRecord } from "../../shared/review.ts";
 import { bash_env } from "../shell/git-bash.ts";
 import { human_requests_of, last_human_id } from "./context.ts";
@@ -20,6 +21,7 @@ export type InputRequest = {
   project_root: string;
   custom_instructions: string;
   actor: ReviewActor;
+  model: ModelEntry;
   profile: string | null;
   delegated_task: string | null;
   records: ReviewRecord[];
@@ -54,7 +56,7 @@ export const review_input = async (request: InputRequest, git: GitRunner = run_g
   return {
     chat: { chat_id: request.chat_id, project_root: request.project_root, custom_instructions: request.custom_instructions, humans, profile, snapshot },
     chat_key,
-    agent: { actor: request.actor, profile: request.profile, delegated_task: request.delegated_task, earlier_commands: request.earlier_commands },
+    agent: { actor: request.actor, model: { id: request.model.id, label: request.model.label }, profile: request.profile, delegated_task: request.delegated_task, earlier_commands: request.earlier_commands },
     source: { records: request.records, decisions: request.decisions, steps: request.steps },
     mark: last_human_id(request.chat_id),
     call_id: request.call_id,

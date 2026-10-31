@@ -15,6 +15,7 @@ import { reasoning_bound_to_prefix } from "../model/prompt-cache.ts";
 import { round_body } from "../model/stream.ts";
 import type { ApiAssistantMessage, ApiMessage, ApiToolCall, RoundRequest, RoundResult, RoundToolCall, RoundUsage } from "../model/types.ts";
 import type { ContextReading, Tool, ToolContext, ToolImage, ToolProfile } from "../tools/types.ts";
+import { tool_batches } from "./batches.ts";
 import { carrier, image_url, type CarrierImage } from "./carriers.ts";
 import { create_status_driver } from "./reasoning-status.ts";
 import type { Emitter, TurnSession } from "./session.ts";
@@ -84,6 +85,10 @@ type ToolOutcome = { aborted: boolean; status: ToolEndStatus; result_text: strin
 
 type KeptImages = { stored: StepImage[]; carried: CarrierImage[]; note: string };
 
+type RoundCall = RoundToolCall & { engine_id: string; args: Record<string, unknown> | null; tool: Tool | null };
+
+type CallResult = { aborted: true } | { aborted: false; result_text: string; carried: CarrierImage[]; plan: boolean };
+
 const images_left_out_note = "Older images were left out of this request to stay inside the model provider's documented limits.";
 
 const build_context = (session: TurnSession, call_id: string, profile: ToolProfile, image_count: number, context: () => ContextReading): ToolContext => ({
@@ -116,6 +121,7 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
   side_model: session.side_model,
   review: {
     actor: session.review.actor,
+    model: session.review.model,
     call: session.review.call,
     history: session.review.history,
     record: async (entry) => {
@@ -181,6 +187,26 @@ const keep_images = async (session: TurnSession, call_id: string, images: ToolIm
     console.error(`[turn] storing ${images.length} images of call ${call_id} in chat ${session.chat_id} failed:`, error);
     return { stored: [], carried: [], note: `[The screenshots of this call could not be stored and are not attached: ${error_text(error)}.]` };
   }
+};
+
+const run_call = async (session: TurnSession, call: RoundCall, profile: ToolProfile, image_count: number, context: () => ContextReading): Promise<CallResult> => {
+  session.emit({ type: "tool_start", call_id: call.engine_id });
+  const outcome = await execute_tool(session, call.tool, call.engine_id, call.name, call.args, profile, image_count, context);
+  if (outcome.aborted) {
+    return { aborted: true };
+  }
+  const kept = await keep_images(session, call.engine_id, outcome.images);
+  const result_text = kept.note ? `${outcome.result_text}\n${kept.note}` : outcome.result_text;
+  session.emit({
+    type: "tool_end",
+    call_id: call.engine_id,
+    status: outcome.status,
+    view: outcome.view,
+    error: outcome.error,
+    result_text,
+    ...(kept.stored.length ? { images: kept.stored } : {}),
+  });
+  return { aborted: false, result_text, carried: kept.carried, plan: call.name === "present_plan" && outcome.status === "done" };
 };
 
 export const fit_request = async (request: RoundRequest): Promise<boolean> => {
@@ -253,10 +279,11 @@ export const run_round = async (session: TurnSession, round: number, api_message
     return { aborted: false, tool_calls: 0, finish_reason: result.finish_reason, usage: result.usage, estimate, plan_presented: false };
   }
   const scope = session.call_scope ?? session.message_id;
-  const calls: (RoundToolCall & { engine_id: string; args: Record<string, unknown> | null })[] = result.tool_calls.map((call, position) => ({
+  const calls: RoundCall[] = result.tool_calls.map((call, position) => ({
     ...call,
     engine_id: engine_call_id(round, position),
     args: parse_args(call.arguments),
+    tool: tools.find((entry) => entry.spec.name === call.name) ?? null,
   }));
   const api_calls: ApiToolCall[] = calls.map((call) => ({
     id: api_call_id(scope, call.engine_id),
@@ -285,31 +312,32 @@ export const run_round = async (session: TurnSession, round: number, api_message
   let plan_presented = false;
   const sent_images = image_slots(api_messages).length;
   const carried: CarrierImage[] = [];
-  for (const call of calls) {
+  for (const batch of tool_batches(calls)) {
     if (session.signal.aborted) {
       return aborted_outcome(result, estimate);
     }
-    session.emit({ type: "tool_start", call_id: call.engine_id });
-    const tool = tools.find((entry) => entry.spec.name === call.name) ?? null;
-    const outcome = await execute_tool(session, tool, call.engine_id, call.name, call.args, profile, sent_images + carried.length + 1, context);
-    if (outcome.aborted) {
-      return aborted_outcome(result, estimate);
+    const image_count = sent_images + carried.length + batch.length;
+    const settled = await Promise.allSettled(batch.map((call) => run_call(session, call, profile, image_count, context)));
+    let aborted = false;
+    let rejected: PromiseRejectedResult | null = null;
+    for (const [at, entry] of settled.entries()) {
+      if (entry.status === "rejected") {
+        rejected ??= entry;
+        continue;
+      }
+      if (entry.value.aborted) {
+        aborted = true;
+        continue;
+      }
+      api_messages.push({ role: "tool", tool_call_id: api_call_id(scope, batch[at].engine_id), content: entry.value.result_text });
+      carried.push(...entry.value.carried);
+      plan_presented ||= entry.value.plan;
     }
-    const kept = await keep_images(session, call.engine_id, outcome.images);
-    const result_text = kept.note ? `${outcome.result_text}\n${kept.note}` : outcome.result_text;
-    api_messages.push({ role: "tool", tool_call_id: api_call_id(scope, call.engine_id), content: result_text });
-    session.emit({
-      type: "tool_end",
-      call_id: call.engine_id,
-      status: outcome.status,
-      view: outcome.view,
-      error: outcome.error,
-      result_text,
-      ...(kept.stored.length ? { images: kept.stored } : {}),
-    });
-    carried.push(...kept.carried);
-    if (call.name === "present_plan" && outcome.status === "done") {
-      plan_presented = true;
+    if (rejected) {
+      throw rejected.reason;
+    }
+    if (aborted) {
+      return aborted_outcome(result, estimate);
     }
   }
   if (carried.length) {

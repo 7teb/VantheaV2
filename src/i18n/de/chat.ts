@@ -18,6 +18,8 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.copy": "Kopieren",
   "chat.edit": "Bearbeiten",
   "chat.fork": "Chat ab hier verzweigen",
+  "chat.regenerate": "Antwort neu generieren",
+  "chat.info_context": "{used} von {limit} Tokens",
   "chat.open_in_explorer": "Im Explorer öffnen",
   "chat.edit_cancel": "Abbrechen",
   "chat.edit_resend": "Neu senden",

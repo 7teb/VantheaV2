@@ -32,6 +32,7 @@ export type ReviewHistory = { records: ReviewRecord[]; steps: ToolStep[]; earlie
 
 export type ActorReview = {
   actor: ReviewActor;
+  model: ModelEntry;
   call: ReviewModelCall;
   history: () => Promise<ReviewHistory>;
   mirror?: (entry: ReviewRecord) => Promise<void>;
@@ -78,6 +79,7 @@ export type ToolResult = { status: "done" | "failed" | "denied"; text: string; v
 export type ToolDefinition<A> = {
   spec: ToolSpec;
   profiles: ToolProfile[];
+  concurrent?: boolean;
   available?: (settings: Settings, model: ModelEntry) => boolean;
   parse: (raw: Record<string, unknown>) => A;
   run: (ctx: ToolContext, args: A) => Promise<ToolResult>;
@@ -86,6 +88,7 @@ export type ToolDefinition<A> = {
 export type Tool = {
   spec: ToolSpec;
   profiles: ToolProfile[];
+  concurrent?: boolean;
   available: (settings: Settings, model: ModelEntry) => boolean;
   execute: (ctx: ToolContext, raw: Record<string, unknown>) => Promise<ToolResult>;
 };
@@ -95,6 +98,7 @@ export class ToolArgumentError extends Error {}
 export const define_tool = <A>(definition: ToolDefinition<A>): Tool => ({
   spec: definition.spec,
   profiles: definition.profiles,
+  concurrent: definition.concurrent ?? false,
   available: definition.available ?? (() => true),
   execute: (ctx, raw) => definition.run(ctx, definition.parse(raw)),
 });

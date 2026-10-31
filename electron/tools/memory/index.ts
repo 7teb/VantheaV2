@@ -136,6 +136,7 @@ const list_memories_tool = define_tool<Record<string, never>>({
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   profiles: ["main", "plan"],
+  concurrent: true,
   available: memory_enabled,
   parse: () => ({}),
   run: async () => {

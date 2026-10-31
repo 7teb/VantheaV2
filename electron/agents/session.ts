@@ -115,6 +115,7 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
         live_steps: () => live.transcript.steps.filter((step) => step.kind === "tool"),
       },
       review_call,
+      model,
     ),
     human_decisions: async () =>
       merge_decisions(await chat_decisions(agent.chat_id), live.transcript.steps.flatMap((step) => (step.kind === "tool" ? (step.decisions ?? []) : []))),

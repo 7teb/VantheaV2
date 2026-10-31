@@ -37,6 +37,7 @@ export const get_agent_status_tool = define_tool<{ agent_id: string; report_from
     },
   },
   profiles: ["main", "explore", "worker"],
+  concurrent: true,
   parse: (raw) => ({ agent_id: read_agent_id(raw), report_from: read_int_arg(raw, "report_from", 0, Number.MAX_SAFE_INTEGER) ?? 0 }),
   run: (ctx, args) =>
     guarded(ctx, "get_agent_status", async () => {

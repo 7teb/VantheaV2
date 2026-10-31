@@ -32,6 +32,7 @@ export const analyze_image_tool: Tool = define_tool<Args>({
     },
   },
   profiles: ["main", "plan", "explore", "worker"],
+  concurrent: true,
   parse,
   run: async (ctx, args) => {
     const attachment = await chat_attachment(ctx.chat_id, args.attachment_id, "image");

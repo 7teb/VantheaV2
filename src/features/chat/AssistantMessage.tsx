@@ -1,5 +1,5 @@
 import { Fragment, memo, useRef } from "react";
-import type { AssistantMessage as AssistantMessageData, Message, NoticeStep } from "../../../shared/chat.ts";
+import type { AssistantMessage as AssistantMessageData, Message, NoticeStep, UserMessage } from "../../../shared/chat.ts";
 import { file_changes } from "../../../shared/file-changes.ts";
 import { build_blocks } from "./assistant-blocks.ts";
 import { summary_line_step } from "./compaction-line.ts";
@@ -50,6 +50,7 @@ type AssistantMessageProps = {
   accepted: ReadonlySet<string>;
   undoable_id: string | null;
   summary_after: string | null;
+  retry_from: UserMessage | null;
 };
 
 const same_turn = (before: AssistantMessageProps, after: AssistantMessageProps) =>
@@ -59,10 +60,11 @@ const same_turn = (before: AssistantMessageProps, after: AssistantMessageProps) 
   before.last_plan_id === after.last_plan_id &&
   before.undoable_id === after.undoable_id &&
   before.summary_after === after.summary_after &&
+  before.retry_from === after.retry_from &&
   before.messages.length === after.messages.length &&
   before.messages.every((message, index) => message === after.messages[index] && before.accepted.has(message.id) === after.accepted.has(message.id));
 
-export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_plan_id, accepted, undoable_id, summary_after }: AssistantMessageProps) => {
+export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_plan_id, accepted, undoable_id, summary_after, retry_from }: AssistantMessageProps) => {
   const members = messages.filter((message): message is AssistantMessageData => message.role === "assistant");
   const layout = turn_layout(messages);
   const facts = members.map((member) => facts_with(member, layout.lead.get(member.id)));
@@ -115,6 +117,8 @@ export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_p
               last_plan={last_plan_id === message.id}
               plan_accepted={accepted.has(message.id)}
               file_card={index === members.length - 1 ? file_card : null}
+              turn_started_at={leader.created_at}
+              retry_from={index === members.length - 1 ? retry_from : null}
             />
             {summary}
           </Fragment>

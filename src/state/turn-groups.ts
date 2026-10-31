@@ -40,3 +40,12 @@ export const turn_leader = (messages: Message[], message_id: string): string | n
   }
   return null;
 };
+
+export const regenerable_turn = (segments: TurnSegment[]): UserMessage | null => {
+  const answer = segments.at(-1);
+  const asked = segments.at(-2);
+  if (answer?.kind !== "turn" || asked?.kind !== "user" || asked.message.origin !== "user") {
+    return null;
+  }
+  return asked.message;
+};

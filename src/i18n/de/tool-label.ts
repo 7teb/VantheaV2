@@ -111,6 +111,8 @@ export const tool_label: Record<keyof typeof en, string> = {
   "tool_label.listed_models": "Verfügbare Modelle aufgelistet",
   "tool_label.adding_mcp": "Fügt MCP-Server {x} hinzu",
   "tool_label.added_mcp": "MCP-Server {x} hinzugefügt",
+  "tool_label.loading_tools": "Lädt Tools",
+  "tool_label.loaded_tools": "Tools geladen",
   "tool_label.browser_tabs_done": "Browser-Tabs verwaltet",
   "tool_label.browser_navigated": "{x} geöffnet",
   "tool_label.browser_went_back": "Zurück zu {x}",

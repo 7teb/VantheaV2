@@ -10,15 +10,26 @@ import { resolve_write_target, type WriteTarget } from "./scope.ts";
 
 export const max_write_bytes = 1024 * 1024;
 
-export type PreparedEdit = { project_root: string; target: WriteTarget; previous: string | null; next: string; bytes: Buffer; diff: LineDiff };
+export type PreparedEdit = {
+  project_root: string;
+  target: WriteTarget;
+  previous: string | null;
+  previous_sha256: string | null;
+  next: string;
+  bytes: Buffer;
+  diff: LineDiff;
+};
 
 export type PreparedReplace = PreparedEdit & { replaced: number; flexible: boolean };
 
-type ExistingText = { text: string; encoding: TextEncoding };
+type ExistingText = { text: string; encoding: TextEncoding; sha256: string };
+
+const sha256_of = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
 
 const read_text = async (file: string): Promise<ExistingText | null> => {
   try {
-    return decode_text(await fs.readFile(file));
+    const bytes = await fs.readFile(file);
+    return { ...decode_text(bytes), sha256: sha256_of(bytes) };
   } catch (error) {
     if (error_code(error) === "ENOENT") {
       return null;
@@ -47,7 +58,7 @@ export const prepare_write = async (project_root: string, relative: string, cont
   const existing = await read_existing(target);
   const previous = existing?.text ?? null;
   const bytes = encode_text(content, existing?.encoding ?? plain_utf8);
-  return { project_root, target, previous, next: content, bytes, diff: line_diff(previous, content) };
+  return { project_root, target, previous, previous_sha256: existing?.sha256 ?? null, next: content, bytes, diff: line_diff(previous, content) };
 };
 
 export const prepare_replace = async (
@@ -68,6 +79,7 @@ export const prepare_replace = async (
     project_root,
     target,
     previous: existing.text,
+    previous_sha256: existing.sha256,
     next: replacement.updated,
     bytes: encode_text(replacement.updated, existing.encoding),
     diff: line_diff(existing.text, replacement.updated),
@@ -83,5 +95,5 @@ export const commit_edit = async (prepared: PreparedEdit): Promise<string> => {
   }
   await write_file_atomic(prepared.target.target, prepared.bytes);
   invalidate_index(prepared.project_root);
-  return createHash("sha256").update(prepared.bytes).digest("hex");
+  return sha256_of(prepared.bytes);
 };

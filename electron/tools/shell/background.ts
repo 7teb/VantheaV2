@@ -105,6 +105,7 @@ export const get_background_task_tool = define_tool<{ id: string }>({
     parameters: id_parameters,
   },
   profiles: ["main", "plan"],
+  concurrent: true,
   parse: (raw) => ({ id: require_string(raw, "id").trim() }),
   run: (ctx, args) =>
     guarded(ctx, "get_background_task", async () => {

@@ -116,6 +116,6 @@ export const add_mcp_server_tool = define_tool<AddArgs>({
       return result("failed", name, `MCP server ${name} was added but did not start: ${status?.error || "unknown state"}.${stderr}`);
     }
     const source = detected ? ` Detected from ${args.folder} (${detected.source}): ${detected.note}` : "";
-    return result("done", name, `MCP server ${name} is connected with ${status.tools.length} tools, available as mcp__${name}__<tool>.${source}`);
+    return result("done", name, `MCP server ${name} is connected with ${status.tools.length} tools named mcp__${name}__<tool>. Find and load them with load_mcp_tools (query searches names and descriptions) and call them with call_mcp_tool.${source}`);
   },
 });

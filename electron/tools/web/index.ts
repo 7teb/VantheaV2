@@ -33,6 +33,7 @@ export const web_search_tool = define_tool<WebSearchArgs>({
     },
   },
   profiles: ["main", "plan", "explore", "worker"],
+  concurrent: true,
   available: (settings) => settings.web_search.enabled && get_secret("tavily") !== "",
   parse: parse_web_search_args,
   run: async (ctx, args) => {

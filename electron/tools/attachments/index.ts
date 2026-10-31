@@ -46,6 +46,7 @@ export const read_attachment_tool = define_tool<AttachmentArgs>({
     },
   },
   profiles: ["main", "plan", "explore", "worker"],
+  concurrent: true,
   parse: (raw) => ({ handle: require_string(raw, "handle").trim(), start_line: positive_int(raw, "start_line") ?? 1, limit: positive_int(raw, "limit") }),
   run: async (ctx, args) => {
     const attachment = await chat_attachment(ctx.chat_id, args.handle, "file");

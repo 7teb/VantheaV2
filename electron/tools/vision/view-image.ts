@@ -28,6 +28,7 @@ export const view_image_tool = define_tool<{ path: string }>({
     },
   },
   profiles: ["main", "plan", "explore", "worker"],
+  concurrent: true,
   available: (_settings, model) => model.vision,
   parse: (raw) => ({ path: require_string(raw, "path") }),
   run: (ctx, args) =>

@@ -1,11 +1,13 @@
 import { memo, useState, type ReactNode } from "react";
-import { manual_compaction_only } from "../../../shared/chat.ts";
+import { manual_compaction_only, type UserMessage } from "../../../shared/chat.ts";
 import { IconButton } from "../../components/Button.tsx";
-import { ForkIcon } from "../../components/icons.tsx";
+import { ForkIcon, InfoIcon, RetryIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { CopyButton } from "../../components/MarkdownCopy.tsx";
 import { use_t } from "../../i18n/index.ts";
-import { fork_chat } from "../../state/chat-actions.ts";
+import { edit_message, fork_chat, type ActionResult } from "../../state/chat-actions.ts";
+import { models_store } from "../../state/models.ts";
+import { use_store } from "../../state/use-store.ts";
 import { ImageBody, ShownImagesBody } from "../tools/bodies-web.tsx";
 import { WorkGroup } from "../tools/WorkGroup.tsx";
 import { answer_text, shows_thinking, thinks_in_group, type Block } from "./assistant-blocks.ts";
@@ -14,6 +16,7 @@ import { ReasoningRow } from "./ReasoningRow.tsx";
 import { CompactionRow, NoticeRow, SteerRow } from "./StepRows.tsx";
 import { FoldItem } from "./TurnFold.tsx";
 import { foldable_block, type MemberFacts } from "./turn-shape.ts";
+import { turn_info } from "./turn-info.ts";
 import { RetryBanner, TurnOutcome } from "./TurnStatus.tsx";
 import { VisualBlock } from "./VisualBlock.tsx";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
@@ -74,18 +77,20 @@ type TurnBodyProps = {
   last_plan: boolean;
   plan_accepted: boolean;
   file_card: ReactNode;
+  turn_started_at: string;
+  retry_from: UserMessage | null;
 };
 
-export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, busy, last_plan, plan_accepted, file_card }: TurnBodyProps) => {
+export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, busy, last_plan, plan_accepted, file_card, turn_started_at, retry_from }: TurnBodyProps) => {
   const t = use_t();
   const { message, blocks } = facts;
   const streaming = message.status === "streaming";
   const grouped_thinking = thinks_in_group(streaming, message.retry !== null, blocks);
-  const [fork_error, set_fork_error] = useState("");
-  const fork = async () => {
-    const result = await fork_chat(chat_id, message.id);
-    set_fork_error(result.ok ? "" : result.error);
-  };
+  const catalog = use_store(models_store, (state) => state.catalog);
+  const [action_error, set_action_error] = useState("");
+  const settle = (result: ActionResult) => set_action_error(result.ok ? "" : result.error);
+  const fork = async () => settle(await fork_chat(chat_id, message.id));
+  const regenerate = async (source: UserMessage) => settle(await edit_message(chat_id, source.id, source.text));
   const answer = answer_text(message);
   const outcome = (
     <>
@@ -127,12 +132,20 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
       {final && !streaming && !manual_compaction_only(message) && (
         <div className="message-actions assistant-actions">
           {answer && <CopyButton text={answer} label={t("chat.copy_answer")} />}
+          {retry_from && !busy && (
+            <IconButton label={t("chat.regenerate")} size="sm" onClick={() => void regenerate(retry_from)}>
+              <RetryIcon size={14} />
+            </IconButton>
+          )}
           <IconButton label={t("chat.fork")} size="sm" onClick={() => void fork()}>
             <ForkIcon size={14} />
           </IconButton>
+          <IconButton label={turn_info(t, message, turn_started_at, catalog)} size="sm">
+            <InfoIcon size={14} />
+          </IconButton>
         </div>
       )}
-      {fork_error && <div className="inline-error">{fork_error}</div>}
+      {action_error && <div className="inline-error">{action_error}</div>}
     </>
   );
 });

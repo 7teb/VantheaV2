@@ -48,6 +48,8 @@ export const tools: Record<keyof typeof en, string> = {
   "tools.combine_skill_installs_other": "{n} Skills installiert",
   "tools.combine_mcp_servers_one": "{n} MCP-Server hinzugefügt",
   "tools.combine_mcp_servers_other": "{n} MCP-Server hinzugefügt",
+  "tools.combine_tool_loads_one": "Tools geladen",
+  "tools.combine_tool_loads_other": "Tools geladen",
   "tools.combine_messages_one": "{n} Nachricht gesendet",
   "tools.combine_messages_other": "{n} Nachrichten gesendet",
   "tools.row_read": "{x} gelesen",
@@ -112,4 +114,5 @@ export const tools: Record<keyof typeof en, string> = {
   "tools.status_ended": "Beendet",
   "tools.peer_outcome_not_running": "Läuft nicht",
   "tools.peer_outcome_duplicate": "Schon gesendet",
+  "tools.running_alongside": "{x} und {n} weitere",
 };

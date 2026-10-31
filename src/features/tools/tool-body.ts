@@ -9,7 +9,7 @@ import { compact_command, is_active_status } from "./tool-meta.ts";
 
 const output_views = new Set<ToolViewKind>(["command", "mcp", "text"]);
 
-const inline_tools = new Set(["datetime", "view_image", "context_status"]);
+const inline_tools = new Set(["datetime", "view_image", "context_status", "list_agents"]);
 
 const notice_views = new Set<ToolViewKind>(["command", "background", "mcp"]);
 
@@ -60,6 +60,7 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
       return true;
     case "read":
     case "browser":
+    case "tool_load":
     case "skill":
     case "todos":
     case "questions":

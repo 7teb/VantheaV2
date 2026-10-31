@@ -30,7 +30,8 @@ export const group_head = (t: Translate, steps: WorkStep[], streaming: boolean, 
     return { kind: "review", key: `review:${current.id}`, step: current };
   }
   if (current) {
-    const label = tool_label(t, current);
+    const active = tools.filter((step) => step.status === "running" || step.status === "awaiting_approval").length;
+    const label = active > 1 ? t("tools.running_alongside", { x: tool_label(t, current), n: active - 1 }) : tool_label(t, current);
     return { kind: "tool", key: `tool:${label}`, label };
   }
   if (live) {

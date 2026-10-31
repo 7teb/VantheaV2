@@ -1,5 +1,7 @@
 import fs from "node:fs/promises";
+import { file_sha256 } from "../../permissions/source-read.ts";
 import { max_walk_entries, project_index, walk_project } from "../../project/index.ts";
+import { record_read } from "../../project/read-ledger.ts";
 import { resolve_inside, type ScopedPath } from "../../project/scope.ts";
 import { read_text_window } from "../../project/text-window.ts";
 import { read_string, require_string } from "../browser/common.ts";
@@ -62,6 +64,7 @@ export const list_files_tool = define_tool<{ path: string | null }>({
     },
   },
   profiles: read_profiles,
+  concurrent: true,
   parse: (raw) => ({ path: read_string(raw, "path") }),
   run: (ctx, args) =>
     guarded(ctx, "list_files", async () => {
@@ -110,6 +113,7 @@ export const read_file_tool = define_tool<ReadArgs>({
     },
   },
   profiles: read_profiles,
+  concurrent: true,
   parse: (raw) => ({
     path: require_string(raw, "path"),
     start_line: read_int_arg(raw, "start_line", 1, Number.MAX_SAFE_INTEGER) ?? 1,
@@ -122,10 +126,12 @@ export const read_file_tool = define_tool<ReadArgs>({
       if (refused) {
         return refused;
       }
+      const sha256 = await file_sha256(scoped.target);
       const window = await read_text_window(scoped.target, args.start_line, args.limit, read_max_tokens);
       if (window.binary) {
         return failed(`${scoped.relative} is a binary file and cannot be read as text`);
       }
+      await record_read(ctx.chat_id, ctx.review.actor.id, scoped.target, sha256);
       if (window.total_lines === 0) {
         const view = { kind: "read" as const, path: scoped.relative, start_line: 1, end_line: 0, total_lines: 0, truncated: false };
         return { status: "done", text: `${scoped.relative} is empty.`, view };

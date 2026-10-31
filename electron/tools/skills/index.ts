@@ -55,6 +55,7 @@ const read_skill_tool = define_tool<{ name: string; file: string | null }>({
     },
   },
   profiles: ["main", "plan", "explore", "worker"],
+  concurrent: true,
   available: () => usable_skills().length > 0,
   parse: (raw) => ({ name: require_string(raw, "name"), file: read_string(raw, "file") }),
   run: async (_ctx, args) => {

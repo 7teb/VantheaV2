@@ -1,4 +1,5 @@
 import type { Message, ToolStep } from "../../shared/chat.ts";
+import type { ModelEntry } from "../../shared/models.ts";
 import type { ReviewActor, ReviewRecord } from "../../shared/review.ts";
 import { command_tools } from "../../shared/shell.ts";
 import { get_chat } from "../chats/store.ts";
@@ -38,8 +39,9 @@ const chat_steps = async (chat_id: string): Promise<ToolStep[]> => {
   return tool_steps_in(chat.messages);
 };
 
-export const main_review = (chat_id: string, call: ReviewModelCall): ActorReview => ({
+export const main_review = (chat_id: string, call: ReviewModelCall, model: ModelEntry): ActorReview => ({
   actor: main_actor,
+  model,
   call,
   history: async () => {
     const steps = await chat_steps(chat_id);
@@ -53,8 +55,9 @@ export const mirror_review = (chat_id: string, message_id: string, call_id: stri
     reviews: [...(step.reviews ?? []).filter((entry) => entry.id !== record.id), record],
   }));
 
-export const agent_review = (scope: AgentScope, call: ReviewModelCall): ActorReview => ({
+export const agent_review = (scope: AgentScope, call: ReviewModelCall, model: ModelEntry): ActorReview => ({
   actor: { id: scope.agent_id, name: scope.name, kind: "agent" },
+  model,
   call,
   history: async () => {
     const live = scope.live_steps();

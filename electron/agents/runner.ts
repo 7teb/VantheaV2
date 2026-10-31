@@ -177,11 +177,13 @@ const close_open_calls = (messages: ApiMessage[]): ApiMessage[] => {
   if (!assistant || assistant.role !== "assistant" || !assistant.tool_calls) {
     return messages;
   }
-  const answered = new Set(messages.slice(at + 1).flatMap((message) => (message.role === "tool" ? [message.tool_call_id] : [])));
-  const missing: ApiMessage[] = assistant.tool_calls
-    .filter((call) => !answered.has(call.id))
-    .map((call) => ({ role: "tool", tool_call_id: call.id, content: "[not executed: the run stopped before this call ran]" }));
-  return [...messages, ...missing];
+  const after = messages.slice(at + 1);
+  const answered = new Map(after.flatMap((message) => (message.role === "tool" ? [[message.tool_call_id, message] as const] : [])));
+  if (assistant.tool_calls.every((call) => answered.has(call.id))) {
+    return messages;
+  }
+  const results: ApiMessage[] = assistant.tool_calls.map((call) => answered.get(call.id) ?? { role: "tool", tool_call_id: call.id, content: "[not executed: the run stopped before this call ran]" });
+  return [...messages.slice(0, at + 1), ...results, ...after.filter((message) => message.role !== "tool")];
 };
 
 const settle_link = (link: WorkflowAgentLink, status: Exclude<AgentRunStatus, "running">, live: LiveRun) => {
@@ -268,6 +270,7 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
       tools,
       user_attachments: false,
       effort: agent.effort,
+      deferred_mcp: [],
     });
     const held = take_held(agent.agent_id).map((entry) => (entry.from === "main" ? kept_instruction_note(entry.text) : peer_note(entry)));
     const role = request.workflow ? workflow_role_section(agent, request.workflow) : agent_role_section(agent);

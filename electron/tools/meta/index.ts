@@ -112,6 +112,7 @@ export const datetime_tool = define_tool<Record<string, never>>({
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   profiles: ["main", "plan", "explore", "worker"],
+  concurrent: true,
   parse: () => ({}),
   run: async () => {
     const text = `${local_iso(new Date())} (${Intl.DateTimeFormat().resolvedOptions().timeZone})`;
@@ -142,6 +143,7 @@ export const context_status_tool = define_tool<Record<string, never>>({
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   profiles: ["main", "plan", "explore", "worker"],
+  concurrent: true,
   parse: () => ({}),
   run: async (ctx) => {
     const text = context_text(ctx.context());

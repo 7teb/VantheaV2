@@ -58,6 +58,7 @@ export type ToolCategory =
   | "task_stops"
   | "skill_installs"
   | "mcp_servers"
+  | "tool_loads"
   | "messages"
   | "skills"
   | "todos"

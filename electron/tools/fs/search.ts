@@ -28,6 +28,7 @@ export const grep_files_tool = define_tool<GrepQuery>({
     },
   },
   profiles: read_profiles,
+  concurrent: true,
   parse: (raw) => ({
     query: require_string(raw, "query"),
     path: read_string(raw, "path") ?? "",
@@ -75,6 +76,7 @@ export const get_file_outline_tool = define_tool<{ path: string }>({
     },
   },
   profiles: read_profiles,
+  concurrent: true,
   parse: (raw) => ({ path: require_string(raw, "path") }),
   run: (ctx, args) =>
     guarded(ctx, "get_file_outline", async () => {

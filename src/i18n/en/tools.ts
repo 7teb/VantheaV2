@@ -46,6 +46,8 @@ export const tools = {
   "tools.combine_skill_installs_other": "installed {n} skills",
   "tools.combine_mcp_servers_one": "added {n} MCP server",
   "tools.combine_mcp_servers_other": "added {n} MCP servers",
+  "tools.combine_tool_loads_one": "loaded tools",
+  "tools.combine_tool_loads_other": "loaded tools",
   "tools.combine_messages_one": "sent {n} message",
   "tools.combine_messages_other": "sent {n} messages",
   "tools.row_read": "Read {x}",
@@ -110,4 +112,5 @@ export const tools = {
   "tools.status_ended": "Ended",
   "tools.peer_outcome_not_running": "Not running",
   "tools.peer_outcome_duplicate": "Already sent",
+  "tools.running_alongside": "{x} and {n} more",
 };

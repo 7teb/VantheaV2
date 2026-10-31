@@ -129,6 +129,7 @@ const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
   task_stops: ["tools.combine_task_stops_one", "tools.combine_task_stops_other"],
   skill_installs: ["tools.combine_skill_installs_one", "tools.combine_skill_installs_other"],
   mcp_servers: ["tools.combine_mcp_servers_one", "tools.combine_mcp_servers_other"],
+  tool_loads: ["tools.combine_tool_loads_one", "tools.combine_tool_loads_other"],
   messages: ["tools.combine_messages_one", "tools.combine_messages_other"],
   skills: ["tools.combine_skills_one", "tools.combine_skills_other"],
   todos: ["tools.combine_todos_one", "tools.combine_todos_other"],

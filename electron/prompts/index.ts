@@ -31,6 +31,7 @@ export type BuildPromptInput = {
   tools: Tool[];
   user_attachments: boolean;
   effort: string;
+  deferred_mcp: string[];
 };
 
 const extra_sections = async (input: BuildPromptInput, tool_names: Set<string>): Promise<PromptSection[]> => {
@@ -64,6 +65,7 @@ export const build_system_prompt = async (input: BuildPromptInput): Promise<stri
     tool_names,
     user_attachments: input.user_attachments,
     major: input.effort === major_effort,
+    deferred_mcp: input.deferred_mcp,
   });
   const major = input.effort === major_effort && tool_names.has("deploy_agent") ? [major_review()] : [];
   return render_sections([...sections, ...major, ...extra]);

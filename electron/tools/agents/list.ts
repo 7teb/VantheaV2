@@ -9,6 +9,7 @@ export const list_agents_tool = define_tool<Record<string, never>>({
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   profiles: ["main", "explore", "worker"],
+  concurrent: true,
   parse: () => ({}),
   run: async (ctx) => {
     const self_id = ctx.review.actor.kind === "agent" ? ctx.review.actor.id : null;

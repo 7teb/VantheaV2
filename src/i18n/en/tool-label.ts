@@ -109,6 +109,8 @@ export const tool_label = {
   "tool_label.listed_models": "Listed the available models",
   "tool_label.adding_mcp": "Adding MCP server {x}",
   "tool_label.added_mcp": "Added MCP server {x}",
+  "tool_label.loading_tools": "Loading tools",
+  "tool_label.loaded_tools": "Loaded tools",
   "tool_label.browser_tabs_done": "Managed browser tabs",
   "tool_label.browser_navigated": "Opened {x}",
   "tool_label.browser_went_back": "Went back to {x}",

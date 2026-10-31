@@ -11,7 +11,7 @@ import { instance_key } from "./review-state.ts";
 import type { ScriptFile } from "./sources.ts";
 import { earlier_line } from "./verdict-text.ts";
 
-export type VerdictRequest = { reviewer: Reviewer; input: Omit<InputRequest, "records" | "steps" | "earlier_commands">; raised: ReviewRaise[]; granted: boolean; signal: AbortSignal };
+export type VerdictRequest = { reviewer: Reviewer; input: Omit<InputRequest, "model" | "records" | "steps" | "earlier_commands">; raised: ReviewRaise[]; granted: boolean; signal: AbortSignal };
 
 export type VerdictResult = { record: ReviewRecord; seen: ReadonlySet<string> };
 
@@ -35,7 +35,7 @@ const review_scripts = (files: ScriptFile[], sent: ReadonlySet<string>, summary:
 export const review_verdict = async (request: VerdictRequest): Promise<VerdictResult> => {
   const { reviewer, signal } = request;
   const history = await reviewer.history();
-  const input = await review_input({ ...request.input, records: history.records, steps: history.steps, earlier_commands: history.earlier_commands });
+  const input = await review_input({ ...request.input, model: reviewer.model, records: history.records, steps: history.steps, earlier_commands: history.earlier_commands });
   const room = (await reviewer.call.prompt_room?.()) ?? request_cap_tokens;
   const assembled = assemble_review(input, room);
   const instance = instance_key(request.input.chat_id, reviewer.actor.id);

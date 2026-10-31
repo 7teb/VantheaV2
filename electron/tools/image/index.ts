@@ -58,6 +58,7 @@ export const generate_image_tool = define_tool<ImageArgs>({
     },
   },
   profiles: ["main"],
+  concurrent: true,
   available: (settings) => settings.image_gen.enabled,
   parse: (raw) => ({
     prompt: require_string(raw, "prompt").trim().slice(0, 4000),

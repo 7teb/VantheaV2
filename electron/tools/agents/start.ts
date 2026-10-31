@@ -88,6 +88,7 @@ export const deploy_agent_tool = define_tool<DeployArgs>({
     },
   },
   profiles: ["main"],
+  concurrent: true,
   parse: parse_deploy,
   run: (ctx, args) =>
     guarded(ctx, "deploy_agent", async () => {
@@ -131,6 +132,7 @@ export const continue_agent_tool = define_tool<{ agent_id: string; prompt: strin
     },
   },
   profiles: ["main"],
+  concurrent: true,
   parse: (raw) => ({ agent_id: read_agent_id(raw), prompt: read_text(raw, "prompt") }),
   run: (ctx, args) =>
     guarded(ctx, "continue_agent", async () => {

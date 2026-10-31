@@ -5,10 +5,11 @@ import { actor_label } from "../../permissions/script-retention.ts";
 import { stat_optional } from "../../permissions/source-read.ts";
 import { record_write } from "../../permissions/written-files.ts";
 import { commit_edit, prepare_replace, prepare_write, type PreparedEdit } from "../../project/edit.ts";
+import { read_refusal, record_read } from "../../project/read-ledger.ts";
 import { turn_diffs } from "../../turn-diff/index.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool, ToolArgumentError, type ToolContext, type ToolProfile, type ToolResult } from "../types.ts";
-import { denied, guarded, read_int_arg, read_text_arg } from "./common.ts";
+import { denied, failed, guarded, read_int_arg, read_text_arg } from "./common.ts";
 import { style_check } from "./style-check.ts";
 
 const write_profiles: ToolProfile[] = ["main", "worker"];
@@ -23,6 +24,10 @@ const edit_view = (prepared: PreparedEdit): ToolView => ({
 });
 
 const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit, summary: string): Promise<ToolResult> => {
+  const refusal = await read_refusal(ctx.chat_id, ctx.review.actor.id, prepared.target.target, prepared.target.relative, prepared.previous_sha256);
+  if (refusal) {
+    return failed(refusal);
+  }
   const view = edit_view(prepared);
   const mode = effective_mode(ctx.chat_id, ctx.mode);
   const instruction_file = mode === "auto" && is_instruction_file(prepared.target.relative);
@@ -43,6 +48,7 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
   const prior = await stat_optional(prepared.target.target, "the write ledger");
   await turn_diffs.before_write(ctx.chat_id, prepared.target.target);
   const sha256 = await commit_edit(prepared);
+  await record_read(ctx.chat_id, ctx.review.actor.id, prepared.target.target, sha256);
   record_write(ctx.chat_id, prepared.target.target, { actor: actor_label(ctx.review.actor), tool, call_id: ctx.call_id, at: Date.now(), sha256, prior_birthtime: prior?.birthtimeMs ?? null });
   return { status: "done", text: `${summary} (+${prepared.diff.added} -${prepared.diff.removed} lines)`, view };
 };
@@ -50,7 +56,7 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
 export const write_file_tool = define_tool<{ path: string; content: string }>({
   spec: {
     name: "write_file",
-    description: "Create a file or overwrite it with the given text. A new file is written as UTF-8; an existing file keeps its encoding (UTF-8, UTF-16 or Windows-1252). path is project-relative; missing folders are created. Prefer replace_in_file for small changes to an existing file.",
+    description: "Create a file or overwrite it with the given text. A new file is written as UTF-8; an existing file keeps its encoding (UTF-8, UTF-16 or Windows-1252). path is project-relative; missing folders are created. To overwrite an existing file you must have read it with read_file, and it must not have changed on disk since your last read or write of it; otherwise the call fails and nothing is written. Prefer replace_in_file for small changes to an existing file.",
     parameters: {
       type: "object",
       properties: {
@@ -66,7 +72,8 @@ export const write_file_tool = define_tool<{ path: string; content: string }>({
   run: (ctx, args) =>
     guarded(ctx, "write_file", async () => {
       const prepared = await prepare_write(ctx.project_root, args.path, args.content);
-      if (prepared.previous === args.content) {
+      if (prepared.previous === args.content && prepared.previous_sha256 !== null) {
+        await record_read(ctx.chat_id, ctx.review.actor.id, prepared.target.target, prepared.previous_sha256);
         return { status: "done", text: `${prepared.target.relative} already has exactly this content; nothing was written.`, view: edit_view(prepared) };
       }
       const verb = prepared.previous === null ? "Created" : "Overwrote";
@@ -97,7 +104,7 @@ export const replace_in_file_tool = define_tool<ReplaceArgs>({
   spec: {
     name: "replace_in_file",
     description:
-      "Replace text in an existing file. old_string must reproduce the file's text: an exact match is tried first, then a match that ignores differences in whitespace, indentation and line endings, but every other character must match. The match must occur exactly expected_replacements times (default 1).",
+      "Replace text in an existing file. old_string must reproduce the file's text: an exact match is tried first, then a match that ignores differences in whitespace, indentation and line endings, but every other character must match. The match must occur exactly expected_replacements times (default 1). You must have read the file with read_file, and it must not have changed on disk since your last read or write of it; otherwise the call fails and nothing is written.",
     parameters: {
       type: "object",
       properties: {

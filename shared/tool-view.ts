@@ -62,6 +62,7 @@ export type ToolView =
   | { kind: "shown_images"; images: ShownImage[] }
   | { kind: "browser"; action: string; url: string; title: string; detail: string }
   | { kind: "mcp"; server: string; tool: string; text: string; is_error: boolean }
+  | { kind: "tool_load"; names: string[] }
   | { kind: "memory"; action: "remember" | "forget" | "list"; text: string }
   | { kind: "skill"; action: "read" | "install"; name: string }
   | { kind: "models"; models: ModelPrice[] }

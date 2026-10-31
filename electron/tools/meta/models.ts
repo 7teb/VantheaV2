@@ -14,6 +14,7 @@ export const list_models_tool = define_tool<Record<string, never>>({
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   profiles: ["main", "plan", "explore", "worker"],
+  concurrent: true,
   parse: () => ({}),
   run: (ctx) =>
     guarded(ctx, "list_models", async () => {

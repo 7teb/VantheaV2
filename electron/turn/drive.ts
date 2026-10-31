@@ -22,6 +22,7 @@ import { reasoning_status_call } from "../side/reasoning-status.ts";
 import { review_call } from "../side/review.ts";
 import { describe_attachment_image } from "../side/vision.ts";
 import { error_text } from "../storage/coerce.ts";
+import { defer_mcp, is_mcp_tool } from "../tools/mcp/deferred.ts";
 import { mcp_tools } from "../tools/mcp/tools.ts";
 import { tools_for } from "../tools/registry.ts";
 import { turn_diffs } from "../turn-diff/index.ts";
@@ -86,7 +87,8 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     set_authorization(plan.chat_id, history, turn.steers);
     await instruction_snapshot(plan.chat_id, plan.project_root, human_requests_of(plan.chat_id));
     const profile = plan.plan ? "plan" : "main";
-    const offered = tools_for(profile, settings, plan.model, mcp_tools());
+    const all_tools = tools_for(profile, settings, plan.model, mcp_tools());
+    const offered = defer_mcp(all_tools);
     const agent_tools = offered.some((tool) => tool.spec.name === "continue_agent");
     const system = await build_system_prompt({
       model: plan.model,
@@ -100,6 +102,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       tools: offered,
       user_attachments: true,
       effort: plan.effort,
+      deferred_mcp: all_tools.filter(is_mcp_tool).map((tool) => tool.spec.name),
     });
     const api_messages = await build_api_messages({ system, summary: loaded.summary, messages: history, model: plan.model, agent_tools });
     const carried = offered.some((tool) => tool.spec.name === "update_todos") ? carried_todos_note(history) : null;
@@ -117,10 +120,10 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       signal,
       emit: turn.emit,
       stream: stream_round,
-      resolve_tools: (p) => tools_for(p, settings, plan.model, mcp_tools()),
+      resolve_tools: (p) => defer_mcp(tools_for(p, settings, plan.model, mcp_tools())),
       side_model,
       wait_decision: (call_id, request, on_hold) => wait_for_decision({ key: plan.chat_id, chat_id: plan.chat_id, call_id, request, signal, on_hold }),
-      review: main_review(plan.chat_id, review_call),
+      review: main_review(plan.chat_id, review_call, plan.model),
       human_decisions: () => chat_decisions(plan.chat_id),
       steers: {
         next: () => turn.steers[0] ?? null,
