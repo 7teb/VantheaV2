@@ -192,22 +192,6 @@
     overflow-wrap: anywhere;
   }
 
-  .origin-note .command-card + .command-card {
-    margin-top: var(--space-2);
-  }
-
-  @media (hover: hover) and (pointer: fine) and (min-width: 601px) {
-    .user-message {
-      position: relative;
-    }
-
-    .user-message > .message-actions {
-      position: absolute;
-      right: calc(100% + var(--space-2));
-      bottom: 9px;
-    }
-  }
-
   @media (max-width: 600px) {
     .user-message {
       max-width: 88%;

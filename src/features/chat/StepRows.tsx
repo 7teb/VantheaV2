@@ -36,6 +36,7 @@ const notice_titles: Record<NoticeKind, MessageKey> = {
   peer_status: "chat.notice_peer_status",
   peer_digest: "chat.notice_peer_digest",
   workflow_result: "chat.notice_workflow_result",
+  background_task: "chat.notice_background_task",
 };
 
 const agent_note_of = (step: NoticeStep) => {

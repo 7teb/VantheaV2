@@ -6,6 +6,8 @@ export const shell_labels: Record<ShellKind, string> = { powershell: "PowerShell
 
 export const shell_run_tools: Record<ShellKind, string> = { powershell: "run_command", bash: "run_bash" };
 
+export const auto_background_ms = 90_000;
+
 export const command_tools: readonly string[] = [shell_run_tools.powershell, shell_run_tools.bash, "start_background_task"];
 
 export const is_shell_run = (name: string): boolean => name === shell_run_tools.powershell || name === shell_run_tools.bash;

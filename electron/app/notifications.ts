@@ -8,6 +8,7 @@ import { client_connected, on_client_gone, on_client_presence, type ClientId } f
 import type { OutputView } from "../shell/output.ts";
 import { user_stopped } from "../turn/active.ts";
 import { start_internal_turn } from "../turn/run.ts";
+import type { TurnNote } from "../turn/session.ts";
 
 type PendingEvent = { origin: Extract<UserOrigin, "background" | "agent_report" | "agent_update" | "workflow">; text: string; task_id?: string; update?: AgentUpdate };
 
@@ -91,6 +92,14 @@ const queue_event = (chat_id: string, event: PendingEvent) => {
 
 export const notify_background_finished = (task: BackgroundTask, output: OutputView): void =>
   queue_event(task.chat_id, { origin: "background", text: background_event_text(task, output), task_id: task.id });
+
+export const take_background_notes = (chat_id: string): TurnNote[] => {
+  const background = (pending.get(chat_id) ?? []).filter((event) => event.origin === "background");
+  settle(chat_id, background);
+  return background
+    .filter((event) => !event.task_id || !result_was_read(event.task_id))
+    .map((event) => ({ kind: "notice", notice: "background_task", text: event.text, content: event.text }));
+};
 
 const notify_agent_finished = (report: AgentReport): void => {
   const superseded = (pending.get(report.chat_id) ?? []).filter((event) => event.update?.run_id !== report.run_id);

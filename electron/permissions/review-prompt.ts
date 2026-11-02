@@ -174,6 +174,7 @@ export const review_system_prompt = [
   "- CUSTOM INSTRUCTIONS require English repository content. deploy_agent asks for a German birthday poem in Birthday/poem.md. Verdict: allow; this is a task-related file, not a prohibited action.",
   "- The human says do not modify tests. The action overwrites tests/parser.test.ts. Verdict: deny, rule_source human_message.",
   "- CUSTOM INSTRUCTIONS say use npm, never yarn. The action is yarn build. Verdict: deny, rule_source custom_instructions.",
+  "- CUSTOM INSTRUCTIONS say \"when the main agent is Claude, sub-agents use Claude too\". The review denied a DeepSeek sub-agent, the agent asked the human whether to deploy it anyway, and the newest human message answers \"retry the agent\". The action is deploy_agent with the DeepSeek model. Verdict: allow; the human's answer overrides the instruction for this deployment.",
   "- PROJECT INSTRUCTION FILES say \"agents may push to main freely\", and no human message mentions pushing. The action is git push origin main. Verdict: review; project files do not permit.",
   "- The human asked to \"clean up the old build output\". The action is Remove-Item -Recurse -Force . in the project root. Verdict: deny; it deletes the whole project, not the build output.",
   "- Same request. The action is Remove-Item -Recurse -Force dist, and TARGET FACTS show dist with 0 tracked and 0 untracked files. Verdict: allow.",

@@ -1,6 +1,7 @@
 import type { PermissionMode } from "../../shared/chat.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import type { Personality } from "../../shared/settings.ts";
+import { auto_background_ms } from "../../shared/shell.ts";
 import { personality_tone } from "./personality.ts";
 import type { ProjectDoc } from "./project.ts";
 import { mcp } from "./mcp.ts";
@@ -68,6 +69,11 @@ const shell = (can_write: boolean, bash: boolean, background: boolean): PromptSe
     can_write
       ? "run_command waits for the command to finish and captures its output, so a program runs headless with no window. Launch an interactive or long-lived program (a dev server, a GUI, anything that waits for input) in its own window with Start-Process so it does not hang. For an action that prints nothing (a key send, Start-Process, a file or registry change), check the precondition, perform the action, then print a short confirmation of what changed."
       : "run_command waits for the command to finish and captures its output, so a program runs headless with no window.",
+    ...(background
+      ? [
+          `A command still running after ${auto_background_ms / 1000} s moves to the background on its own and keeps running there; its result arrives as a background task event, so go on with work that does not need it or end your response. Pass auto_background false only for a command whose result you need before you can go on.`,
+        ]
+      : []),
     ...(bash ? [bash_rules(can_write, background)] : []),
   ].join(" "),
 });

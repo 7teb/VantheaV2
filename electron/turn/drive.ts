@@ -53,6 +53,12 @@ export const set_turn_finished_hook = (fn: (chat_id: string, message_id: string)
   turn_finished = fn;
 };
 
+let event_notes: ((chat_id: string) => TurnNote[]) | null = null;
+
+export const set_event_notes_hook = (fn: (chat_id: string) => TurnNote[]): void => {
+  event_notes = fn;
+};
+
 const run_finished_hook = (chat_id: string, message_id: string) => {
   try {
     turn_finished?.(chat_id, message_id);
@@ -136,7 +142,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
         },
       },
       take_notes: () => {
-        const notes = [...opening_notes, ...take_agent_notes(plan.chat_id, agent_tools)];
+        const notes = [...opening_notes, ...take_agent_notes(plan.chat_id, agent_tools), ...(event_notes?.(plan.chat_id) ?? [])];
         opening_notes = [];
         return notes;
       },

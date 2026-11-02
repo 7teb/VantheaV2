@@ -51,14 +51,14 @@ import { clear_mcp_chat, set_command_gate } from "../tools/mcp/decide.ts";
 import { tools_for } from "../tools/registry.ts";
 import { active_turn, active_turns, forget_user_stop, on_active_turns_changed, turn_settled } from "../turn/active.ts";
 import { init_turn_diffs, turn_diffs } from "../turn-diff/index.ts";
-import { set_turn_finished_hook } from "../turn/drive.ts";
+import { set_event_notes_hook, set_turn_finished_hook } from "../turn/drive.ts";
 import { interrupt_all_turns, stop_turn } from "../turn/run.ts";
 import { release_worktree } from "../worktrees/remove.ts";
 import { sweep_worktree_ledger } from "../worktrees/sweep.ts";
 import { saved_workflows_section } from "../workflows/prompt.ts";
 import { clear_chat_workflows, init_workflows, shutdown_workflows_sync } from "../workflows/runtime.ts";
 import { record_swept_worktrees } from "../workflows/store.ts";
-import { deliver_pending_events, drop_pending_events, notify_agent, notify_background_finished } from "./notifications.ts";
+import { deliver_pending_events, drop_pending_events, notify_agent, notify_background_finished, take_background_notes } from "./notifications.ts";
 
 let shutting_down = false;
 
@@ -100,6 +100,7 @@ const wire_hooks = () => {
     return sections.filter((section) => section !== null);
   });
   set_agent_continuation(notify_agent);
+  set_event_notes_hook(take_background_notes);
   set_turn_finished_hook((chat_id, message_id) => {
     if (shutting_down) {
       return;

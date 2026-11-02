@@ -51,7 +51,7 @@ export const ModelPicker = ({ chat_id }: { chat_id: string | null }) => {
           })),
         }
       : null;
-  const sections = efforts_section ? [efforts_section, models_section] : [models_section];
+  const sections = efforts_section ? [models_section, efforts_section] : [models_section];
 
   return (
     <>

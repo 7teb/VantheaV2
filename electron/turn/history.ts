@@ -144,6 +144,8 @@ const lead_messages = async (steps: Step[], { model, read_image, agent_tools }: 
       out.push({ role: "user", content: carried_todos_content(step.text) });
     } else if (step.notice === "model_switch") {
       out.push({ role: "user", content: model_switch_content(step.text) });
+    } else if (step.notice === "background_task") {
+      out.push({ role: "user", content: step.text });
     }
   }
   return out;

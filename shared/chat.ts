@@ -113,7 +113,8 @@ export type NoticeKind =
   | "peer_message"
   | "peer_status"
   | "peer_digest"
-  | "workflow_result";
+  | "workflow_result"
+  | "background_task";
 
 export type NoticeStep = { id: string; round: number; kind: "notice"; notice: NoticeKind; text: string };
 
