@@ -7,6 +7,7 @@ import { stored_context } from "../context/calibration.ts";
 import { harness_facts } from "../context/facts.ts";
 import { save_tool_images } from "../media/files.ts";
 import { major_effort } from "../model/catalog.ts";
+import { model_catalog } from "../model/catalog-file.ts";
 import { stream_round } from "../model/stream.ts";
 import { cancel_chat, wait_for_decision } from "../permissions/approvals.ts";
 import { human_requests_of, set_authorization } from "../permissions/context.ts";
@@ -28,6 +29,7 @@ import { tools_for } from "../tools/registry.ts";
 import { turn_diffs } from "../turn-diff/index.ts";
 import { drop_untaken_steers, unregister_active, type ActiveTurn } from "./active.ts";
 import { carried_todos_note } from "./carried-todos.ts";
+import { model_switch_note } from "./model-switch.ts";
 import { build_api_messages } from "./history.ts";
 import { run_compaction_turn, run_turn_loop } from "./loop.ts";
 import type { CompactionHooks, TurnNote, TurnSession } from "./session.ts";
@@ -106,7 +108,8 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     });
     const api_messages = await build_api_messages({ system, summary: loaded.summary, messages: history, model: plan.model, agent_tools });
     const carried = offered.some((tool) => tool.spec.name === "update_todos") ? carried_todos_note(history) : null;
-    let opening_notes: TurnNote[] = carried ? [carried] : [];
+    const switched = model_switch_note(history, plan.model, await model_catalog());
+    let opening_notes: TurnNote[] = [switched, carried].filter((note): note is TurnNote => note !== null);
     const session: TurnSession = {
       chat_id: plan.chat_id,
       message_id: plan.message_id,

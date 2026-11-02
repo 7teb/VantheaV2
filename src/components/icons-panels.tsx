@@ -2,8 +2,7 @@ import { codicon, Icon, type IconProps } from "./icons-base.tsx";
 
 export const BookOpenIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M12 5v16" />
-    <path d="M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z" />
+    <path d="M10 11.5h2a1.5 1.5 0 0 0 1.5-1.5V4A1.5 1.5 0 0 0 12 2.5h-2a2.5 2.5 0 0 0-2.5 2 2.5 2.5 0 0 0-2.5-2H3A1.5 1.5 0 0 0 1.5 4v6A1.5 1.5 0 0 0 3 11.5h2a2.5 2.5 0 0 1 2.5 1.5 2.5 2.5 0 0 1 2.5-1.5zM7.5 4.5V13" />
   </Icon>
 );
 
@@ -20,7 +19,7 @@ export const EyeOffIcon = (props: IconProps) => (
 );
 
 export const CircleStopIcon = (props: IconProps) => (
-  <Icon {...codicon} strokeWidth={0} {...props}>
+  <Icon {...codicon} {...props}>
     <path d="M6 6h4v4H6z" />
     <path fillRule="evenodd" clipRule="evenodd" d="M8.6 1c1.6.1 3.1.9 4.2 2 1.3 1.4 2 3.1 2 5.1 0 1.6-.6 3.1-1.6 4.4-1 1.2-2.4 2.1-4 2.4-1.6.3-3.2.1-4.6-.7-1.4-.8-2.5-2-3.1-3.5C.9 9.2.8 7.5 1.3 6c.5-1.6 1.4-2.9 2.8-3.8C5.4 1.3 7 .9 8.6 1zm.5 12.9c1.3-.3 2.5-1 3.4-2.1.8-1.1 1.3-2.4 1.2-3.8 0-1.6-.6-3.2-1.7-4.3-1-1-2.2-1.6-3.6-1.7-1.3-.1-2.7.2-3.8 1-1.1.8-1.9 1.9-2.3 3.3-.4 1.3-.4 2.7.2 4 .6 1.3 1.5 2.3 2.7 3 1.2.7 2.6.9 3.9.6z" />
   </Icon>

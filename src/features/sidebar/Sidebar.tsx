@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
 import { remote_client } from "../../api/bridge.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
-import { ArchiveIcon, ComposeIcon, FolderOpenIcon, FolderPlusIcon, PlusIcon, SettingsIcon } from "../../components/icons.tsx";
+import { ArchiveIcon, ComposeIcon, FolderOpenIcon, FolderPlusIcon, PlusSmallIcon, SettingsIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
 import { Tooltip } from "../../components/Tooltip.tsx";
 import { use_t } from "../../i18n/index.ts";
@@ -20,6 +20,7 @@ import { ProjectGroup } from "./ProjectGroup.tsx";
 import { archived_chats, build_sidebar, normalize_path } from "./sidebar-model.ts";
 import { SidebarSection as Section } from "./SidebarSection.tsx";
 import { SidebarSkeleton } from "./SidebarSkeleton.tsx";
+import { use_row_motion } from "./use-row-motion.ts";
 import "./Sidebar.css";
 
 const use_minute_clock = () => {
@@ -57,6 +58,8 @@ export const Sidebar = () => {
   const [add_open, set_add_open] = useState(false);
   const [archive_open, set_archive_open] = useState(false);
   const [create_open, set_create_open] = useState(false);
+  const lists = useRef<HTMLDivElement>(null);
+  use_row_motion(lists);
   const model = useMemo(() => (projects ? build_sidebar(chats.list, projects) : null), [chats.list, projects]);
   const archived = useMemo(() => archived_chats(chats.list), [chats.list]);
   if (archive_open && archived.length === 0) {
@@ -92,7 +95,7 @@ export const Sidebar = () => {
       return <ActivityView active_chat_id={active_chat_id} now={now} />;
     }
     return (
-      <div className="sidebar-sections enter-fade-up">
+      <div ref={lists} className="sidebar-sections sidebar-lists enter-fade-up">
         {model.pinned.length > 0 && <Section label={t("sidebar.pinned")}>{rows(model.pinned)}</Section>}
         <Section
           label={t("sidebar.projects")}
@@ -106,7 +109,7 @@ export const Sidebar = () => {
               active={add_open}
               onClick={() => set_add_open((was_open) => !was_open)}
             >
-              <PlusIcon size={14} />
+              <PlusSmallIcon />
             </IconButton>
           }
         >
@@ -131,17 +134,17 @@ export const Sidebar = () => {
     <aside className="sidebar" data-state={collapsed ? "closed" : "open"} inert={collapsed} aria-label={t("sidebar.navigation")}>
       <div className="sidebar-inner">
         <nav className="sidebar-nav">
-          <NavButton icon={<ComposeIcon size={16} />} label={t("sidebar.new_chat")} hint={shortcut_hint("new_chat")} on_click={() => start_new_chat(project_path)} />
+          <NavButton icon={<ComposeIcon />} label={t("sidebar.new_chat")} hint={shortcut_hint("new_chat")} on_click={() => start_new_chat(project_path)} />
         </nav>
         <div className="sidebar-scroll">{body()}</div>
         <div className="sidebar-footer">
           <IconButton label={t("sidebar.settings")} hint={shortcut_hint("settings")} onClick={() => open_settings()}>
-            <SettingsIcon size={14} />
+            <SettingsIcon />
           </IconButton>
           {chats.status === "ready" && archived.length > 0 && (
             <Tooltip label={t("sidebar.archived")}>
               <button type="button" className="sidebar-archive" aria-label={t("sidebar.archived")} onClick={() => set_archive_open(true)}>
-                <ArchiveIcon size={16} />
+                <ArchiveIcon />
                 <span className="sidebar-archive-count">{archived.length}</span>
               </button>
             </Tooltip>
@@ -149,7 +152,7 @@ export const Sidebar = () => {
         </div>
       </div>
       <CreateProjectDialog open={create_open} on_close={() => set_create_open(false)} />
-      <ArchivedDialog open={archive_open} chats={archived} active_chat_id={active_chat_id} now={now} on_close={() => set_archive_open(false)} />
+      <ArchivedDialog open={archive_open} chats={archived} projects={projects ?? []} active_chat_id={active_chat_id} now={now} on_close={() => set_archive_open(false)} />
       <Menu
         open={add_open}
         anchor={add_anchor}
@@ -161,8 +164,8 @@ export const Sidebar = () => {
             items: [
               ...(remote_client
                 ? []
-                : [{ id: "existing", label: t("projects.add_existing"), icon: <FolderOpenIcon size={15} />, on_select: () => choose_project().catch(report("choosing a project")) }]),
-              { id: "create", label: t("projects.create"), icon: <FolderPlusIcon size={15} />, on_select: () => set_create_open(true) },
+                : [{ id: "existing", label: t("projects.add_existing"), icon: <FolderOpenIcon />, on_select: () => choose_project().catch(report("choosing a project")) }]),
+              { id: "create", label: t("projects.create"), icon: <FolderPlusIcon />, on_select: () => set_create_open(true) },
             ],
           },
         ]}

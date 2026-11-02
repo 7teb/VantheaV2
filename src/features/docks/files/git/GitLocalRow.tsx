@@ -89,11 +89,11 @@ export const GitLocalRow = ({ view }: { view: GitRepoView }) => {
         compare_line(t, tracking),
         <span className="git-part git-sync" tabIndex={0}>
           <span className="git-sync-part" data-nonzero={tracking.ahead > 0}>
-            <AheadIcon size={14} />
+            <AheadIcon />
             {tracking.ahead}
           </span>
           <span className="git-sync-part" data-nonzero={tracking.behind > 0}>
-            <BehindIcon size={14} />
+            <BehindIcon />
             {tracking.behind}
           </span>
         </span>,
@@ -121,7 +121,7 @@ export const GitLocalRow = ({ view }: { view: GitRepoView }) => {
   }
   return (
     <div className="git-row">
-      <span className="git-row-icon">{name === null ? <GitCommitIcon size={16} /> : <GitBranchIcon size={16} />}</span>
+      <span className="git-row-icon">{name === null ? <GitCommitIcon /> : <GitBranchIcon />}</span>
       <span className="git-row-main">
         {with_tip(
           tip,

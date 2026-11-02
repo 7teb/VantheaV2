@@ -82,11 +82,11 @@ const SkillRow = ({ skill }: { skill: SkillEntry }) => {
         </div>
         <div className="pane-item-actions is-visible">
           <IconButton size="sm" label={open ? t("skills.hide") : t("skills.view")} onClick={() => void toggle_body()}>
-            {open ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
+            {open ? <EyeOffIcon /> : <EyeIcon />}
           </IconButton>
           {!skill.builtin && (
             <IconButton size="sm" label={t("skills.remove")} onClick={() => set_confirming(true)}>
-              <TrashIcon size={14} />
+              <TrashIcon />
             </IconButton>
           )}
           <Toggle
@@ -137,10 +137,10 @@ export const SkillsPane = () => {
       <SettingsGroup>
         <SettingsRow label={t("skills.folder")} hint={t("skills.folder_sub")} error={error}>
           <IconButton label={t("skills.reload")} onClick={() => void load_skills()}>
-            <RetryIcon size={15} />
+            <RetryIcon />
           </IconButton>
           {!remote_client && (
-            <Button icon={<FolderOpenIcon size={15} />} onClick={() => void open_folder()}>
+            <Button icon={<FolderOpenIcon />} onClick={() => void open_folder()}>
               {t("skills.open")}
             </Button>
           )}
@@ -152,7 +152,6 @@ export const SkillsPane = () => {
         </SettingsGroup>
       )}
       {status === "failed" && <p className="pane-note">{t("skills.load_failed")}</p>}
-      {status === "ready" && skills.length === 0 && <p className="pane-note">{t("skills.empty")}</p>}
       {status === "ready" &&
         skill_sections(skills).map((section) => (
           <SettingsGroup key={section.key} label={section.group || undefined}>

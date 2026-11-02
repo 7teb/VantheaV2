@@ -1,6 +1,8 @@
+import type { ToolStep } from "../../../shared/chat.ts";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { BodyProps } from "./body-types.ts";
+import { CommandText } from "./CommandCard.tsx";
 import { OutputBlock } from "./OutputBlock.tsx";
 
 export const PlanBody = ({ view }: BodyProps<"plan">) => <Markdown text={view.text} className="tool-body-markdown" />;
@@ -19,4 +21,23 @@ export const PeerMessageBody = ({ view }: BodyProps<"peer_message">) => {
   );
 };
 
-export const McpBody = ({ view }: BodyProps<"mcp">) => <OutputBlock text={view.text} tone={view.is_error ? "error" : "normal"} />;
+const call_arguments = (step: ToolStep): string => {
+  const args = step.name === "call_mcp_tool" ? step.args.arguments : step.args;
+  if (typeof args === "string") {
+    return args.trim();
+  }
+  return args && typeof args === "object" && Object.keys(args).length > 0 ? JSON.stringify(args) : "";
+};
+
+export const McpBody = ({ view, step }: BodyProps<"mcp">) => {
+  const args = call_arguments(step);
+  if (!args) {
+    return <OutputBlock text={view.text} />;
+  }
+  return (
+    <div className="command-card mcp-card">
+      <CommandText command={args} prompt={false} />
+      <OutputBlock text={view.text} />
+    </div>
+  );
+};

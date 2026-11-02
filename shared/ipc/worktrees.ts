@@ -4,10 +4,10 @@ import { invoke } from "./channel.ts";
 export type WorktreeEligibility =
   | { kind: "ready"; branch: string | null; submodules: boolean }
   | { kind: "not_repo" }
-  | { kind: "no_commits" }
-  | { kind: "untracked_folder" }
+  | { kind: "no_commits"; branch: string | null }
+  | { kind: "untracked_folder"; branch: string | null }
   | { kind: "git_missing" }
-  | { kind: "programs"; keys: string[] }
+  | { kind: "programs"; keys: string[]; branch: string | null }
   | { kind: "failed"; error: string };
 
 export type WorktreeHead = { branch: string | null; detached_at: string | null; missing: boolean };

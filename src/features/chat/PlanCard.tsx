@@ -24,13 +24,13 @@ export const PlanCard = memo(({ chat_id, message_id, text, can_accept, accepted 
     <>
       <div className="plan-card enter-fade-up">
         <div className="plan-card-head">
-          <ClipboardListIcon size={15} />
+          <ClipboardListIcon />
           <span className="section-label">{t("plan.title")}</span>
         </div>
         <Markdown text={text} className="plan-card-body" />
         {accepted && (
           <div className="plan-card-accepted">
-            <CheckIcon size={14} />
+            <CheckIcon />
             <span>{t("plan.accepted")}</span>
           </div>
         )}

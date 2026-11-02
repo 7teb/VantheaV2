@@ -19,7 +19,7 @@ export const ActivityBell = () => {
 
   return (
     <IconButton className="activity-bell" label={label} active={showing} aria-pressed={showing} onClick={toggle_activity_view}>
-      <BellIcon size={16} />
+      <BellIcon />
       {attention && <span className="activity-bell-dot" />}
     </IconButton>
   );

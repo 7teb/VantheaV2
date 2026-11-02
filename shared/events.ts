@@ -14,6 +14,7 @@ import type {
   TurnError,
   TurnStatus,
 } from "./chat.ts";
+import type { ToolFailure } from "./tool-failure.ts";
 import type { ToolView } from "./tool-view.ts";
 
 export type FinalStatus = Exclude<TurnStatus, "streaming">;
@@ -39,6 +40,7 @@ export type StreamEventBody =
       status: ToolEndStatus;
       view: ToolView | null;
       error: string | null;
+      failure?: ToolFailure;
       result_text: string;
       images?: StepImage[];
     }

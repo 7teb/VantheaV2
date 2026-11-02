@@ -21,6 +21,8 @@ export type ModelContext = { limit: number | null; compact_percent: number };
 
 export const min_context_limit = 16000;
 
+export const compact_percent_range = { min: 50, max: 95 } as const;
+
 export const mcp_tool_key = (server: string, tool: string) => `${server}/${tool}`;
 
 export type Settings = {

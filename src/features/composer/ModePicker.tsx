@@ -46,7 +46,7 @@ export const ModePicker = ({ chat_id }: { chat_id: string | null }) => {
     return {
       id: entry.id,
       label: t(entry.label),
-      icon: <EntryIcon size={15} />,
+      icon: <EntryIcon />,
       checked: entry.id === mode,
       on_select: () => {
         if (windowed) {
@@ -60,7 +60,7 @@ export const ModePicker = ({ chat_id }: { chat_id: string | null }) => {
     mode_items.push({
       id: "start_window",
       label: t("composer.full_window_start", { n: full_window_minutes }),
-      icon: <ClockIcon size={15} />,
+      icon: <ClockIcon />,
       on_select: () => void open_full_window(chat_id),
     });
   }
@@ -69,7 +69,7 @@ export const ModePicker = ({ chat_id }: { chat_id: string | null }) => {
     sections.push({
       id: "window",
       label: hint,
-      items: [{ id: "end", label: t("composer.full_window_end"), icon: <CircleStopIcon size={15} />, on_select: () => void end_full_window(windowed.chat_id) }],
+      items: [{ id: "end", label: t("composer.full_window_end"), icon: <CircleStopIcon />, on_select: () => void end_full_window(windowed.chat_id) }],
     });
   }
 
@@ -87,9 +87,9 @@ export const ModePicker = ({ chat_id }: { chat_id: string | null }) => {
         data-mode={windowed ? "full" : mode}
         onClick={() => set_open(!open)}
       >
-        <Icon size={15} />
+        <Icon />
         <span className="composer-chip-label">{label}</span>
-        <ChevronDownIcon size={14} className="composer-chip-chevron" />
+        <ChevronDownIcon className="composer-chip-chevron" />
       </button>
       <Menu
         open={open}

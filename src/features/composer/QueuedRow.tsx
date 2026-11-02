@@ -22,7 +22,7 @@ const RowIcon = ({ entry }: { entry: QueuedMessage }) => {
   if (entry.steering) {
     return (
       <span className="queued-icon">
-        <CircleSpinnerIcon size={14} className="spin" />
+        <CircleSpinnerIcon className="spin" />
       </span>
     );
   }
@@ -30,14 +30,14 @@ const RowIcon = ({ entry }: { entry: QueuedMessage }) => {
     return (
       <Tooltip label={t("composer.queued_not_sent_hint")}>
         <span className="queued-icon" data-tone="warning" role="img" aria-label={t("composer.queued_not_sent")}>
-          <CircleAlertIcon size={14} />
+          <CircleAlertIcon />
         </span>
       </Tooltip>
     );
   }
   return (
     <span className="queued-icon">
-      <QueueIcon size={14} className="queued-mark" />
+      <QueueIcon className="queued-mark" />
     </span>
   );
 };
@@ -94,7 +94,7 @@ export const QueuedRow = ({ chat_id, entry, busy, leaving, on_left, on_edited }:
       disabled={entry.after_compaction}
       onClick={() => void (steer ? steer_queued(chat_id, entry.id) : send_queued(chat_id, entry.id))}
     >
-      <CornerDownRightIcon size={14} />
+      <CornerDownRightIcon />
       {t(steer ? "composer.queued_steer" : "composer.queued_send")}
     </button>
   );
@@ -110,7 +110,7 @@ export const QueuedRow = ({ chat_id, entry, busy, leaving, on_left, on_edited }:
           </span>
           {files > 0 && (
             <span className="queued-meta">
-              <PaperclipIcon size={12} />
+              <PaperclipIcon />
               {files}
             </span>
           )}
@@ -119,7 +119,7 @@ export const QueuedRow = ({ chat_id, entry, busy, leaving, on_left, on_edited }:
           <RowStatus entry={entry} />
           {!entry.steering && (busy && !entry.after_compaction ? <Tooltip label={t("composer.queued_steer_hint")}>{steer_button}</Tooltip> : steer_button)}
           <IconButton label={t("composer.queued_discard")} size="sm" disabled={entry.steering} onClick={() => discard_queued(chat_id, entry.id)}>
-            <TrashIcon size={14} />
+            <TrashIcon />
           </IconButton>
           {!entry.steering && (
             <IconButton
@@ -132,7 +132,7 @@ export const QueuedRow = ({ chat_id, entry, busy, leaving, on_left, on_edited }:
               active={menu_open}
               onClick={() => set_menu_open((was_open) => !was_open)}
             >
-              <MoreHorizontalIcon size={16} />
+              <MoreHorizontalIcon />
             </IconButton>
           )}
         </span>
@@ -150,7 +150,7 @@ export const QueuedRow = ({ chat_id, entry, busy, leaving, on_left, on_edited }:
               {
                 id: "edit",
                 label: t("composer.queued_edit"),
-                icon: <PencilIcon size={15} />,
+                icon: <PencilIcon />,
                 on_select: () => {
                   edit_queued(chat_id, entry.id);
                   on_edited();

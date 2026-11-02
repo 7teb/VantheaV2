@@ -27,7 +27,7 @@ const notes: Record<SourceTab, { failed: MessageKey; empty: MessageKey; manage: 
 
 export const usable_skills = (skills: Loaded<SkillEntry>) => skills.items.filter((skill) => skill.enabled && !skill.error);
 
-const check = (checked: boolean) => <span className="composer-popover-check">{checked && <CheckIcon size={16} />}</span>;
+const check = (checked: boolean) => <span className="composer-popover-check">{checked && <CheckIcon />}</span>;
 
 export const SourceList = ({ tab, label_id, skills, servers, draft, on_chip, on_manage }: SourceListProps) => {
   const t = use_t();

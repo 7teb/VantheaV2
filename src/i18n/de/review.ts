@@ -30,6 +30,5 @@ export const review: Record<keyof typeof en, string> = {
   "review.denied_by_you": "Von dir abgelehnt",
   "review.feedback": "Dein Feedback: {x}",
   "review.blocked": "Blockiert: VantheaX führt diesen Befehl nie aus",
-  "review.pending_title": "Automatische Prüfung",
-  "review.pending_detail": "Ein sorgfältig instruierter Prüf-Agent prüft diese Anfrage, bevor VantheaX sie ausführt.",
+  "review.scripts_stopped": "Nicht ausgeführt: Ein Skript, das er ausführt, hat sich während der Prüfung dreimal geändert",
 };

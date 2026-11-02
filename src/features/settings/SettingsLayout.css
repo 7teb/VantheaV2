@@ -12,6 +12,7 @@
 }
 
 .settings-group-body {
+  --text-disabled: var(--raised-text-disabled);
   padding: var(--space-1) 0;
   border-radius: var(--radius-xl);
 }

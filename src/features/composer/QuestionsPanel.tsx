@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { open_questions, type OpenQuestion } from "../../../shared/questions.ts";
-import { ChevronLeftIcon, ChevronRightIcon, CircleHelpIcon } from "../../components/icons.tsx";
+import { CircleHelpIcon, NavLeftIcon, NavRightIcon } from "../../components/icons.tsx";
 import { QuestionForm } from "../../components/QuestionForm.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { ActionResult } from "../../state/chat-actions.ts";
@@ -62,16 +62,16 @@ const QuestionsCard = ({ chat_id, open }: QuestionsCardProps) => {
   const next_label = t("questions.next_question");
   const head = (
     <>
-      <CircleHelpIcon size={16} className="questions-head-icon" />
+      <CircleHelpIcon className="questions-head-icon" />
       <span>{t("questions.header")}</span>
       {open.length > 1 && (
         <span className="questions-nav">
           <button type="button" className="questions-nav-button" aria-label={previous_label} title={previous_label} disabled={index === 0} onClick={() => go(-1)}>
-            <ChevronLeftIcon size={16} />
+            <NavLeftIcon />
           </button>
           <span className="questions-count">{t("questions.count", { n: index + 1, total: open.length })}</span>
           <button type="button" className="questions-nav-button" aria-label={next_label} title={next_label} disabled={last} onClick={() => go(1)}>
-            <ChevronRightIcon size={16} />
+            <NavRightIcon />
           </button>
         </span>
       )}

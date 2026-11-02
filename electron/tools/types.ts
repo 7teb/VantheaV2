@@ -5,6 +5,7 @@ import type { PeerType } from "../../shared/peer-notes.ts";
 import type { ModelEntry, SideModelRole } from "../../shared/models.ts";
 import type { ReviewActor, ReviewRecord, ReviewUsage } from "../../shared/review.ts";
 import type { Settings } from "../../shared/settings.ts";
+import type { ToolFailure } from "../../shared/tool-failure.ts";
 import type { ToolView } from "../../shared/tool-view.ts";
 
 export type ToolProfile = "main" | "plan" | "explore" | "worker";
@@ -74,7 +75,7 @@ export type ToolContext = {
 
 export type ToolImage = { bytes: Buffer; mime: string; label: string };
 
-export type ToolResult = { status: "done" | "failed" | "denied"; text: string; view: ToolView | null; images?: ToolImage[] };
+export type ToolResult = { status: "done" | "failed" | "denied"; text: string; view: ToolView | null; failure?: ToolFailure; images?: ToolImage[] };
 
 export type ToolDefinition<A> = {
   spec: ToolSpec;
@@ -94,6 +95,17 @@ export type Tool = {
 };
 
 export class ToolArgumentError extends Error {}
+
+export class ToolFailureError extends Error {
+  failure: ToolFailure;
+
+  constructor(message: string, failure: ToolFailure, options?: ErrorOptions) {
+    super(message, options);
+    this.failure = failure;
+  }
+}
+
+export const failure_of = (error: unknown): ToolFailure | undefined => (error instanceof ToolFailureError ? error.failure : undefined);
 
 export const define_tool = <A>(definition: ToolDefinition<A>): Tool => ({
   spec: definition.spec,

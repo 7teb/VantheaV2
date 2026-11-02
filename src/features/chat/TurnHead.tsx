@@ -1,5 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { ChevronRightIcon } from "../../components/icons.tsx";
+import { LabelMorph } from "../../components/LabelMorph.tsx";
 import { use_clock } from "../../components/use-clock.ts";
 import { use_t } from "../../i18n/index.ts";
 import { set_turn_folded } from "../../state/turn-folds.ts";
@@ -50,14 +51,12 @@ export const TurnHead = ({ chat_id, message_id, created_at, head, foldable, fold
   };
   return (
     <div className="turn-head">
-      {foldable ? (
-        <button type="button" className="turn-toggle" aria-expanded={!folded} onClick={toggle}>
+      <button type="button" className={foldable ? "turn-toggle" : undefined} disabled={!foldable} aria-expanded={foldable ? !folded : undefined} onClick={toggle}>
+        <LabelMorph morph_key={head.kind}>
           <Label head={head} created_at={created_at} />
-          <ChevronRightIcon size={12} className="turn-toggle-chevron" />
-        </button>
-      ) : (
-        <Label head={head} created_at={created_at} />
-      )}
+        </LabelMorph>
+        {foldable && <ChevronRightIcon className="turn-toggle-chevron" />}
+      </button>
       <div className="turn-head-rule" />
     </div>
   );

@@ -74,7 +74,7 @@
   min-height: 28px;
   padding: 5px 8px;
   border-radius: var(--radius-item);
-  color: var(--text-menu-item);
+  color: var(--text-row);
   text-align: left;
 }
 
@@ -112,8 +112,8 @@ button.remote-link:focus-visible {
   display: inline-grid;
   flex: none;
   place-items: center;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .remote-hint {

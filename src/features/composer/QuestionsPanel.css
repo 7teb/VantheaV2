@@ -35,8 +35,9 @@
   }
 
   .questions-nav-button:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--ring-accent);
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow: none;
   }
 
   .questions-count {

@@ -30,8 +30,8 @@ export const WorktreeChip = ({ draft_key, project_path }: WorktreeChipProps) => 
         onClick={() => toggle_worktree(draft_key)}
       >
         <span className="draft-chip-icon">
-          <WorktreeIcon size={15} />
-          <CloseIcon size={15} />
+          <WorktreeIcon />
+          <CloseIcon />
         </span>
         <span className="composer-chip-label">{t("worktree.row")}</span>
       </button>

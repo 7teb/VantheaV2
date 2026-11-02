@@ -1,7 +1,8 @@
 import type { McpTier } from "../../shared/approval.ts";
 import type { PermissionMode } from "../../shared/chat.ts";
 import { compact_fraction } from "../../shared/chat.ts";
-import { min_context_limit, type Language, type McpServerConfig, type McpToolOverride, type ModelContext, type Personality, type ProjectEntry, type Settings } from "../../shared/settings.ts";
+import { flex_base } from "../../shared/models.ts";
+import { compact_percent_range, min_context_limit, type Language, type McpServerConfig, type McpToolOverride, type ModelContext, type Personality, type ProjectEntry, type Settings } from "../../shared/settings.ts";
 import { as_array, as_boolean, as_record, as_string, clamp_int, is_record, pick } from "../storage/coerce.ts";
 import { folder_name, path_key } from "../storage/paths.ts";
 
@@ -135,7 +136,7 @@ const model_context = (value: unknown): ModelContext => {
   const raw = as_record(value);
   return {
     limit: typeof raw.limit === "number" ? clamp_int(raw.limit, min_context_limit, 100_000_000, min_context_limit) : null,
-    compact_percent: clamp_int(raw.compact_percent, 50, 95, Math.round(compact_fraction * 100)),
+    compact_percent: clamp_int(raw.compact_percent, compact_percent_range.min, compact_percent_range.max, Math.round(compact_fraction * 100)),
   };
 };
 
@@ -158,9 +159,10 @@ export const normalize_settings = (value: unknown, base: Settings): Settings => 
   const web = as_record(raw.web_search);
   const image = as_record(raw.image_gen);
   const skills = as_record(raw.skills);
+  const model = model_id(raw.model, base.model);
   return {
     language: pick(raw.language, languages, base.language),
-    model: model_id(raw.model, base.model),
+    model: flex_base(model) ?? model,
     effort: effort(raw.effort, base.effort),
     mode: pick(raw.mode, modes, base.mode),
     projects: projects(raw.projects, base.projects),

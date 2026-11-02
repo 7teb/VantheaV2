@@ -62,7 +62,7 @@ const LinkList = ({ links, selected, on_select }: LinkListProps) => {
           onClick={() => on_select(index)}
         >
           <LinkText link={link} />
-          <span className="remote-link-check">{index === selected && <CheckIcon size={14} />}</span>
+          <span className="remote-link-check">{index === selected && <CheckIcon />}</span>
         </button>
       ))}
     </div>
@@ -85,7 +85,7 @@ const RemoteOn = ({ status }: { status: RemoteStatus }) => {
       <div className="remote-foot">
         <span className="remote-count">{connected_text(t, status.connected)}</span>
         <Tooltip label={t("remote.new_link_hint")}>
-          <Button size="sm" icon={<RetryIcon size={14} />} onClick={() => void renew_remote_link()}>
+          <Button size="sm" icon={<RetryIcon />} onClick={() => void renew_remote_link()}>
             {t("remote.new_link")}
           </Button>
         </Tooltip>

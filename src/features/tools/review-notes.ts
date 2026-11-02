@@ -73,7 +73,7 @@ export const approval_lines = (t: Translate, request: ApprovalRequest): NoteLine
       return [...rechecked, ...note_lines(t, request.review), ...reason];
     }
     case "write":
-      return request.instruction_file ? [line(t("review.min_instruction_file"))] : [];
+      return [...(request.instruction_file ? [line(t("review.min_instruction_file"))] : []), ...note_lines(t, request.review)];
     case "memory":
     case "mcp_server":
     case "skill_install":
@@ -87,7 +87,8 @@ const denied_notice = (t: Translate, current: ReviewRecord | null, decision: Hum
   if (decision && !decision.approved) {
     const reason = current?.source === "model" && current.reason ? [line(decision.expired ? current.reason : t("review.reason", { x: current.reason }), "reason")] : [];
     const feedback = decision.feedback.trim() ? [line(t("review.feedback", { x: decision.feedback.trim() }), "detail")] : [];
-    return { title: decision.expired ? t("review.denied") : t("review.denied_by_you"), lines: [...reason, ...feedback] };
+    const lines = [...reason, ...feedback];
+    return lines.length > 0 ? { title: decision.expired ? t("review.denied") : t("review.denied_by_you"), lines } : null;
   }
   if (!current || current.verdict !== "deny" || current.source !== "model") {
     return null;
@@ -114,6 +115,9 @@ export const step_outcome = (t: Translate, step: ToolStep): StepOutcome => {
   const decision = (current ? decisions.findLast((entry) => entry.review_id === current.id) : decisions.at(-1)) ?? null;
   switch (step.status) {
     case "denied":
+      if (!current && step.reviews?.at(-1)?.superseded === "scripts_changed") {
+        return { notice: { title: t("review.scripts_stopped"), lines: [] }, footer: [] };
+      }
       return { notice: denied_notice(t, current, decision), footer: [] };
     case "failed":
       if (current?.source === "floor") {

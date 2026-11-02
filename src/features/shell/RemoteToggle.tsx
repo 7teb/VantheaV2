@@ -25,7 +25,7 @@ export const RemoteToggle = () => {
         className="titlebar-remote"
         onClick={() => set_open(!open)}
       >
-        <SmartphoneIcon size={17} />
+        <SmartphoneIcon />
         {on && <span className="remote-dot" aria-hidden="true" />}
       </IconButton>
       <Popover open={open} anchor={anchor} label={t("remote.title")} placement="bottom-end" min_width={320} className="remote-popover" on_close={() => set_open(false)}>

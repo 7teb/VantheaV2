@@ -2,6 +2,7 @@ import type { ApprovalRequest, HumanDecision } from "./approval.ts";
 import type { ModelChoice } from "./models.ts";
 import type { QuestionStates } from "./questions.ts";
 import type { ReviewRecord } from "./review.ts";
+import type { ToolFailure } from "./tool-failure.ts";
 import type { ToolView } from "./tool-view.ts";
 
 export type PermissionMode = "ask" | "auto" | "full";
@@ -86,6 +87,7 @@ export type ToolStep = {
   reviews?: ReviewRecord[];
   view: ToolView | null;
   error: string | null;
+  failure?: ToolFailure;
   result_text: string;
   images?: StepImage[];
   started_at: number | null;
@@ -105,6 +107,7 @@ export type NoticeKind =
   | "plan_blocked"
   | "output_limit"
   | "todos_carried"
+  | "model_switch"
   | "context_trimmed"
   | "agent_roster"
   | "peer_message"

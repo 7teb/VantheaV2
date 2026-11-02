@@ -8,13 +8,9 @@
     min-width: 0;
   }
 
-  .reasoning-label.is-status {
-    animation: fade-up var(--duration-enter) var(--ease-out) backwards;
-  }
-
   .reasoning-label-text {
     display: block;
-    overflow: hidden;
+    overflow: clip visible;
     white-space: nowrap;
     text-overflow: ellipsis;
   }

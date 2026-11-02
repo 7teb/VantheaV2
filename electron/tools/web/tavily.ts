@@ -2,6 +2,7 @@ import type { WebFailure } from "../../../shared/tool-view.ts";
 import { parse_retry_after } from "../../model/errors.ts";
 import { abortable_sleep } from "../../model/transport.ts";
 import { as_array, as_record, as_string, error_text } from "../../storage/coerce.ts";
+import { ToolFailureError } from "../types.ts";
 
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
 
@@ -104,7 +105,7 @@ const attempt_post = async (fetch_fn: FetchFn, key: string, route: string, body:
     if (signal.aborted || !attempt.aborted) {
       throw error;
     }
-    throw new Error(`Tavily ${route} did not answer within ${attempt_timeout_ms / 1000} s`, { cause: error });
+    throw new ToolFailureError(`Tavily ${route} did not answer within ${attempt_timeout_ms / 1000} s`, { kind: "web_timeout", seconds: attempt_timeout_ms / 1000 }, { cause: error });
   }
 };
 
@@ -115,12 +116,13 @@ export const tavily_post = async (fetch_fn: FetchFn, key: string, route: "/searc
       try {
         return JSON.parse(text);
       } catch (error) {
-        throw new Error(`Tavily returned an unreadable ${route} response (${error_text(error)}): ${text.slice(0, 200)}`, { cause: error });
+        throw new ToolFailureError(`Tavily returned an unreadable ${route} response (${error_text(error)}): ${text.slice(0, 200)}`, { kind: "web_unreadable" }, { cause: error });
       }
     }
     const detail = tavily_error_detail(text);
     if (!retry_statuses.has(response.status) || attempt >= max_attempts) {
-      throw new Error(`Tavily ${response.status}: ${detail}`);
+      const message = `Tavily ${response.status}: ${detail}`;
+      throw new ToolFailureError(message, { kind: "reply", text: message });
     }
     const wait_ms = retry_wait(response, attempt);
     console.warn(`[web] Tavily ${route} returned ${response.status}, retrying in ${wait_ms} ms: ${detail}`);

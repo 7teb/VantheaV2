@@ -31,7 +31,7 @@ export const MenuRow = ({ icon: Icon, label, hint, trail, disabled = false, acti
     onClick={on_select}
     onMouseMove={on_hover}
   >
-    <span className="composer-popover-icon">{Icon && <Icon size={16} />}</span>
+    <span className="composer-popover-icon">{Icon && <Icon />}</span>
     <span className="composer-popover-name">{label}</span>
     {hint && <span className="composer-popover-hint">{hint}</span>}
     {trail && <span className="composer-popover-trail">{trail}</span>}

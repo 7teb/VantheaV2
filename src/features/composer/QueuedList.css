@@ -1,4 +1,11 @@
 @layer components {
+  @keyframes queued-row-in {
+    from {
+      grid-template-rows: 0fr;
+      opacity: 0;
+    }
+  }
+
   @keyframes queued-row-out {
     to {
       grid-template-rows: 0fr;
@@ -6,50 +13,11 @@
     }
   }
 
-  @keyframes queued-panel-out {
-    to {
-      opacity: 0;
-    }
-  }
-
-  .queued-panel {
-    --queued-inset: 13px;
-    --queued-tuck: 4px;
-    --queued-shoulder: calc(var(--radius-composer) - var(--queued-inset));
-    position: relative;
-    margin: 0 var(--queued-inset) calc(-1 * (var(--queued-tuck) + var(--space-2)));
-    padding: 1px 0 var(--queued-tuck);
-    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-    corner-shape: superellipse(1.5);
-    background: var(--surface-dock-card);
-    mask:
-      linear-gradient(var(--mask) 0 0) top / 100% calc(100% - var(--queued-tuck)) no-repeat,
-      radial-gradient(var(--radius-composer) at 100% var(--radius-composer), transparent calc(var(--radius-composer) - 1px), var(--mask) var(--radius-composer))
-        left bottom / var(--queued-shoulder) var(--queued-tuck) no-repeat,
-      radial-gradient(var(--radius-composer) at 0 var(--radius-composer), transparent calc(var(--radius-composer) - 1px), var(--mask) var(--radius-composer))
-        right bottom / var(--queued-shoulder) var(--queued-tuck) no-repeat;
-  }
-
-  .queued-panel::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border: 1px solid var(--ring-rail);
-    border-bottom: 0;
-    border-radius: inherit;
-    corner-shape: inherit;
-    pointer-events: none;
-  }
-
-  .queued-panel[data-leaving="true"] {
-    animation: queued-panel-out var(--duration-base) var(--ease-out) forwards;
-  }
-
   .queued-list {
     display: flex;
     flex-direction: column;
     gap: 1px;
-    max-height: min(30dvh, calc(var(--composer-card-cap, 100dvh) - 1px - var(--queued-tuck)));
+    max-height: min(30dvh, calc(var(--composer-card-cap, 100dvh) - 1px - var(--tab-tuck)));
     overflow-x: hidden;
     overflow-y: auto;
   }
@@ -57,6 +25,15 @@
   .queued-row {
     display: grid;
     grid-template-rows: 1fr;
+  }
+
+  .queued-row:not([data-leaving="true"]) {
+    animation: queued-row-in var(--duration-slow) var(--ease-height) backwards;
+  }
+
+  .queued-row:not([data-leaving="true"]) .queued-row-inner {
+    overflow: clip;
+    overflow-clip-margin: 4px;
   }
 
   .queued-row[data-leaving="true"] {

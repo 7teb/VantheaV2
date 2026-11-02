@@ -11,7 +11,7 @@ export const FilesBody = ({ view }: BodyProps<"files">) => {
   const shown = view.files.slice(0, max_listed);
   return (
     <div className="tool-body-stack">
-      <ul className="tool-body-list inset-surface">
+      <ul className="tool-body-list tool-card">
         {shown.map((file) => (
           <li key={file} className="tool-body-path">
             {file}
@@ -24,7 +24,7 @@ export const FilesBody = ({ view }: BodyProps<"files">) => {
 };
 
 export const GrepBody = ({ view }: BodyProps<"grep">) => (
-  <ul className="tool-body-list inset-surface">
+  <ul className="tool-body-list tool-card">
     {view.matches.map((match, index) => (
       <li key={index} className="tool-grep-match">
         <span className="tool-body-path tool-body-muted">
@@ -39,7 +39,7 @@ export const GrepBody = ({ view }: BodyProps<"grep">) => (
 export const OutlineBody = ({ view }: BodyProps<"outline">) => (
   <div className="tool-body-stack">
     <div className="tool-body-path">{view.path}</div>
-    <ul className="tool-body-list inset-surface">
+    <ul className="tool-body-list tool-card">
       {view.symbols.map((symbol, index) => (
         <li key={index} className="tool-outline-symbol" style={{ paddingLeft: 12 + symbol.depth * 14 }}>
           <span className="tool-body-muted">{symbol.kind}</span>

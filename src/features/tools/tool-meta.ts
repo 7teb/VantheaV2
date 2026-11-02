@@ -83,6 +83,8 @@ const skill_name = (step: ToolStep) => view_of(step, "skill")?.name || text_arg(
 
 const query_of = (step: ToolStep) => view_of(step, "grep")?.query ?? text_arg(step, "query");
 
+const server_name = (step: ToolStep) => text_arg(step, "name");
+
 const listed_root = (step: ToolStep) => view_of(step, "files")?.root || text_arg(step, "path");
 
 const listed_label: Label = (t, step) => {
@@ -125,7 +127,7 @@ const command_label = (active: boolean): Label => (t, step) => {
   const command = command_of(step);
   const keys = shell_label_keys[call_shell(step.name, step.args)];
   if (step.status === "awaiting_approval") {
-    return compact_command(command) ? t("tool_label.run_cmd", { x: command }) : t(keys.ask);
+    return t(keys.ask);
   }
   if (active) {
     return compact_command(command) ? t("tool_label.running", { x: command }) : t(keys.running);
@@ -134,6 +136,15 @@ const command_label = (active: boolean): Label => (t, step) => {
     return compact_command(command) ? t("tool_label.moved_background", { x: command }) : t(keys.moved);
   }
   return compact_command(command) ? t("tool_label.ran", { x: command }) : t(keys.ran);
+};
+
+const command_attempt: Label = (t, step) => {
+  const view = view_of(step, "command");
+  if (view && (view.exit_code !== null || view.timed_out)) {
+    return command_label(false)(t, step);
+  }
+  const command = command_of(step);
+  return compact_command(command) ? t("tool_label.run_cmd", { x: command }) : t(shell_label_keys[call_shell(step.name, step.args)].ask);
 };
 
 const edit_done: Label = (t, step) => t(view_of(step, "edit")?.created ? "tool_label.created" : "tool_label.edited", { x: file_name(step) });
@@ -150,6 +161,8 @@ const read_urls = (step: ToolStep): string[] => {
   const urls: unknown = view_of(step, "web_search")?.urls ?? step.args.urls;
   return Array.isArray(urls) ? urls.filter((url): url is string => typeof url === "string") : [];
 };
+
+const web_query = (step: ToolStep) => view_of(step, "web_search")?.query || text_arg(step, "query");
 
 const web_label = (search: Label, one_page: MessageKey, pages: MessageKey): Label => (t, step) => {
   const failed = view_of(step, "web_search")?.failed?.map((entry) => entry.url) ?? [];
@@ -178,21 +191,21 @@ const workflow_label = (named_key: MessageKey, plain: MessageKey): Label => (t, 
   return name ? t(named_key, { x: name }) : t(plain);
 };
 
-const entry = (icon: ToolIconName, category: ToolCategory, active: Label, done: Label = active): ToolMeta => ({ icon, category, active, done });
+const entry = (icon: ToolIconName, category: ToolCategory, active: Label, done: Label = active, attempt: Label = done): ToolMeta => ({ icon, category, active, done, attempt });
 
 const named: Record<string, ToolMeta> = {
-  run_command: entry("terminal", "commands", command_label(true), command_label(false)),
-  run_bash: entry("bash", "commands", command_label(true), command_label(false)),
+  run_command: entry("terminal", "commands", command_label(true), command_label(false), command_attempt),
+  run_bash: entry("bash", "commands", command_label(true), command_label(false), command_attempt),
   start_background_task: entry("background", "commands", fixed("tool_label.starting_background"), fixed("tool_label.started_background")),
   get_background_task: entry("background", "task_checks", fixed("tool_label.checking_background"), fixed("tool_label.checked_background")),
   cancel_background_task: entry("background", "task_stops", fixed("tool_label.stopping_background"), fixed("tool_label.stopped_background")),
-  read_file: entry("file", "reads", with_x("tool_label.reading", file_name), with_x("tool_label.read", file_name)),
+  read_file: entry("file", "reads", with_x("tool_label.reading", file_name), with_x("tool_label.read", file_name), with_x("tool_label.read_attempt", file_name)),
   read_attachment: entry("file", "reads", with_x("tool_label.reading_attachment", file_name), with_x("tool_label.read_attachment", file_name)),
   get_file_outline: entry("outline", "reads", with_x("tool_label.outlining", file_name), with_x("tool_label.outlined", file_name)),
   list_files: entry("files", "listings", fixed("tool_label.listing"), listed_label),
-  grep_files: entry("search", "searches", with_x("tool_label.grepping", query_of), with_x("tool_label.searched", query_of)),
-  write_file: entry("edit", "edits", edit_active, edit_done),
-  replace_in_file: entry("edit", "edits", edit_active, edit_done),
+  grep_files: entry("search", "searches", with_x("tool_label.grepping", query_of), with_x("tool_label.searched", query_of), with_x("tool_label.search_attempt", query_of)),
+  write_file: entry("edit", "edits", edit_active, edit_done, with_x("tool_label.write_attempt", file_name)),
+  replace_in_file: entry("edit", "edits", edit_active, edit_done, with_x("tool_label.edit_attempt", file_name)),
   update_todos: entry("todos", "todos", fixed("tool_label.update_todos"), fixed("tool_label.todos")),
   present_plan: entry("plan", "other", fixed("tool_label.planning"), fixed("tool_label.planned")),
   ask_user: entry("question", "questions", with_x("tool_label.asking", first_question), with_x("tool_label.asked", first_question)),
@@ -200,9 +213,10 @@ const named: Record<string, ToolMeta> = {
     "web",
     "web",
     web_label(fixed("tool_label.web_search"), "tool_label.reading", "tool_label.reading_pages"),
-    web_label(with_x("tool_label.searched_web", (step) => view_of(step, "web_search")?.query || text_arg(step, "query")), "tool_label.read", "tool_label.read_pages"),
+    web_label(with_x("tool_label.searched_web", web_query), "tool_label.read", "tool_label.read_pages"),
+    web_label(with_x("tool_label.search_web_attempt", web_query), "tool_label.read_attempt", "tool_label.read_pages"),
   ),
-  generate_image: entry("image", "images", fixed("tool_label.generating_image"), fixed("tool_label.generated_image")),
+  generate_image: entry("image", "images", fixed("tool_label.generating_image"), fixed("tool_label.generated_image"), fixed("tool_label.generate_image_attempt")),
   present_images: entry("image", "other", fixed("tool_label.presenting_images"), fixed("tool_label.presented_images")),
   show_images: entry("image", "images", with_x("tool_label.showing_images", shown_name), with_x("tool_label.showed_images", shown_name)),
   analyze_image: entry("image", "other", fixed("tool_label.analyze_image"), fixed("tool_label.analyzed_image")),
@@ -214,19 +228,19 @@ const named: Record<string, ToolMeta> = {
   cancel_agent: entry("agent", "agent_stops", with_x("tool_label.cancel_agent", agent_name), with_x("tool_label.stopped_agent", agent_name)),
   run_workflow: entry("workflow", "workflows", workflow_label("workflow.label_starting", "workflow.label_starting_plain"), workflow_label("workflow.label_completed", "workflow.label_completed_plain")),
   stop_workflow: entry("workflow", "workflow_stops", workflow_label("workflow.label_stopping", "workflow.label_stopping_plain"), workflow_label("workflow.label_stopped", "workflow.label_stopped_plain")),
-  message_agent: entry("agent", "messages", with_x("tool_label.message_agent", agent_name), with_x("tool_label.messaged_agent", agent_name)),
+  message_agent: entry("agent", "messages", with_x("tool_label.message_agent", agent_name), with_x("tool_label.messaged_agent", agent_name), with_x("tool_label.message_agent_attempt", agent_name)),
   message_main_agent: entry("agent", "messages", fixed("tool_label.message_main"), fixed("tool_label.messaged_main")),
   message_peer: entry("agent", "messages", with_x("tool_label.message_peer", peer_name), with_x("tool_label.messaged_peer", peer_name)),
   list_agents: entry("agent", "other", fixed("tool_label.list_agents"), fixed("tool_label.listed_agents")),
-  remember: entry("memory", "memory", fixed("tool_label.remember"), fixed("tool_label.remembered")),
-  forget: entry("memory", "memory", fixed("tool_label.forget"), fixed("tool_label.forgot")),
+  remember: entry("memory", "memory", fixed("tool_label.remember"), fixed("tool_label.remembered"), fixed("tool_label.remember_attempt")),
+  forget: entry("memory", "memory", fixed("tool_label.forget"), fixed("tool_label.forgot"), fixed("tool_label.forget_attempt")),
   list_memories: entry("memory", "memory", fixed("tool_label.list_memories"), fixed("tool_label.listed_memories")),
   read_skill: entry("skill", "skills", with_x("tool_label.read_skill", skill_name), with_x("tool_label.read_skill_done", skill_name)),
-  install_skill: entry("skill", "skill_installs", with_x("tool_label.install_skill", skill_name), with_x("tool_label.installed_skill", skill_name)),
+  install_skill: entry("skill", "skill_installs", with_x("tool_label.install_skill", skill_name), with_x("tool_label.installed_skill", skill_name), with_x("tool_label.install_skill_attempt", skill_name)),
   datetime: entry("clock", "other", fixed("tool_label.datetime"), fixed("tool_label.checked_datetime")),
   context_status: entry("gauge", "other", fixed("tool_label.context_status"), fixed("tool_label.checked_context")),
   list_models: entry("models", "other", fixed("tool_label.list_models"), fixed("tool_label.listed_models")),
-  add_mcp_server: entry("mcp", "mcp_servers", with_x("tool_label.adding_mcp", (step) => text_arg(step, "name")), with_x("tool_label.added_mcp", (step) => text_arg(step, "name"))),
+  add_mcp_server: entry("mcp", "mcp_servers", with_x("tool_label.adding_mcp", server_name), with_x("tool_label.added_mcp", server_name), with_x("tool_label.add_mcp", server_name)),
   load_mcp_tools: entry("mcp", "tool_loads", fixed("tool_label.loading_tools"), fixed("tool_label.loaded_tools")),
   check_page: entry("page_check", "other", with_x("tool_label.check_page", (step) => base_name(text_arg(step, "path"))), with_x("tool_label.check_page_done", (step) => base_name(text_arg(step, "path")))),
 };
@@ -263,16 +277,18 @@ const navigate_done = by_action(
   "tool_label.browser_navigate_done",
 );
 
+const navigate_attempt = by_action({ goto: "tool_label.browser_open_attempt" }, "tool_label.browser_navigate_done");
+
 const clicked: Label = (t, step) => t(step.args.double === true ? "tool_label.browser_double_clicked" : "tool_label.browser_clicked", { x: acted_on(browser_target)(step) });
 
 const browser: Record<string, ToolMeta> = {
   browser_tabs: entry("browser_tabs", "browser", fixed("tool_label.browser_tabs"), fixed("tool_label.browser_tabs_done")),
   browser_tab: entry("browser_tabs", "browser", fixed("tool_label.browser_tabs"), tab_done),
-  browser_navigate: entry("browser_navigate", "browser", fixed("tool_label.browser_navigate"), navigate_done),
+  browser_navigate: entry("browser_navigate", "browser", fixed("tool_label.browser_navigate"), navigate_done, navigate_attempt),
   browser_snapshot: entry("browser_snapshot", "browser", fixed("tool_label.browser_snapshot"), fixed("tool_label.browser_snapshot_done")),
   browser_console: entry("browser_console", "browser", fixed("tool_label.browser_console"), fixed("tool_label.browser_console_done")),
   browser_eval: entry("browser_eval", "browser", fixed("tool_label.browser_eval"), fixed("tool_label.browser_eval_done")),
-  browser_click: entry("browser_click", "browser", with_x("tool_label.browser_click", browser_target), clicked),
+  browser_click: entry("browser_click", "browser", with_x("tool_label.browser_click", browser_target), clicked, fixed("tool_label.browser_click_attempt")),
   browser_type: entry("browser_type", "browser", with_x("tool_label.browser_type", browser_target), with_x("tool_label.browser_typed", acted_on(browser_target))),
   browser_key: entry("browser_key", "browser", with_x("tool_label.browser_key", (step) => text_arg(step, "key")), with_x("tool_label.browser_pressed", acted_on((step) => text_arg(step, "key")))),
   browser_scroll: entry("browser_scroll", "browser", fixed("tool_label.browser_scroll"), fixed("tool_label.browser_scrolled")),
@@ -323,7 +339,7 @@ const by_kind: Record<ToolViewKind, ToolMeta> = {
   text: entry("text", "other", with_x("tool_label.running", (step) => step.name), with_x("tool_label.ran", (step) => step.name)),
 };
 
-const fallback = entry("clock", "other", (t, step) => (step.name ? t("tool_label.running", { x: step.name }) : t("tool_label.working")), (t, step) => t("tool_label.ran", { x: step.name }));
+const fallback = entry("clock", "other", (t, step) => (step.name ? t("tool_label.running", { x: step.name }) : t("tool_label.working")), (t, step) => t("tool_label.ran", { x: step.name }), (t, step) => t("tool_label.run_cmd", { x: step.name }));
 
 export const tool_meta = (step: ToolStep): ToolMeta => {
   if (step.name.startsWith("mcp__") || step.name === "call_mcp_tool") {
@@ -343,15 +359,23 @@ export const is_active_status = (status: ToolStep["status"]) =>
 
 const labels_while_drafting = new Set<ToolCategory>(["edits", "visuals"]);
 
-const denied_target = (step: ToolStep) => command_of(step) || step_path(step) || query_of(step) || step.name;
+const denied_target = (t: Translate, step: ToolStep): string => {
+  if (tool_meta(step) === mcp_meta) {
+    return t("tool_label.mcp", mcp_parts(step));
+  }
+  return command_of(step) || step_path(step) || query_of(step) || agent_name(step) || skill_name(step) || workflow_name(step) || step.name;
+};
 
 export const tool_label = (t: Translate, step: ToolStep): string => {
   const meta = tool_meta(step);
   if (step.status === "denied") {
-    return t("tool_label.denied", { x: denied_target(step) });
+    return t("tool_label.denied", { x: denied_target(t, step) });
   }
   if (step.status === "drafting" && !labels_while_drafting.has(meta.category)) {
     return t("tool_label.drafting");
+  }
+  if (step.status === "failed") {
+    return meta.attempt(t, step);
   }
   return is_active_status(step.status) ? meta.active(t, step) : meta.done(t, step);
 };

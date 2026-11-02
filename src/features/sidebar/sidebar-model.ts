@@ -57,4 +57,12 @@ export const sidebar_order = (model: SidebarModel, collapsed: string[]): ChatMet
 
 export const chat_label = (t: Translate, title: string) => title.trim() || t("sidebar.new_chat");
 
-export const project_label =(project: ProjectEntry) => project.name || project.path.split(/[\\/]/).filter(Boolean).pop() || project.path;
+const folder_name = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() || path;
+
+export const project_label = (project: ProjectEntry) => project.name || folder_name(project.path);
+
+export const project_path_label = (projects: ProjectEntry[], path: string) => {
+  const key = normalize_path(path);
+  const entry = projects.find((project) => normalize_path(project.path) === key);
+  return entry ? project_label(entry) : folder_name(path);
+};

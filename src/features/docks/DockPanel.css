@@ -45,8 +45,8 @@
 
 .dock-title-meta {
   overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: var(--font-size-caption);
+  color: var(--text-detail);
+  font-size: var(--font-size-ui);
   font-weight: var(--weight-regular);
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
@@ -123,7 +123,7 @@
   height: 100%;
   padding: 0 4px 0 10px;
   border-radius: inherit;
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-ui);
 }
 
 .dock-tab-label {

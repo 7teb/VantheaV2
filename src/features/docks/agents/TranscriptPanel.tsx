@@ -49,7 +49,7 @@ export const TranscriptPanel = ({ entry, agents, now }: TranscriptPanelProps) =>
       title={
         <div className="agent-head">
           <IconButton label={t("agent.back")} onClick={close_agent_run}>
-            <ArrowLeftIcon size={16} />
+            <ArrowLeftIcon />
           </IconButton>
           <DockTitle label={name} meta={meta} />
         </div>
@@ -59,7 +59,7 @@ export const TranscriptPanel = ({ entry, agents, now }: TranscriptPanelProps) =>
         <>
           {transcript?.context && <ContextRing usage={transcript.context} placement="bottom-end" />}
           {status === "running" && (
-            <Button variant="ghost" icon={<CircleStopIcon size={14} />} disabled={stopping} onClick={() => void stop()}>
+            <Button variant="ghost" icon={<CircleStopIcon />} disabled={stopping} onClick={() => void stop()}>
               {t("agent.stop")}
             </Button>
           )}

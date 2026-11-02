@@ -4,6 +4,7 @@ import { latest_todos } from "../../../shared/todos.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon } from "../../components/icons.tsx";
+import { LabelMorph } from "../../components/LabelMorph.tsx";
 import { ProgressRing } from "../../components/ProgressRing.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { chat_view_store } from "../../state/chat-view.ts";
@@ -24,11 +25,16 @@ export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
   const [open, set_open] = useState(true);
   const todos = use_store(chat_view_store, (state) => latest_todos(messages_of(state, chat_id))?.todos ?? null);
   const streaming = use_store(chat_view_store, (state) => latest_todos(messages_of(state, chat_id))?.streaming ?? false);
+  const ready = use_store(chat_view_store, (state) => state.entries[chat_id]?.status === "ready");
   const busy = use_chat_busy(chat_id);
   const [shown, set_shown] = useState<ShownTodos>(() => shown_todos(todos, null));
+  const [waited, set_waited] = useState(false);
   const next = shown_todos(todos, shown);
   if (next !== shown) {
     set_shown(next);
+  }
+  if (!next && ready && !waited) {
+    set_waited(true);
   }
   if (!next) {
     return null;
@@ -41,6 +47,7 @@ export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
       className="todos-panel composer-dock-card raised-surface enter-fade-up"
       data-open={open}
       data-leaving={next.leaving}
+      data-entering={waited}
       onAnimationEnd={(event) => {
         if (event.animationName === "todos-out") {
           set_shown(null);
@@ -50,11 +57,15 @@ export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
       <div className="todos-panel-inner">
         <button type="button" className="todos-panel-head" aria-expanded={open} onClick={() => set_open(!open)}>
           <ProgressRing ratio={done / next.todos.length} size={16} className="todos-panel-ring" />
-          <span className={class_names("todos-panel-title", current && live && "is-working")}><WorkingLetters text={current ? current.text : t("tools.todo_tasks")} active={Boolean(current && live)} /></span>
+          <span className={class_names("todos-panel-title", current && live && "is-working")}>
+            <LabelMorph morph_key={current ? current.id : "tasks"}>
+              <WorkingLetters text={current ? current.text : t("tools.todo_tasks")} active={Boolean(current && live)} />
+            </LabelMorph>
+          </span>
           <span className="todos-panel-count">
             {done}/{next.todos.length}
           </span>
-          <ChevronRightIcon size={12} className="todos-panel-chevron" />
+          <ChevronRightIcon className="todos-panel-chevron" />
         </button>
         <CollapsibleBody open={open}>
           <div className="todos-panel-body">

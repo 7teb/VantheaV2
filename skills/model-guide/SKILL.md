@@ -77,7 +77,7 @@ The owner's benchmark and the public ones do not always agree. Claude Opus 5.5 l
 
 ## What "Flex" means
 
-A model whose label ends in "Flex" (its catalog id ends in `:floor`) is the same model as the entry without "Flex", sent first to the provider's Flex tier:
+A model whose label ends in "Flex" is the same model as the one without "Flex", sent first to the provider's Flex tier. In the chat the user turns it on with the "/" command Flex; for deploy_agent and continue_agent its id is the model id with `:floor` appended, as list_models lists it (for example `openai/gpt-6.1-sol:floor`):
 
 - GPT 6.1 Sol Flex, GPT 6.1 Terra Flex and GPT 6 Astra Flex use OpenAI's Flex processing. Gemini 4 Argon Flex uses the Flex tier of Google AI Studio (the Gemini API). Gemini 3.8 Flash Flex uses the Flex tiers of Google Vertex and Google AI Studio.
 - Price: half the standard price per token.

@@ -41,13 +41,13 @@ export const TerminalDock = ({ visible, chat_id, project_path }: DockViewProps) 
       close_label={t("terminal.close")}
       actions={
         <IconButton label={t("terminal.new")} onClick={add_tab}>
-          <PlusIcon size={16} />
+          <PlusIcon />
         </IconButton>
       }
     >
       {tabs.length === 0 ? (
         <div className="terminal-empty">
-          <Button icon={<PlusIcon size={14} />} onClick={add_tab}>
+          <Button icon={<PlusIcon />} onClick={add_tab}>
             {t("terminal.new")}
           </Button>
         </div>

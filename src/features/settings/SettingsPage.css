@@ -52,11 +52,36 @@
 }
 
 .settings-nav {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
   min-height: 0;
   overflow-y: auto;
+}
+
+.settings-nav::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--nav-w, 0px);
+  height: var(--nav-h, 0px);
+  border-radius: var(--radius-md);
+  background: var(--fill-active);
+  transform: translate(var(--nav-x, 0px), var(--nav-y, 0px));
+  pointer-events: none;
+}
+
+.settings-nav[data-marker="ready"]::before {
+  transition:
+    transform var(--duration-slow) var(--ease-out),
+    width var(--duration-slow) var(--ease-out),
+    height var(--duration-slow) var(--ease-out);
+}
+
+.settings-nav[data-marker="none"]::before {
+  opacity: 0;
 }
 
 .settings-nav-group {
@@ -73,6 +98,7 @@
 }
 
 .settings-nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -86,23 +112,12 @@
     color var(--duration-fast) var(--ease-out);
 }
 
-.settings-nav-item svg {
-  color: var(--text-tertiary);
-  transition: color var(--duration-fast) var(--ease-out);
-}
-
-.settings-nav-item:hover {
+.settings-nav-item:not([aria-current="page"]):hover {
   background: var(--fill-hover);
   color: var(--text-primary);
 }
 
 .settings-nav-item[aria-current="page"] {
-  background: var(--fill-active);
-  color: var(--text-primary);
-}
-
-.settings-nav-item:hover svg,
-.settings-nav-item[aria-current="page"] svg {
   color: var(--text-primary);
 }
 
@@ -116,6 +131,7 @@
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   overscroll-behavior-y: contain;
   border-top-left-radius: var(--radius-xl);
   background: var(--surface-main);
@@ -129,8 +145,16 @@
   padding: var(--space-10) var(--space-8) calc(var(--space-12) + var(--safe-bottom));
 }
 
-.settings-heading {
+.settings-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--size-control);
   margin-bottom: var(--space-6);
+}
+
+.settings-heading {
   font-size: var(--font-size-heading);
   font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
@@ -160,7 +184,10 @@
 
   .settings-nav {
     gap: 2px;
+    padding-right: 32px;
+    scroll-padding-inline-end: 32px;
     scrollbar-width: none;
+    mask-image: linear-gradient(to right, var(--mask) calc(100% - 32px), transparent);
   }
 
   .settings-nav-group {

@@ -11,7 +11,7 @@ import { CommandCard } from "./CommandCard.tsx";
 import { step_outcome } from "./review-notes.ts";
 import { ReviewNotice } from "./ReviewNote.tsx";
 
-const CommandStatus = ({ exit_code, timed_out }: { exit_code: number | null; timed_out: boolean }) => {
+export const CommandStatus = ({ exit_code, timed_out }: { exit_code: number | null; timed_out: boolean }) => {
   const t = use_t();
   if (timed_out) {
     return <span>{t("tools.command_timed_out")}</span>;
@@ -24,7 +24,7 @@ const CommandStatus = ({ exit_code, timed_out }: { exit_code: number | null; tim
   }
   return (
     <span className="command-card-success">
-      <CheckIcon size={12} />
+      <CheckIcon />
       {t("tools.command_success")}
     </span>
   );

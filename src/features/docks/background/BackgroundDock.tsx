@@ -138,7 +138,7 @@ export const BackgroundDock = ({ visible, chat_id }: DockViewProps) => {
         clearable &&
         chat_id !== null && (
           <IconButton label={t("background.clear_finished")} onClick={() => void clear_finished_tasks(chat_id)}>
-            <TrashIcon size={16} />
+            <TrashIcon />
           </IconButton>
         )
       }

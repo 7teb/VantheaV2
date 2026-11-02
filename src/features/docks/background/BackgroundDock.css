@@ -80,11 +80,15 @@
   white-space: nowrap;
 }
 
-.bg-task-meta {
-  padding-left: 25px;
-  color: var(--text-tertiary);
-  font-size: var(--font-size-caption);
+.bg-task-time {
+  flex: none;
+  color: var(--text-detail);
+  font-size: var(--font-size-ui);
   font-variant-numeric: tabular-nums;
+}
+
+.bg-task[data-status="failed"] .bg-task-time {
+  color: var(--text-danger);
 }
 
 .bg-task-details {

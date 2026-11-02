@@ -3,7 +3,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { brotliCompress, brotliCompressSync, brotliDecompress, constants as zlib_constants } from "node:zlib";
 import type { Chat, ChatMeta, ChatSummary, Message, RoundReasoning, Step, StepImage, ToolStep } from "../../shared/chat.ts";
-import { speed_tiers, type ModelChoice } from "../../shared/models.ts";
+import { flex_base, speed_tiers, type ModelChoice } from "../../shared/models.ts";
 import { coerce_context_usage } from "../context/calibration.ts";
 import { is_media_id } from "../media/files.ts";
 import { coerce_reviews } from "../permissions/review-coerce.ts";
@@ -35,8 +35,10 @@ const decode_chat = async (packed: Buffer): Promise<unknown> => JSON.parse((awai
 
 export const parse_choice = (value: unknown): ModelChoice | null => {
   const raw = as_record(value);
-  const model = as_string(raw.model).slice(0, 300);
-  const tier = speed_tiers.find((entry) => entry === raw.tier);
+  const stored = as_string(raw.model).slice(0, 300);
+  const flex_model = flex_base(stored);
+  const model = flex_model ?? stored;
+  const tier = flex_model ? "flex" : speed_tiers.find((entry) => entry === raw.tier);
   return model ? { model, effort: as_string(raw.effort).slice(0, 40), pro: as_boolean(raw.pro, false), ...(tier ? { tier } : {}) } : null;
 };
 

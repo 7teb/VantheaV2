@@ -20,7 +20,7 @@ export const RefLabels = ({ labels }: { labels: RefLabel[] }) => {
       {labels.slice(0, shown_labels).map((label) => (
         <Tooltip key={`${label.kind}:${label.name}`} label={label_tip(t, label)} placement="bottom-start">
           <span className="git-ref" data-kind={label.kind}>
-            {label.kind === "tag" && <TagIcon size={12} />}
+            {label.kind === "tag" && <TagIcon />}
             <span>{label.name}</span>
           </span>
         </Tooltip>

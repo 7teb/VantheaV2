@@ -35,7 +35,7 @@ export const DockTabs = ({ tabs, active_id, label, close_label, on_select, on_cl
             <span className="dock-tab-label">{tab.label}</span>
           </button>
           <IconButton label={close_label} size="sm" tooltip={false} className="dock-tab-close" onClick={() => on_close(tab.id)}>
-            <CloseIcon size={12} />
+            <CloseIcon />
           </IconButton>
         </div>
       );

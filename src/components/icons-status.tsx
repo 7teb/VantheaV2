@@ -1,7 +1,7 @@
-import { codicon, Icon, type IconProps } from "./icons-base.tsx";
+import { codicon, Icon, lucide, type IconProps } from "./icons-base.tsx";
 
 export const ClockIcon = (props: IconProps) => (
-  <Icon {...props}>
+  <Icon {...lucide} {...props}>
     <circle cx="12" cy="12" r="10" />
     <path d="M12 6v6l4 2" />
   </Icon>
@@ -13,10 +13,16 @@ export const CircleIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const CircleDashedIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="8" cy="8" r="6.5" pathLength={60} strokeDasharray="1 4" />
+  </Icon>
+);
+
 export const CircleSpinnerIcon = (props: IconProps) => (
   <Icon {...props}>
-    <circle cx="12" cy="12" r="10" strokeOpacity={0.3} />
-    <path d="M12 2a10 10 0 0 1 10 10" />
+    <path d="M14.5 8a6.5 6.5 0 1 1-6.5-6.5" strokeOpacity={0.3} strokeLinecap="butt" />
+    <path d="M8 1.5a6.5 6.5 0 0 1 6.5 6.5" />
   </Icon>
 );
 
@@ -29,14 +35,14 @@ export const CircleCheckIcon = (props: IconProps) => (
 
 export const CircleAlertIcon = (props: IconProps) => (
   <Icon {...props}>
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 8v4" />
-    <path d="M12 16h.01" />
+    <circle cx="8" cy="8" r="6.5" />
+    <path d="M7.5 4.5v4" />
+    <path d="M7 11.5h1" strokeLinecap="butt" />
   </Icon>
 );
 
 export const CircleHelpIcon = (props: IconProps) => (
-  <Icon {...props}>
+  <Icon {...lucide} {...props}>
     <circle cx="12" cy="12" r="10" />
     <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
     <path d="M12 17h.01" />
@@ -56,7 +62,7 @@ export const ListIcon = (props: IconProps) => (
 );
 
 export const ListChecksIcon = (props: IconProps) => (
-  <Icon {...codicon} strokeWidth={0} {...props}>
+  <Icon {...codicon} {...props}>
     <path fillRule="evenodd" clipRule="evenodd" d="M3.75 4.48h-.71L2 3.43l.71-.7.69.68L4.81 2l.71.71-1.77 1.77zM6.99 3h8v1h-8V3zm0 3h8v1h-8V6zm8 3h-8v1h8V9zm-8 3h8v1h-8v-1zM3.04 7.48h.71l1.77-1.77-.71-.7L3.4 6.42l-.69-.69-.71.71 1.04 1.04zm.71 3.01h-.71L2 9.45l.71-.71.69.69 1.41-1.42.71.71-1.77 1.77zm-.71 3.01h.71l1.77-1.77-.71-.71-1.41 1.42-.69-.69-.71.7 1.04 1.05z" />
   </Icon>
 );
@@ -74,26 +80,26 @@ export const QueueIcon = (props: IconProps) => (
 );
 
 export const GripIcon = (props: IconProps) => (
-  <Icon {...codicon} strokeWidth={0.5} {...props}>
+  <Icon {...codicon} {...props}>
     <path d="M5 3h2v2H5zm0 4h2v2H5zm0 4h2v2H5zm4-8h2v2H9zm0 4h2v2H9zm0 4h2v2H9z" />
   </Icon>
 );
 
 export const GaugeIcon = (props: IconProps) => (
-  <Icon {...props}>
+  <Icon {...lucide} {...props}>
     <path d="m12 14 4-4" />
     <path d="M3.34 19a10 10 0 1 1 17.32 0" />
   </Icon>
 );
 
 export const ZapIcon = (props: IconProps) => (
-  <Icon {...props}>
+  <Icon {...lucide} {...props}>
     <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
   </Icon>
 );
 
 export const LayersIcon = (props: IconProps) => (
-  <Icon {...props}>
+  <Icon {...lucide} {...props}>
     <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />
     <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" />
     <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" />
@@ -101,12 +107,7 @@ export const LayersIcon = (props: IconProps) => (
 );
 
 export const TextSelectIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M13.5 3.5H17a3.5 3.5 0 0 1 3.5 3.5v10" />
-    <circle cx="20.5" cy="19.5" r="1" />
-    <circle cx="3.5" cy="4.5" r="1" />
-    <path d="M3.5 7v10A3.5 3.5 0 0 0 7 20.5h3.5" />
-    <path d="M8.5 10h7" />
-    <path d="M8.5 14H13" />
+  <Icon {...lucide} {...props}>
+    <path d="M13.5 3.5H17a3.5 3.5 0 0 1 3.5 3.5v10M21.5 19.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM4.5 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM3.5 7v10A3.5 3.5 0 0 0 7 20.5h3.5M8.5 10h7M8.5 14H13" />
   </Icon>
 );

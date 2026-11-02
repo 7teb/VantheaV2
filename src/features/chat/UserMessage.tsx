@@ -44,11 +44,11 @@ export const UserMessage = memo(({ chat_id, message, busy }: UserMessageProps) =
           {shown && <CopyButton text={shown} />}
           {!command && (
             <IconButton label={t("chat.edit")} size="sm" disabled={busy} onClick={() => set_editing(true)}>
-              <PencilIcon size={14} />
+              <PencilIcon />
             </IconButton>
           )}
           <IconButton label={t("chat.fork")} size="sm" onClick={() => void fork()}>
-            <ForkIcon size={14} />
+            <ForkIcon />
           </IconButton>
         </div>
       )}

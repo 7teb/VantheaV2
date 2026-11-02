@@ -55,7 +55,7 @@ export const MessageList = ({ chat_id, chat }: MessageListProps) => {
       </div>
       {away && (
         <button type="button" className="jump-latest raised-surface" onClick={jump}>
-          <ArrowDownIcon size={14} />
+          <ArrowDownIcon />
           <span>{t("composer.jump_latest")}</span>
         </button>
       )}

@@ -299,6 +299,11 @@ export const open_file = async (path: string) => {
   await read_file(key, scope, path);
 };
 
+export const shown_root = (): Promise<FilesRoot | null> => {
+  const scope = shown_scope();
+  return ensure_root(view_key(scope), scope);
+};
+
 export const show_file = (path: string) => {
   if (ui_store.get().dock.kind !== "files") {
     toggle_dock("files");

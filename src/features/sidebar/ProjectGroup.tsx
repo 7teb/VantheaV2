@@ -5,10 +5,14 @@ import { ConfirmDialog } from "../../components/Dialog.tsx";
 import { ChevronRightIcon, FolderIcon, FolderOpenIcon, MoreHorizontalIcon, PencilLineIcon, PinIcon, PinOffIcon, TrashIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
 import { use_t } from "../../i18n/index.ts";
+import { chat_marks_store } from "../../state/chat-marks.ts";
 import { remove_project, rename_project, set_project_pinned } from "../../state/projects.ts";
 import { start_new_chat, toggle_project_collapsed } from "../../state/ui.ts";
+import { use_store } from "../../state/use-store.ts";
+import { group_status } from "./activity.ts";
 import { InlineRename } from "./InlineRename.tsx";
 import { project_label, type ProjectGroup as Group } from "./sidebar-model.ts";
+import { StatusMark } from "./StatusMark.tsx";
 import { WorktreeWarning } from "./WorktreeWarning.tsx";
 import "./ProjectGroup.css";
 
@@ -24,6 +28,7 @@ export const ProjectGroup = ({ group, chat_total, collapsed, selected, children 
   const [menu_open, set_menu_open] = useState(false);
   const [renaming, set_renaming] = useState(false);
   const [confirming, set_confirming] = useState(false);
+  const status = use_store(chat_marks_store, (marks) => (collapsed ? group_status(group.chats, marks) : null));
 
   return (
     <section className="project-group" data-collapsed={collapsed}>
@@ -35,8 +40,8 @@ export const ProjectGroup = ({ group, chat_total, collapsed, selected, children 
           aria-label={collapsed ? t("sidebar.show_chats") : t("sidebar.hide_chats")}
           onClick={() => toggle_project_collapsed(project.path)}
         >
-          {collapsed ? <FolderIcon size={15} className="project-folder" /> : <FolderOpenIcon size={15} className="project-folder" />}
-          <ChevronRightIcon size={13} className="project-chevron" />
+          {collapsed ? <FolderIcon className="project-folder" /> : <FolderOpenIcon className="project-folder" />}
+          <ChevronRightIcon className="project-chevron" />
         </button>
         {renaming ? (
           <InlineRename
@@ -52,7 +57,8 @@ export const ProjectGroup = ({ group, chat_total, collapsed, selected, children 
         ) : (
           <button type="button" className="sidebar-row-main" title={project.path} onClick={() => start_new_chat(project.path)}>
             <span className="sidebar-row-label">{label}</span>
-            {project.pinned && <PinIcon size={12} className="project-pin" />}
+            {project.pinned && <PinIcon className="project-pin" />}
+            {status && <StatusMark status={status} />}
           </button>
         )}
         {!renaming && (
@@ -67,7 +73,7 @@ export const ProjectGroup = ({ group, chat_total, collapsed, selected, children 
             active={menu_open}
             onClick={() => set_menu_open((was_open) => !was_open)}
           >
-            <MoreHorizontalIcon size={16} />
+            <MoreHorizontalIcon />
           </IconButton>
         )}
       </div>
@@ -83,14 +89,14 @@ export const ProjectGroup = ({ group, chat_total, collapsed, selected, children 
           {
             id: "project",
             items: [
-              { id: "rename", label: t("sidebar.rename"), icon: <PencilLineIcon size={15} />, on_select: () => set_renaming(true) },
+              { id: "rename", label: t("sidebar.rename"), icon: <PencilLineIcon />, on_select: () => set_renaming(true) },
               {
                 id: "pin",
                 label: project.pinned ? t("sidebar.unpin") : t("sidebar.pin"),
-                icon: project.pinned ? <PinOffIcon size={15} /> : <PinIcon size={15} />,
+                icon: project.pinned ? <PinOffIcon /> : <PinIcon />,
                 on_select: () => set_project_pinned(project.path, !project.pinned).catch(report("pin", project.path)),
               },
-              { id: "delete", label: t("projects.delete"), icon: <TrashIcon size={15} />, danger: true, on_select: () => set_confirming(true) },
+              { id: "delete", label: t("projects.delete"), icon: <TrashIcon />, danger: true, on_select: () => set_confirming(true) },
             ],
           },
         ]}

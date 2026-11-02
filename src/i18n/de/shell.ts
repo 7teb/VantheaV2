@@ -15,5 +15,4 @@ export const shell: Record<keyof typeof en, string> = {
   "shell.more": "Mehr",
   "shell.background_tasks": "Hintergrund-Tasks",
   "shell.keep_awake": "Computer wach halten",
-  "shell.keep_awake_detail": "Nur für diese Sitzung",
 };

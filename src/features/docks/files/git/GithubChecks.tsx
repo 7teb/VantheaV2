@@ -3,18 +3,18 @@ import type { GithubCheck, GithubCheckState, GithubChecks as Checks } from "../.
 import { CircleAlertIcon, CircleCheckIcon, CircleSlashIcon, CircleSpinnerIcon, CircleXIcon, ExternalLinkIcon } from "../../../../components/icons.tsx";
 import { use_t, type Translate } from "../../../../i18n/index.ts";
 
-export const CheckStateIcon = ({ state, size }: { state: GithubCheckState; size: number }) => {
+export const CheckStateIcon = ({ state }: { state: GithubCheckState }) => {
   switch (state) {
     case "passed":
-      return <CircleCheckIcon size={size} />;
+      return <CircleCheckIcon />;
     case "failed":
-      return <CircleXIcon size={size} />;
+      return <CircleXIcon />;
     case "running":
-      return <CircleSpinnerIcon size={size} className="spin" />;
+      return <CircleSpinnerIcon className="spin" />;
     case "action_required":
-      return <CircleAlertIcon size={size} />;
+      return <CircleAlertIcon />;
     case "skipped":
-      return <CircleSlashIcon size={size} />;
+      return <CircleSlashIcon />;
   }
 };
 
@@ -66,7 +66,7 @@ const CheckRow = ({ check, on_open }: { check: GithubCheck; on_open: (url: strin
   const body = (
     <>
       <span className="git-row-icon">
-        <CheckStateIcon state={check.state} size={16} />
+        <CheckStateIcon state={check.state} />
       </span>
       <span className="gh-pop-item-text gh-pop-item-name">{check.name}</span>
       {duration !== null && <span className="gh-pop-time">{duration}</span>}
@@ -84,7 +84,7 @@ const CheckRow = ({ check, on_open }: { check: GithubCheck; on_open: (url: strin
     <button type="button" className="gh-pop-item" data-tone={check.state} onClick={() => on_open(url)}>
       {body}
       <span className="gh-pop-ext">
-        <ExternalLinkIcon size={14} />
+        <ExternalLinkIcon />
       </span>
     </button>
   );

@@ -53,12 +53,12 @@ export const SecretRow = ({ name, label, stored, placeholder, on_saved }: Secret
             set_saved(false);
             set_error(null);
           }}
-          icon={<KeyIcon size={15} />}
+          icon={<KeyIcon />}
           placeholder={stored ? masked_key : placeholder}
           aria-label={label}
           autoComplete="off"
         />
-        <Button type="submit" disabled={value.trim() === "" || saving} icon={saved ? <CheckIcon size={15} /> : undefined}>
+        <Button type="submit" disabled={value.trim() === "" || saving} icon={saved ? <CheckIcon /> : undefined}>
           {saved ? t("settings.key_saved") : t("settings.save_key")}
         </Button>
       </form>

@@ -40,7 +40,7 @@ export const WorkflowRow = memo(({ chat_id, view }: WorkflowRowProps) => {
         onClick={() => open_workflow(view.run_id)}
       >
         <span className="tool-row-icon">
-          <WorkflowIcon size={16} />
+          <WorkflowIcon />
         </span>
         <span className={class_names("tool-row-label", running && "is-working")}>
           <WorkingLetters text={label} active={running} />

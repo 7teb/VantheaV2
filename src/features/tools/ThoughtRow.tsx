@@ -3,6 +3,7 @@ import type { ReasoningStep } from "../../../shared/chat.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon } from "../../components/icons.tsx";
+import { LabelMorph } from "../../components/LabelMorph.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { reasoning_head } from "../chat/reasoning-head.ts";
@@ -31,9 +32,13 @@ export const ThoughtRow = memo(({ step, live }: ThoughtRowProps) => {
         <span className="tool-row-icon">
           <i className="thought-mark" />
         </span>
-        <span className={class_names("tool-row-label", working && "is-working")}><WorkingLetters text={label} active={working} /></span>
-        {meta && <span className="tool-row-duration">{meta}</span>}
-        {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}
+        <span className={class_names("tool-row-label", working && "is-working")}>
+          <LabelMorph morph_key={`${working}:${label}`}>
+            <WorkingLetters text={label} active={working} />
+          </LabelMorph>
+        </span>
+        <span className="tool-row-meta">{meta && <span className="tool-row-duration">{meta}</span>}</span>
+        {expandable && <ChevronRightIcon className="tool-row-chevron" />}
       </button>
       {expandable && (
         <CollapsibleBody open={open}>

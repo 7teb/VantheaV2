@@ -1,8 +1,9 @@
 import type { ToolView } from "../../../shared/tool-view.ts";
 import { effective_mode } from "../../permissions/full-window.ts";
-import { is_instruction_file } from "../../permissions/instruction-files.ts";
+import { diff_lines_text, is_instruction_file } from "../../permissions/instruction-files.ts";
 import { actor_label } from "../../permissions/script-retention.ts";
 import { stat_optional } from "../../permissions/source-read.ts";
+import { tool_gate } from "../../permissions/tool-gate.ts";
 import { record_write } from "../../permissions/written-files.ts";
 import { commit_edit, prepare_replace, prepare_write, type PreparedEdit } from "../../project/edit.ts";
 import { read_refusal, record_read } from "../../project/read-ledger.ts";
@@ -23,6 +24,9 @@ const edit_view = (prepared: PreparedEdit): ToolView => ({
   diff: prepared.diff.lines,
 });
 
+const instruction_subject = (prepared: PreparedEdit): string =>
+  [`${prepared.previous === null ? "create" : "edit"} ${prepared.target.relative} (+${prepared.diff.added} -${prepared.diff.removed})`, diff_lines_text(prepared.diff.lines)].join("\n");
+
 const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit, summary: string): Promise<ToolResult> => {
   const refusal = await read_refusal(ctx.chat_id, ctx.review.actor.id, prepared.target.target, prepared.target.relative, prepared.previous_sha256);
   if (refusal) {
@@ -30,8 +34,12 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
   }
   const view = edit_view(prepared);
   const mode = effective_mode(ctx.chat_id, ctx.mode);
-  const instruction_file = mode === "auto" && is_instruction_file(prepared.target.relative);
-  if (mode === "ask" || instruction_file) {
+  const instruction_file = is_instruction_file(prepared.target.relative);
+  const gate = mode === "auto" && instruction_file ? await tool_gate(ctx, tool, instruction_subject(prepared)) : null;
+  if (gate?.kind === "denied") {
+    return { status: "denied", text: gate.text, view };
+  }
+  if (mode === "ask" || gate?.kind === "ask") {
     const decision = await ctx.approve({
       kind: "write",
       path: prepared.target.relative,
@@ -40,6 +48,7 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
       removed: prepared.diff.removed,
       diff: prepared.diff.lines,
       ...(instruction_file ? { instruction_file: true } : {}),
+      ...(gate?.kind === "ask" && gate.note ? { review: gate.note } : {}),
     });
     if (!decision.approved) {
       return denied(`the edit to ${prepared.target.relative}`, decision);

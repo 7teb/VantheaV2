@@ -25,7 +25,17 @@
     box-shadow: var(--shadow-dock);
   }
 
-  @keyframes dock-panel-out {
+  @keyframes composer-panel-in {
+    from {
+      grid-template-rows: 0fr;
+      margin-bottom: calc(-1 * var(--space-2));
+      padding-block: 0;
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  @keyframes composer-panel-out {
     to {
       grid-template-rows: 0fr;
       margin-bottom: calc(-1 * var(--space-2));
@@ -35,21 +45,25 @@
     }
   }
 
-  .dock-panel {
+  .composer-panel {
     display: grid;
     grid-template-rows: 1fr;
   }
 
-  .dock-panel-inner {
+  .composer-panel-inner {
     display: flex;
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
   }
 
-  .dock-panel[data-state="closed"] {
+  .composer-panel[data-state="open"] {
+    animation: composer-panel-in var(--duration-slow) var(--ease-height) backwards;
+  }
+
+  .composer-panel[data-state="closed"] {
     pointer-events: none;
-    animation: dock-panel-out var(--duration-slow) var(--ease-in) forwards;
+    animation: composer-panel-out var(--duration-slow) var(--ease-in) forwards;
   }
 
   .composer-slot:has(.composer-dock-card ~ .composer-dock-card) .composer-dock-card {
@@ -219,6 +233,7 @@
   }
 
   .composer-chip-label {
+    width: calc-size(max-content, round(up, size, 1px));
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -229,6 +244,7 @@
   }
 
   .composer-chip-hint {
+    width: calc-size(max-content, round(up, size, 1px));
     color: var(--text-tertiary);
   }
 
@@ -236,8 +252,15 @@
     color: var(--accent);
   }
 
-  .composer-chip-chevron {
-    margin-left: -2px;
+  .composer-chip .composer-chip-chevron {
+    margin-left: -4px;
+    transition:
+      color var(--duration-fast) var(--ease-out),
+      transform var(--duration-chevron) var(--ease-out);
+  }
+
+  .composer-chip[data-open="true"] .composer-chip-chevron {
+    transform: rotate(180deg);
   }
 
   .composer-note {

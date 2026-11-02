@@ -1,6 +1,6 @@
 import type { WebSource } from "../../../shared/tool-view.ts";
 import { error_text } from "../../storage/coerce.ts";
-import type { ToolResult } from "../types.ts";
+import { failure_of, type ToolResult } from "../types.ts";
 import { map_search_results, search_body, tavily_post, type FetchFn, type SearchOptions, type SourceText } from "./tavily.ts";
 
 export type WebSearchDeps = { fetch: FetchFn; key: string; signal: AbortSignal };
@@ -33,7 +33,8 @@ export const run_web_search = async (input: SearchOptions, deps: WebSearchDeps):
       throw error;
     }
     console.warn(`[web] search for "${input.query.slice(0, 120)}" failed: ${error_text(error)}`);
-    return { status: "failed", text: `Web search failed: ${error_text(error).slice(0, 400)}`, view: view([]) };
+    const failure = failure_of(error);
+    return { status: "failed", text: `Web search failed: ${error_text(error).slice(0, 400)}`, view: view([]), ...(failure ? { failure } : {}) };
   }
   if (!sources.length) {
     return { status: "done", text: `No web results were found for "${input.query}".`, view: view([]) };

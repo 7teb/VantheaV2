@@ -29,7 +29,7 @@
   }
 
   .turn-toggle-chevron {
-    transition: transform 0.15s var(--ease-out);
+    transition: transform var(--duration-chevron) var(--ease-out);
   }
 
   .turn-toggle[aria-expanded="true"] .turn-toggle-chevron {

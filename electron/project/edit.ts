@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { error_code } from "../storage/coerce.ts";
 import { write_file_atomic } from "../storage/json-file.ts";
 import { decode_text, encode_text, looks_binary, plain_utf8, type TextEncoding } from "../storage/text-codec.ts";
+import { ToolFailureError } from "../tools/types.ts";
 import { line_diff, type LineDiff } from "./diff.ts";
 import { invalidate_index } from "./index.ts";
 import { apply_replacement } from "./replace.ts";
@@ -71,9 +72,9 @@ export const prepare_replace = async (
   const target = await resolve_write_target(project_root, relative);
   const existing = await read_existing(target);
   if (existing === null) {
-    throw new Error(`${target.relative} does not exist; use write_file to create it`);
+    throw new ToolFailureError(`${target.relative} does not exist; use write_file to create it`, { kind: "not_in_project", path: target.relative });
   }
-  const replacement = apply_replacement(existing.text, old_string, new_string, expected);
+  const replacement = apply_replacement(existing.text, old_string, new_string, expected, target.relative);
   check_size(replacement.updated, "The edited file");
   return {
     project_root,

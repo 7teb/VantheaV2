@@ -8,10 +8,10 @@ export const Icon = ({ size = 16, children, ...rest }: IconProps & { children: R
   <svg
     width={size}
     height={size}
-    viewBox="0 0 24 24"
+    viewBox="0 0 16 16"
     fill="none"
     stroke="currentColor"
-    strokeWidth={1.75}
+    strokeWidth={1}
     strokeLinecap="round"
     strokeLinejoin="round"
     aria-hidden="true"
@@ -22,6 +22,8 @@ export const Icon = ({ size = 16, children, ...rest }: IconProps & { children: R
   </svg>
 );
 
-export const codicon = { viewBox: "0 0 16 16", fill: "currentColor", strokeWidth: 0.15 } as const;
+export const lucide = { viewBox: "0 0 24 24", strokeWidth: 1.75 } as const;
 
-export const phosphor = { viewBox: "11 11 234 234", fill: "currentColor", strokeWidth: 0.64 } as const;
+export const codicon = { fill: "currentColor", stroke: "none" } as const;
+
+export const phosphor = { viewBox: "11 11 234 234", fill: "currentColor", stroke: "none" } as const;

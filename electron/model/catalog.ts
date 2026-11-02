@@ -1,4 +1,5 @@
 import { find_model, verbosity_levels, type ImageModelEntry, type ModelCatalog, type ModelEntry, type ProVariant, type SideModelEntry, speed_tiers, type SpeedTier, type SideModelRole, type Verbosity } from "../../shared/models.ts";
+import { compact_percent_range, min_context_limit, type ModelContext } from "../../shared/settings.ts";
 
 export const major_effort = "major";
 
@@ -22,6 +23,11 @@ const as_count = (value: unknown, where: string): number =>
   typeof value === "number" && Number.isInteger(value) && value > 0 ? value : fail(where, "must be a positive integer");
 
 const as_flag = (value: unknown, where: string): boolean => (typeof value === "boolean" ? value : fail(where, "must be true or false"));
+
+const as_percent = (value: unknown, where: string): number =>
+  typeof value === "number" && Number.isInteger(value) && value >= compact_percent_range.min && value <= compact_percent_range.max
+    ? value
+    : fail(where, `must be an integer from ${compact_percent_range.min} to ${compact_percent_range.max}`);
 
 const as_texts = (value: unknown, where: string): string[] => {
   if (!Array.isArray(value)) {
@@ -50,16 +56,25 @@ const parse_pro = (value: unknown, where: string): ProVariant => {
   return { id: as_text(raw.id, `${where}.id`), label: as_text(raw.label, `${where}.label`) };
 };
 
-const parse_tiers = (value: unknown, where: string): Partial<Record<SpeedTier, string>> => {
-  const tiers: Partial<Record<SpeedTier, string>> = {};
+const parse_tiers = (value: unknown, where: string): Partial<Record<SpeedTier, string[]>> => {
+  const tiers: Partial<Record<SpeedTier, string[]>> = {};
   for (const [key, route] of Object.entries(as_record(value, where))) {
     const tier = speed_tiers.find((entry) => entry === key);
     if (!tier) {
       return fail(`${where}.${key}`, `must be one of ${speed_tiers.join(", ")}`);
     }
-    tiers[tier] = as_text(route, `${where}.${key}`);
+    tiers[tier] = as_texts(route, `${where}.${key}`);
   }
   return tiers;
+};
+
+const parse_default_context = (value: unknown, where: string, context_length: number): ModelContext => {
+  const raw = as_record(value, where);
+  const limit = raw.limit === null ? null : as_count(raw.limit, `${where}.limit`);
+  if (limit !== null && (limit < min_context_limit || limit >= context_length)) {
+    return fail(`${where}.limit`, `must be null or at least ${min_context_limit} and below the model's context_length`);
+  }
+  return { limit, compact_percent: as_percent(raw.compact_percent, `${where}.compact_percent`) };
 };
 
 const parse_model = (value: unknown, index: number): ModelEntry => {
@@ -69,6 +84,7 @@ const parse_model = (value: unknown, index: number): ModelEntry => {
   const named = `${where} (${id})`;
   const efforts = parse_efforts(raw.efforts, `${named}.efforts`);
   const default_effort = typeof raw.default_effort === "string" ? raw.default_effort : "";
+  const context_length = as_count(raw.context_length, `${named}.context_length`);
   if (efforts.length ? !efforts.includes(default_effort) : default_effort !== "") {
     fail(`${named}.default_effort`, efforts.length ? "must be one of the model's efforts" : "must be empty when the model has no efforts");
   }
@@ -80,13 +96,14 @@ const parse_model = (value: unknown, index: number): ModelEntry => {
     efforts: efforts.length ? [...efforts, major_effort] : efforts,
     default_effort,
     vision: as_flag(raw.vision, `${named}.vision`),
-    context_length: as_count(raw.context_length, `${named}.context_length`),
+    context_length,
     max_output: as_count(raw.max_output, `${named}.max_output`),
     reasoning_passback: raw.reasoning_passback === undefined ? false : as_flag(raw.reasoning_passback, `${named}.reasoning_passback`),
     ...(raw.verbosity === undefined ? {} : { verbosity: parse_verbosity(raw.verbosity, `${named}.verbosity`) }),
     ...(raw.note === undefined ? {} : { note: as_text(raw.note, `${named}.note`) }),
     ...(raw.pro === undefined ? {} : { pro: parse_pro(raw.pro, `${named}.pro`) }),
     ...(raw.tiers === undefined ? {} : { tiers: parse_tiers(raw.tiers, `${named}.tiers`) }),
+    ...(raw.default_context === undefined ? {} : { default_context: parse_default_context(raw.default_context, `${named}.default_context`, context_length) }),
   };
 };
 

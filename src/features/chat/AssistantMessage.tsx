@@ -87,7 +87,7 @@ export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_p
     />
   );
   return (
-    <div ref={frame} className="assistant-message enter-fade-up" data-last={last.id === last_id}>
+    <div ref={frame} className="assistant-message enter-fade-up" data-last={last.id === last_id} data-streaming={last.status === "streaming"}>
       {head && <TurnHead chat_id={chat_id} message_id={leader.id} created_at={leader.created_at} head={head} foldable={fold.foldable} folded={fold.folded} />}
       {messages.map((message) => {
         const summary = summary_after === message.id && <CompactionRow step={summary_line_step} />;

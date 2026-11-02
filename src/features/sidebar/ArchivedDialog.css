@@ -71,7 +71,7 @@
 
 .archived-icon {
   flex: none;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   transition: color var(--duration-fast) var(--ease-out);
 }
 

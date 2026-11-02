@@ -4,6 +4,7 @@ import { is_shell_run } from "../../../shared/shell.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon, CircleAlertIcon, ShieldTerminalIcon } from "../../components/icons.tsx";
+import { LabelMorph } from "../../components/LabelMorph.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { open_agent_run } from "../../state/agents.ts";
 import { AgentCritter } from "./AgentCritter.tsx";
@@ -28,7 +29,7 @@ const StatusMark = ({ step }: { step: ToolStep }) => {
     case "failed":
       return (
         <span className="tool-row-status is-failed" title={t("tools.status_failed")}>
-          <CircleAlertIcon size={13} />
+          <CircleAlertIcon />
         </span>
       );
     case "cancelled":
@@ -53,6 +54,8 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
   const [seen, set_seen] = useState(false);
   const Icon = tool_icon(step);
   const active = is_active_status(step.status);
+  const working = active && step.status !== "queued";
+  const label = tool_label(t, step);
   const edit = step.view?.kind === "edit" ? step.view : null;
   const drafted = step.status === "drafting" ? (step.progress?.lines ?? 0) : 0;
   const reviewing = is_reviewing(step);
@@ -74,24 +77,32 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
         onClick={() => (run ? open_agent_run({ agent_id: run.agent_id, run_id: run.run_id }) : set_chosen(!open))}
       >
         <span className="tool-row-icon">
-          {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter chat_id={chat_id} step={step} /> : <Icon size={16} />}
+          {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter chat_id={chat_id} step={step} /> : <Icon />}
         </span>
-        <span className={class_names("tool-row-label", active && step.status !== "queued" && !reviewing && "is-working")}>
-          {reviewing ? <ReviewingLabel step={step} /> : <WorkingLetters text={tool_label(t, step)} active={active && step.status !== "queued"} />}
+        <span className={class_names("tool-row-label", working && !reviewing && "is-working")}>
+          <LabelMorph morph_key={reviewing ? "review" : `${working}:${label}`}>
+            {reviewing ? <ReviewingLabel step={step} /> : <WorkingLetters text={label} active={working} />}
+          </LabelMorph>
         </span>
-        {reviewing && <ShieldTerminalIcon size={16} className="tool-row-shield" />}
+        {reviewing && <ShieldTerminalIcon className="tool-row-shield" />}
         {edit && <span className="tool-stat-add">+{edit.added}</span>}
         {edit && <span className="tool-stat-remove">-{edit.removed}</span>}
         {drafted > 0 && <DraftLines count={drafted} />}
-        {!edit && !drafted && <RowDetail chat_id={chat_id} step={step} />}
         {started && <AgentRunMark run_id={started.run_id} />}
         <StatusMark step={step} />
-        {is_shell_run(step.name) && <CommandTime step={step} />}
-        {expandable && <ChevronRightIcon size={12} className="tool-row-chevron" />}
+        <span className="tool-row-meta">
+          {!edit && !drafted && <RowDetail chat_id={chat_id} step={step} />}
+          {is_shell_run(step.name) && (
+            <LabelMorph morph_key={step.status === "running" ? "elapsed" : "duration"}>
+              <CommandTime step={step} />
+            </LabelMorph>
+          )}
+        </span>
+        {expandable && <ChevronRightIcon className="tool-row-chevron" />}
       </button>
       {expandable && (
         <CollapsibleBody open={open}>
-          <div className="tool-row-body">{seen && <ToolBody step={step} open={open} chat_id={chat_id} />}</div>
+          <div className="tool-row-body">{seen && <ToolBody step={step} chat_id={chat_id} />}</div>
         </CollapsibleBody>
       )}
     </div>

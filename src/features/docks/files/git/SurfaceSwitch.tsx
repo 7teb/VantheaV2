@@ -9,14 +9,14 @@ type SurfaceSwitchProps = { surface: GitSurface; git: boolean; diff: boolean; ch
 
 export const SurfaceSwitch = ({ surface, git, diff, changes, history, meta, narrow }: SurfaceSwitchProps) => {
   const t = use_t();
-  const options: SegmentedOption<GitSurface>[] = [{ id: "files", label: t("git.files"), icon: <FolderIcon size={16} /> }];
+  const options: SegmentedOption<GitSurface>[] = [{ id: "files", label: t("git.files"), icon: <FolderIcon /> }];
   if (git) {
     options.push(
-      { id: "changes", label: t("git.changes"), icon: <FileDiffIcon size={16} />, count: changes > 0 ? changes : undefined, disabled: changes === 0 },
-      { id: "history", label: t("git.history"), icon: <HistoryIcon size={16} />, disabled: !history },
+      { id: "changes", label: t("git.changes"), icon: <FileDiffIcon />, count: changes > 0 ? changes : undefined, disabled: changes === 0 },
+      { id: "history", label: t("git.history"), icon: <HistoryIcon />, disabled: !history },
     );
   }
-  options.push({ id: "diff", label: t("turn_diff.surface"), tip: t("turn_diff.surface_tip"), icon: <GitCompareIcon size={16} />, disabled: !diff });
+  options.push({ id: "diff", label: t("turn_diff.surface"), tip: t("turn_diff.surface_tip"), icon: <GitCompareIcon />, disabled: !diff });
   return (
     <div className="git-head">
       <Segmented className="git-switch" fit tooltips={narrow} label={t("git.surface")} value={surface} on_change={pick_surface} options={options} />

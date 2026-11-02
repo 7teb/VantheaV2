@@ -19,7 +19,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: var(--font-size-ui);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-caption);
+    color: var(--text-tertiary);
   }
 
   .code-block-pre {
@@ -29,6 +31,7 @@
     font-family: var(--font-mono);
     font-size: var(--font-size-code);
     line-height: var(--leading-code);
+    color: var(--text-code);
     tab-size: 4;
   }
 

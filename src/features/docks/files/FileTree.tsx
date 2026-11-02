@@ -16,12 +16,12 @@ const indent = (depth: number) => ({ "--depth": depth }) as CSSProperties;
 
 const entry_icon = (entry: DirEntry, open: boolean, nested_repo: boolean) => {
   if (entry.kind === "file") {
-    return <FileIcon size={15} />;
+    return <FileIcon />;
   }
   if (nested_repo) {
-    return <FolderGitIcon size={15} />;
+    return <FolderGitIcon />;
   }
-  return open ? <FolderOpenIcon size={15} /> : <FolderIcon size={15} />;
+  return open ? <FolderOpenIcon /> : <FolderIcon />;
 };
 
 const decoration_for = (decorations: GitDecorations | null, path: string, dir: boolean): GitDecoration | null =>
@@ -55,7 +55,7 @@ const EntryRow = ({ entry, depth, open, active, decoration, on_open }: EntryRowP
       onClick={activate}
     >
       <span className="files-row-chevron" data-open={open}>
-        {dir && <ChevronRightIcon size={13} />}
+        {dir && <ChevronRightIcon />}
       </span>
       <span className="files-row-icon">{entry_icon(entry, open, nested_repo)}</span>
       <span className="files-row-label">{entry.name}</span>
@@ -138,7 +138,7 @@ const MatchRows = ({ active, on_open }: { active: string | null; on_open: (path:
             onClick={() => on_open(path)}
           >
             <span className="files-row-icon">
-              <FileIcon size={15} />
+              <FileIcon />
             </span>
             <span className="files-match-name">{base_name(path)}</span>
             <span className="files-match-dir">{parent_dir(path)}</span>
@@ -166,11 +166,11 @@ export const FileTree = ({ on_open }: { on_open: (path: string) => void }) => {
           on_change={set_query}
           placeholder={t("files.filter")}
           aria-label={t("files.filter")}
-          icon={<SearchIcon size={14} />}
+          icon={<SearchIcon />}
           trailing={
             query && (
               <IconButton label={t("files.clear_filter")} size="sm" tooltip={false} className="files-filter-clear" onClick={() => set_query("")}>
-                <CloseIcon size={12} />
+                <CloseIcon />
               </IconButton>
             )
           }

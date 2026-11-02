@@ -1,7 +1,7 @@
 import type { WebFailure } from "../../../shared/tool-view.ts";
 import { estimate_tokens, result_cap_tokens, token_prefix } from "../../context/estimate.ts";
 import { error_text } from "../../storage/coerce.ts";
-import type { ToolResult } from "../types.ts";
+import { failure_of, type ToolResult } from "../types.ts";
 import { source_heading, untrusted_note, view_sources, type WebSearchDeps } from "./search.ts";
 import { extract_body, failed_extracts, map_extract_results, tavily_post, type SourceText } from "./tavily.ts";
 
@@ -66,7 +66,8 @@ export const read_pages = async (input: PageReadInput, deps: WebSearchDeps): Pro
       throw error;
     }
     console.warn(`[web] reading ${input.urls.join(", ").slice(0, 300)} failed: ${error_text(error)}`);
-    return { status: "failed", text: `Reading ${input.urls.join(", ")} failed: ${error_text(error).slice(0, 400)}`, view: view([], []) };
+    const failure = failure_of(error);
+    return { status: "failed", text: `Reading ${input.urls.join(", ")} failed: ${error_text(error).slice(0, 400)}`, view: view([], []), ...(failure ? { failure } : {}) };
   }
   const pages = map_extract_results(data);
   const failed = failed_extracts(data);

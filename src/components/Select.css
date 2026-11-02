@@ -48,7 +48,7 @@
 
   .select-chevron {
     color: var(--text-tertiary);
-    transition: transform var(--duration-base) var(--ease-out);
+    transition: transform var(--duration-chevron) var(--ease-out);
   }
 
   .select.is-open .select-chevron {

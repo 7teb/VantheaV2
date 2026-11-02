@@ -155,6 +155,11 @@
   background: var(--divider);
 }
 
+.mcp-code .text-field-input {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-code);
+}
+
 .mcp-paste.text-area,
 .mcp-lines.text-area {
   min-height: 0;

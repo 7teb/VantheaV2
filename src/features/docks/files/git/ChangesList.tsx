@@ -102,7 +102,7 @@ const ChangeRow = ({ entry, active, counts, on_open }: ChangeRowProps) => {
     <>
       {entry.nested_repo ? (
         <span className="git-change-mark">
-          <FolderGitIcon size={14} />
+          <FolderGitIcon />
         </span>
       ) : (
         <GitBadge decoration={{ status: entry.status, entry, rollup: false }} dir={false} />

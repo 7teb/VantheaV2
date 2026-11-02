@@ -4,7 +4,7 @@ import { use_t } from "../../i18n/index.ts";
 import { OutputBlock } from "./OutputBlock.tsx";
 import "./CommandCard.css";
 
-const CommandText = ({ command }: { command: string }) => {
+export const CommandText = ({ command, prompt = true }: { command: string; prompt?: boolean }) => {
   const t = use_t();
   const text = useRef<HTMLPreElement>(null);
   const [expanded, set_expanded] = useState(false);
@@ -34,12 +34,12 @@ const CommandText = ({ command }: { command: string }) => {
   return (
     <div className="command-card-command" data-expanded={expanded} data-clamped={clamped}>
       <pre ref={text} className="command-card-text" onClick={expand_from_text}>
-        <span className="command-card-prompt">{"$ "}</span>
+        {prompt && <span className="command-card-prompt">{"$ "}</span>}
         {command}
       </pre>
       {clamped && (
         <button type="button" className="command-card-toggle" aria-expanded={expanded} aria-label={label} title={label} onClick={() => set_expanded(!expanded)}>
-          <ChevronDownIcon size={14} />
+          <ChevronDownIcon />
         </button>
       )}
     </div>

@@ -35,7 +35,7 @@ const published = (raw: string, language: string) => {
 const SourceIcon = ({ host }: { host: string }) => {
   const [failed, set_failed] = useState(false);
   if (failed) {
-    return <GlobeIcon size={14} />;
+    return <GlobeIcon />;
   }
   return <img className="web-source-icon" src={favicon_src(host)} alt="" width={14} height={14} onError={() => set_failed(true)} />;
 };
@@ -69,7 +69,7 @@ export const WebSearchBody = ({ view }: BodyProps<"web_search">) => {
           )}
           {failed.map((entry, index) => (
             <div key={`failed:${index}`} className="web-failure" title={entry.url}>
-              <CircleAlertIcon size={14} />
+              <CircleAlertIcon />
               <span className="web-failure-url">{page_address(entry.url)}</span>
               <span className="web-failure-error">{entry.error}</span>
             </div>

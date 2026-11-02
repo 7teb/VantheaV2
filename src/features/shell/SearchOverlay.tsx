@@ -8,9 +8,10 @@ import { TextField } from "../../components/TextField.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { relative_time } from "../../i18n/relative-time.ts";
 import { chats_store } from "../../state/chats.ts";
+import { settings_store } from "../../state/settings.ts";
 import { close_search, open_chat, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
-import { chat_label } from "../sidebar/sidebar-model.ts";
+import { chat_label, project_path_label } from "../sidebar/sidebar-model.ts";
 import "./SearchOverlay.css";
 
 type Results = { query: string; status: "loading" | "ready" | "failed"; hits: ChatSearchHit[] };
@@ -52,6 +53,7 @@ const use_search = (query: string): Results => {
 
 const SearchPanel = () => {
   const t = use_t();
+  const projects = use_store(settings_store, (view) => view?.projects ?? null);
   const [query, set_query] = useState("");
   const [cursor, set_cursor] = useState(0);
   const chats = use_store(chats_store, (state) => state.list);
@@ -108,7 +110,7 @@ const SearchPanel = () => {
           set_query(next);
           set_cursor(0);
         }}
-        icon={<SearchIcon size={17} />}
+        icon={<SearchIcon />}
         placeholder={t("search.placeholder")}
         aria-label={t("search.label")}
         role="combobox"
@@ -131,10 +133,12 @@ const SearchPanel = () => {
               onMouseMove={() => set_cursor(index)}
               onClick={() => choose(hit)}
             >
-              {hit.archived ? <ArchiveIcon size={16} className="search-hit-icon" /> : <MessageSquareIcon size={16} className="search-hit-icon" />}
+              {hit.archived ? <ArchiveIcon className="search-hit-icon" /> : <MessageSquareIcon className="search-hit-icon" />}
               <span className="search-hit-text">
                 <span className="search-hit-title">{chat_label(t, hit.title)}</span>
-                <span className="search-hit-detail">{hit.snippet || hit.project_path || t("search.no_project")}</span>
+                <span className="search-hit-detail" title={hit.project_path || undefined}>
+                  {hit.snippet || (hit.project_path ? project_path_label(projects ?? [], hit.project_path) : t("search.no_project"))}
+                </span>
               </span>
               {hit.archived && <span className="search-hit-tag">{t("search.archived")}</span>}
               <span className="search-hit-time">{relative_time(t, hit.updated_at, now)}</span>

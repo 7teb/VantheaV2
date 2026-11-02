@@ -17,7 +17,7 @@ export const ApprovalEnv = ({ env }: { env: Record<string, string> }) => {
       <div className="approval-env-head">
         <span>{t("approval.env_label", { n: entries.length })}</span>
         <IconButton size="sm" label={revealed ? t("approval.env_hide") : t("approval.env_show")} active={revealed} onClick={() => set_revealed(!revealed)}>
-          {revealed ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
+          {revealed ? <EyeOffIcon /> : <EyeIcon />}
         </IconButton>
       </div>
       <dl className="approval-env-list inset-surface">

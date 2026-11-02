@@ -28,7 +28,7 @@ export const DownloadCli = () => {
   const t = use_t();
   return (
     <Tooltip label={cli_download_url.replace(/^https:\/\//, "").replace(/\/$/, "")}>
-      <Button size="sm" icon_end={<ExternalLinkIcon size={14} />} onClick={() => open_external(cli_download_url)}>
+      <Button size="sm" icon_end={<ExternalLinkIcon />} onClick={() => open_external(cli_download_url)}>
         {t("github.download_cli")}
       </Button>
     </Tooltip>
@@ -49,7 +49,7 @@ const stale_reason = (t: Translate, language: string, stale: GithubStale): strin
 const BlockedRow = ({ view }: { view: Blocked }) => {
   const t = use_t();
   const language = use_language();
-  const lock = <LockIcon size={16} />;
+  const lock = <LockIcon />;
   const command = "command" in view && view.command !== null ? view.command : undefined;
   switch (view.kind) {
     case "cli_host":
@@ -75,7 +75,7 @@ const BlockedRow = ({ view }: { view: Blocked }) => {
           icon={lock}
           title={t("github.sso", { org: view.org })}
           action={
-            <Button size="sm" icon_end={<ExternalLinkIcon size={14} />} onClick={() => open_external(view.url)}>
+            <Button size="sm" icon_end={<ExternalLinkIcon />} onClick={() => open_external(view.url)}>
               {t("github.start_sso")}
             </Button>
           }
@@ -86,7 +86,7 @@ const BlockedRow = ({ view }: { view: Blocked }) => {
         const time = view.reset_at ? clock_of(language, view.reset_at) : null;
         return (
           <GitNotice
-            icon={<ClockIcon size={16} />}
+            icon={<ClockIcon />}
             title={t("github.rate")}
             detail={time ? t("github.rate_reset", { time }) : undefined}
             command={view.command ?? undefined}
@@ -95,8 +95,8 @@ const BlockedRow = ({ view }: { view: Blocked }) => {
           />
         );
       }
-      if (view.reason === "offline") return <GitNotice icon={<CloudOffIcon size={16} />} title={t("github.offline")} />;
-      return <GitNotice icon={<CloudOffIcon size={16} />} title={view.status === null ? t("github.server_error_plain") : t("github.server_error", { status: view.status })} />;
+      if (view.reason === "offline") return <GitNotice icon={<CloudOffIcon />} title={t("github.offline")} />;
+      return <GitNotice icon={<CloudOffIcon />} title={view.status === null ? t("github.server_error_plain") : t("github.server_error", { status: view.status })} />;
   }
 };
 
@@ -109,7 +109,7 @@ const DataRow = ({ view, git }: { view: GithubData; git: GitRepoView }) => {
   const visibility = view.visibility === null ? null : t(view.visibility === "public" ? "github.public" : view.visibility === "private" ? "github.private" : "github.internal");
   const rest = visibility === null ? t("github.row_tip_plain") : t("github.row_tip", { visibility });
   const tip = view.stale ? t("github.stale_tip", { time: clock_of(language, view.updated_at), reason: stale[1] ?? "", rest }) : rest;
-  const icon = view.stale ? <CloudOffIcon size={16} /> : view.visibility === "public" ? <LockOpenIcon size={16} /> : <LockIcon size={16} />;
+  const icon = view.stale ? <CloudOffIcon /> : view.visibility === "public" ? <LockOpenIcon /> : <LockIcon />;
   const foot = view.stale ? stale : view.source_login ? [t("github.via_cli", { login: view.source_login })] : [];
   return (
     <div className="git-gh-slot">
@@ -129,12 +129,12 @@ const DataRow = ({ view, git }: { view: GithubData; git: GitRepoView }) => {
             <span className="git-row-end">
               {view.pr && (
                 <span className="git-stat" data-tone={view.pr.state}>
-                  <PrStateIcon state={view.pr.state} size={14} />#{view.pr.number} {t(pr_labels[view.pr.state])}
+                  <PrStateIcon state={view.pr.state} />#{view.pr.number} {t(pr_labels[view.pr.state])}
                 </span>
               )}
               {view.checks && (
                 <span className="git-stat" data-tone={view.checks.state}>
-                  <CheckStateIcon state={view.checks.state} size={14} />
+                  <CheckStateIcon state={view.checks.state} />
                   {checks_label(t, view.checks)}
                 </span>
               )}

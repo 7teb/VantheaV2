@@ -2,19 +2,19 @@ import { useState } from "react";
 import type { Todo } from "../../../shared/chat.ts";
 import { newly_done } from "../../../shared/todos.ts";
 import { class_names } from "../../components/class-names.ts";
-import { CircleCheckIcon, CircleIcon, CircleSpinnerIcon } from "../../components/icons.tsx";
+import { CircleCheckIcon, CircleDashedIcon, CircleSpinnerIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./TodoList.css";
 
 const TodoMark = ({ status, live }: { status: Todo["status"]; live: boolean }) => {
   if (status === "done") {
-    return <CircleCheckIcon size={15} />;
+    return <CircleCheckIcon />;
   }
   if (status === "in_progress") {
-    return <CircleSpinnerIcon size={15} className={live ? "spin" : undefined} />;
+    return <CircleSpinnerIcon className={live ? "spin" : undefined} />;
   }
-  return <CircleIcon size={15} />;
+  return <CircleDashedIcon />;
 };
 
 const use_finished = (todos: Todo[]): Set<string> => {

@@ -73,7 +73,7 @@ export const CommitBox = ({ view }: { view: GitRepoView }) => {
         )}
         {has_text && !running && (
           <IconButton className="commit-retry" size="sm" label={t("git_actions.write_again")} disabled={reason !== null} onClick={() => void write_commit_message()}>
-            <RetryIcon size={14} />
+            <RetryIcon />
           </IconButton>
         )}
       </div>

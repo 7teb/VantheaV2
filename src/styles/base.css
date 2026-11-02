@@ -81,8 +81,8 @@
     flex: none;
   }
 
-  svg * {
-    color: var(--current-opaque);
+  .chevron-icon {
+    margin-inline: -2px;
   }
 
   code,
@@ -140,6 +140,13 @@
     line-height: 1;
     letter-spacing: var(--tracking-label);
     text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .side-section-label {
+    font-size: var(--font-size-ui);
+    font-weight: var(--weight-semibold);
+    line-height: 1;
     color: var(--text-tertiary);
   }
 

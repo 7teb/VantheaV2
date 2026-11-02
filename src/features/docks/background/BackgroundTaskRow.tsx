@@ -1,12 +1,10 @@
 import { useLayoutEffect, useRef } from "react";
 import type { BackgroundStatus, BackgroundTask } from "../../../../shared/ipc/work.ts";
-import { shell_labels } from "../../../../shared/shell.ts";
 import { IconButton } from "../../../components/Button.tsx";
 import { Collapsible } from "../../../components/Collapsible.tsx";
 import { CircleAlertIcon, CircleCheckIcon, CircleSlashIcon, CircleStopIcon, CircleSpinnerIcon, type IconComponent } from "../../../components/icons.tsx";
 import { use_t } from "../../../i18n/index.ts";
 import { cancel_background_task } from "../../../state/background.ts";
-import { background_status_keys } from "../../tools/background-status.ts";
 import { format_duration } from "../../tools/tool-summary.ts";
 
 const status_icons: Record<BackgroundStatus, IconComponent> = {
@@ -39,25 +37,23 @@ export const BackgroundTaskRow = ({ task, now }: BackgroundTaskRowProps) => {
   const StatusIcon = status_icons[task.status];
   const running = task.status === "running";
   const end = task.ended_at ? Date.parse(task.ended_at) : now;
-  const meta = [shell_labels[task.shell], t(background_status_keys[task.status]), format_duration(end - Date.parse(task.started_at))];
-  if (task.exit_code !== null) {
-    meta.push(t("background.exit_code", { code: task.exit_code }));
-  }
+  const exit_code = task.exit_code;
+  const time = exit_code !== null && exit_code !== 0 ? t("background.exit_code", { code: exit_code }) : format_duration(end - Date.parse(task.started_at));
 
   return (
     <article className="bg-task" data-status={task.status}>
       <div className="bg-task-head">
-        <StatusIcon size={15} className={running ? "bg-task-icon spin" : "bg-task-icon"} />
+        <StatusIcon className={running ? "bg-task-icon spin" : "bg-task-icon"} />
         <code className="bg-task-command" title={task.command}>
           {task.command}
         </code>
+        <span className="bg-task-time">{time}</span>
         {running && (
           <IconButton size="sm" label={t("background.cancel")} onClick={() => void cancel_background_task(task.id)}>
-            <CircleStopIcon size={15} />
+            <CircleStopIcon />
           </IconButton>
         )}
       </div>
-      <div className="bg-task-meta">{meta.join(" · ")}</div>
       {task.output_tail && (
         <Collapsible className="bg-task-details" header={t("background.output")} default_open={running}>
           <OutputTail text={task.output_tail} />

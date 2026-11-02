@@ -65,6 +65,7 @@
 
 .files-row {
   --depth: 0;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -72,7 +73,7 @@
   height: 26px;
   padding: 0 var(--space-2) 0 calc(6px + var(--depth) * 12px);
   border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  color: var(--text-row);
   font-size: var(--font-size-ui);
   text-align: left;
   white-space: nowrap;
@@ -91,6 +92,22 @@
   color: var(--text-primary);
 }
 
+.files-row[aria-expanded]:not([data-git="ignored"]) {
+  color: var(--text-primary);
+}
+
+.files-row::before,
+.files-note-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 12px;
+  width: calc(var(--depth) * 12px);
+  background: repeating-linear-gradient(to right, var(--rail) 0 1px, transparent 1px 12px);
+  pointer-events: none;
+}
+
 .files-row-chevron {
   display: inline-grid;
   flex: none;
@@ -98,7 +115,7 @@
   width: 14px;
   height: 14px;
   color: var(--text-tertiary);
-  transition: transform var(--duration-fast) var(--ease-out);
+  transition: transform var(--duration-chevron) var(--ease-out);
 }
 
 .files-row-chevron[data-open="true"] {
@@ -110,6 +127,10 @@
   flex: none;
   place-items: center;
   color: var(--text-tertiary);
+}
+
+.files-row[aria-expanded]:not([data-git="ignored"]) .files-row-icon {
+  color: var(--text-secondary);
 }
 
 .files-row-label,
@@ -132,13 +153,14 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: var(--font-size-caption);
+  color: var(--text-detail);
+  font-size: var(--font-size-ui);
   mask-image: linear-gradient(to right, var(--mask) calc(100% - 16px), transparent);
 }
 
 .files-note-row {
   --depth: 0;
+  position: relative;
   display: flex;
   align-items: center;
   height: 26px;
@@ -179,11 +201,12 @@
   height: 32px;
   padding: 0 6px 0 var(--space-4);
   color: var(--text-tertiary);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-ui);
 }
 
 .files-path-text {
   min-width: 0;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -212,7 +235,7 @@
   display: inline-grid;
   flex: none;
   place-items: center;
-  width: 14px;
+  width: 16px;
   height: 16px;
   color: var(--text-tertiary);
 }

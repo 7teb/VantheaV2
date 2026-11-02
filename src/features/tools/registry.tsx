@@ -132,22 +132,21 @@ const ViewBody = ({ view, step }: { view: ToolView; step: ToolStep }) => {
   return Body ? <Body view={view} step={step} /> : null;
 };
 
-export const ToolBody = ({ step, open, chat_id }: { step: ToolStep; open: boolean; chat_id: string }) => {
+export const ToolBody = ({ step, chat_id }: { step: ToolStep; chat_id: string }) => {
   const t = use_t();
   const live = step.progress?.output_tail ?? null;
   const draft = live_draft(step);
-  const error = shown_error(step);
+  const error = shown_error(t, step);
   const note = denial_note(t, step);
   return (
     <div className="tool-body">
-      {is_reviewing(step) && <ReviewBody step={step} row_open={open} />}
+      {is_reviewing(step) && <ReviewBody step={step} />}
       {error && <div className="tool-body-error">{error}</div>}
-      {step.status === "cancelled" && <div className="tool-body-muted">{t("tools.cancelled")}</div>}
       {draft && <DraftCode draft={draft} />}
       {(live || live_command(step)) && <LiveBody step={step} live={live} chat_id={chat_id} />}
       {step.view && view_content(t, step, step.view) && <ViewBody view={step.view} step={step} />}
-      {note && note.lines.length > 0 && <ReviewNotice note={note} />}
-      {!step.view && !live && !step.error && step.status !== "denied" && step.result_text && <OutputBlock text={step.result_text} />}
+      {note && <ReviewNotice note={note} />}
+      {!step.view && !live && !error && step.status !== "denied" && step.result_text && <OutputBlock text={step.result_text} />}
     </div>
   );
 };

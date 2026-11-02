@@ -1,8 +1,9 @@
 import type { ApprovalDecision } from "../../../shared/approval.ts";
+import type { ToolFailure } from "../../../shared/tool-failure.ts";
 import { error_text } from "../../storage/coerce.ts";
-import { ToolArgumentError, type ToolContext, type ToolResult } from "../types.ts";
+import { failure_of, ToolArgumentError, type ToolContext, type ToolResult } from "../types.ts";
 
-export const failed = (text: string): ToolResult => ({ status: "failed", text, view: null });
+export const failed = (text: string, failure?: ToolFailure): ToolResult => ({ status: "failed", text, view: null, ...(failure ? { failure } : {}) });
 
 export const denied = (what: string, decision: ApprovalDecision): ToolResult => ({
   status: "denied",
@@ -19,7 +20,7 @@ export const guarded = async (ctx: ToolContext, tool: string, work: () => Promis
     }
     const message = error_text(error);
     console.warn(`[tools] ${tool} in ${ctx.project_root} failed: ${message}`);
-    return failed(message);
+    return failed(message, failure_of(error));
   }
 };
 

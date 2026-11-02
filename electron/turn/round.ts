@@ -1,6 +1,7 @@
 import { approval_skip_ms, skips_unanswered } from "../../shared/approval.ts";
 import type { ContextCalibration, StepImage, ToolProgress } from "../../shared/chat.ts";
 import type { ToolEndStatus } from "../../shared/events.ts";
+import type { ToolFailure } from "../../shared/tool-failure.ts";
 import { last_human_id, note_human_answer } from "../permissions/context.ts";
 import { human_decision } from "../permissions/decisions.ts";
 import { error_text } from "../storage/coerce.ts";
@@ -14,7 +15,7 @@ import { image_limit, image_rules } from "../model/image-limits.ts";
 import { reasoning_bound_to_prefix } from "../model/prompt-cache.ts";
 import { round_body } from "../model/stream.ts";
 import type { ApiAssistantMessage, ApiMessage, ApiToolCall, RoundRequest, RoundResult, RoundToolCall, RoundUsage } from "../model/types.ts";
-import type { ContextReading, Tool, ToolContext, ToolImage, ToolProfile } from "../tools/types.ts";
+import { failure_of, type ContextReading, type Tool, type ToolContext, type ToolImage, type ToolProfile } from "../tools/types.ts";
 import { tool_batches } from "./batches.ts";
 import { carrier, image_url, type CarrierImage } from "./carriers.ts";
 import { create_status_driver } from "./reasoning-status.ts";
@@ -81,7 +82,7 @@ const throttled_progress = (emit: Emitter, call_id: string): ((progress: ToolPro
   };
 };
 
-type ToolOutcome = { aborted: boolean; status: ToolEndStatus; result_text: string; view: ToolView | null; error: string | null; images: ToolImage[] };
+type ToolOutcome = { aborted: boolean; status: ToolEndStatus; result_text: string; view: ToolView | null; error: string | null; failure?: ToolFailure; images: ToolImage[] };
 
 type KeptImages = { stored: StepImage[]; carried: CarrierImage[]; note: string };
 
@@ -89,7 +90,6 @@ type RoundCall = RoundToolCall & { engine_id: string; args: Record<string, unkno
 
 type CallResult = { aborted: true } | { aborted: false; result_text: string; carried: CarrierImage[]; plan: boolean };
 
-const images_left_out_note = "Older images were left out of this request to stay inside the model provider's documented limits.";
 
 const build_context = (session: TurnSession, call_id: string, profile: ToolProfile, image_count: number, context: () => ContextReading): ToolContext => ({
   chat_id: session.chat_id,
@@ -160,6 +160,7 @@ const execute_tool = async (
       result_text: cap_text(result.text, result_cap_tokens),
       view: result.view,
       error: result.status === "failed" ? result.text.slice(0, 2000) : null,
+      ...(result.status === "failed" && result.failure ? { failure: result.failure } : {}),
       images: result.images ?? [],
     };
   } catch (error) {
@@ -168,7 +169,8 @@ const execute_tool = async (
     }
     const message = error_text(error);
     console.error(`[turn] tool ${name} threw on args ${JSON.stringify(args).slice(0, 200)}:`, error);
-    return { aborted: false, status: "failed", result_text: cap_text(message, result_cap_tokens), view: null, error: message, images: [] };
+    const failure = failure_of(error);
+    return { aborted: false, status: "failed", result_text: cap_text(message, result_cap_tokens), view: null, error: message, ...(failure ? { failure } : {}), images: [] };
   }
 };
 
@@ -203,17 +205,18 @@ const run_call = async (session: TurnSession, call: RoundCall, profile: ToolProf
     status: outcome.status,
     view: outcome.view,
     error: outcome.error,
+    ...(outcome.failure ? { failure: outcome.failure } : {}),
     result_text,
     ...(kept.stored.length ? { images: kept.stored } : {}),
   });
   return { aborted: false, result_text, carried: kept.carried, plan: call.name === "present_plan" && outcome.status === "done" };
 };
 
-export const fit_request = async (request: RoundRequest): Promise<boolean> => {
+export const fit_request = async (request: RoundRequest): Promise<void> => {
   const limit = image_limit(request.model);
   const bound = reasoning_bound_to_prefix(request.model.id);
   await shrink_images(request.messages, limit, shrunk_data_url, bound);
-  return fit_images(request.messages, limit, () => Buffer.byteLength(JSON.stringify(round_body(request))), bound);
+  fit_images(request.messages, limit, () => Buffer.byteLength(JSON.stringify(round_body(request))), bound);
 };
 
 const aborted_outcome = (result: RoundResult, estimate: number): RoundOutcome => ({
@@ -261,9 +264,7 @@ export const run_round = async (session: TurnSession, round: number, api_message
   const profile = round_profile(session);
   const tools = session.resolve_tools(profile);
   const request: RoundRequest = { model: session.model, effort: session.effort, messages: api_messages, tools: tools.map((tool) => tool.spec) };
-  if (await fit_request(request)) {
-    session.emit({ type: "notice", round, notice: "context_trimmed", text: images_left_out_note });
-  }
+  await fit_request(request);
   const estimate = sent_estimate(request.messages, request.tools, session.model);
   request.max_tokens = output_budget(request.messages, request.tools, session.model, calibration);
   const result = await stream_with_status(session, round, request);

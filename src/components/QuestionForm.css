@@ -123,11 +123,17 @@
     background: var(--fill-row);
   }
 
-  .question-option:focus-visible,
+  .question-option:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+    box-shadow: none;
+  }
+
   .question-icon-button:focus-visible,
   .question-button:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--ring-accent);
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    box-shadow: none;
   }
 
   .question-index {
@@ -187,7 +193,7 @@
   }
 
   .question-other:focus-within {
-    box-shadow: 0 0 0 1px var(--ring-accent);
+    box-shadow: inset 0 0 0 1px var(--ring-well-focus);
   }
 
   .question-other-icon {

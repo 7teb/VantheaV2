@@ -2,16 +2,17 @@ import type { ToolStep } from "../../../shared/chat.ts";
 import { is_shell_run } from "../../../shared/shell.ts";
 import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
 import type { Translate } from "../../i18n/translate.ts";
+import { failure_text } from "./failure-text.ts";
 import { live_draft } from "./live-draft.ts";
 import { step_outcome, type OutcomeNote } from "./review-notes.ts";
-import { is_reviewing } from "./review-phase.ts";
+import { is_command_step, is_reviewing } from "./review-phase.ts";
 import { compact_command, is_active_status } from "./tool-meta.ts";
 
-const output_views = new Set<ToolViewKind>(["command", "mcp", "text"]);
+const output_views = new Set<ToolViewKind>(["command", "text"]);
 
 const inline_tools = new Set(["datetime", "view_image", "context_status", "list_agents"]);
 
-const notice_views = new Set<ToolViewKind>(["command", "background", "mcp"]);
+const notice_views = new Set<ToolViewKind>(["command", "background"]);
 
 const message_tools = new Set(["message_agent", "message_peer", "message_main_agent"]);
 
@@ -51,8 +52,9 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
       return view.models.length > 0;
     case "text":
       return view.text !== "" && !inline_tools.has(step.name);
-    case "plan":
     case "mcp":
+      return view.text !== "" && step.status !== "denied";
+    case "plan":
     case "memory":
       return view.text !== "";
     case "background":
@@ -74,9 +76,19 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
 export const denial_note = (t: Translate, step: ToolStep): OutcomeNote | null =>
   step.status === "denied" && !(step.view && notice_views.has(step.view.kind)) ? step_outcome(t, step).notice : null;
 
-const shows_own_error = (view: ToolView | null): boolean => Boolean(view && (output_views.has(view.kind) || (view.kind === "web_search" && view.failed?.length)));
+const shows_own_error = (view: ToolView | null): boolean => {
+  if (view?.kind === "mcp") {
+    return view.text !== "";
+  }
+  return Boolean(view && (output_views.has(view.kind) || (view.kind === "web_search" && view.failed?.length)));
+};
 
-export const shown_error = (step: ToolStep): string | null => (shows_own_error(step.view) ? null : step.error);
+export const shown_error = (t: Translate, step: ToolStep): string | null => {
+  if (shows_own_error(step.view)) {
+    return null;
+  }
+  return step.failure ? failure_text(t, step.failure) : step.error;
+};
 
 export const offers_background = (step: ToolStep): boolean => step.status === "running" && step.progress?.can_background === true;
 
@@ -93,11 +105,11 @@ export const opens_by_itself = (step: ToolStep, main_chat: boolean): boolean =>
   !is_reviewing(step) && live_draft(step) === null && !(main_chat && is_shell_run(step.name));
 
 export const has_body = (t: Translate, step: ToolStep): boolean =>
-  !is_agent_message(step) &&
-  (is_reviewing(step) ||
-    Boolean(shown_error(step)) ||
+  (!is_agent_message(step) || step.status === "failed") &&
+  ((is_reviewing(step) && is_command_step(step)) ||
+    Boolean(shown_error(t, step)) ||
     Boolean(step.progress?.output_tail) ||
     live_command(step) ||
     live_draft(step) !== null ||
-    (denial_note(t, step)?.lines.length ?? 0) > 0 ||
+    denial_note(t, step) !== null ||
     (step.view ? view_content(t, step, step.view) : step.status !== "denied" && !is_active_status(step.status) && step.result_text !== ""));

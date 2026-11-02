@@ -7,17 +7,15 @@
   min-height: 0;
   overflow: hidden;
   background: var(--surface-shell);
-  transition:
-    width var(--duration-slower) var(--ease-out),
-    visibility 0s;
+  transition: visibility 0s;
 }
 
 .dock-host[data-state="closed"] {
   width: 0;
   visibility: hidden;
   transition:
-    width var(--duration-slower) var(--ease-out),
-    visibility 0s linear var(--duration-slower);
+    width 0s linear var(--duration-fast),
+    visibility 0s linear var(--duration-fast);
 }
 
 .dock-host[data-resizing="true"] {
@@ -67,6 +65,18 @@
 
 .dock-resize:focus-visible::after {
   background: var(--focus-ring);
+}
+
+@media (min-width: 861px) {
+  .dock-host[data-state="open"] .dock-inner {
+    --slide-shift: 24px;
+    animation: slide-in var(--duration-base) var(--ease-out) backwards;
+  }
+
+  .dock-host[data-state="closed"] .dock-inner {
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-in);
+  }
 }
 
 @media (hover: none) and (pointer: coarse) {

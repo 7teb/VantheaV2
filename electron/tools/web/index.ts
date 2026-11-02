@@ -41,7 +41,7 @@ export const web_search_tool = define_tool<WebSearchArgs>({
     const key = get_secret("tavily");
     if (!key) {
       const text = "No Tavily API key is set. Ask the user to add their Tavily key in Settings > Web search.";
-      return { status: "failed", text, view: { kind: "web_search", query: args.query, depth: "basic", answer: "", sources: [], urls: args.urls } };
+      return { status: "failed", text, view: { kind: "web_search", query: args.query, depth: "basic", answer: "", sources: [], urls: args.urls }, failure: { kind: "web_no_key" } };
     }
     const deps: WebSearchDeps = { fetch: (url, init) => fetch(url, init), key, signal: ctx.signal };
     if (args.urls.length) {

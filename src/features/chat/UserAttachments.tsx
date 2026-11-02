@@ -30,7 +30,7 @@ export const UserAttachments = ({ attachments }: { attachments: Attachment[] }) 
         <div className="user-attachment-files">
           {files.map((attachment) => (
             <div key={attachment.id} className="user-attachment-file inset-surface" title={attachment.name}>
-              <FileTextIcon size={16} />
+              <FileTextIcon />
               <span className="user-attachment-name">{attachment.name}</span>
               <span className="user-attachment-size">{format_size(attachment.size)}</span>
             </div>

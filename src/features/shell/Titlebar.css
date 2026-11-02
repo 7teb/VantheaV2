@@ -76,6 +76,10 @@
   gap: 2px;
 }
 
+.titlebar .icon-button.is-active {
+  background: var(--fill-selected);
+}
+
 .titlebar-more {
   position: relative;
 }
@@ -169,8 +173,7 @@
   }
 
   .titlebar-brand,
-  .titlebar-dock,
-  .titlebar-title .title-branch {
+  .titlebar-dock {
     display: none;
   }
 

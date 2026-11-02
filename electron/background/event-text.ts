@@ -1,3 +1,4 @@
+import { background_event_labels, background_event_marker } from "../../shared/background-notes.ts";
 import type { BackgroundTask } from "../../shared/ipc/work.ts";
 import { shell_labels } from "../../shared/shell.ts";
 import { result_cap_tokens } from "../context/estimate.ts";
@@ -14,25 +15,25 @@ const duration_seconds = (task: BackgroundTask) => {
 const output_text = (output: OutputView): string => {
   const shown = output.tail(output_cap).trim();
   if (!shown) {
-    return "Output: empty";
+    return `${background_event_labels.output}: empty`;
   }
   const before = output.chars() - output_cap;
   if (before <= 0) {
-    return `Output:\n${shown}`;
+    return `${background_event_labels.output}:\n${shown}`;
   }
-  return `Output, the last ${output_cap} characters (the ${before} characters before them are omitted here; get_background_task returns the output with its start and end up to the ${result_cap_tokens}-token cap per tool result):\n${shown}`;
+  return `${background_event_labels.output}, the last ${output_cap} characters (the ${before} characters before them are omitted here; get_background_task returns the output with its start and end up to the ${result_cap_tokens}-token cap per tool result):\n${shown}`;
 };
 
 export const background_event_text = (task: BackgroundTask, output: OutputView): string =>
   [
-    "[BACKGROUND TASK EVENT]",
+    background_event_marker,
     "This is an internal app event, not a message written by the user. A long-running task you started earlier in this chat has finished.",
     `ID: ${task.id}`,
     `Name: ${task.name}`,
-    `Shell: ${shell_labels[task.shell]}`,
-    `Command: ${task.command}`,
-    `Status: ${task.status}`,
-    `Exit code: ${task.exit_code ?? "none"}`,
+    `${background_event_labels.shell}: ${shell_labels[task.shell]}`,
+    `${background_event_labels.command}: ${task.command}`,
+    `${background_event_labels.status}: ${task.status}`,
+    `${background_event_labels.exit_code}: ${task.exit_code ?? "none"}`,
     `Duration: ${duration_seconds(task)}s`,
     output_text(output),
     "Use this as new evidence and continue the original work if it is still relevant. Do not say the user sent this event. If nothing is left to do, reply briefly.",

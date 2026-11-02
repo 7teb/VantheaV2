@@ -51,19 +51,19 @@ export const inspect_repo = async (project_dir: string): Promise<RepoCheck> => {
     return { kind: "failed", error: detected.message };
   }
   const { paths } = detected;
+  const branch = await current_branch(tool, paths.top);
   const base = await head_commit(tool, paths.top);
   if (base === null) {
-    return { kind: "no_commits" };
+    return { kind: "no_commits", branch };
   }
   const prefix = paths.prefix.replace(/\/+$/, "");
   if (prefix && !(await in_head(tool, paths.top, prefix))) {
-    return { kind: "untracked_folder" };
+    return { kind: "untracked_folder", branch };
   }
   const filters = await read_owned_filters(tool, paths.top);
   if (filters.length > 0) {
-    return { kind: "programs", keys: filters };
+    return { kind: "programs", keys: filters, branch };
   }
-  const branch = await current_branch(tool, paths.top);
   const submodules = (await entry_kind(path.join(paths.top, ".gitmodules"))) === "file";
   return { kind: "ready", tool, paths, prefix, base, branch, submodules };
 };

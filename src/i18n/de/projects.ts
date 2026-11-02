@@ -20,6 +20,7 @@ export const projects: Record<keyof typeof en, string> = {
   "projects.folder_label": "Ordner",
   "projects.folder_empty": "Ohne Ordner legt VantheaX Dokumente\\VantheaX\\{name} an und richtet darin Git ein, wenn Git installiert ist.",
   "projects.folder_add": "Ordner hinzufügen",
+  "projects.folder_drop": "Ordner hier ablegen oder",
   "projects.folder_remove": "Ordner entfernen",
   "projects.create_submit": "Projekt erstellen",
   "projects.create_failed": "Das Projekt konnte nicht angelegt werden: {error}",

@@ -2,6 +2,7 @@ import { isValidElement, memo, useMemo, type MouseEvent, type ReactNode } from "
 import ReactMarkdown, { defaultUrlTransform, type Components, type Options, type UrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { is_external_url, open_external } from "../state/chat-actions.ts";
+import { open_file_link } from "../state/file-links.ts";
 import { class_names } from "./class-names.ts";
 import { FileIcon } from "./icons.tsx";
 import { has_math, normalize_math, split_blocks } from "./markdown-blocks.ts";
@@ -18,18 +19,30 @@ const plain_rehype_plugins: Options["rehypePlugins"] = [rehype_table_columns];
 
 const local_image = /^(vx-media:|data:image\/)/i;
 
-const url_transform: UrlTransform = (url, key) => (key === "src" && local_image.test(url) ? url : defaultUrlTransform(url));
+const url_transform: UrlTransform = (url, key) => {
+  if (key === "src" && local_image.test(url)) {
+    return url;
+  }
+  return key === "href" && !is_external_url(url) ? url : defaultUrlTransform(url);
+};
 
-const follow = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+const follow = (event: MouseEvent<HTMLAnchorElement>, href: string | undefined) => {
   event.preventDefault();
-  open_external(href);
+  if (!href) {
+    return;
+  }
+  if (is_external_url(href)) {
+    open_external(href);
+    return;
+  }
+  void open_file_link(href);
 };
 
 const MarkdownLink = ({ href, children }: { href?: string; children?: ReactNode }) => {
   const target = href && is_external_url(href) ? href : null;
   return (
-    <a className={class_names("md-link", !target && "md-file-link")} href={target ?? undefined} title={target ?? undefined} onClick={(event) => follow(event, target ?? "")}>
-      {!target && <FileIcon size={16} />}
+    <a className={class_names("md-link", !target && "md-file-link")} href={target ?? undefined} title={target ?? undefined} onClick={(event) => follow(event, href)}>
+      {!target && <FileIcon />}
       {children}
     </a>
   );

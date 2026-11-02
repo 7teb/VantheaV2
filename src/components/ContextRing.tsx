@@ -52,7 +52,7 @@ export const ContextRing = ({ usage, compact, mark, placement = "top-end" }: Con
           set_open((value) => !value);
         }}
       >
-        <ProgressRing ratio={ratio} size={18} />
+        <ProgressRing ratio={ratio} size={16} />
       </button>
       <Popover open={open} anchor={anchor} label={t("context.title")} on_close={() => set_open(false)} placement={placement} className="context-popover">
         <div className="context-popover-title">{t("context.title")}</div>

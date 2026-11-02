@@ -100,10 +100,20 @@ export const restore_worktree = async (chat_id: string) => {
 
 const has_worktree = (chat_id: string) => chats_store.get().list.some((chat) => chat.id === chat_id && chat.worktree !== undefined);
 
+const reload_active_eligibility = () => {
+  const project_path = ui_store.get().project_path;
+  if (project_path && worktree_store.get().eligibility[project_path] !== undefined) {
+    void load_eligibility(project_path);
+  }
+};
+
 export const init_worktree = (): (() => void) => {
   const stop_ends = on_turn_end((chat_id) => {
     if (has_worktree(chat_id)) {
       void load_head(chat_id);
+    }
+    if (chats_store.get().list.some((chat) => chat.id === chat_id && chat.project_path === ui_store.get().project_path)) {
+      reload_active_eligibility();
     }
   });
   let focused = window_store.get()?.focused ?? true;
@@ -114,6 +124,9 @@ export const init_worktree = (): (() => void) => {
     const active = ui_store.get().active_chat_id;
     if (regained && active !== null && has_worktree(active)) {
       void load_head(active);
+    }
+    if (regained) {
+      reload_active_eligibility();
     }
   });
   return () => {

@@ -32,7 +32,7 @@ const DownloadAction = () => {
   const t = use_t();
   return (
     <Tooltip label={git_download_url.replace(/^https:\/\//, "")}>
-      <Button size="sm" icon_end={<ExternalLinkIcon size={14} />} onClick={() => open_external(git_download_url)}>
+      <Button size="sm" icon_end={<ExternalLinkIcon />} onClick={() => open_external(git_download_url)}>
         {t("git.download")}
       </Button>
     </Tooltip>
@@ -44,7 +44,7 @@ const OperationRow = ({ operation, conflicts }: { operation: GitOperation; confl
   return (
     <div className="git-row" data-tone="waiting" role="status">
       <span className="git-row-icon">
-        <HourglassIcon size={16} />
+        <HourglassIcon />
       </span>
       <span className="git-row-main">
         <span className="git-part git-title">{t(operation_labels[operation.kind])}</span>
@@ -70,7 +70,7 @@ const repo_rows = (t: Translate, view: GitRepoView): ReactNode => (
     <GitLocalRow view={view} />
     {view.operation && <OperationRow operation={view.operation} conflicts={view.entries.filter((entry) => entry.status === "conflicted").length} />}
     <FetchNotice fetch={view.fetch} />
-    {view.watch_failed && <GitNotice icon={<EyeOffIcon size={16} />} title={t("git.watch_failed")} />}
+    {view.watch_failed && <GitNotice icon={<EyeOffIcon />} title={t("git.watch_failed")} />}
     <GithubRow git={view} />
     <GitActions view={view} />
   </>
@@ -79,25 +79,25 @@ const repo_rows = (t: Translate, view: GitRepoView): ReactNode => (
 const card_rows = (t: Translate, view: Exclude<GitView, { kind: "none" } | { kind: "loading" }>): ReactNode => {
   switch (view.kind) {
     case "git_missing":
-      return <GitNotice icon={<CircleAlertIcon size={16} />} title={t("git.missing")} action={<DownloadAction />} />;
+      return <GitNotice icon={<CircleAlertIcon />} title={t("git.missing")} action={<DownloadAction />} />;
     case "git_too_old":
       return (
         <GitNotice
-          icon={<CircleAlertIcon size={16} />}
+          icon={<CircleAlertIcon />}
           title={t("git.too_old", { version: view.version })}
           detail={t(view.reason === "partial_clone" ? "git.too_old_partial_detail" : "git.too_old_detail")}
           action={<DownloadAction />}
         />
       );
     case "blocked_ownership":
-      return <GitNotice icon={<ShieldAlertIcon size={16} />} title={t("git.blocked_ownership")} command={`git config --global --add safe.directory ${quote_arg(view.path)}`} />;
+      return <GitNotice icon={<ShieldAlertIcon />} title={t("git.blocked_ownership")} command={`git config --global --add safe.directory ${quote_arg(view.path)}`} />;
     case "outside_tracked":
-      return <GitNotice icon={<InfoIcon size={16} />} title={t("git.outside_tracked")} detail={t("git.outside_tracked_detail", { repo: view.repo_root })} />;
+      return <GitNotice icon={<InfoIcon />} title={t("git.outside_tracked")} detail={t("git.outside_tracked_detail", { repo: view.repo_root })} />;
     case "error":
       return view.broken_gitfile ? (
-        <GitNotice icon={<CircleAlertIcon size={16} />} tone="danger" title={t("git.broken_gitfile")} />
+        <GitNotice icon={<CircleAlertIcon />} tone="danger" title={t("git.broken_gitfile")} />
       ) : (
-        <GitNotice icon={<CircleAlertIcon size={16} />} tone="danger" title={t("git.error")} detail={view.message} mono />
+        <GitNotice icon={<CircleAlertIcon />} tone="danger" title={t("git.error")} detail={view.message} mono />
       );
     case "repo":
       return repo_rows(t, view);

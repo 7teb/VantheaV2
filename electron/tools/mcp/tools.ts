@@ -3,7 +3,7 @@ import type { ToolView } from "../../../shared/tool-view.ts";
 import { call_tool, default_call_timeout_ms, ready_servers, type McpToolInfo } from "../../mcp/client.ts";
 import { target_scope } from "../../mcp/risk.ts";
 import { effective_tier, is_trusted, tool_enabled } from "../../mcp/servers.ts";
-import { build_description, build_parameters, type McpResultText } from "../../mcp/specs.ts";
+import { build_description, build_parameters, mcp_error_marker, type McpResultText } from "../../mcp/specs.ts";
 import { changed_pins, type PinChange } from "../../permissions/source-read.ts";
 import { approved_note, not_approved_text, scripts_changed_text } from "../../permissions/verdict-text.ts";
 import { define_tool, type Tool, type ToolContext, type ToolResult } from "../types.ts";
@@ -19,6 +19,8 @@ const error_text = (error: unknown) => (error instanceof Error ? error.message :
 
 const mcp_view = (server: string, tool: string, text: string, is_error: boolean): ToolView => ({ kind: "mcp", server, tool, text: text.slice(0, view_text_limit), is_error });
 
+const server_text = (result: McpResultText) => (result.is_error ? result.text.slice(mcp_error_marker.length) : result.text);
+
 const invoke = async (ctx: ToolContext, call: McpCall, note: string | null): Promise<ToolResult> => {
   const label = `${call.server} ${call.tool}`;
   ctx.progress({ label: "", lines: null, output_tail: null });
@@ -33,15 +35,15 @@ const invoke = async (ctx: ToolContext, call: McpCall, note: string | null): Pro
     if (ctx.signal.aborted) {
       throw error;
     }
-    const text = `[MCP tool error] ${error_text(error)}`;
-    console.warn(`[mcp] ${label} failed: ${error_text(error)}`);
-    return { status: "failed", text, view: mcp_view(call.server, call.tool, text, true) };
+    const reason = error_text(error);
+    console.warn(`[mcp] ${label} failed: ${reason}`);
+    return { status: "failed", text: `${mcp_error_marker}${reason}`, view: mcp_view(call.server, call.tool, reason, true) };
   }
   const media = await mcp_images(ctx, call.server, call.tool, result.images);
   return {
     status: result.is_error ? "failed" : "done",
     text: [...(note ? [note] : []), ...media.notes, result.text].join("\n"),
-    view: mcp_view(call.server, call.tool, result.text, result.is_error),
+    view: mcp_view(call.server, call.tool, server_text(result), result.is_error),
     ...(media.images.length ? { images: media.images } : {}),
   };
 };
@@ -55,7 +57,8 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
   for (let pass = 1; ; pass += 1) {
     const verdict = await decide(call, ctx, mcp_review, changed);
     if (verdict.kind === "block" || verdict.kind === "denied") {
-      return { status: verdict.kind === "denied" ? "denied" : "failed", text: verdict.reason, view: mcp_view(server, info.name, verdict.reason, true) };
+      const denied = verdict.kind === "denied";
+      return { status: denied ? "denied" : "failed", text: verdict.reason, view: mcp_view(server, info.name, denied ? "" : verdict.reason, true) };
     }
     let note: string | null = null;
     if (verdict.kind === "ask") {
@@ -74,7 +77,7 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
       if (!decision.approved) {
         const model_reason = verdict.note?.source === "model" && verdict.note.reason ? verdict.note.reason : null;
         const text = not_approved_text("tool call", decision, model_reason);
-        return { status: "denied", text, view: mcp_view(server, info.name, text, true) };
+        return { status: "denied", text, view: mcp_view(server, info.name, "", true) };
       }
       record_grant(ctx.chat_id, call, decision.grant);
       note = approved_note("tool call");
@@ -89,7 +92,7 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
     }
     if (pass >= max_reviews) {
       const text = scripts_changed_text(now.map((change) => change.path));
-      return { status: "denied", text, view: mcp_view(server, info.name, text, true) };
+      return { status: "denied", text, view: mcp_view(server, info.name, "", true) };
     }
     changed = now;
   }

@@ -215,12 +215,12 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
 
   const action = () => {
     if (sending && !busy) {
-      return <PrimaryButton label={t("composer.sending")} icon={<CircleSpinnerIcon size={16} className="spin" />} disabled />;
+      return <PrimaryButton label={t("composer.sending")} icon={<CircleSpinnerIcon className="spin" />} disabled />;
     }
     if (busy && chat_id !== null && dictating === null && draft.text.trim() === "" && draft.uploads.length === 0 && draft.chips.length === 0) {
-      return <PrimaryButton label={t("composer.stop")} icon={<StopIcon size={16} />} onClick={() => void stop_turn(chat_id)} />;
+      return <PrimaryButton label={t("composer.stop")} icon={<StopIcon />} onClick={() => void stop_turn(chat_id)} />;
     }
-    return <PrimaryButton label={t(busy || compacting ? "composer.queue_send" : "composer.send")} icon={<ArrowUpIcon size={16} />} disabled={!sendable} onClick={send} />;
+    return <PrimaryButton label={t(busy || compacting ? "composer.queue_send" : "composer.send")} icon={<ArrowUpIcon />} disabled={!sendable} onClick={send} />;
   };
 
   return (
@@ -240,7 +240,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
       }}
       onDrop={on_drop}
     >
-      <ComposerMedia draft_key={draft_key} uploads={draft.uploads} />
+      <ComposerMedia key={draft_key} draft_key={draft_key} uploads={draft.uploads} />
       <textarea
         ref={area}
         className="composer-input"
@@ -283,7 +283,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
           aria-haspopup="dialog"
           onClick={() => set_plus_for(plus_open ? null : draft_key)}
         >
-          <PlusIcon size={16} />
+          <PlusIcon />
         </IconButton>
         <input
           ref={picker}
@@ -309,8 +309,8 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
             onClick={() => toggle_plan(draft_key)}
           >
             <span className="draft-chip-icon">
-              <ClipboardListIcon size={15} />
-              <CloseIcon size={15} />
+              <ClipboardListIcon />
+              <CloseIcon />
             </span>
             <span className="composer-chip-label">{t("composer.plan")}</span>
           </button>

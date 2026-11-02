@@ -115,7 +115,7 @@ const CommitFileRow = ({ root, hash, file, counted, open, scroller }: CommitFile
   return (
     <>
       <button type="button" className="git-change" data-git={file.status} aria-expanded={open} title={title} onClick={() => toggle_commit_file(hash, file.path)}>
-        <ChevronRightIcon size={14} className="commit-file-chevron" />
+        <ChevronRightIcon className="commit-file-chevron" />
         <GitBadge decoration={{ status: file.status, entry: file_entry(file), rollup: false }} dir={false} />
         <span className="git-change-name">{base_name(file.path)}</span>
         <span className="git-change-dir">{place}</span>
@@ -184,7 +184,7 @@ export const CommitDetailPane = ({ root, hash, live }: CommitDetailPaneProps) =>
         <div className="commit-detail-title">{message.subject}</div>
         {site !== null && (
           <IconButton size="sm" label={t("github.open")} onClick={() => open_external(`${site}/commit/${detail.hash}`)}>
-            <ExternalLinkIcon size={14} />
+            <ExternalLinkIcon />
           </IconButton>
         )}
       </div>

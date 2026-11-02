@@ -177,7 +177,7 @@ export const PlusMenu = ({ open, keep, chat_id, project_path, draft_key, draft, 
               className="composer-popover-tab"
               onClick={() => set_tab(entry.id)}
             >
-              <Icon size={14} />
+              <Icon />
               <span>{t(entry.label)}</span>
               {counts[entry.id] > 0 && <span className="composer-popover-count">{counts[entry.id]}</span>}
             </button>

@@ -60,12 +60,7 @@ const ToolRow = ({ server, tool, on_error }: { server: string; tool: McpToolStat
 };
 
 export const McpToolList = ({ server }: { server: McpServerStatus }) => {
-  const t = use_t();
   const [error, set_error] = useState<string | null>(null);
-
-  if (server.tools.length === 0) {
-    return <p className="pane-note">{t("mcp.no_tools")}</p>;
-  }
 
   return (
     <div className="mcp-tools">

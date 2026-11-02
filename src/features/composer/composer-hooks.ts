@@ -1,5 +1,5 @@
 import { compact_fraction, type ContextUsage } from "../../../shared/chat.ts";
-import { with_context_setting, type ModelChoice, type ModelEntry } from "../../../shared/models.ts";
+import { context_setting, with_context_setting, type ModelChoice, type ModelEntry } from "../../../shared/models.ts";
 import type { ModelContext } from "../../../shared/settings.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import { chats_store } from "../../state/chats.ts";
@@ -52,8 +52,9 @@ export const use_model_choice = (chat_id: string | null): ModelChoice | null => 
 export const use_model_context = (chat_id: string | null): ModelContextChoice => {
   const catalog = use_store(models_store, (state) => state.catalog);
   const model_id = use_model_choice(chat_id)?.model ?? null;
-  const setting = use_store(settings_store, (state) => (model_id ? state?.model_context[model_id] : undefined));
-  return { model: model_id ? (catalog?.models.find((entry) => entry.id === model_id) ?? null) : null, setting };
+  const stored = use_store(settings_store, (state) => (model_id ? state?.model_context[model_id] : undefined));
+  const model = model_id ? (catalog?.models.find((entry) => entry.id === model_id) ?? null) : null;
+  return { model, setting: model ? context_setting(model, stored) : stored };
 };
 
 export type ShownContext = { usage: ContextUsage | null; compact_at: number | null };

@@ -26,7 +26,7 @@ export const CopyButton = ({ text, label, labelled = false }: CopyButtonProps) =
   };
 
   const name = label ?? t("chat.copy");
-  const icon = copied ? <CheckIcon size={labelled ? 13 : 14} /> : <CopyIcon size={labelled ? 13 : 14} />;
+  const icon = copied ? <CheckIcon /> : <CopyIcon />;
 
   if (labelled) {
     return (

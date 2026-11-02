@@ -41,7 +41,7 @@ export const TitlebarMenu = () => {
           id: "docks",
           items: titlebar_docks.map((kind) => {
             const { label, icon: DockIcon } = dock_toggles[kind];
-            return { id: kind, label: t(label), icon: <DockIcon size={15} />, on_select: () => toggle_dock(kind) };
+            return { id: kind, label: t(label), icon: <DockIcon />, on_select: () => toggle_dock(kind) };
           }),
         },
       ]
@@ -59,7 +59,7 @@ export const TitlebarMenu = () => {
         className="titlebar-more"
         onClick={() => set_open(!open)}
       >
-        <MoreVerticalIcon size={17} />
+        <MoreVerticalIcon />
         {waiting && <span className="wait-dot titlebar-wait" aria-hidden="true" />}
       </IconButton>
       <Menu
@@ -79,7 +79,7 @@ export const TitlebarMenu = () => {
                 label: t("shell.background_tasks"),
                 icon: (
                   <span className="titlebar-menu-icon">
-                    <BackgroundIcon size={15} />
+                    <BackgroundIcon />
                     {waiting && <span className="wait-dot titlebar-menu-wait" aria-hidden="true" />}
                   </span>
                 ),
@@ -89,7 +89,7 @@ export const TitlebarMenu = () => {
               {
                 id: "artifacts",
                 label: t(dock_toggles.artifacts.label),
-                icon: <ImagesIcon size={15} />,
+                icon: <ImagesIcon />,
                 on_select: () => toggle_dock("artifacts"),
               },
             ],
@@ -100,7 +100,6 @@ export const TitlebarMenu = () => {
               {
                 id: "keep_awake",
                 label: t("shell.keep_awake"),
-                description: t("shell.keep_awake_detail"),
                 toggled: keep_awake,
                 on_select: () => void set_keep_awake(!keep_awake),
               },

@@ -22,7 +22,7 @@ import "./PrComposer.css";
 
 const CliRow = ({ cli, host }: { cli: PrCli; host: string }) => {
   const t = use_t();
-  const icon = <LockIcon size={16} />;
+  const icon = <LockIcon />;
   if (cli.command !== null) {
     return <GitNotice icon={icon} title={t("github.cli_host", { host })} command={cli.command} command_tip={t("git_actions.pr_login_tip")} />;
   }
@@ -105,7 +105,7 @@ export const PrComposer = () => {
           <span className="section-label">{t("git_actions.pr_label")}</span>
           {draft.base !== null && <span className="pr-into">{t("git_actions.pr_into", { base: draft.base })}</span>}
           <IconButton className="pr-close" size="sm" label={t("common.close")} onClick={() => close_pr(root)}>
-            <CloseIcon size={14} />
+            <CloseIcon />
           </IconButton>
         </header>
         {draft.cli ? <CliRow cli={draft.cli} host={host ?? ""} /> : <Fields root={root} draft={draft} />}
@@ -114,7 +114,7 @@ export const PrComposer = () => {
             notice={pr_notice(t, draft.issue)}
             action={
               exists && (
-                <Button size="sm" variant="ghost" icon_end={<ExternalLinkIcon size={14} />} onClick={() => open_external(exists)}>
+                <Button size="sm" variant="ghost" icon_end={<ExternalLinkIcon />} onClick={() => open_external(exists)}>
                   {t("github.open")}
                 </Button>
               )

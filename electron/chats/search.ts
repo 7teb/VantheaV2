@@ -17,6 +17,8 @@ const snippet_at = (text: string, needle: string): string | null => {
   return `${start > 0 ? "..." : ""}${core}${end < text.length ? "..." : ""}`;
 };
 
+const contains = (text: string, needle: string): boolean => text.toLowerCase().includes(needle);
+
 const chat_text = async (chat_id: string): Promise<string> => {
   const body = bodies.get(chat_id);
   return body ? search_text(body.messages) : read_search_text(chat_id);
@@ -32,7 +34,7 @@ export const search_chats = async (query: string): Promise<ChatSearchHit[]> => {
     if (hits.length >= max_search_hits) {
       break;
     }
-    const snippet = snippet_at(meta.title, needle) ?? snippet_at(meta.project_path, needle) ?? snippet_at(await chat_text(meta.id), needle);
+    const snippet = contains(meta.title, needle) || contains(meta.project_path, needle) ? "" : snippet_at(await chat_text(meta.id), needle);
     if (snippet !== null) {
       hits.push({ chat_id: meta.id, title: meta.title, project_path: meta.project_path, snippet, updated_at: meta.updated_at, ...(meta.archived ? { archived: true } : {}) });
     }

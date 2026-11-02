@@ -7,14 +7,14 @@
   height: 100%;
   margin-right: -10px;
   border-radius: var(--radius-md);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .project-toggle > svg {
   grid-area: 1 / 1;
   transition:
     opacity var(--duration-fast) var(--ease-out),
-    transform var(--duration-slow) var(--ease-out);
+    transform var(--duration-chevron) var(--ease-out);
 }
 
 .project-chevron {
@@ -39,6 +39,10 @@
   color: var(--text-primary);
 }
 
+.sidebar-row.project-row {
+  color: var(--text-primary);
+}
+
 .project-pin {
   color: var(--text-tertiary);
   transition: opacity var(--duration-fast) var(--ease-out);
@@ -50,11 +54,26 @@
   opacity: 0;
 }
 
+.project-group + .project-group {
+  margin-top: 6px;
+}
+
 .project-chats .collapsible-clip {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1px;
   padding-left: var(--space-5);
+}
+
+.project-chats .collapsible-clip::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 6px;
+  left: 15px;
+  width: 1px;
+  background: var(--rail);
 }
 
 .project-chats .collapsible-clip > :first-child {
@@ -64,6 +83,14 @@
 @media (hover: none) and (pointer: coarse) {
   .project-toggle {
     width: 40px;
+  }
+
+  .project-chats .collapsible-clip {
+    padding-left: 30px;
+  }
+
+  .project-chats .collapsible-clip::before {
+    left: 20px;
   }
 
   .project-row:hover .project-chevron {

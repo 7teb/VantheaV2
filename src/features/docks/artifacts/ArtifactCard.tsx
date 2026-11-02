@@ -47,13 +47,13 @@ export const ArtifactCard = ({ artifact, renaming, on_rename, on_open }: Artifac
             active={artifact.pinned}
             onClick={() => void set_artifact_pinned(artifact.id, !artifact.pinned)}
           >
-            {artifact.pinned ? <PinOffIcon size={14} /> : <PinIcon size={14} />}
+            {artifact.pinned ? <PinOffIcon /> : <PinIcon />}
           </IconButton>
           <IconButton size="sm" label={t("docks.artifacts_rename")} onClick={() => on_rename(artifact.id)}>
-            <PencilIcon size={14} />
+            <PencilIcon />
           </IconButton>
           <IconButton size="sm" label={t("docks.artifacts_export")} onClick={() => void export_artifact(artifact.id)}>
-            <DownloadIcon size={14} />
+            <DownloadIcon />
           </IconButton>
         </span>
       </figcaption>

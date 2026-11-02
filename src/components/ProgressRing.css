@@ -1,7 +1,7 @@
 @layer components {
   .progress-ring circle {
     fill: none;
-    stroke-width: 2.25;
+    stroke-width: 2;
   }
 
   .progress-ring-track {

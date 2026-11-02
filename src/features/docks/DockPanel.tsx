@@ -21,7 +21,7 @@ export const DockPanel = ({ title, actions, toolbar, close_label, className, chi
       <div className="dock-header-actions">
         {actions}
         <IconButton label={close_label} onClick={close_dock}>
-          <CloseIcon size={16} />
+          <CloseIcon />
         </IconButton>
       </div>
     </header>

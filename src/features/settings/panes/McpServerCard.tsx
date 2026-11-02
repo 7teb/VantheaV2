@@ -71,10 +71,10 @@ export const McpServerCard = ({ server }: { server: McpServerStatus }) => {
             disabled={busy || !server.config.enabled}
             onClick={() => void run("mcp:reconnect", () => reconnect_mcp_server(server.name))}
           >
-            <RetryIcon size={14} />
+            <RetryIcon />
           </IconButton>
           <IconButton size="sm" label={t("mcp.remove")} disabled={busy} onClick={() => set_confirming(true)}>
-            <TrashIcon size={14} />
+            <TrashIcon />
           </IconButton>
           <Toggle
             checked={server.config.enabled}
@@ -98,9 +98,9 @@ export const McpServerCard = ({ server }: { server: McpServerStatus }) => {
           />
         </SettingsRow>
       )}
-      {server.state === "ready" && (
+      {server.state === "ready" && server.tools.length > 0 && (
         <div className="settings-row mcp-section">
-          <Collapsible header={`${t("mcp.tools")} · ${server.tools.length}`}>
+          <Collapsible header={t("mcp.tools")}>
             <McpToolList server={server} />
           </Collapsible>
         </div>

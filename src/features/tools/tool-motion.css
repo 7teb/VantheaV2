@@ -14,10 +14,28 @@
   }
 
   .work-single[data-live],
-  .work-group[data-live],
-  .work-group[data-live] .work-group-body > .thought-row:not(:first-child),
-  .work-group[data-live] .work-group-body > .tool-row:not(:first-child) {
+  .work-group[data-live] {
     animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+  }
+
+  .work-group[data-live] .work-group-body > :is(.tool-row, .thought-row, .notice-row):not(:first-child) {
+    interpolate-size: allow-keywords;
+    min-height: 0;
+    animation: none;
+    transition:
+      height var(--duration-slow) var(--ease-height),
+      opacity var(--duration-enter) var(--ease-out),
+      translate var(--duration-enter) var(--ease-out),
+      overflow-y 0s allow-discrete var(--duration-slow);
+  }
+
+  @starting-style {
+    .work-group[data-live] .work-group-body > :is(.tool-row, .thought-row, .notice-row):not(:first-child) {
+      height: 0;
+      overflow-y: clip;
+      opacity: 0;
+      translate: 0 3px;
+    }
   }
 
   .tool-row-icon {
@@ -29,13 +47,17 @@
     color: var(--text-secondary);
   }
 
-  .chat-column .work-single .tool-row:not([data-status="failed"], [data-status="denied"]) .tool-row-icon,
+  .chat-column .work-single .tool-row:not([data-status="denied"]) .tool-row-icon,
   .chat-column .work-group > .work-group-head .tool-row-icon {
     color: var(--text-primary);
   }
 
   :is(.work-single, .work-group)[data-live] :is(.tool-row-detail, .tool-row-duration, .tool-row-status) {
     animation: fade-in var(--duration-base) var(--ease-out) backwards;
+  }
+
+  :is(.work-single, .work-group)[data-live] .label-morph-item[data-phase="in"] .tool-row-duration:not(.tool-row-elapsed) {
+    animation: none;
   }
 
   :is(.work-single, .work-group)[data-live] .tool-row-status.is-failed {
@@ -49,14 +71,5 @@
 
   .tool-row .tool-row-elapsed[data-tick="1"] {
     animation: tool-tick-odd var(--duration-slow) var(--ease-out);
-  }
-
-  .work-group-body .tool-row-head,
-  .work-group-body :is(.tool-row-detail, .tool-row-duration, .tool-row-status) {
-    color: var(--text-tertiary);
-  }
-
-  .work-group-body .tool-row-status.is-failed {
-    color: var(--text-danger);
   }
 }

@@ -14,6 +14,15 @@ export const activity_entries = (chats: ChatMeta[], marks: ChatMarks): ActivityE
     .filter((entry): entry is ActivityEntry => entry.status !== "idle")
     .sort((a, b) => rank[a.status] - rank[b.status] || Date.parse(b.chat.updated_at) - Date.parse(a.chat.updated_at));
 
+export const group_status = (chats: ChatMeta[], marks: ChatMarks): ActivityStatus | null =>
+  chats.reduce<ActivityStatus | null>((best, chat) => {
+    const status = row_status(marks[chat.id], chat.streaming);
+    if (status === "idle") {
+      return best;
+    }
+    return best === null || rank[status] < rank[best] ? status : best;
+  }, null);
+
 export const needs_attention = (entries: ActivityEntry[]): boolean => entries.some((entry) => entry.status !== "running");
 
 export type DayGroup = { kind: "today" | "yesterday" | "weekday" | "older"; day_start: number; chats: ChatMeta[] };

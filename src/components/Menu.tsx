@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { class_names } from "./class-names.ts";
 import { Floating } from "./Floating.tsx";
 import { CheckIcon } from "./icons.tsx";
@@ -104,33 +104,37 @@ export const Menu = ({ open, anchor, label, sections, on_close, placement = "bot
       min_width={min_width}
       on_key_down={on_key_down}
     >
-      {sections.map((section) => (
-        <div key={section.id} className="menu-section" role="group" aria-label={section.label}>
-          {section.label && <div className="menu-section-label">{section.label}</div>}
-          {section.items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role={item_role(item)}
-              aria-checked={item.toggled ?? item.checked}
-              tabIndex={-1}
-              disabled={item.disabled}
-              className={class_names("menu-item", item.danger && "is-danger")}
-              onClick={() => select(item)}
-            >
-              {item.icon && <span className="menu-item-icon">{item.icon}</span>}
-              <span className="menu-item-label">
-                {item.label}
-                {item.description && <span className="menu-item-description">{item.description}</span>}
-              </span>
-              {item.hint && <span className="menu-item-hint">{item.hint}</span>}
-              {item.badge && <span className="menu-item-badge">{item.badge}</span>}
-              {item.toggled !== undefined && <ToggleTrack checked={item.toggled} />}
-              {selectable && <span className="menu-item-check">{item.checked && <CheckIcon size={15} />}</span>}
-            </button>
-          ))}
-        </div>
-      ))}
+      {sections.map((section, section_index) => {
+        const offset = sections.slice(0, section_index).reduce((count, previous) => count + previous.items.length, 0);
+        return (
+          <div key={section.id} className="menu-section" role="group" aria-label={section.label}>
+            {section.label && <div className="menu-section-label">{section.label}</div>}
+            {section.items.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                role={item_role(item)}
+                aria-checked={item.toggled ?? item.checked}
+                tabIndex={-1}
+                disabled={item.disabled}
+                className={class_names("menu-item", item.danger && "is-danger")}
+                style={{ "--row": Math.min(offset + index, 8) } as CSSProperties}
+                onClick={() => select(item)}
+              >
+                {item.icon && <span className="menu-item-icon">{item.icon}</span>}
+                <span className="menu-item-label">
+                  {item.label}
+                  {item.description && <span className="menu-item-description">{item.description}</span>}
+                </span>
+                {item.hint && <span className="menu-item-hint">{item.hint}</span>}
+                {item.badge && <span className="menu-item-badge">{item.badge}</span>}
+                {item.toggled !== undefined && <ToggleTrack checked={item.toggled} />}
+                {selectable && <span className="menu-item-check">{item.checked && <CheckIcon />}</span>}
+              </button>
+            ))}
+          </div>
+        );
+      })}
     </Floating>
   );
 };

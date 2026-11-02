@@ -14,16 +14,16 @@ export const pr_labels: Record<GithubPrState, MessageKey> = {
   closed: "github.pr_closed",
 };
 
-export const PrStateIcon = ({ state, size }: { state: GithubPrState; size: number }) => {
+export const PrStateIcon = ({ state }: { state: GithubPrState }) => {
   switch (state) {
     case "open":
-      return <GitPullRequestIcon size={size} />;
+      return <GitPullRequestIcon />;
     case "draft":
-      return <GitPullRequestDraftIcon size={size} />;
+      return <GitPullRequestDraftIcon />;
     case "merged":
-      return <GitMergeIcon size={size} />;
+      return <GitMergeIcon />;
     case "closed":
-      return <GitPullRequestClosedIcon size={size} />;
+      return <GitPullRequestClosedIcon />;
   }
 };
 
@@ -84,7 +84,7 @@ const PrRow = ({ pr, on_open }: { pr: GithubPr; on_open: (url: string) => void }
   const body = (
     <>
       <span className="git-row-icon">
-        <PrStateIcon state={pr.state} size={16} />
+        <PrStateIcon state={pr.state} />
       </span>
       <span className="gh-pop-item-text">
         <span className="gh-pop-item-title">
@@ -108,7 +108,7 @@ const PrRow = ({ pr, on_open }: { pr: GithubPr; on_open: (url: string) => void }
     <button type="button" className="gh-pop-item" data-tone={pr.state} onClick={() => on_open(url)}>
       {body}
       <span className="gh-pop-ext">
-        <ExternalLinkIcon size={14} />
+        <ExternalLinkIcon />
       </span>
     </button>
   );
@@ -129,7 +129,7 @@ export const GithubPopover = ({ open, anchor, on_close, view, git, foot }: Githu
     <Popover open={open} anchor={anchor} label={t("github.title")} on_close={on_close} placement="bottom-end" className="gh-pop">
       <div className="gh-pop-section">
         <div className="gh-pop-head">
-          <span className="git-row-icon">{view.visibility === "public" ? <LockOpenIcon size={16} /> : <LockIcon size={16} />}</span>
+          <span className="git-row-icon">{view.visibility === "public" ? <LockOpenIcon /> : <LockIcon />}</span>
           <span className="gh-pop-text">
             <span className="gh-pop-title">
               {view.repo.owner}/{view.repo.name}
@@ -145,7 +145,7 @@ export const GithubPopover = ({ open, anchor, on_close, view, git, foot }: Githu
         {branch !== null && (
           <div className="gh-pop-fact">
             <span className="git-row-icon">
-              <GitBranchIcon size={16} />
+              <GitBranchIcon />
             </span>
             <span className="gh-pop-text">
               <span className="gh-pop-fact-title">{t("github.branch_title")}</span>
@@ -156,7 +156,7 @@ export const GithubPopover = ({ open, anchor, on_close, view, git, foot }: Githu
         {site !== null && (
           <button type="button" className="gh-pop-item" onClick={() => visit(site)}>
             <span className="git-row-icon">
-              <ExternalLinkIcon size={16} />
+              <ExternalLinkIcon />
             </span>
             <span className="gh-pop-item-text">{t("github.open")}</span>
           </button>

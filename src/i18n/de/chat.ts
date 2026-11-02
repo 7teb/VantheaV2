@@ -52,6 +52,7 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.notice_plan_blocked": "Vom Planmodus blockiert",
   "chat.notice_output_limit": "Die Antwort hat das Ausgabelimit erreicht",
   "chat.notice_todos_carried": "Offene To-dos übernommen",
+  "chat.notice_model_switch": "Modell über den Modellwechsel informiert",
   "chat.notice_context_trimmed": "Älterer Kontext wurde gekürzt",
   "chat.retry_in": "neuer Versuch in {n} s",
   "chat.error_rate_limited": "Der Anbieter drosselt gerade Anfragen. Warte kurz und versuch es erneut.",

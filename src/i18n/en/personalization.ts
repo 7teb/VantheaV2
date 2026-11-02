@@ -27,7 +27,6 @@ export const personalization = {
   "personalization.mem_confirmed": "confirmed",
   "personalization.mem_legacy": "legacy memories quarantined",
   "personalization.mem_legacy_sub": "Old memories are preserved but no longer sent to the agent.",
-  "personalization.mem_empty": "No memory suggestions waiting for review.",
   "personalization.mem_accept": "Keep",
   "personalization.mem_reject": "Discard",
   "personalization.mem_kind_preference": "Global preference",
@@ -38,6 +37,5 @@ export const personalization = {
   "personalization.mem_remove": "Remove memory",
   "personalization.mem_reset_title": "Reset all memories?",
   "personalization.mem_saved": "Saved memories",
-  "personalization.mem_saved_empty": "No memories saved yet",
   "personalization.save_failed": "Saving failed",
 };

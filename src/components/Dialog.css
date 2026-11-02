@@ -52,11 +52,20 @@
 
   .confirm-detail {
     margin-top: var(--space-2);
-    overflow: hidden;
     color: var(--text-secondary);
     font-size: var(--font-size-ui);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+  }
+
+  .dialog-field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .dialog-field-label {
+    color: var(--text-secondary);
+    font-size: var(--font-size-ui);
+    font-weight: var(--weight-regular);
   }
 
   .confirm-actions {

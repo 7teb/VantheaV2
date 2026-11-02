@@ -18,7 +18,7 @@ type ApprovalAsk =
       plan_rule?: boolean;
       rechecked?: boolean;
     }
-  | { kind: "write"; path: string; created: boolean; added: number; removed: number; diff: DiffLine[]; instruction_file?: boolean }
+  | { kind: "write"; path: string; created: boolean; added: number; removed: number; diff: DiffLine[]; instruction_file?: boolean; review?: ReviewNote }
   | { kind: "mcp"; server: string; tool: string; tier: McpTier; args_preview: string; scope: string | null; reason?: string; review?: ReviewNote; rechecked?: boolean }
   | { kind: "mcp_server"; name: string; command: string; args: string[]; cwd: string; env: Record<string, string>; replaces: boolean; review?: ReviewNote }
   | { kind: "skill_install"; name: string; description: string; files: string[]; source: string; replaces: string | null; content: string; review?: ReviewNote }

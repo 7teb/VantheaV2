@@ -44,14 +44,14 @@ export const WorkflowEntry = ({ summary, now }: { summary: WorkflowSummary; now:
   return (
     <section className="agent-entry workflow-entry" data-running={running}>
       <header className="agent-entry-head">
-        <WorkflowIcon size={16} />
+        <WorkflowIcon />
         <span className="agent-entry-name" title={summary.description || summary.name}>
           {summary.name}
         </span>
         <span className="agent-entry-meta">{t("workflow.kind")}</span>
         {running && (
           <IconButton size="sm" label={t("workflow.stop")} disabled={stopping} onClick={() => void stop()}>
-            <CircleStopIcon size={15} />
+            <CircleStopIcon />
           </IconButton>
         )}
       </header>
@@ -59,12 +59,12 @@ export const WorkflowEntry = ({ summary, now }: { summary: WorkflowSummary; now:
       <ul className="agent-runs">
         <li>
           <button type="button" className="agent-run" data-status={tone} onClick={() => open_workflow(summary.run_id)}>
-            <StatusIcon size={14} className={class_names("agent-run-icon", running && "spin")} />
+            <StatusIcon className={class_names("agent-run-icon", running && "spin")} />
             <span className="agent-run-prompt" title={activity(summary)}>
               {activity(summary)}
             </span>
-            <span className="agent-run-meta">{workflow_state(t, summary, now)}</span>
-            <ChevronRightIcon size={12} className="agent-run-chevron" />
+            <span className="agent-run-meta">{running ? agents_line(t, summary) : run_duration(summary, now)}</span>
+            <ChevronRightIcon className="agent-run-chevron" />
           </button>
         </li>
       </ul>

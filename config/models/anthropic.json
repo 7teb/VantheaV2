@@ -8,6 +8,7 @@
     "default_effort": "medium",
     "vision": true,
     "context_length": 1000000,
+    "default_context": { "limit": 100000, "compact_percent": 95 },
     "max_output": 128000
   },
   {
@@ -19,6 +20,7 @@
     "default_effort": "high",
     "vision": true,
     "context_length": 1000000,
+    "default_context": { "limit": null, "compact_percent": 95 },
     "max_output": 128000
   },
   {
@@ -30,6 +32,7 @@
     "default_effort": "high",
     "vision": true,
     "context_length": 1000000,
+    "default_context": { "limit": null, "compact_percent": 95 },
     "max_output": 128000
   }
 ]

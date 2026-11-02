@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { codicon, Icon, phosphor, type IconProps } from "./icons-base.tsx";
+import { codicon, Icon, lucide, phosphor, type IconProps } from "./icons-base.tsx";
 
 const folder = "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z";
 
@@ -16,16 +16,14 @@ export const FolderOpenIcon = (props: IconProps) => (
 );
 
 export const FolderPlusIcon = (props: IconProps) => (
-  <Icon {...codicon} viewBox="0.3 0.3 16.5 16.5" {...props}>
+  <Icon {...codicon} {...props}>
     <path fillRule="evenodd" clipRule="evenodd" d="M14.5 2H7.71l-.85-.85L6.51 1h-5l-.5.5v11l.5.5H7v-1H1.99V6h4.49l.35-.15.86-.86H14v1.5l-.001.51h1.011V2.5L14.5 2zm-.51 2h-6.5l-.35.15-.86.86H2v-3h4.29l.85.85.36.15H14l-.01.99zM13 16h-1v-3H9v-1h3V9h1v3h3v1h-3v3z" />
   </Icon>
 );
 
 export const FolderXIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d={folder} />
-    <path d="m9.5 10.5 5 5" />
-    <path d="m14.5 10.5-5 5" />
+  <Icon {...lucide} {...props}>
+    <path d={`${folder}M9.5 10.5l5 5M14.5 10.5l-5 5`} />
   </Icon>
 );
 
@@ -38,11 +36,8 @@ export const FolderSearchIcon = (props: IconProps) => (
 );
 
 export const FolderGitIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d={folder} />
-    <circle cx="12" cy="13" r="2" />
-    <path d="M14 13h3" />
-    <path d="M7 13h3" />
+  <Icon {...lucide} {...props}>
+    <path d={`${folder}M14 13a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM14 13h3M7 13h3`} />
   </Icon>
 );
 
@@ -68,7 +63,7 @@ export const FileTextIcon = (props: IconProps) => (
 );
 
 export const FilePenIcon = (props: IconProps) => (
-  <Icon {...codicon} strokeWidth={0.069} {...props}>
+  <Icon {...codicon} {...props}>
     <path d="M13.23 1h-1.46L3.52 9.25l-.16.22L1 13.59 2.41 15l4.12-2.36.22-.16L15 4.23V2.77L13.23 1zM2.41 13.59l1.51-3 1.45 1.45-2.96 1.55zm3.83-2.06L4.47 9.76l8-8 1.77 1.77-8 8z" />
   </Icon>
 );
@@ -87,16 +82,12 @@ export const FileDiffIcon = (props: IconProps) => (
 
 export const SummaryIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M15 4H7" />
-    <path d="m18 16 3 3-3 3" />
-    <path d="M3 4v13a2 2 0 0 0 2 2h16" />
-    <path d="M7 14h7" />
-    <path d="M7 9h12" />
+    <path d="M5.5 2.5h5M11.5 9.5l2 2-2 2M2.5 2.5V10A1.5 1.5 0 0 0 4 11.5h9.5M5.5 8.5h4M5.5 5.5h7" />
   </Icon>
 );
 
 export const OutlineIcon = (props: IconProps) => (
-  <Icon {...props}>
+  <Icon {...lucide} {...props}>
     <rect x="3" y="3" width="18" height="18" rx="2" />
     <path d="M9 8h7" />
     <path d="M8 12h6" />
@@ -105,7 +96,7 @@ export const OutlineIcon = (props: IconProps) => (
 );
 
 export const PaperclipIcon = (props: IconProps) => (
-  <Icon {...props}>
+  <Icon {...lucide} {...props}>
     <path d="M14.09 8.3v6.7a2.09 2.09 0 0 1-4.18 0V6.58a4.18 4.18 0 0 1 8.36 0v8.17a6.27 6.27 0 0 1-12.54 0V8.4" />
   </Icon>
 );

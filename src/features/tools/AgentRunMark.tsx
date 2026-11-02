@@ -19,7 +19,7 @@ export const AgentRunMark = ({ run_id }: { run_id: string }) => {
   if (running) {
     return (
       <span className="tool-row-agent" title={t("agent.status_running")}>
-        <CircleSpinnerIcon size={13} className="spin" />
+        <CircleSpinnerIcon className="spin" />
       </span>
     );
   }

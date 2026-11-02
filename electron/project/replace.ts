@@ -1,3 +1,5 @@
+import { ToolFailureError } from "../tools/types.ts";
+
 export type Replacement = { updated: string; replaced: number; flexible: boolean };
 
 const escape_regex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -13,7 +15,7 @@ const crlf_replacement = (original: string, replacement: string, lf_matched: boo
 const not_found =
   "old_string was not found in the file, even allowing for differences in whitespace, indentation and line endings. Read the exact region again with read_file (start_line and limit) and copy the text verbatim, or pick a shorter unique anchor. The file was not changed.";
 
-export const apply_replacement = (original: string, old_string: string, new_string: string, expected: number): Replacement => {
+export const apply_replacement = (original: string, old_string: string, new_string: string, expected: number, path: string): Replacement => {
   const parts = original.split(old_string);
   const exact = parts.length - 1;
   if (exact === expected) {
@@ -26,12 +28,12 @@ export const apply_replacement = (original: string, old_string: string, new_stri
     );
   }
   if (!old_string.trim()) {
-    throw new Error("old_string was not found, and it contains only whitespace, so no whitespace-flexible match was tried. The file was not changed.");
+    throw new ToolFailureError("old_string was not found, and it contains only whitespace, so no whitespace-flexible match was tried. The file was not changed.", { kind: "replace_not_found", path });
   }
   const pattern = new RegExp(flexible_pattern(old_string), "g");
   const count = original.match(pattern)?.length ?? 0;
   if (count === 0) {
-    throw new Error(not_found);
+    throw new ToolFailureError(not_found, { kind: "replace_not_found", path });
   }
   if (count !== expected) {
     throw new Error(

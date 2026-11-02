@@ -2,7 +2,6 @@ import { memo, useState } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
 import { IconButton } from "../../components/Button.tsx";
 import { ConfirmDialog } from "../../components/Dialog.tsx";
-import { DotSpinner } from "../../components/DotSpinner.tsx";
 import { ArchiveIcon, MoreHorizontalIcon, PencilLineIcon, PinIcon, PinOffIcon, TrashIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
 import { use_t } from "../../i18n/index.ts";
@@ -15,6 +14,7 @@ import { open_chat } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
 import { InlineRename } from "./InlineRename.tsx";
 import { chat_label } from "./sidebar-model.ts";
+import { StatusMark } from "./StatusMark.tsx";
 import { WorktreeWarning } from "./WorktreeWarning.tsx";
 
 type ChatRowProps = { chat: ChatMeta; active: boolean; now: number; detail?: string };
@@ -23,18 +23,13 @@ const report = (action: string, chat_id: string) => (error: unknown) => console.
 
 const Trailing = ({ t, status, updated_at, now }: { t: Translate; status: RowStatus; updated_at: string; now: number }) => {
   if (status === "idle") {
-    return <span className="chat-row-time">{relative_time(t, updated_at, now)}</span>;
+    return (
+      <span key={status} className="chat-row-time">
+        {relative_time(t, updated_at, now)}
+      </span>
+    );
   }
-  const shown = {
-    waiting: { label: t("sidebar.waiting"), mark: <span className="wait-dot" /> },
-    running: { label: t("sidebar.working"), mark: <DotSpinner /> },
-    unread: { label: t("sidebar.unread"), mark: <span className="chat-row-unread" /> },
-  };
-  return (
-    <span className="chat-row-status" role="status" aria-label={shown[status].label}>
-      {shown[status].mark}
-    </span>
-  );
+  return <StatusMark status={status} />;
 };
 
 export const ChatRow = memo(({ chat, active, now, detail }: ChatRowProps) => {
@@ -46,7 +41,7 @@ export const ChatRow = memo(({ chat, active, now, detail }: ChatRowProps) => {
   const status = use_store(chat_marks_store, (marks) => row_status(marks[chat.id], chat.streaming));
 
   return (
-    <div className="sidebar-row chat-row" data-active={active} data-menu-open={menu_open} data-detail={detail !== undefined || undefined}>
+    <div className="sidebar-row chat-row" data-chat-id={chat.id} data-active={active} data-menu-open={menu_open} data-detail={detail !== undefined || undefined}>
       {renaming ? (
         <InlineRename
           initial={chat.title}
@@ -83,7 +78,7 @@ export const ChatRow = memo(({ chat, active, now, detail }: ChatRowProps) => {
           active={menu_open}
           onClick={() => set_menu_open((was_open) => !was_open)}
         >
-          <MoreHorizontalIcon size={16} />
+          <MoreHorizontalIcon />
         </IconButton>
       )}
       <Menu
@@ -95,21 +90,21 @@ export const ChatRow = memo(({ chat, active, now, detail }: ChatRowProps) => {
           {
             id: "chat",
             items: [
-              { id: "rename", label: t("sidebar.rename"), icon: <PencilLineIcon size={15} />, on_select: () => set_renaming(true) },
+              { id: "rename", label: t("sidebar.rename"), icon: <PencilLineIcon />, on_select: () => set_renaming(true) },
               {
                 id: "pin",
                 label: chat.pinned ? t("sidebar.unpin") : t("sidebar.pin"),
-                icon: chat.pinned ? <PinOffIcon size={15} /> : <PinIcon size={15} />,
+                icon: chat.pinned ? <PinOffIcon /> : <PinIcon />,
                 on_select: () => set_chat_pinned(chat.id, !chat.pinned).catch(report("pin", chat.id)),
               },
               {
                 id: "archive",
                 label: t("sidebar.archive"),
-                icon: <ArchiveIcon size={15} />,
+                icon: <ArchiveIcon />,
                 disabled: chat.streaming,
                 on_select: () => set_chat_archived(chat.id, true).catch(report("archive", chat.id)),
               },
-              { id: "delete", label: t("sidebar.delete"), icon: <TrashIcon size={15} />, danger: true, on_select: () => set_confirming(true) },
+              { id: "delete", label: t("sidebar.delete"), icon: <TrashIcon />, danger: true, on_select: () => set_confirming(true) },
             ],
           },
         ]}

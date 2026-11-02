@@ -69,7 +69,7 @@ const EndMark = ({ status }: { status: Exclude<WorkflowStatus, "running"> }) => 
   const t = use_t();
   return (
     <span className="workflow-end" data-status={status}>
-      {status === "completed" && <CheckIcon size={12} />}
+      {status === "completed" && <CheckIcon />}
       {end_label(t, status)}
     </span>
   );

@@ -56,6 +56,12 @@
     color: inherit;
   }
 
+  .tool-row-icon > .label-morph,
+  .tool-row-icon > .label-morph > .label-morph-item {
+    display: grid;
+    place-items: center;
+  }
+
   .tool-row-agent {
     display: inline-flex;
     flex: none;
@@ -74,6 +80,18 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .tool-row-label:has(> .label-morph) {
+    overflow: clip visible;
+  }
+
+  :is(.tool-row-head, .work-group-head, .tool-row-meta) > .label-morph {
+    flex: none;
+  }
+
+  :is(.tool-row-icon, .tool-row-head, .work-group-head, .tool-row-meta) > .label-morph > .label-morph-item {
+    overflow: visible;
   }
 
   .tool-row-detail,
@@ -98,12 +116,21 @@
     align-items: center;
   }
 
+  .tool-row-meta {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    margin-left: auto;
+  }
+
   .tool-row-status.is-failed {
     color: var(--text-danger);
   }
 
-  .tool-row[data-status="failed"] .tool-row-icon {
-    color: var(--text-danger);
+  .tool-row-status.is-denied {
+    color: var(--text-warning);
   }
 
   .tool-row[data-status="denied"] .tool-row-icon {
@@ -119,10 +146,11 @@
     flex: none;
     margin-left: auto;
     color: var(--text-tertiary);
-    transition: transform var(--duration-slow) var(--ease-out);
+    transition: transform var(--duration-chevron) var(--ease-out);
   }
 
-  .work-group-head .tool-row-chevron {
+  .work-group-head .tool-row-chevron,
+  .tool-row-meta + .tool-row-chevron {
     margin-left: 0;
   }
 
@@ -137,7 +165,6 @@
     gap: 2px;
     margin-left: 7px;
     padding: 2px 0 2px 13px;
-    box-shadow: inset 1px 0 0 var(--rail);
   }
 
   .tool-row-body {
@@ -184,7 +211,7 @@
   }
 
   .tool-body-error {
-    color: var(--text-danger);
+    color: var(--text-tertiary);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
@@ -203,13 +230,20 @@
     white-space: normal;
   }
 
+  .tool-card {
+    border: 1px solid var(--rule-command);
+    border-radius: 12.5px;
+    corner-shape: superellipse(1.5);
+    background: var(--fill-command);
+    color: var(--text-tertiary);
+  }
+
   .tool-body-list {
     display: flex;
     flex-direction: column;
     max-height: 280px;
     overflow: auto;
     padding: 6px 0;
-    border-radius: var(--radius-lg);
   }
 
   .tool-body-list > li {
@@ -231,7 +265,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--text-code);
+    color: var(--text-secondary);
   }
 
   .tool-outline-symbol {
@@ -273,17 +307,11 @@
     margin: 0;
     padding: 10px var(--space-3);
     overflow: auto;
-    border-radius: var(--radius-lg);
     font-family: var(--font-mono);
     font-size: var(--font-size-code);
     line-height: var(--leading-code);
-    color: var(--text-code);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-  }
-
-  .output-block[data-tone="error"] .output-block-pre {
-    color: var(--text-danger);
   }
 
   .output-block-more {

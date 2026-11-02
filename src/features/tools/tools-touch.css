@@ -1,6 +1,7 @@
 @layer components {
   @media (max-width: 600px) {
-    .tool-row-detail {
+    .tool-row-detail,
+    .tool-row-meta {
       flex-shrink: 100;
     }
 

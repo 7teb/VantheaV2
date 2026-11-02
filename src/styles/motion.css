@@ -122,7 +122,7 @@
     height: 7px;
     border-radius: var(--radius-full);
     background: var(--text-waiting);
-    --pulse-dim: 0.45;
+    --pulse-dim: 0.7;
     animation: pulse 1.6s var(--ease-in-out) infinite;
   }
 

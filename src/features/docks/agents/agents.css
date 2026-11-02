@@ -29,8 +29,8 @@
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: var(--font-size-caption);
+  color: var(--text-detail);
+  font-size: var(--font-size-ui);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -64,7 +64,7 @@
   margin-left: 25px;
   padding: 0 var(--space-2) 0 10px;
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
+  color: var(--text-row);
   text-align: left;
   transition:
     background var(--duration-fast) var(--ease-out),
@@ -116,8 +116,8 @@
 
 .agent-run-meta {
   flex: none;
-  color: var(--text-tertiary);
-  font-size: var(--font-size-caption);
+  color: var(--text-detail);
+  font-size: var(--font-size-ui);
   font-variant-numeric: tabular-nums;
 }
 

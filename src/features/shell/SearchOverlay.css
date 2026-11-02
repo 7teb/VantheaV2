@@ -59,7 +59,7 @@
 }
 
 .search-hit-icon {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .search-hit[aria-selected="true"] .search-hit-icon {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
+import type { ProjectEntry } from "../../../shared/settings.ts";
 import { IconButton } from "../../components/Button.tsx";
 import { ConfirmDialog, Dialog } from "../../components/Dialog.tsx";
 import { ArchiveRestoreIcon, MessageSquareIcon, TrashIcon } from "../../components/icons.tsx";
@@ -7,17 +8,17 @@ import { use_t } from "../../i18n/index.ts";
 import { relative_time } from "../../i18n/relative-time.ts";
 import { delete_chat, set_chat_archived } from "../../state/chats.ts";
 import { open_chat } from "../../state/ui.ts";
-import { chat_label } from "./sidebar-model.ts";
+import { chat_label, project_path_label } from "./sidebar-model.ts";
 import { WorktreeWarning } from "./WorktreeWarning.tsx";
 import "./ArchivedDialog.css";
 
-type ArchivedDialogProps = { open: boolean; chats: ChatMeta[]; active_chat_id: string | null; now: number; on_close: () => void };
+type ArchivedDialogProps = { open: boolean; chats: ChatMeta[]; projects: ProjectEntry[]; active_chat_id: string | null; now: number; on_close: () => void };
 
 type Deleting = { chat: ChatMeta; open: boolean };
 
 type Removal = { chat_id: string; index: number };
 
-export const ArchivedDialog = ({ open, chats, active_chat_id, now, on_close }: ArchivedDialogProps) => {
+export const ArchivedDialog = ({ open, chats, projects, active_chat_id, now, on_close }: ArchivedDialogProps) => {
   const t = use_t();
   const [deleting, set_deleting] = useState<Deleting | null>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -61,19 +62,21 @@ export const ArchivedDialog = ({ open, chats, active_chat_id, now, on_close }: A
           {chats.map((chat) => (
             <div key={chat.id} role="listitem" className="archived-row" data-active={chat.id === active_chat_id}>
               <button type="button" className="archived-open" aria-current={chat.id === active_chat_id ? "page" : undefined} onClick={() => choose(chat)}>
-                <MessageSquareIcon size={16} className="archived-icon" />
+                <MessageSquareIcon className="archived-icon" />
                 <span className="archived-text">
                   <span className="archived-name">{chat_label(t, chat.title)}</span>
-                  <span className="archived-detail">{chat.project_path || t("search.no_project")}</span>
+                  <span className="archived-detail" title={chat.project_path || undefined}>
+                    {chat.project_path ? project_path_label(projects, chat.project_path) : t("search.no_project")}
+                  </span>
                 </span>
                 <span className="archived-time">{relative_time(t, chat.updated_at, now)}</span>
               </button>
               <div className="archived-actions">
                 <IconButton size="sm" label={t("sidebar.restore")} onClick={() => remove(chat.id, "restore", (id) => set_chat_archived(id, false))}>
-                  <ArchiveRestoreIcon size={15} />
+                  <ArchiveRestoreIcon />
                 </IconButton>
                 <IconButton size="sm" label={t("sidebar.delete")} className="archived-delete" onClick={() => set_deleting({ chat, open: true })}>
-                  <TrashIcon size={15} />
+                  <TrashIcon />
                 </IconButton>
               </div>
             </div>

@@ -94,6 +94,8 @@ const part_text = (part: ContentPart, images: McpImage[]) => {
 
 export type McpResultText = { text: string; is_error: boolean; images: McpImage[] };
 
+export const mcp_error_marker = "[MCP tool error] ";
+
 export type CallResult = { content?: unknown; structuredContent?: unknown; toolResult?: unknown; isError?: unknown };
 
 const parses_to = (candidate: string, structured: unknown) => {
@@ -126,5 +128,5 @@ export const format_result = (result: CallResult): McpResultText => {
   const text = with_structured(content, parts, result.structuredContent ?? result.toolResult);
   const is_error = result.isError === true;
   const body = text || "(empty result)";
-  return { text: is_error ? `[MCP tool error] ${body}` : body, is_error, images };
+  return { text: is_error ? `${mcp_error_marker}${body}` : body, is_error, images };
 };

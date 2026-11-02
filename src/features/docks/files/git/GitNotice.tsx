@@ -60,12 +60,12 @@ export const FetchNotice = ({ fetch }: { fetch: FetchState }) => {
   const t = use_t();
   const { blocked, error } = fetch;
   if (blocked && blocked.kind !== "agent_running") {
-    return <GitNotice icon={<CircleSlashIcon size={16} />} title={t("git.autofetch_off")} detail={block_detail(t, blocked)} />;
+    return <GitNotice icon={<CircleSlashIcon />} title={t("git.autofetch_off")} detail={block_detail(t, blocked)} />;
   }
   if (!error || error.kind === "offline") {
     return null;
   }
-  const icon = <CloudAlertIcon size={16} />;
+  const icon = <CloudAlertIcon />;
   const host = error.host ?? error.remote;
   const command = error.command ?? undefined;
   switch (error.kind) {

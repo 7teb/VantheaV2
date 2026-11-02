@@ -16,7 +16,7 @@
 }
 
 .browser-url .text-field-input {
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-ui);
 }
 
 .browser-progress {

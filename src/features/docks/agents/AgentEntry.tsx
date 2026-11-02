@@ -3,17 +3,26 @@ import type { AgentRunSummary, AgentSummary } from "../../../../shared/ipc/work.
 import { IconButton } from "../../../components/Button.tsx";
 import { class_names } from "../../../components/class-names.ts";
 import { ChevronRightIcon, CircleStopIcon, CritterIcon } from "../../../components/icons.tsx";
-import { use_t } from "../../../i18n/index.ts";
+import { use_t, type Translate } from "../../../i18n/index.ts";
 import { agent_approvals_store, is_waiting } from "../../../state/agent-approvals.ts";
 import { cancel_agent, select_agent_run } from "../../../state/agents.ts";
 import { find_model } from "../../../../shared/models.ts";
 import { models_store } from "../../../state/models.ts";
 import { use_store } from "../../../state/use-store.ts";
-import { agent_status_keys } from "../../tools/background-status.ts";
 import { first_line, profile_labels, run_duration, status_icons } from "./agent-meta.ts";
 import "./agents.css";
 
 type RunRowProps = { agent_id: string; run: AgentRunSummary; now: number };
+
+const run_meta = (t: Translate, run: AgentRunSummary, waiting: boolean, now: number): string => {
+  if (waiting) {
+    return t("agent.waiting_approval");
+  }
+  if (run.status === "running" && run.open_questions > 0) {
+    return t(run.open_questions === 1 ? "agent.open_questions_one" : "agent.open_questions_other", { n: run.open_questions });
+  }
+  return run_duration(run, now);
+};
 
 const RunRow = ({ agent_id, run, now }: RunRowProps) => {
   const t = use_t();
@@ -27,21 +36,13 @@ const RunRow = ({ agent_id, run, now }: RunRowProps) => {
             <span className="wait-dot" />
           </span>
         ) : (
-          <StatusIcon size={14} className={class_names("agent-run-icon", run.status === "running" && "spin")} />
+          <StatusIcon className={class_names("agent-run-icon", run.status === "running" && "spin")} />
         )}
         <span className="agent-run-prompt" title={run.prompt}>
           {first_line(run.prompt) || t("agent.untitled_run")}
         </span>
-        <span className="agent-run-meta">
-          {[
-            t(waiting ? "agent.waiting_approval" : agent_status_keys[run.status]),
-            ...(run.status === "running" && run.open_questions > 0
-              ? [t(run.open_questions === 1 ? "agent.open_questions_one" : "agent.open_questions_other", { n: run.open_questions })]
-              : []),
-            run_duration(run, now),
-          ].join(" · ")}
-        </span>
-        <ChevronRightIcon size={12} className="agent-run-chevron" />
+        <span className="agent-run-meta">{run_meta(t, run, waiting, now)}</span>
+        <ChevronRightIcon className="agent-run-chevron" />
       </button>
     </li>
   );
@@ -76,7 +77,7 @@ export const AgentEntry = ({ agent, now }: { agent: AgentSummary; now: number })
         </span>
         {running && (
           <IconButton size="sm" label={t("agent.cancel")} disabled={stopping} onClick={() => void stop()}>
-            <CircleStopIcon size={15} />
+            <CircleStopIcon />
           </IconButton>
         )}
       </header>

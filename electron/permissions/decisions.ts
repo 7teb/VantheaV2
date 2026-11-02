@@ -17,7 +17,7 @@ const request_subject = (request: ApprovalRequest): { tool: string; subject: str
     case "mcp":
       return { tool: `mcp:${request.server}/${request.tool}`, subject: request.args_preview, cwd: "", reason: request.review?.reason || request.reason || "" };
     case "write":
-      return { tool: "write_file", subject: request.path, cwd: "", reason: "" };
+      return { tool: "write_file", subject: request.path, cwd: "", reason: request.review?.reason ?? "" };
     case "mcp_server":
       return { tool: "add_mcp_server", subject: `${request.name}: ${[request.command, ...request.args].join(" ")}`, cwd: request.cwd, reason: request.review?.reason ?? "" };
     case "skill_install":
@@ -31,7 +31,7 @@ const request_subject = (request: ApprovalRequest): { tool: string; subject: str
   }
 };
 
-const review_of = (request: ApprovalRequest): string | null => (request.kind === "write" ? null : (request.review?.id ?? null));
+const review_of = (request: ApprovalRequest): string | null => request.review?.id ?? null;
 
 export const human_decision = (request: ApprovalRequest, decision: ApprovalDecision, actor: ReviewActor, last_human_id: string | null): HumanDecision => {
   const { tool, subject, cwd, reason } = request_subject(request);

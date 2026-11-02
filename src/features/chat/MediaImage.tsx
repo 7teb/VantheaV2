@@ -19,7 +19,7 @@ export const MediaImage = ({ src, alt, ratio = null, className, on_open }: Media
     >
       {state === "failed" ? (
         <span className="media-image-missing">
-          <ImageIcon size={18} />
+          <ImageIcon size={32} />
         </span>
       ) : (
         <img src={src} alt={alt} loading="lazy" onLoad={() => set_state("ready")} onError={() => set_state("failed")} />

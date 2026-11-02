@@ -37,8 +37,8 @@ export const DraftChips = ({ draft_key, chips }: { draft_key: string; chips: Dra
         onClick={() => remove_draft_chip(draft_key, chip)}
       >
         <span className="draft-chip-icon">
-          <Icon size={15} />
-          <CloseIcon size={15} />
+          <Icon />
+          <CloseIcon />
         </span>
         <span className="composer-chip-label draft-chip-name">{name}</span>
       </button>

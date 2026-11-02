@@ -30,11 +30,11 @@ export const ArtifactLightbox = ({ artifact, on_close }: ArtifactLightboxProps) 
               <div className="artifact-lightbox-title">{label}</div>
               {shown.prompt && shown.prompt !== label && <div className="artifact-lightbox-prompt">{shown.prompt}</div>}
             </div>
-            <Button icon={<DownloadIcon size={15} />} onClick={() => void export_artifact(shown.id)}>
+            <Button icon={<DownloadIcon />} onClick={() => void export_artifact(shown.id)}>
               {t("docks.artifacts_export")}
             </Button>
             <IconButton label={t("common.close")} onClick={on_close}>
-              <CloseIcon size={16} />
+              <CloseIcon />
             </IconButton>
           </div>
         </>

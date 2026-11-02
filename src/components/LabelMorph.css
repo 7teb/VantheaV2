@@ -1,0 +1,73 @@
+@layer components {
+  @keyframes label-morph-in {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+  }
+
+  @keyframes label-morph-out {
+    to {
+      opacity: 0;
+      transform: translateY(-3px);
+    }
+  }
+
+  @keyframes label-morph-width-0 {
+    from {
+      width: var(--morph-from);
+    }
+    to {
+      width: var(--morph-to);
+    }
+  }
+
+  @keyframes label-morph-width-1 {
+    from {
+      width: var(--morph-from);
+    }
+    to {
+      width: var(--morph-to);
+    }
+  }
+
+  .label-morph {
+    display: inline-grid;
+    min-width: 0;
+    max-width: 100%;
+    text-overflow: inherit;
+  }
+
+  .label-morph:not(:has(> :not(:empty))) {
+    display: none;
+  }
+
+  .label-morph[data-glide] {
+    overflow-x: clip;
+  }
+
+  .label-morph[data-glide="0"] {
+    animation: label-morph-width-0 var(--duration-morph) var(--ease-morph) forwards;
+  }
+
+  .label-morph[data-glide="1"] {
+    animation: label-morph-width-1 var(--duration-morph) var(--ease-morph) forwards;
+  }
+
+  .label-morph-item {
+    grid-area: 1 / 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: inherit;
+  }
+
+  .label-morph-item[data-phase="in"] {
+    animation: label-morph-in var(--duration-morph) var(--ease-morph) backwards;
+  }
+
+  .label-morph-item[data-phase="out"] {
+    pointer-events: none;
+    animation: label-morph-out var(--duration-morph) var(--ease-morph) forwards;
+  }
+}

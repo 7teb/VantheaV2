@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { remote_client } from "../../api/bridge.ts";
+import { useState, type DragEvent, type FormEvent } from "react";
+import { api, remote_client } from "../../api/bridge.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
 import { Dialog } from "../../components/Dialog.tsx";
 import { CloseIcon, FolderIcon, FolderPlusIcon } from "../../components/icons.tsx";
@@ -18,6 +18,7 @@ export const CreateProjectDialog = ({ open, on_close }: CreateProjectDialogProps
   const [folder, set_folder] = useState<string | null>(null);
   const [busy, set_busy] = useState(false);
   const [error, set_error] = useState<string | null>(null);
+  const [dropping, set_dropping] = useState(false);
   const trimmed = name.trim();
 
   const close = () => {
@@ -31,14 +32,42 @@ export const CreateProjectDialog = ({ open, on_close }: CreateProjectDialogProps
     try {
       const chosen = await pick_project_folder();
       if (chosen) {
-        set_folder(chosen);
-        set_name((typed) => typed || base_name(chosen));
+        choose(chosen);
       }
     } catch (failure) {
       console.error("[projects] choosing a project folder failed", failure);
       set_error(ipc_error_text(failure));
     }
   };
+
+  const choose = (chosen: string) => {
+    set_folder(chosen);
+    set_name((typed) => typed || base_name(chosen));
+  };
+
+  const drop_target = remote_client
+    ? {}
+    : {
+        onDragOver: (event: DragEvent<HTMLDivElement>) => {
+          event.preventDefault();
+          set_dropping(true);
+        },
+        onDragLeave: (event: DragEvent<HTMLDivElement>) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            set_dropping(false);
+          }
+        },
+        onDrop: (event: DragEvent<HTMLDivElement>) => {
+          event.preventDefault();
+          set_dropping(false);
+          const entry = event.dataTransfer.items[0]?.webkitGetAsEntry();
+          const file = event.dataTransfer.files[0];
+          const dropped = entry?.isDirectory && file ? api.file_path(file) : "";
+          if (dropped) {
+            choose(dropped);
+          }
+        },
+      };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,38 +93,41 @@ export const CreateProjectDialog = ({ open, on_close }: CreateProjectDialogProps
         <div className="create-project-head">
           <h2 className="confirm-title">{t("projects.create_title")}</h2>
           <IconButton size="sm" label={t("common.close")} onClick={close}>
-            <CloseIcon size={14} />
+            <CloseIcon />
           </IconButton>
         </div>
         <TextField
           value={name}
           on_change={set_name}
-          icon={<FolderIcon size={15} />}
+          icon={<FolderIcon />}
           placeholder={t("projects.name_placeholder")}
           aria-label={t("projects.name_placeholder")}
           maxLength={120}
           autoFocus
         />
-        <div className="create-project-label">{t("projects.folder_label")}</div>
-        <div className="create-project-folder inset-surface">
+        <div className="create-project-label dialog-field-label">{t("projects.folder_label")}</div>
+        <div className="create-project-folder" data-drop={dropping || undefined} {...drop_target}>
           {folder ? (
             <div className="create-project-chosen">
-              <FolderIcon size={15} />
+              <FolderIcon />
               <span className="create-project-path" title={folder}>
                 {folder}
               </span>
               <IconButton size="sm" label={t("projects.folder_remove")} onClick={() => set_folder(null)}>
-                <CloseIcon size={14} />
+                <CloseIcon />
               </IconButton>
             </div>
           ) : (
             <>
-              <p className="create-project-hint">{t("projects.folder_empty", { name: trimmed || t("projects.name_placeholder") })}</p>
               {!remote_client && (
-                <Button size="sm" icon={<FolderPlusIcon size={15} />} onClick={() => void pick()}>
-                  {t("projects.folder_add")}
-                </Button>
+                <div className="create-project-drop">
+                  <span>{t("projects.folder_drop")}</span>
+                  <Button size="sm" icon={<FolderPlusIcon />} onClick={() => void pick()}>
+                    {t("projects.folder_add")}
+                  </Button>
+                </div>
               )}
+              <p className="create-project-hint">{t("projects.folder_empty", { name: trimmed || t("projects.name_placeholder") })}</p>
             </>
           )}
         </div>

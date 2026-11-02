@@ -46,19 +46,19 @@ const ContextCard = ({ panel_key, chat_id, presence }: ContextPanelProps & { pre
 
   return (
     <div
-      className="context-panel dock-panel composer-dock-card raised-surface enter-fade-up"
+      className="context-panel composer-panel composer-dock-card raised-surface"
       data-state={presence.state}
       role="region"
       aria-label={t("context.title")}
       onAnimationEnd={presence.on_animation_end}
     >
-      <div className="dock-panel-inner">
+      <div className="composer-panel-inner">
         <div className="context-panel-head">
-          <LayersIcon size={16} className="context-panel-icon" />
+          <LayersIcon className="context-panel-icon" />
           <span className="context-panel-title">{t("context.title")}</span>
           {usage && <span className="context-panel-total">{`${compact_tokens(usage.used)} / ${compact_tokens(usage.limit)}`}</span>}
           <IconButton size="sm" className="context-panel-close" label={t("context.close")} onClick={close}>
-            <CloseIcon size={14} />
+            <CloseIcon />
           </IconButton>
         </div>
         <div className="context-panel-body">

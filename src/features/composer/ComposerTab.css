@@ -1,0 +1,123 @@
+@layer components {
+  @keyframes composer-tab-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  .composer-tab {
+    --tab-inset: 13px;
+    --tab-tuck: 4px;
+    --tab-shoulder: calc(var(--radius-composer) - var(--tab-inset));
+    position: relative;
+    margin: 0 var(--tab-inset) calc(-1 * (var(--tab-tuck) + var(--space-2)));
+    padding: 1px 0 var(--tab-tuck);
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    corner-shape: superellipse(1.5);
+    background: var(--surface-dock-card);
+    mask:
+      linear-gradient(var(--mask) 0 0) top / 100% calc(100% - var(--tab-tuck)) no-repeat,
+      radial-gradient(var(--radius-composer) at 100% var(--radius-composer), transparent calc(var(--radius-composer) - 1px), var(--mask) var(--radius-composer))
+        left bottom / var(--tab-shoulder) var(--tab-tuck) no-repeat,
+      radial-gradient(var(--radius-composer) at 0 var(--radius-composer), transparent calc(var(--radius-composer) - 1px), var(--mask) var(--radius-composer))
+        right bottom / var(--tab-shoulder) var(--tab-tuck) no-repeat;
+  }
+
+  .composer-tab:empty {
+    display: none;
+  }
+
+  .composer-tab::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--ring-rail);
+    border-bottom: 0;
+    border-radius: inherit;
+    corner-shape: inherit;
+    pointer-events: none;
+  }
+
+  .composer-tab:not(:has(> .composer-strip)):has(> .queued-list[data-leaving="true"]) {
+    animation: composer-tab-out var(--duration-base) var(--ease-out) forwards;
+  }
+
+  .composer-tab > .queued-list:has(+ .composer-strip) {
+    max-height: min(30dvh, calc(var(--composer-card-cap, 100dvh) - 30px - var(--tab-tuck)));
+  }
+
+  .composer-strip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    height: 28px;
+    padding: 0 4px 0 10px;
+    font-size: var(--font-size-caption);
+    line-height: 16px;
+    color: var(--text-tertiary);
+  }
+
+  .queued-list + .composer-strip {
+    height: 29px;
+    border-top: 1px solid var(--divider);
+  }
+
+  .composer-strip-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .composer-strip-item[data-missing] {
+    color: var(--text-danger);
+  }
+
+  .composer-strip-item > svg {
+    flex: none;
+  }
+
+  .composer-strip-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .composer-strip-context {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    margin-left: auto;
+    padding: 0 6px;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-caption);
+    line-height: 16px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .composer-strip-context:hover,
+  .composer-strip-context[aria-expanded="true"] {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .composer-strip-context .progress-ring-track {
+    stroke: var(--ring-strong);
+  }
+
+  .composer-strip-context .progress-ring-value {
+    stroke: var(--accent);
+  }
+
+  .composer-strip-context[data-level="high"] .progress-ring-value {
+    stroke: var(--text-danger);
+  }
+}

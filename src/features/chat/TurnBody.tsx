@@ -6,8 +6,6 @@ import { Markdown } from "../../components/Markdown.tsx";
 import { CopyButton } from "../../components/MarkdownCopy.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { edit_message, fork_chat, type ActionResult } from "../../state/chat-actions.ts";
-import { models_store } from "../../state/models.ts";
-import { use_store } from "../../state/use-store.ts";
 import { ImageBody, ShownImagesBody } from "../tools/bodies-web.tsx";
 import { WorkGroup } from "../tools/WorkGroup.tsx";
 import { answer_text, shows_thinking, thinks_in_group, type Block } from "./assistant-blocks.ts";
@@ -86,7 +84,6 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
   const { message, blocks } = facts;
   const streaming = message.status === "streaming";
   const grouped_thinking = thinks_in_group(streaming, message.retry !== null, blocks);
-  const catalog = use_store(models_store, (state) => state.catalog);
   const [action_error, set_action_error] = useState("");
   const settle = (result: ActionResult) => set_action_error(result.ok ? "" : result.error);
   const fork = async () => settle(await fork_chat(chat_id, message.id));
@@ -134,14 +131,14 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
           {answer && <CopyButton text={answer} label={t("chat.copy_answer")} />}
           {retry_from && !busy && (
             <IconButton label={t("chat.regenerate")} size="sm" onClick={() => void regenerate(retry_from)}>
-              <RetryIcon size={14} />
+              <RetryIcon />
             </IconButton>
           )}
           <IconButton label={t("chat.fork")} size="sm" onClick={() => void fork()}>
-            <ForkIcon size={14} />
+            <ForkIcon />
           </IconButton>
-          <IconButton label={turn_info(t, message, turn_started_at, catalog)} size="sm">
-            <InfoIcon size={14} />
+          <IconButton label={turn_info(t, message, turn_started_at)} size="sm">
+            <InfoIcon />
           </IconButton>
         </div>
       )}

@@ -105,13 +105,6 @@
   padding: 0 4px 0 10px;
 }
 
-.sidebar-section-label {
-  color: var(--text-detail);
-  font-size: var(--font-size-ui);
-  font-weight: var(--weight-semibold);
-  line-height: 1;
-}
-
 .sidebar-section-actions {
   display: flex;
   align-items: center;
@@ -124,10 +117,15 @@
   align-items: center;
   height: 30px;
   border-radius: var(--radius-lg);
-  color: var(--text-secondary);
+  color: var(--text-row);
   transition:
     background var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out);
+}
+
+.sidebar-lists .chat-row {
+  animation: fade-up var(--duration-enter) var(--ease-out) backwards;
 }
 
 .sidebar-row:hover,
@@ -179,8 +177,9 @@
 .chat-row-time,
 .chat-row-status {
   flex: none;
-  color: var(--text-tertiary);
-  font-size: var(--font-size-caption);
+  color: var(--text-detail);
+  font-size: var(--font-size-ui);
+  font-variant-numeric: tabular-nums;
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
@@ -189,6 +188,10 @@
   place-items: center;
   width: 16px;
   color: var(--live);
+}
+
+.sidebar-lists :is(.chat-row-time, .chat-row-status) {
+  animation: fade-in var(--duration-base) var(--ease-morph) backwards;
 }
 
 .chat-row-status .wait-dot {
@@ -223,12 +226,13 @@
   text-overflow: ellipsis;
 }
 
-.chat-row:hover .chat-row-time,
+.sidebar-row:hover .chat-row-time,
 .chat-row:focus-within .chat-row-time,
-.chat-row[data-menu-open="true"] .chat-row-time,
-.chat-row:hover .chat-row-status,
+.sidebar-row[data-menu-open="true"] .chat-row-time,
+.sidebar-row:hover .chat-row-status,
 .chat-row:focus-within .chat-row-status,
-.chat-row[data-menu-open="true"] .chat-row-status {
+.project-row:has(:focus-visible) .chat-row-status,
+.sidebar-row[data-menu-open="true"] .chat-row-status {
   opacity: 0;
 }
 
@@ -369,8 +373,8 @@
   }
 
   .sidebar-row .sidebar-row-more,
-  .sidebar .chat-row .chat-row-time,
-  .sidebar .chat-row .chat-row-status {
+  .sidebar .sidebar-row .chat-row-time,
+  .sidebar .sidebar-row .chat-row-status {
     opacity: 1;
   }
 

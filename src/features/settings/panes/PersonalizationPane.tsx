@@ -63,7 +63,7 @@ const InstructionsRow = ({ saved }: { saved: string }) => {
         <div className="instructions-footer">
           <Button
             disabled={draft === saved || state === "saving"}
-            icon={state === "saved" && draft === saved ? <CheckIcon size={15} /> : undefined}
+            icon={state === "saved" && draft === saved ? <CheckIcon /> : undefined}
             onClick={() => void save()}
           >
             {state === "saved" && draft === saved ? t("personalization.saved") : t("personalization.save")}

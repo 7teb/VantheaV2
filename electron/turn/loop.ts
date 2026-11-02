@@ -15,12 +15,6 @@ import { steer_message } from "./user-input.ts";
 
 const continuation_text = "Your last message hit the model's maximum output length and was cut off. Continue exactly where you left off and keep going until the task is finished. Do not start over or repeat what you already wrote.";
 
-const output_limit_note = "The previous response reached the model's maximum output length and was continued.";
-
-const window_note = "The conversation did not fit into the model's context window, so the oldest tool outputs were removed from this request.";
-
-const compaction_fallback_note = "Compacting the context failed, so older tool output in this turn was dropped instead.";
-
 const interrupted_kinds = new Set<TurnError["kind"]>(["stream_interrupted", "timeout", "provider_unavailable"]);
 
 const end_status = (error: unknown): FinalStatus => {
@@ -85,7 +79,7 @@ const deliver_input = async (session: TurnSession, round: number, api_messages: 
 
 const drop_old_results = (session: TurnSession, round: number, api_messages: ApiMessage[], calibration: ContextCalibration | null) => {
   if (trim_tool_messages(api_messages, session.model, compact_threshold(session.model), calibration_scale(calibration))) {
-    session.emit({ type: "notice", round, notice: "context_trimmed", text: compaction_fallback_note });
+    session.emit({ type: "notice", round, notice: "context_trimmed", text: "" });
   }
 };
 
@@ -117,7 +111,7 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
         await deliver_input(session, round, api_messages);
       }
       if (fit_window(api_messages, session.model, measure(session, api_messages, calibration), undefined, 1, calibration_scale(calibration)).length) {
-        session.emit({ type: "notice", round, notice: "context_trimmed", text: window_note });
+        session.emit({ type: "notice", round, notice: "context_trimmed", text: "" });
       }
       const outcome = await run_round(session, round, api_messages, calibration, floor);
       const next = calibrate(outcome.usage, outcome.estimate) ?? calibration;
@@ -139,7 +133,7 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
       }
       if (outcome.tool_calls === 0) {
         if (outcome.finish_reason === "length") {
-          session.emit({ type: "notice", round, notice: "output_limit", text: output_limit_note });
+          session.emit({ type: "notice", round, notice: "output_limit", text: "" });
           api_messages.push({ role: "user", content: continuation_text });
           continue;
         }

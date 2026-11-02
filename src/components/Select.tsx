@@ -45,7 +45,7 @@ export const Select = <T extends string>({
         onClick={() => set_open((was_open) => !was_open)}
       >
         <span className="select-value">{current?.label ?? value}</span>
-        <ChevronDownIcon size={14} className="select-chevron" />
+        <ChevronDownIcon className="select-chevron" />
       </button>
       <Menu
         open={open}

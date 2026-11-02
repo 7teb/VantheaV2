@@ -71,4 +71,4 @@ export type ToolCategory =
 
 export type Label = (t: Translate, step: ToolStep) => string;
 
-export type ToolMeta = { icon: ToolIconName; category: ToolCategory; active: Label; done: Label };
+export type ToolMeta = { icon: ToolIconName; category: ToolCategory; active: Label; done: Label; attempt: Label };

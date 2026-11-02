@@ -46,14 +46,14 @@ export const WorkflowAgentRow = ({ run_id, agent, now }: WorkflowAgentRowProps) 
     <li className="workflow-agent" data-status={agent.status} data-waiting={waiting || undefined}>
       <button type="button" className="workflow-agent-main" disabled={transcript === null} title={agent_hint(t, agent, model)} onClick={() => transcript && open_agent_run(transcript)}>
         <span className="workflow-agent-icon">
-          {waiting ? <span className="wait-dot" aria-hidden="true" /> : <StatusIcon size={14} className={agent.status === "running" ? "spin" : undefined} />}
+          {waiting ? <span className="wait-dot" aria-hidden="true" /> : <StatusIcon className={agent.status === "running" ? "spin" : undefined} />}
         </span>
         <span className="workflow-agent-label">{agent.label}</span>
         <span className="workflow-agent-meta">{agent_meta(t, agent, now, waiting)}</span>
       </button>
       {can_skip(agent) && (
         <IconButton size="sm" className="workflow-agent-skip" label={t("workflow.skip_agent")} disabled={skipping} onClick={() => void skip()}>
-          <SkipForwardIcon size={14} />
+          <SkipForwardIcon />
         </IconButton>
       )}
       {problem && <div className="workflow-agent-error">{problem}</div>}

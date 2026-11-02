@@ -34,7 +34,7 @@ const trail_of = (item: SlashItem) => {
     return <ToggleTrack checked={item.toggled} />;
   }
   if (item.submenu) {
-    return <ChevronRightIcon size={14} />;
+    return <ChevronRightIcon />;
   }
   return null;
 };
@@ -72,7 +72,7 @@ export const SlashMenu = ({ slash, keep, list_id }: SlashMenuProps) => {
         <div className="composer-popover-label">{t("commands.menu")}</div>
       ) : (
         <button type="button" className="composer-popover-label composer-popover-back" tabIndex={-1} aria-label={t("commands.back")} onClick={slash.back}>
-          <ChevronLeftIcon size={14} />
+          <ChevronLeftIcon />
           <span>{shown.parent}</span>
         </button>
       )}

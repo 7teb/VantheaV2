@@ -37,10 +37,10 @@ const ReviewItem = ({ item }: { item: MemoryReviewItem }) => {
         {error && <div className="pane-item-error">{error}</div>}
       </div>
       <div className="pane-item-actions is-visible">
-        <Button variant="ghost" disabled={busy} icon={<CloseIcon size={14} />} onClick={() => void resolve("discard")}>
+        <Button variant="ghost" disabled={busy} icon={<CloseIcon />} onClick={() => void resolve("discard")}>
           {t("personalization.mem_reject")}
         </Button>
-        <Button disabled={busy} icon={<CheckIcon size={14} />} onClick={() => void resolve("keep")}>
+        <Button disabled={busy} icon={<CheckIcon />} onClick={() => void resolve("keep")}>
           {t("personalization.mem_accept")}
         </Button>
       </div>
@@ -74,7 +74,7 @@ const MemoryItem = ({ record, now }: { record: MemoryRecord; now: number }) => {
       </div>
       <div className="pane-item-actions">
         <IconButton size="sm" label={t("personalization.mem_remove")} onClick={() => void remove()}>
-          <TrashIcon size={14} />
+          <TrashIcon />
         </IconButton>
       </div>
     </div>
@@ -91,20 +91,23 @@ export const MemoryLists = () => {
     void load_memory();
   }, []);
 
+  const shows_review = review.status === "failed" || (review.status === "ready" && review.items.length > 0);
+  const shows_saved = memories.status !== "ready" || memories.items.length > 0;
   return (
     <>
-      <SettingsGroup label={t("personalization.mem_review")}>
-        {review.status === "loading" && <ListSkeleton rows={[72, 58]} />}
-        {review.status === "failed" && <p className="pane-note">{t("personalization.mem_load_failed")}</p>}
-        {review.status === "ready" && review.items.length === 0 && <p className="pane-note">{t("personalization.mem_empty")}</p>}
-        {review.status === "ready" && review.items.map((item) => <ReviewItem key={item.id} item={item} />)}
-      </SettingsGroup>
-      <SettingsGroup label={t("personalization.mem_saved")}>
-        {memories.status === "loading" && <ListSkeleton rows={[84, 66, 76]} />}
-        {memories.status === "failed" && <p className="pane-note">{t("personalization.mem_load_failed")}</p>}
-        {memories.status === "ready" && memories.items.length === 0 && <p className="pane-note">{t("personalization.mem_saved_empty")}</p>}
-        {memories.status === "ready" && memories.items.map((record) => <MemoryItem key={record.id} record={record} now={now} />)}
-      </SettingsGroup>
+      {shows_review && (
+        <SettingsGroup label={t("personalization.mem_review")}>
+          {review.status === "failed" && <p className="pane-note">{t("personalization.mem_load_failed")}</p>}
+          {review.status === "ready" && review.items.map((item) => <ReviewItem key={item.id} item={item} />)}
+        </SettingsGroup>
+      )}
+      {shows_saved && (
+        <SettingsGroup label={t("personalization.mem_saved")}>
+          {memories.status === "loading" && <ListSkeleton rows={[84, 66, 76]} />}
+          {memories.status === "failed" && <p className="pane-note">{t("personalization.mem_load_failed")}</p>}
+          {memories.status === "ready" && memories.items.map((record) => <MemoryItem key={record.id} record={record} now={now} />)}
+        </SettingsGroup>
+      )}
     </>
   );
 };

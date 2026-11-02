@@ -74,7 +74,7 @@
     width: 100%;
     padding: 5px 8px;
     border-radius: var(--radius-item);
-    color: var(--text-menu-item);
+    color: var(--text-row);
     white-space: nowrap;
     text-align: left;
     outline: none;
@@ -231,7 +231,7 @@
   }
 
   .composer-plus svg {
-    transition: transform var(--duration-slow) var(--ease-out);
+    transition: transform var(--duration-chevron) var(--ease-out);
   }
 
   .composer-plus[aria-expanded="true"] svg {

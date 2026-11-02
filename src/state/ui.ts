@@ -139,7 +139,11 @@ export const start_new_chat = (project_path: string) => {
 };
 
 export const toggle_dock = (kind: DockKind) =>
-  ui_store.update((state) => ({ ...state, dock: { ...state.dock, kind: state.dock.kind === kind ? null : kind, expanded: false } }));
+  ui_store.update((state) => ({
+    ...state,
+    settings_open: false,
+    dock: { ...state.dock, kind: state.settings_open || state.dock.kind !== kind ? kind : null, expanded: false },
+  }));
 
 export const close_dock = () => ui_store.update((state) => ({ ...state, dock: { ...state.dock, kind: null, expanded: false } }));
 

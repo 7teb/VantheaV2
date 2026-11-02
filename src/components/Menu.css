@@ -4,6 +4,7 @@
     flex-direction: column;
     padding: 4px;
     font-size: var(--font-size-ui);
+    line-height: 20px;
   }
 
   .menu-section {
@@ -35,9 +36,17 @@
     width: 100%;
     padding: 5px 8px;
     border-radius: var(--radius-item);
-    color: var(--text-menu-item);
+    color: var(--text-row);
     white-space: nowrap;
     outline: none;
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .floating[data-state="open"] .menu-item {
+    animation: fade-up var(--duration-slow) var(--ease-out) backwards;
+    animation-delay: calc(var(--row, 0) * 14ms);
   }
 
   .menu-item:hover:not(:disabled),
@@ -73,6 +82,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: var(--font-size-caption);
+    line-height: 16px;
     color: var(--text-tertiary);
   }
 

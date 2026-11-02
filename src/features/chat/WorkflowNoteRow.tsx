@@ -21,7 +21,7 @@ export const WorkflowNoteRow = memo(({ note }: { note: WorkflowNote }) => {
     <div className="agent-note tool-row enter-fade-up" data-status={failed ? "failed" : note.status}>
       <button type="button" className="tool-row-head" disabled>
         <span className="tool-row-icon">
-          <WorkflowIcon size={14} />
+          <WorkflowIcon />
         </span>
         <span className="tool-row-label">{t("workflow.note_result", { x: note.name })}</span>
         {status && <span className={class_names("tool-row-status", failed && "is-failed")}>{t(status)}</span>}

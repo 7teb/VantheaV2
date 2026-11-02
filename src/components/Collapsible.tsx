@@ -40,7 +40,7 @@ export const Collapsible = ({ header, open, default_open = false, on_toggle, cla
   return (
     <div className={class_names("collapsible", className)} data-open={expanded}>
       <button type="button" className="collapsible-header" aria-expanded={expanded} aria-controls={body_id} onClick={toggle}>
-        <ChevronRightIcon size={14} className="collapsible-chevron" />
+        <ChevronRightIcon className="collapsible-chevron" />
         <span className="collapsible-title">{header}</span>
       </button>
       <CollapsibleBody open={expanded} id={body_id}>

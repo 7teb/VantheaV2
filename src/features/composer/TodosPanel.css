@@ -14,6 +14,10 @@
     padding: 4px;
   }
 
+  .todos-panel[data-entering="true"]:not([data-leaving="true"]) {
+    animation: composer-panel-in var(--duration-slow) var(--ease-height) backwards;
+  }
+
   .todos-panel[data-leaving="true"] {
     animation: todos-out var(--duration-slow) var(--ease-in) 600ms forwards;
   }
@@ -40,10 +44,6 @@
     color: var(--text-primary);
   }
 
-  .todos-panel-ring circle {
-    stroke-width: 2;
-  }
-
   .todos-panel-title {
     flex: 1;
     min-width: 0;
@@ -61,7 +61,7 @@
   .todos-panel-chevron {
     flex: none;
     color: var(--text-tertiary);
-    transition: transform var(--duration-slow) var(--ease-out);
+    transition: transform var(--duration-chevron) var(--ease-out);
   }
 
   .todos-panel[data-open="true"] .todos-panel-chevron {
@@ -79,13 +79,26 @@
 
   .todos-panel .todo-item {
     min-height: 0;
-    padding: 5px 12px;
-    line-height: var(--leading-ui);
+    margin: 0 4px;
+    padding: 5px 8px;
+    border-radius: var(--radius-full);
     animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+    transition:
+      background var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out);
   }
 
-  .todos-panel .todo-mark {
-    height: calc(var(--font-size-ui) * var(--leading-ui));
+  .todos-panel .todo-item[data-status="in_progress"] {
+    background: var(--surface-on-raised);
+    box-shadow: inset 0 0 0 1px var(--ring-on-raised);
+  }
+
+  .todos-panel .is-working {
+    --working-dim: var(--text-secondary);
+  }
+
+  .todos-panel-ring .progress-ring-track {
+    stroke: var(--ring-strong);
   }
 
   @media (hover: none) and (pointer: coarse) {

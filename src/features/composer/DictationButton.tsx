@@ -26,7 +26,7 @@ export const DictationButton = ({ draft_key, on_stop }: DictationButtonProps) =>
       <Tooltip label={t("dictation.stop")}>
         <button type="button" className="dictation-recording" aria-label={t("dictation.stop")} onClick={on_stop}>
           <DictationWave />
-          <StopIcon size={16} />
+          <StopIcon />
         </button>
       </Tooltip>
     );
@@ -39,13 +39,13 @@ export const DictationButton = ({ draft_key, on_stop }: DictationButtonProps) =>
         disabled={phase === "transcribing"}
         onClick={cancel_dictation}
       >
-        <CircleSpinnerIcon size={16} className="spin" />
+        <CircleSpinnerIcon className="spin" />
       </IconButton>
     );
   }
   return (
     <IconButton className="dictation-mic" label={t("dictation.dictate")} disabled={phase === "elsewhere"} onClick={() => void start_dictation(draft_key)}>
-      <MicIcon size={16} />
+      <MicIcon />
     </IconButton>
   );
 };

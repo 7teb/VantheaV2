@@ -69,16 +69,16 @@ export const FileChanges = memo(({ chat_id, steps, from_id, to_id, undo_id, busy
   return (
     <div className="file-changes enter-fade-up">
       <div className="file-changes-head">
-        <FileDiffIcon size={15} />
+        <FileDiffIcon />
         <span className="file-changes-title">{title}</span>
         <span className="tool-stat-add">+{added}</span>
         <span className="tool-stat-remove">-{removed}</span>
         <span className="file-changes-actions">
-          <Button variant="ghost" icon={<GitCompareIcon size={14} />} onClick={() => open_turn_diff({ from_id, to_id })}>
+          <Button variant="ghost" icon={<GitCompareIcon />} onClick={() => open_turn_diff({ from_id, to_id })}>
             {t("chat.changes_show_diff")}
           </Button>
           {undo_id !== null && (
-            <Button variant="ghost" icon={<UndoIcon size={14} />} disabled={busy || pending} onClick={() => void undo(undo_id)}>
+            <Button variant="ghost" icon={<UndoIcon />} disabled={busy || pending} onClick={() => void undo(undo_id)}>
               {t("chat.changes_undo")}
             </Button>
           )}

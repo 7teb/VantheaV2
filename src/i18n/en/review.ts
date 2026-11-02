@@ -28,6 +28,5 @@ export const review = {
   "review.denied_by_you": "Denied by you",
   "review.feedback": "Your feedback: {x}",
   "review.blocked": "Blocked: VantheaX never runs this command",
-  "review.pending_title": "Automatic review",
-  "review.pending_detail": "A carefully instructed review agent checks this request before VantheaX runs it.",
+  "review.scripts_stopped": "Not run: a script it runs changed three times during the review",
 };

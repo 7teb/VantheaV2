@@ -54,22 +54,42 @@ const kept_peer_outcomes: Partial<Record<PeerOutcome, MessageKey>> = {
 };
 
 const grep_detail = (t: Translate, view: Extract<ToolView, { kind: "grep" }>): string => {
-  if (view.incomplete) {
-    return t("tools.grep_incomplete", { n: view.total });
-  }
-  if (view.truncated) {
+  if (view.incomplete || view.truncated) {
     return t("tools.grep_capped", { n: view.total });
   }
-  return view.total === 0 ? t("tools.grep_no_matches") : "";
+  if (view.total === 0) {
+    return t("tools.grep_no_matches");
+  }
+  return t(view.total === 1 ? "tools.grep_count_one" : "tools.grep_count_other", { n: view.total });
+};
+
+const web_detail = (t: Translate, view: Extract<ToolView, { kind: "web_search" }>): string => {
+  if (view.urls && view.urls.length > 0) {
+    return "";
+  }
+  if (view.sources.length === 0) {
+    return t("tools.web_no_results");
+  }
+  return t(view.sources.length === 1 ? "tools.web_results_one" : "tools.web_results_other", { n: view.sources.length });
+};
+
+const files_detail = (t: Translate, view: Extract<ToolView, { kind: "files" }>): string => {
+  const n = view.files.length;
+  if (view.truncated) {
+    return t("tools.files_capped", { n });
+  }
+  return t(n === 1 ? "tools.files_count_one" : "tools.files_count_other", { n });
 };
 
 export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unknown_status): string => {
   const view = step.view;
   switch (view?.kind) {
     case "grep":
-      return grep_detail(t, view);
-    case "mcp":
-      return view.is_error ? t("tools.mcp_error") : "";
+      return step.status === "done" ? grep_detail(t, view) : "";
+    case "web_search":
+      return step.status === "done" ? web_detail(t, view) : "";
+    case "files":
+      return step.status === "done" ? files_detail(t, view) : "";
     case "peer_message": {
       const key = kept_peer_outcomes[view.outcome];
       return key ? t(key) : "";
@@ -78,8 +98,6 @@ export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unk
       return is_shell_run(step.name) ? "" : row_status_label(t, background_status_label, view.status, live);
     case "agent":
       return row_status_label(t, agent_status_label, view.status, live);
-    case "text":
-      return step.name === "datetime" ? view.text : "";
     default:
       return "";
   }

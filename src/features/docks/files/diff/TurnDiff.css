@@ -20,7 +20,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--text-detail);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-ui);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   mask-image: linear-gradient(to right, var(--mask) calc(100% - 12px), transparent);
@@ -37,7 +37,7 @@
   height: 26px;
   padding: 0 var(--space-2) 0 6px;
   color: var(--text-detail);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-ui);
   white-space: nowrap;
 }
 

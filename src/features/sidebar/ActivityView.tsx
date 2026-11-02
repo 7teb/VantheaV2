@@ -4,10 +4,11 @@ import { Button } from "../../components/Button.tsx";
 import { use_language, use_t, type MessageKey } from "../../i18n/index.ts";
 import { chat_marks_store, read_all_marks } from "../../state/chat-marks.ts";
 import { chats_store } from "../../state/chats.ts";
+import { settings_store } from "../../state/settings.ts";
 import { use_store } from "../../state/use-store.ts";
-import { base_name } from "../tools/tool-meta.ts";
 import { activity_entries, day_groups, needs_attention, type DayGroup } from "./activity.ts";
 import { ChatRow } from "./ChatRow.tsx";
+import { project_path_label } from "./sidebar-model.ts";
 import { SidebarSection } from "./SidebarSection.tsx";
 
 const day_keys: Record<Exclude<DayGroup["kind"], "weekday">, MessageKey> = {
@@ -23,12 +24,13 @@ export const ActivityView = ({ active_chat_id, now }: ActivityViewProps) => {
   const language = use_language();
   const chats = use_store(chats_store, (state) => state.list);
   const marks = use_store(chat_marks_store, (state) => state);
+  const projects = use_store(settings_store, (view) => view?.projects ?? null);
   const entries = useMemo(() => activity_entries(chats, marks), [chats, marks]);
   const groups = useMemo(() => day_groups(chats, new Set(entries.map((entry) => entry.chat.id)), now), [chats, entries, now]);
   const weekday = useMemo(() => new Intl.DateTimeFormat(language, { weekday: "long" }), [language]);
 
   const row = (chat: ChatMeta) => (
-    <ChatRow key={chat.id} chat={chat} active={chat.id === active_chat_id} now={now} detail={chat.project_path ? base_name(chat.project_path) : t("sidebar.no_project")} />
+    <ChatRow key={chat.id} chat={chat} active={chat.id === active_chat_id} now={now} detail={chat.project_path ? project_path_label(projects ?? [], chat.project_path) : t("sidebar.no_project")} />
   );
 
   return (

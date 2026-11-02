@@ -36,7 +36,7 @@ const MoveToBackground = ({ chat_id, call_id }: { chat_id: string; call_id: stri
           {t(problem)}
         </span>
       )}
-      <Button variant="ghost" className="command-card-action" icon={<LayersIcon size={14} />} disabled={pending} onClick={() => void move()}>
+      <Button variant="ghost" className="command-card-action" icon={<LayersIcon />} disabled={pending} onClick={() => void move()}>
         {t("tools.move_to_background")}
       </Button>
     </>

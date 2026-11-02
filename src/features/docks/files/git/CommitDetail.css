@@ -99,7 +99,7 @@
 .commit-file-chevron {
   flex: none;
   color: var(--text-tertiary);
-  transition: transform var(--duration-slow) var(--ease-out);
+  transition: transform var(--duration-chevron) var(--ease-out);
 }
 
 .git-change[aria-expanded="true"] .commit-file-chevron {

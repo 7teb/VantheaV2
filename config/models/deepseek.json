@@ -3,11 +3,12 @@
     "id": "deepseek/deepseek-v4.1-flash-1017",
     "label": "DeepSeek V4.1 Flash",
     "provider": "DeepSeek",
-    "provider_order": ["deepseek"],
+    "provider_order": ["deepseek", "relace/fast"],
     "efforts": ["low", "high", "max"],
     "default_effort": "high",
     "vision": true,
     "context_length": 1048576,
+    "default_context": { "limit": 512000, "compact_percent": 95 },
     "max_output": 393216,
     "reasoning_passback": true
   }

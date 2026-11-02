@@ -4,9 +4,9 @@ import { use_t } from "../../i18n/index.ts";
 
 const preview_lines = 30;
 
-type OutputBlockProps = { text: string; tone?: "normal" | "error"; className?: string; tail?: boolean };
+type OutputBlockProps = { text: string; className?: string; tail?: boolean };
 
-export const OutputBlock = ({ text, tone = "normal", className, tail = false }: OutputBlockProps) => {
+export const OutputBlock = ({ text, className, tail = false }: OutputBlockProps) => {
   const t = use_t();
   const [all, set_all] = useState(false);
   const lines = text.split("\n");
@@ -15,8 +15,8 @@ export const OutputBlock = ({ text, tone = "normal", className, tail = false }: 
   const shown = all || hidden <= 0 ? text : preview.join("\n");
   const more = tail ? t("tools.preview_earlier", { n: hidden }) : t("tools.preview_more", { n: hidden });
   return (
-    <div className={class_names("output-block", className)} data-tone={tone}>
-      <pre className="output-block-pre inset-surface">{shown}</pre>
+    <div className={class_names("output-block", className)}>
+      <pre className="output-block-pre tool-card">{shown}</pre>
       {hidden > 0 && (
         <button type="button" className="output-block-more" onClick={() => set_all(!all)}>
           {all ? t("chat.show_less") : more}

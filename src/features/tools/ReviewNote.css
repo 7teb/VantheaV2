@@ -21,8 +21,7 @@
   }
 
   .review-notice-title {
-    font-weight: var(--weight-semibold);
-    color: var(--text-primary);
+    color: var(--text-secondary);
   }
 
   .review-notice-line[data-tone="reason"] {

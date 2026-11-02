@@ -32,8 +32,7 @@ export const MaximizeGlyph = (props: GlyphProps) => (
 
 export const RestoreGlyph = (props: GlyphProps) => (
   <Glyph crisp {...props}>
-    <rect x="0.5" y="2.5" width="7" height="7" />
-    <path d="M2.5 2.5v-2h7v7h-2" />
+    <path d="M0.5 2.5h7v7h-7zM2.5 2.5v-2h7v7h-2" />
   </Glyph>
 );
 

@@ -5,7 +5,7 @@ export type ModelRoute = { id: string; label: string; provider_order: string[] }
 
 export type ProVariant = { id: string; label: string };
 
-export const speed_tiers = ["fast", "ultrafast"] as const;
+export const speed_tiers = ["fast", "ultrafast", "flex"] as const;
 
 export type SpeedTier = (typeof speed_tiers)[number];
 
@@ -31,10 +31,13 @@ export type ModelEntry = {
   note?: string;
   fallback?: ModelRoute;
   pro?: ProVariant;
-  tiers?: Partial<Record<SpeedTier, string>>;
+  tiers?: Partial<Record<SpeedTier, string[]>>;
+  default_context?: ModelContext;
 };
 
-export const with_context_setting = (model: ModelEntry, setting: ModelContext | undefined): ModelEntry =>
+export const context_setting = (model: ModelEntry, stored: ModelContext | undefined): ModelContext | undefined => stored ?? model.default_context;
+
+export const with_context_setting =(model: ModelEntry, setting: ModelContext | undefined): ModelEntry =>
   setting
     ? { ...model, context_length: setting.limit === null ? model.context_length : Math.min(setting.limit, model.context_length), compact_at: setting.compact_percent / 100 }
     : model;
@@ -68,29 +71,44 @@ export const pro_variant = (model: ModelEntry): ModelEntry => {
 
 export const with_pro = (model: ModelEntry, pro: boolean): ModelEntry => (pro ? pro_variant(model) : model);
 
-const tier_names: Record<SpeedTier, string> = { fast: "Fast", ultrafast: "Ultrafast" };
+const tier_names: Record<SpeedTier, string> = { fast: "Fast", ultrafast: "Ultrafast", flex: "Flex" };
 
 export const with_tier = (model: ModelEntry, tier: SpeedTier | undefined): ModelEntry => {
   const route = tier ? model.tiers?.[tier] : undefined;
-  return tier && route ? { ...model, label: `${model.label} ${tier_names[tier]}`, provider_order: [route] } : model;
+  return tier && route ? { ...model, label: `${model.label} ${tier_names[tier]}`, provider_order: route } : model;
 };
+
+const flex_suffix = ":floor";
+
+export const flex_base = (id: string): string | null => (id.endsWith(flex_suffix) ? id.slice(0, -flex_suffix.length) : null);
+
+export const flex_id = (id: string): string => `${id}${flex_suffix}`;
 
 export const with_choice = (model: ModelEntry, choice: Pick<ModelChoice, "pro" | "tier">): ModelEntry => with_tier(with_pro(model, choice.pro), choice.tier);
 
-export const model_listing = (models: readonly ModelEntry[], id: string): { entry: ModelEntry; pro: boolean } | null => {
-  const entry = models.find((model) => model.id === id || model.pro?.id === id);
-  return entry ? { entry, pro: entry.id !== id } : null;
+export type ModelListing = { entry: ModelEntry; pro: boolean; tier?: SpeedTier };
+
+export const model_listing = (models: readonly ModelEntry[], id: string): ModelListing | null => {
+  const base = flex_base(id);
+  const wanted = base ?? id;
+  const entry = models.find((model) => model.id === wanted || model.pro?.id === wanted);
+  if (!entry || (base && !entry.tiers?.flex)) {
+    return null;
+  }
+  return { entry, pro: entry.id !== wanted, ...(base ? { tier: "flex" as const } : {}) };
 };
+
+export const listed_model = (listed: ModelListing): ModelEntry => with_choice(listed.entry, listed);
 
 export const find_model = (catalog: ModelCatalog | null, id: string): ModelEntry | null => {
   const listed = model_listing(catalog?.models ?? [], id);
-  return listed ? with_pro(listed.entry, listed.pro) : null;
+  return listed ? listed_model(listed) : null;
 };
 
 export const message_choice = (catalog: ModelCatalog | null, messages: readonly Message[]): ModelChoice | null => {
   const last = messages.findLast((message): message is AssistantMessage => message.role === "assistant");
   const listed = last ? model_listing(catalog?.models ?? [], last.model) : null;
-  return last && listed ? { model: listed.entry.id, effort: last.effort, pro: listed.pro } : null;
+  return last && listed ? { model: listed.entry.id, effort: last.effort, pro: listed.pro, ...(listed.tier ? { tier: listed.tier } : {}) } : null;
 };
 
 export const chat_choice = (stored: ModelChoice | undefined, messages: readonly Message[] | undefined, catalog: ModelCatalog | null, fallback: ModelChoice): ModelChoice =>

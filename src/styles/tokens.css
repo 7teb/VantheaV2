@@ -29,7 +29,6 @@
     --surface-accent-disabled: rgba(166, 125, 242, 0.24);
     --surface-user-bubble: #503285;
     --surface-solid: #fcfcfc;
-    --surface-solid-hover: rgba(252, 252, 252, 0.8);
     --surface-toggle-off: rgba(255, 255, 255, 0.1);
     --surface-toggle-track-on: rgba(255, 255, 255, 0.55);
     --surface-toggle-on: #e6e6e6;
@@ -52,7 +51,6 @@
     --text-summary: rgba(252, 252, 252, 0.6);
     --text-detail: rgba(252, 252, 252, 0.56);
     --text-tertiary: rgba(252, 252, 252, 0.473);
-    --text-review-title: rgba(252, 252, 252, 0.376);
     --text-quaternary: #3a3a3a;
     --text-code: #d6d6d6;
     --text-disabled: #3e3e3e;
@@ -66,7 +64,7 @@
     --text-placeholder: rgba(252, 252, 252, 0.235);
     --text-composer-placeholder: var(--text-placeholder);
     --text-on-caption-close: #ffffff;
-    --text-menu-item: rgba(252, 252, 252, 0.75);
+    --text-row: rgba(252, 252, 252, 0.75);
     --raised-text-tertiary: rgba(252, 252, 252, 0.56);
     --raised-text-disabled: rgba(252, 252, 252, 0.35);
     --current-opaque: rgb(
@@ -90,7 +88,6 @@
     --ring-rail: rgba(252, 252, 252, 0.06);
     --ring-strong: rgba(252, 252, 252, 0.2);
     --accent: #a67df2;
-    --ring-accent: var(--accent);
     --brand-violet: rgba(166, 125, 242, 0.95);
     --brand-indigo: rgba(92, 72, 230, 0.9);
     --brand-lilac: rgba(222, 196, 255, 0.8);
@@ -180,16 +177,8 @@
     --check-failed: var(--text-danger);
     --check-pending: var(--text-waiting);
 
-    --shadow-inset:
-      inset 0 2px 5px rgba(0, 0, 0, 0.75),
-      inset 0 1px 0 rgba(0, 0, 0, 0.95),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.025),
-      0 1px 0 rgba(255, 255, 255, 0.035);
-    --shadow-inset-strong:
-      inset 0 3px 8px rgba(0, 0, 0, 0.85),
-      inset 0 1px 0 rgba(0, 0, 0, 1),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.03),
-      0 1px 0 rgba(255, 255, 255, 0.045);
+    --shadow-inset: inset 0 0 0 1px var(--ring-card);
+    --shadow-inset-strong: inset 0 0 0 1px var(--ring-well-focus);
     --shadow-dock:
       0 0 0 0.5px rgba(252, 252, 252, 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 0.07),
@@ -323,11 +312,15 @@
     --duration-slow: 240ms;
     --duration-slower: 320ms;
     --duration-enter: 350ms;
+    --duration-chevron: 150ms;
+    --duration-morph: 180ms;
+    --duration-height-open: 300ms;
+    --duration-height-close: 200ms;
     --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-in: cubic-bezier(0.4, 0, 1, 1);
-    --ease-expand: cubic-bezier(0.19, 1, 0.22, 1);
-    --ease-collapse: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-height: cubic-bezier(0.3, 0.1, 0.2, 1);
+    --ease-morph: cubic-bezier(0.2, 0, 0, 1);
     --ease-linear: linear;
   }
 

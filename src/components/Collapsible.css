@@ -17,7 +17,7 @@
 
   .collapsible-chevron {
     color: var(--text-tertiary);
-    transition: transform var(--duration-slow) var(--ease-out);
+    transition: transform var(--duration-chevron) var(--ease-out);
   }
 
   .collapsible[data-open="true"] > .collapsible-header .collapsible-chevron {
@@ -36,13 +36,16 @@
     grid-template-rows: 0fr;
     opacity: 0;
     transition:
-      grid-template-rows var(--duration-slower) var(--ease-out),
-      opacity var(--duration-slow) var(--ease-out);
+      grid-template-rows var(--duration-height-close) var(--ease-height),
+      opacity var(--duration-fast) ease;
   }
 
   .collapsible-body[data-open="true"] {
     grid-template-rows: 1fr;
     opacity: 1;
+    transition:
+      grid-template-rows var(--duration-height-open) var(--ease-height),
+      opacity var(--duration-base) ease;
   }
 
   .collapsible-clip {

@@ -251,7 +251,7 @@ export const QuestionForm = ({
         </div>
         <div className="question-head-side">
           <button type="button" className="question-icon-button" aria-label={dismiss_label} title={dismiss_label} onClick={dismiss}>
-            <CloseIcon size={18} />
+            <CloseIcon />
           </button>
         </div>
       </div>
@@ -280,13 +280,13 @@ export const QuestionForm = ({
                   {index + 1}
                 </span>
                 <span className="question-option-label">{label}</span>
-                <ArrowLeftIcon size={16} className="question-option-arrow" />
+                <ArrowLeftIcon className="question-option-arrow" />
               </button>
             ))}
           </div>
           <div className="question-other" onPointerEnter={() => set_hovered("other")} onPointerLeave={() => set_hovered(null)} onMouseDown={on_other_mouse_down}>
             <span className="question-other-icon">
-              <PencilIcon size={16} />
+              <PencilIcon />
             </span>
             <textarea
               ref={input}

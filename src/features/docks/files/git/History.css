@@ -22,7 +22,7 @@
   height: 26px;
   padding: 0 var(--space-2) 0 0;
   border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  color: var(--text-row);
   font-size: var(--font-size-ui);
   text-align: left;
   white-space: nowrap;
@@ -68,7 +68,7 @@
 .git-commit-time {
   flex: none;
   color: var(--text-detail);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-ui);
   font-variant-numeric: tabular-nums;
 }
 

@@ -185,22 +185,22 @@ export const FilesDock = ({ visible, chat_id, project_path }: DockViewProps) => 
         <>
           {surface === "diff" && chat_id !== null && !missing && (
             <IconButton label={t("git.refresh")} onClick={() => refresh_turn_diff(chat_id)}>
-              <RetryIcon size={16} />
+              <RetryIcon />
             </IconButton>
           )}
           {surface !== "diff" && git.kind !== "none" && !missing && (
             <IconButton label={fetching ? t("git.fetching") : t("git.refresh")} onClick={refresh}>
-              <RetryIcon size={16} className={fetching ? "spin" : undefined} />
+              <RetryIcon className={fetching ? "spin" : undefined} />
             </IconButton>
           )}
           {has_viewer && surface !== "history" && (
             <IconButton label={column_label(t, surface, tree_open)} aria-pressed={!tree_open} onClick={toggle_tree}>
-              <PanelLeftIcon size={16} />
+              <PanelLeftIcon />
             </IconButton>
           )}
           {!sheet && (
             <IconButton label={expanded ? t("files.shrink") : t("files.expand")} aria-pressed={expanded} onClick={toggle_dock_expanded}>
-              {expanded ? <ShrinkIcon size={16} /> : <ExpandIcon size={16} />}
+              {expanded ? <ShrinkIcon /> : <ExpandIcon />}
             </IconButton>
           )}
         </>

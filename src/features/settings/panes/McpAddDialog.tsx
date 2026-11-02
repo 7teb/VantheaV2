@@ -93,7 +93,7 @@ export const McpAddDialog = ({ open, existing, on_close }: McpAddDialogProps) =>
         <h2 className="mcp-dialog-title">{t("mcp.add_title")}</h2>
         {!remote_client && (
           <>
-            <Button icon={<FolderOpenIcon size={15} />} disabled={busy} onClick={() => void detect()}>
+            <Button icon={<FolderOpenIcon />} disabled={busy} onClick={() => void detect()}>
               {t("mcp.choose_plugin")}
             </Button>
             <div className="mcp-divider">{t("mcp.or_paste")}</div>
@@ -102,12 +102,27 @@ export const McpAddDialog = ({ open, existing, on_close }: McpAddDialogProps) =>
         <TextArea className="mcp-paste" value={paste} rows={4} placeholder={t("mcp.paste_placeholder")} aria-label={t("mcp.or_paste")} on_change={apply_paste} />
         {note && <p className="mcp-note">{note}</p>}
         <div className="mcp-divider">{t("mcp.or_manual")}</div>
-        <TextField value={draft.name} on_change={field("name")} placeholder={t("mcp.name_label")} aria-label={t("mcp.name_label")} />
+        <div className="dialog-field">
+          <span className="dialog-field-label">{t("mcp.name_label")}</span>
+          <TextField value={draft.name} on_change={field("name")} placeholder={t("mcp.name_example")} aria-label={t("mcp.name_label")} />
+        </div>
         {name_error() && <p className="mcp-note is-danger">{name_error()}</p>}
-        <TextField value={draft.command} on_change={field("command")} placeholder={t("mcp.command_label")} aria-label={t("mcp.command_label")} />
-        <TextArea className="mcp-lines" value={draft.args} rows={3} on_change={field("args")} placeholder={t("mcp.args_label")} aria-label={t("mcp.args_label")} />
-        <TextArea className="mcp-lines" value={draft.env} rows={2} on_change={field("env")} placeholder={t("mcp.env_label")} aria-label={t("mcp.env_label")} />
-        <TextField value={draft.cwd} on_change={field("cwd")} placeholder={t("mcp.cwd_label")} aria-label={t("mcp.cwd_label")} />
+        <div className="dialog-field">
+          <span className="dialog-field-label">{t("mcp.command_label")}</span>
+          <TextField className="mcp-code" value={draft.command} on_change={field("command")} placeholder={t("mcp.command_example")} aria-label={t("mcp.command_label")} />
+        </div>
+        <label className="dialog-field">
+          <span className="dialog-field-label">{t("mcp.args_label")}</span>
+          <TextArea className="mcp-lines" value={draft.args} rows={3} on_change={field("args")} placeholder={t("mcp.args_example")} />
+        </label>
+        <label className="dialog-field">
+          <span className="dialog-field-label">{t("mcp.env_label")}</span>
+          <TextArea className="mcp-lines" value={draft.env} rows={2} on_change={field("env")} placeholder={t("mcp.env_example")} />
+        </label>
+        <div className="dialog-field">
+          <span className="dialog-field-label">{t("mcp.cwd_label")}</span>
+          <TextField className="mcp-code" value={draft.cwd} on_change={field("cwd")} aria-label={t("mcp.cwd_label")} />
+        </div>
         {error && (
           <p className="mcp-note is-danger" role="alert">
             {error}

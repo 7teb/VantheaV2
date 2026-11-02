@@ -15,7 +15,7 @@ export const RetryBanner = ({ retry }: { retry: RetryState }) => {
   const seconds = Math.ceil((retry.until - now) / 1000);
   return (
     <div className="retry-banner enter-fade-up">
-      <CloudAlertIcon size={14} />
+      <CloudAlertIcon />
       <span className="is-working"><WorkingLetters text={t("status.retrying", { n: retry.attempt, total: retry.max })} /></span>
       {seconds > 0 && <span className="retry-banner-wait">{t("chat.retry_in", { n: seconds })}</span>}
       {retry.reason && <span className="retry-banner-reason">{retry.reason}</span>}
@@ -42,7 +42,7 @@ export const ErrorCard = ({ error }: { error: TurnError }) => {
   return (
     <div className="error-card enter-fade-up">
       <div className="error-card-head">
-        <CircleAlertIcon size={15} />
+        <CircleAlertIcon />
         <span>{t(error_keys[error.kind])}</span>
       </div>
       {error.message && (
@@ -68,7 +68,7 @@ const InterruptedRow = ({ chat_id, error, can_continue }: InterruptedRowProps) =
   };
   return (
     <div className="interrupted-row enter-fade-up" title={error?.message || undefined}>
-      <CloudAlertIcon size={14} />
+      <CloudAlertIcon />
       <span className="interrupted-text">{t(error?.kind === "app_closed" ? "chat.interrupted_restart" : "chat.interrupted_note_once")}</span>
       {can_continue && (
         <Button variant="secondary" disabled={pending} onClick={() => void resume()}>

@@ -68,6 +68,10 @@
     overflow-wrap: break-word;
   }
 
+  .command-card-command:last-child .command-card-text {
+    padding-bottom: var(--space-2);
+  }
+
   .command-card-command[data-expanded="false"] .command-card-text {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -104,7 +108,7 @@
   }
 
   .command-card-toggle svg {
-    transition: transform var(--duration-slow) var(--ease-out);
+    transition: transform var(--duration-chevron) var(--ease-out);
   }
 
   .command-card-command[data-expanded="true"] .command-card-toggle svg {
@@ -124,6 +128,7 @@
     margin: 0;
     padding: var(--space-2);
     overflow: auto;
+    border: 0;
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -148,6 +153,13 @@
     animation-fill-mode: both;
     animation-direction: reverse;
     animation-timeline: scroll(self y);
+  }
+
+  .mcp-card .output-block-pre {
+    display: block;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    mask: none;
   }
 
   .command-card .output-block-more {

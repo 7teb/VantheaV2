@@ -4,6 +4,7 @@ import { is_secret_path, windows_name } from "../../shared/secret-path.ts";
 import { main_twin } from "../git/repo.ts";
 import { error_code, error_text, missing_path } from "../storage/coerce.ts";
 import { path_key } from "../storage/paths.ts";
+import { ToolFailureError } from "../tools/types.ts";
 
 export type ScopedPath = { root: string; target: string; relative: string };
 
@@ -68,15 +69,16 @@ const through_modules = async (root: string, requested: string, target: string):
 export const resolve_inside = async (project_root: string, relative = "."): Promise<ScopedPath> => {
   const root = await project_real_root(project_root);
   const requested = path.resolve(root, relative || ".");
+  const outside = { kind: "outside_project", path: to_posix(relative || ".") } as const;
   if (!is_inside(root, requested)) {
-    throw new Error(outside_message);
+    throw new ToolFailureError(outside_message, outside);
   }
   let target: string;
   try {
     target = await fs.realpath(requested);
   } catch (error) {
     if (error_code(error) === "ENOENT") {
-      throw new Error(`${to_posix(relative)} does not exist in the project`, { cause: error });
+      throw new ToolFailureError(`${to_posix(relative)} does not exist in the project`, { kind: "not_in_project", path: to_posix(relative) }, { cause: error });
     }
     throw error;
   }
@@ -86,7 +88,7 @@ export const resolve_inside = async (project_root: string, relative = "."): Prom
   if (await through_modules(root, requested, target)) {
     return { root, target, relative: to_posix(path.relative(root, requested)) };
   }
-  throw new Error(outside_message);
+  throw new ToolFailureError(outside_message, outside);
 };
 
 const check_write_path = (relative: string) => {
@@ -132,17 +134,18 @@ export const resolve_write_target = async (project_root: string, relative: strin
   check_write_path(relative);
   const root = await project_real_root(project_root);
   const parent = path.resolve(root, path.dirname(relative));
+  const outside = { kind: "outside_project", path: to_posix(relative) } as const;
   if (!is_inside(root, parent)) {
-    throw new Error("Path is outside the project folder");
+    throw new ToolFailureError("Path is outside the project folder", outside);
   }
   const existing = await nearest_existing(parent);
   const real_existing = await fs.realpath(existing);
   if (!is_inside(root, real_existing)) {
-    throw new Error("Path is outside the project folder (a parent folder links out of the project)");
+    throw new ToolFailureError("Path is outside the project folder (a parent folder links out of the project)", outside);
   }
   const target = path.join(real_existing, path.relative(existing, parent), path.basename(relative));
   if (!is_inside(root, target)) {
-    throw new Error("Path is outside the project folder");
+    throw new ToolFailureError("Path is outside the project folder", outside);
   }
   const info = await lstat_or_null(target);
   if (info?.isSymbolicLink()) {

@@ -32,7 +32,7 @@
   height: 26px;
   padding: 0 var(--space-2) 0 6px;
   border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  color: var(--text-row);
   font-size: var(--font-size-ui);
   text-align: left;
   white-space: nowrap;
@@ -78,8 +78,8 @@ button.git-change:hover {
   flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: var(--font-size-caption);
+  color: var(--text-detail);
+  font-size: var(--font-size-ui);
   mask-image: linear-gradient(to right, var(--mask) calc(100% - 12px), transparent);
 }
 

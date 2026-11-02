@@ -56,7 +56,7 @@ export const BrowserDock = ({ visible, chat_id }: DockViewProps) => {
       close_label={t("browser.close")}
       actions={
         <IconButton label={t("browser.add_tab")} onClick={() => void open_browser_tab(chat_key)}>
-          <PlusIcon size={16} />
+          <PlusIcon />
         </IconButton>
       }
       toolbar={<BrowserToolbar chat_key={chat_key} tab={active} visible={visible} />}

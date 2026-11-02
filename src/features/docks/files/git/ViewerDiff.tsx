@@ -85,7 +85,7 @@ type ViewerNoteProps = { text: string; tone?: "conflict" };
 
 export const ViewerNote = ({ text, tone }: ViewerNoteProps) => (
   <p className="files-note" data-tone={tone}>
-    <span className="files-note-icon">{tone === "conflict" ? <CircleAlertIcon size={14} /> : <InfoIcon size={14} />}</span>
+    <span className="files-note-icon">{tone === "conflict" ? <CircleAlertIcon /> : <InfoIcon />}</span>
     <span>{text}</span>
   </p>
 );
@@ -104,8 +104,8 @@ export const ViewerModeSwitch = ({ path, mode, narrow }: ModeSwitchProps) => {
       value={mode}
       on_change={(next) => set_viewer_mode(path, next)}
       options={[
-        { id: "file", label: t("git.mode_file"), icon: <FileIcon size={16} /> },
-        { id: "diff", label: t("git.mode_diff"), icon: <FileDiffIcon size={16} /> },
+        { id: "file", label: t("git.mode_file"), icon: <FileIcon /> },
+        { id: "diff", label: t("git.mode_diff"), icon: <FileDiffIcon /> },
       ]}
     />
   );

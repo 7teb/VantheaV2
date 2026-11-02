@@ -50,6 +50,7 @@ export const chat = {
   "chat.notice_plan_blocked": "Blocked by plan mode",
   "chat.notice_output_limit": "The answer reached the output limit",
   "chat.notice_todos_carried": "Open todos carried over",
+  "chat.notice_model_switch": "Told the model about the model switch",
   "chat.notice_context_trimmed": "Older context was trimmed to fit",
   "chat.retry_in": "retrying in {n}s",
   "chat.error_rate_limited": "The provider is rate limiting requests. Wait a moment and try again.",

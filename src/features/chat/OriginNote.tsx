@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { parse_report_events, parse_update_batch, type AgentNote } from "../../../shared/agent-notes.ts";
+import { parse_background_events, type BackgroundEvent } from "../../../shared/background-notes.ts";
 import type { CommandOrigin, UserMessage, UserOrigin } from "../../../shared/chat.ts";
 import { parse_workflow_notice, split_workflow_notices } from "../../../shared/workflow-notes.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon, ClipboardListIcon, CritterMark, LayersIcon, MessageSquareIcon, RetryIcon, UndoIcon, WorkflowIcon, type IconComponent } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
+import { background_status_label } from "../tools/background-status.ts";
+import { CommandStatus } from "../tools/bodies-run.tsx";
+import { CommandCard } from "../tools/CommandCard.tsx";
 import { AgentNoteRow } from "./AgentNoteRow.tsx";
 import { WorkflowNoteRow } from "./WorkflowNoteRow.tsx";
 
@@ -27,6 +31,12 @@ const agent_notes_of = (message: UserMessage): AgentNote[] => {
     return parse_update_batch(message.text);
   }
   return [];
+};
+
+const BackgroundEventCard = ({ event }: { event: BackgroundEvent }) => {
+  const t = use_t();
+  const footer = event.exit_code === null ? <span>{background_status_label(t, event.status)}</span> : <CommandStatus exit_code={event.exit_code} timed_out={false} />;
+  return <CommandCard shell={event.shell} command={event.command} output={event.output} footer={footer} />;
 };
 
 export const OriginNote = ({ message }: { message: UserMessage }) => {
@@ -57,17 +67,18 @@ export const OriginNote = ({ message }: { message: UserMessage }) => {
   }
   const note = notes[message.origin];
   const Icon = note.icon;
-  const expandable = message.origin === "background" || message.origin === "agent_report" || message.origin === "agent_update";
+  const events = message.origin === "background" ? parse_background_events(message.text) : [];
+  const expandable = events.length > 0 || message.origin === "agent_report" || message.origin === "agent_update";
   return (
     <div className="origin-note enter-fade-up" data-origin={message.origin} data-open={open}>
       <button type="button" className="origin-note-head" disabled={!expandable} aria-expanded={expandable ? open : undefined} onClick={() => set_open(!open)}>
-        <Icon size={14} />
+        <Icon />
         <span>{t(note.label)}</span>
-        {expandable && <ChevronRightIcon size={12} className="origin-note-chevron" />}
+        {expandable && <ChevronRightIcon className="origin-note-chevron" />}
       </button>
       {expandable && (
         <CollapsibleBody open={open}>
-          <div className="origin-note-text">{message.text}</div>
+          {events.length > 0 ? events.map((event, index) => <BackgroundEventCard key={index} event={event} />) : <div className="origin-note-text">{message.text}</div>}
         </CollapsibleBody>
       )}
     </div>

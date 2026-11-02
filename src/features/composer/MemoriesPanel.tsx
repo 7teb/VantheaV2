@@ -40,7 +40,7 @@ const MemoryRow = ({ record }: { record: MemoryRecord }) => {
         {error && <span className="memories-row-error">{error}</span>}
       </div>
       <IconButton size="sm" className="memories-row-remove" label={t("personalization.mem_remove")} disabled={busy} onClick={() => void remove()}>
-        <TrashIcon size={14} />
+        <TrashIcon />
       </IconButton>
     </li>
   );
@@ -99,19 +99,19 @@ const MemoriesCard = ({ panel_key, presence }: { panel_key: string; presence: Pr
   return (
     <div
       ref={card}
-      className="memories-panel dock-panel composer-dock-card raised-surface enter-fade-up"
+      className="memories-panel composer-panel composer-dock-card raised-surface"
       data-state={presence.state}
       role="region"
       aria-label={t("memories.title")}
       onAnimationEnd={presence.on_animation_end}
     >
-      <div className="dock-panel-inner">
+      <div className="composer-panel-inner">
         <div className="memories-head">
-          <WormIcon size={16} className="memories-head-icon" />
+          <WormIcon className="memories-head-icon" />
           <span className="memories-title">{t("memories.title")}</span>
           {count > 0 && <span className="memories-count">{count}</span>}
           <IconButton size="sm" className="memories-close" label={t("memories.close")} onClick={close}>
-            <CloseIcon size={14} />
+            <CloseIcon />
           </IconButton>
         </div>
         {!enabled && <p className="memories-note">{t("memories.off")}</p>}
@@ -133,7 +133,7 @@ const MemoriesCard = ({ panel_key, presence }: { panel_key: string; presence: Pr
             autoFocus
             className="memories-input"
           />
-          <Button type="submit" icon={<PlusIcon size={14} />} disabled={adding || !text.trim()}>
+          <Button type="submit" icon={<PlusIcon />} disabled={adding || !text.trim()}>
             {t("memories.add")}
           </Button>
         </form>

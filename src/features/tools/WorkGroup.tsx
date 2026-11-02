@@ -4,13 +4,14 @@ import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { DotSpinner } from "../../components/DotSpinner.tsx";
 import { ChevronRightIcon, SquareTerminalIcon } from "../../components/icons.tsx";
+import { LabelMorph } from "../../components/LabelMorph.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
 import { MainMessageRow } from "../chat/MainMessageRow.tsx";
 import { NoticeRow } from "../chat/StepRows.tsx";
 import { AgentCritter } from "./AgentCritter.tsx";
 import { ApprovalCard } from "./ApprovalCard.tsx";
-import { group_head } from "./group-head.ts";
+import { group_head, open_head } from "./group-head.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
 import { Elapsed } from "./RowMeta.tsx";
 import { ThoughtRow } from "./ThoughtRow.tsx";
@@ -62,17 +63,27 @@ const GroupMeta = ({ steps, running, live_start }: { steps: WorkStep[]; running:
   return span === null ? null : <span className="tool-row-duration">{format_duration(span)}</span>;
 };
 
+const GroupCounts = ({ failed, denied }: { failed: number; denied: number }) => {
+  const t = use_t();
+  return (
+    <>
+      {failed > 0 && <span className="tool-row-status is-failed">{t(failed === 1 ? "tools.group_failed_one" : "tools.group_failed_other", { n: failed })}</span>}
+      {denied > 0 && <span className="tool-row-status is-denied">{t(denied === 1 ? "tools.group_denied_one" : "tools.group_denied_other", { n: denied })}</span>}
+    </>
+  );
+};
+
 const GroupIcon = ({ chat_id, steps }: { chat_id: string; steps: WorkStep[] }) => {
   const first = work_tools(steps)[0];
   if (!first) {
-    return <SquareTerminalIcon size={16} />;
+    return <SquareTerminalIcon />;
   }
   const icon = tool_meta(first).icon;
   if (icon === "agent" && first.status !== "denied") {
     return <AgentCritter chat_id={chat_id} step={first} />;
   }
   const Icon = tool_icons[icon];
-  return <Icon size={16} />;
+  return <Icon />;
 };
 
 type GroupRowProps = { chat_id: string; step: WorkStep; streaming: boolean; main_chat: boolean };
@@ -101,15 +112,27 @@ const StepGroup = ({ chat_id, steps, streaming, pending, run }: StepGroupProps) 
   const { scroller, content } = use_pinned_bottom(streaming);
   const running = head.kind !== "done";
   const reviewing = head.kind === "review";
+  const progress = open && running ? open_head(t, steps) : null;
+  const shown = progress ?? head;
+  const working = shown.kind !== "done";
   return (
     <div className="work-group" data-open={open} data-live={streaming || undefined} data-running={running || undefined} data-review={reviewing || undefined}>
       <button type="button" className="work-group-head" aria-expanded={open} onClick={() => set_open(!open)}>
-        <span className="tool-row-icon">{running ? <DotSpinner /> : <GroupIcon chat_id={chat_id} steps={steps} />}</span>
-        <span className={class_names("tool-row-label", running && !reviewing && "is-working")}>
-          {head.kind === "review" ? <ReviewingLabel step={head.step} /> : <WorkingLetters text={head.label} active={running} />}
+        <span className="tool-row-icon">
+          <LabelMorph morph_key={running ? "spinner" : "icon"}>{running ? <DotSpinner /> : <GroupIcon chat_id={chat_id} steps={steps} />}</LabelMorph>
         </span>
-        <GroupMeta steps={steps} running={running} live_start={head.kind === "workflow" ? head.started_at : null} />
-        <ChevronRightIcon size={12} className="tool-row-chevron" />
+        {(shown.kind === "review" || shown.label !== "") && (
+          <span className={class_names("tool-row-label", working && shown.kind !== "review" && "is-working")}>
+            <LabelMorph morph_key={shown.kind === "review" ? shown.key : `${working}:${shown.label}`}>
+              {shown.kind === "review" ? <ReviewingLabel step={shown.step} /> : <WorkingLetters text={shown.label} active={working} />}
+            </LabelMorph>
+          </span>
+        )}
+        {shown.kind === "done" && <GroupCounts failed={shown.failed} denied={shown.denied} />}
+        <LabelMorph morph_key={running ? "elapsed" : "duration"}>
+          <GroupMeta steps={steps} running={running} live_start={head.kind === "workflow" ? head.started_at : null} />
+        </LabelMorph>
+        <ChevronRightIcon className="tool-row-chevron" />
       </button>
       <CollapsibleBody open={open}>
         <div ref={scroller} className="work-group-scroll">

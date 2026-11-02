@@ -13,5 +13,4 @@ export const shell = {
   "shell.more": "More",
   "shell.background_tasks": "Background tasks",
   "shell.keep_awake": "Keep computer awake",
-  "shell.keep_awake_detail": "Only for this session",
 };

@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { DiffLine } from "../../shared/tool-view.ts";
 import { instruction_fallback } from "../chats/workspace.ts";
 import { line_diff } from "../project/diff.ts";
 import { instruction_dirs } from "../prompts/project.ts";
@@ -83,10 +84,10 @@ export const refresh_instruction_snapshot = async (chat_id: string): Promise<voi
   }
 };
 
-const diff_text = (before: string | null, after: string | null): string =>
-  line_diff(before, after)
-    .lines.map((line) => (line.kind === "gap" ? "@@" : `${line.kind === "add" ? "+" : line.kind === "remove" ? "-" : " "}${line.text}`))
-    .join("\n");
+export const diff_lines_text = (lines: DiffLine[]): string =>
+  lines.map((line) => (line.kind === "gap" ? "@@" : `${line.kind === "add" ? "+" : line.kind === "remove" ? "-" : " "}${line.text}`)).join("\n");
+
+const diff_text = (before: string | null, after: string | null): string => diff_lines_text(line_diff(before, after).lines);
 
 export const agent_edits = async (chat_id: string, root: string): Promise<AgentEdits> => {
   const snapshot = snapshots.get(chat_id);

@@ -11,7 +11,6 @@ import { dock_toggles, titlebar_docks } from "./docks.ts";
 import { RemoteConnection } from "./RemoteConnection.tsx";
 import { RemoteToggle } from "./RemoteToggle.tsx";
 import { shortcut_hint } from "./shortcuts.ts";
-import { TitleBranch } from "./TitleBranch.tsx";
 import { TitlebarMenu } from "./TitlebarMenu.tsx";
 import { WindowControls } from "./WindowControls.tsx";
 import { wordmark } from "./wordmark.ts";
@@ -22,8 +21,10 @@ export const Titlebar = () => {
   const collapsed = use_store(ui_store, (state) => state.sidebar_collapsed);
   const open_dock = use_store(ui_store, (state) => state.dock.kind);
   const active_chat_id = use_store(ui_store, (state) => state.active_chat_id);
+  const settings_open = use_store(ui_store, (state) => state.settings_open);
   const chat_title = use_store(chats_store, (state) => state.list.find((chat) => chat.id === active_chat_id)?.title);
-  const title = chat_title === undefined ? "" : chat_label(t, chat_title);
+  const chat_text = chat_title === undefined ? "" : chat_label(t, chat_title);
+  const title = settings_open ? t("settings.title") : chat_text;
 
   return (
     <header className="titlebar" data-sidebar={collapsed ? "closed" : "open"}>
@@ -32,7 +33,7 @@ export const Titlebar = () => {
         <span className="titlebar-actions">
           <ActivityBell />
           <IconButton label={t("sidebar.search")} hint={shortcut_hint("search")} className="titlebar-search" onClick={open_search}>
-            <SearchIcon size={16} />
+            <SearchIcon />
           </IconButton>
           <IconButton
             label={collapsed ? t("shell.sidebar_open") : t("shell.sidebar_close")}
@@ -41,13 +42,12 @@ export const Titlebar = () => {
             className="titlebar-sidebar-toggle"
             onClick={toggle_sidebar}
           >
-            <PanelLeftIcon size={18} />
+            <PanelLeftIcon />
           </IconButton>
         </span>
       </div>
       <div className="titlebar-title">
         <span className="titlebar-title-text">{title}</span>
-        <TitleBranch chat_id={active_chat_id} />
         <RemoteConnection />
       </div>
       <div className="titlebar-end">
@@ -64,7 +64,7 @@ export const Titlebar = () => {
                 data-dock={kind}
                 onClick={() => toggle_dock(kind)}
               >
-                <DockIcon size={17} />
+                <DockIcon />
               </IconButton>
             );
           })}

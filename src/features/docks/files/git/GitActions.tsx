@@ -74,20 +74,20 @@ export const GitActions = ({ view }: { view: GitRepoView }) => {
             remote !== null &&
             with_tip(
               push_block ?? push_tip(t, view, remote),
-              <Button size="sm" icon={<PushIcon size={14} />} disabled={actions.pushing || push_block !== null || draft.creating} onClick={() => void push_branch()}>
+              <Button size="sm" icon={<PushIcon />} disabled={actions.pushing || push_block !== null || draft.creating} onClick={() => void push_branch()}>
                 {actions.pushing ? <span className="is-working"><WorkingLetters text={t("git_actions.pushing")} /></span> : t("git_actions.push")}
               </Button>,
             )}
           {show_pr &&
             with_tip(
               busy ? t("commands.turn_running") : null,
-              <Button size="sm" icon={<GitPullRequestIcon size={14} />} aria-expanded={draft.open} disabled={busy || actions.pushing} onClick={() => (draft.open ? close_pr(root) : void open_pr())}>
+              <Button size="sm" icon={<GitPullRequestIcon />} aria-expanded={draft.open} disabled={busy || actions.pushing} onClick={() => (draft.open ? close_pr(root) : void open_pr())}>
                 {t("git_actions.pr")}
               </Button>,
             )}
         </div>
       )}
-      {notice && <GitNotice icon={<CloudAlertIcon size={16} />} tone="danger" title={notice.title} detail={notice.detail} mono={notice.detail !== undefined} command={notice.command} command_tip={notice.command_tip} />}
+      {notice && <GitNotice icon={<CloudAlertIcon />} tone="danger" title={notice.title} detail={notice.detail} mono={notice.detail !== undefined} command={notice.command} command_tip={notice.command_tip} />}
     </>
   );
 };

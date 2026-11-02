@@ -35,7 +35,7 @@ export const WorkflowPanel = ({ summary, failed, now }: WorkflowPanelProps) => {
       title={
         <div className="agent-head">
           <IconButton label={t("agent.back")} onClick={close_workflow}>
-            <ArrowLeftIcon size={16} />
+            <ArrowLeftIcon />
           </IconButton>
           <DockTitle label={summary?.name || t("workflow.kind")} meta={summary ? workflow_state(t, summary, now) : undefined} />
         </div>
@@ -43,7 +43,7 @@ export const WorkflowPanel = ({ summary, failed, now }: WorkflowPanelProps) => {
       close_label={t("background.close")}
       actions={
         summary?.status === "running" && (
-          <Button variant="ghost" icon={<CircleStopIcon size={14} />} disabled={stopping} onClick={() => void stop(summary.run_id)}>
+          <Button variant="ghost" icon={<CircleStopIcon />} disabled={stopping} onClick={() => void stop(summary.run_id)}>
             {t("agent.stop")}
           </Button>
         )

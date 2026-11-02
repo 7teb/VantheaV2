@@ -1,27 +1,20 @@
-import { codicon, Icon, type IconProps } from "./icons-base.tsx";
+import { codicon, Icon, lucide, type IconProps } from "./icons-base.tsx";
 
 export const ArrowDownIcon = (props: IconProps) => (
-  <Icon {...codicon} viewBox="-0.9 -1.4 18.7 18.7" strokeWidth={0.342} {...props}>
+  <Icon {...codicon} {...props}>
     <path fillRule="evenodd" clipRule="evenodd" d="M3.147 9l5 5h.707l5-5-.707-.707L9 12.439V2H8v10.44L3.854 8.292 3.147 9z" />
   </Icon>
 );
 
 export const ClipboardListIcon = (props: IconProps) => (
-  <Icon {...codicon} strokeWidth={0} {...props}>
+  <Icon {...codicon} {...props}>
     <path fillRule="evenodd" clipRule="evenodd" d="M3.75 4.48h-.71L2 3.43l.71-.7.69.68L4.81 2l.71.71-1.77 1.77zM6.99 3h8v1h-8V3zm0 3h8v1h-8V6zm8 3h-8v1h8V9zm-8 3h8v1h-8v-1zM3.04 7.48h.71l1.77-1.77-.71-.7L3.4 6.42l-.69-.69-.71.71 1.04 1.04zm.71 3.01h-.71L2 9.45l.71-.71.69.69 1.41-1.42.71.71-1.77 1.77zm-.71 3.01h.71l1.77-1.77-.71-.71-1.41 1.42-.69-.69-.71.7 1.04 1.05z" />
   </Icon>
 );
 
 export const FoldVerticalIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M12 22v-6" />
-    <path d="M12 8V2" />
-    <path d="M4 12H2" />
-    <path d="M10 12H8" />
-    <path d="M16 12h-2" />
-    <path d="M22 12h-2" />
-    <path d="m15 19-3-3-3 3" />
-    <path d="m15 5-3 3-3-3" />
+  <Icon {...lucide} {...props}>
+    <path d="M12 22v-6M12 8V2M4 12H2M10 12H8M16 12h-2M22 12h-2M15 19l-3-3-3 3M15 5l-3 3-3-3" />
   </Icon>
 );
 
@@ -33,24 +26,18 @@ export const InfoIcon = (props: IconProps) => (
 
 export const ArchiveIcon = (props: IconProps) => (
   <Icon {...props}>
-    <rect x="2" y="3" width="20" height="5" rx="1" />
-    <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-    <path d="M10 12h4" />
+    <path d="M2 2.5h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5zM2.5 5.5V12A1.5 1.5 0 0 0 4 13.5h8a1.5 1.5 0 0 0 1.5-1.5V5.5M6.5 8.5h3" />
   </Icon>
 );
 
 export const ArchiveRestoreIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <rect x="2" y="3" width="20" height="5" rx="1" />
-    <path d="M4 8v11a2 2 0 0 0 2 2h2" />
-    <path d="M20 8v11a2 2 0 0 1-2 2h-2" />
-    <path d="m9 15 3-3 3 3" />
-    <path d="M12 12v9" />
+  <Icon {...lucide} {...props}>
+    <path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM4 8v11a2 2 0 0 0 2 2h2M20 8v11a2 2 0 0 1-2 2h-2M9 15l3-3 3 3M12 12v9" />
   </Icon>
 );
 
 export const PercentIcon = (props: IconProps) => (
-  <Icon {...codicon} viewBox="-1.7 -1.7 19.4 19.4" strokeWidth={0.373} {...props}>
+  <Icon {...codicon} {...props}>
     <path fillRule="evenodd" clipRule="evenodd" d="M11 1v4h4v1h-4v4h4v1h-4v4h-1v-4H6v4H5v-4H1v-1h4V6H1V5h4V1h1v4h4V1h1zM6 6v4h4V6H6z" />
   </Icon>
 );

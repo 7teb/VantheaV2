@@ -51,6 +51,7 @@ const rows: LimitRow[] = [
     ],
     sources: ["https://api-docs.deepseek.com/guides/vision"],
   },
+  { ...no_limit, family: "deepseek", provider: "relace", max_request_bytes: 8_388_608, sources: ["https://openrouter.ai/provider/relace"] },
   { ...no_limit, family: "moonshotai", provider: "moonshotai", max_request_bytes: 100_000_000, sources: ["https://platform.kimi.ai/docs/guide/use-kimi-vision-model"] },
   { ...no_limit, family: "qwen", provider: "alibaba", max_images: 250, max_request_bytes: 16_777_216, max_encoded_bytes: 20_000_000, sources: ["https://www.alibabacloud.com/help/en/model-studio/vision"] },
   {

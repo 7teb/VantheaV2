@@ -1,10 +1,11 @@
-import { useState, type KeyboardEvent } from "react";
-import { CloseIcon, FileTextIcon } from "../../components/icons.tsx";
+import { useMemo, useState, type AnimationEvent, type KeyboardEvent } from "react";
+import { CloseSmallIcon, FileTextIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { DraftUpload } from "../../state/chat-drafts.ts";
 import { discard_upload } from "../../state/composer.ts";
 import { Lightbox, type LightboxImage } from "../chat/Lightbox.tsx";
 import { attachment_src, attachment_thumb_src } from "../chat/media.ts";
+import { use_leaving_rows } from "./use-leaving-rows.ts";
 import "./ComposerMedia.css";
 
 const tile_src = (upload: DraftUpload): string | null => upload.preview ?? (upload.attachment ? attachment_thumb_src(upload.attachment) : null);
@@ -24,14 +25,20 @@ const RemoveButton = ({ name, on_remove }: { name: string; on_remove: () => void
         on_remove();
       }}
     >
-      <CloseIcon size={10} strokeWidth={1} />
+      <CloseSmallIcon />
     </button>
   );
 };
 
-type TileProps = { upload: DraftUpload; on_remove: () => void };
+type TileProps = { upload: DraftUpload; leaving: boolean; on_left: () => void; on_remove: () => void };
 
-const ImageTile = ({ upload, on_remove, on_open }: TileProps & { on_open: (image: LightboxImage) => void }) => {
+const leave_end = (leaving: boolean, on_left: () => void) => (event: AnimationEvent<HTMLDivElement>) => {
+  if (leaving && event.target === event.currentTarget) {
+    on_left();
+  }
+};
+
+const ImageTile = ({ upload, leaving, on_left, on_remove, on_open }: TileProps & { on_open: (image: LightboxImage) => void }) => {
   const t = use_t();
   const src = tile_src(upload);
   const open = () => {
@@ -51,6 +58,9 @@ const ImageTile = ({ upload, on_remove, on_open }: TileProps & { on_open: (image
     <div
       className="composer-media-tile"
       data-status={upload.status}
+      data-leaving={leaving}
+      inert={leaving}
+      onAnimationEnd={leave_end(leaving, on_left)}
       role="button"
       tabIndex={0}
       aria-label={t("composer.open_attachment", { name: upload.name })}
@@ -63,14 +73,20 @@ const ImageTile = ({ upload, on_remove, on_open }: TileProps & { on_open: (image
   );
 };
 
-const FileTile = ({ upload, on_remove }: TileProps) => (
-  <div className="composer-media-tile composer-media-file" data-status={upload.status} title={upload.name}>
+const FileTile = ({ upload, leaving, on_left, on_remove }: TileProps) => (
+  <div
+    className="composer-media-tile composer-media-file"
+    data-status={upload.status}
+    data-leaving={leaving}
+    inert={leaving}
+    title={upload.name}
+    onAnimationEnd={leave_end(leaving, on_left)}
+  >
     <span className="composer-media-frame">
       <span className="composer-media-file-icon">
-        <FileTextIcon size={24} />
+        <FileTextIcon />
       </span>
       <span className="composer-media-file-name">
-        <FileTextIcon size={12} />
         <span>{upload.name}</span>
       </span>
     </span>
@@ -80,18 +96,17 @@ const FileTile = ({ upload, on_remove }: TileProps) => (
 
 export const ComposerMedia = ({ draft_key, uploads }: { draft_key: string; uploads: DraftUpload[] }) => {
   const [open, set_open] = useState<LightboxImage | null>(null);
-  if (uploads.length === 0) {
+  const entries = useMemo(() => uploads.map((upload) => ({ id: upload.key, upload })), [uploads]);
+  const { rows, finish } = use_leaving_rows(entries);
+  if (rows.length === 0) {
     return null;
   }
   return (
     <div className="composer-media">
-      {uploads.map((upload) =>
-        upload.image ? (
-          <ImageTile key={upload.key} upload={upload} on_open={set_open} on_remove={() => discard_upload(draft_key, upload.key)} />
-        ) : (
-          <FileTile key={upload.key} upload={upload} on_remove={() => discard_upload(draft_key, upload.key)} />
-        ),
-      )}
+      {rows.map(({ item, leaving }) => {
+        const tile = { upload: item.upload, leaving, on_left: () => finish(item.id), on_remove: () => discard_upload(draft_key, item.id) };
+        return item.upload.image ? <ImageTile key={item.id} {...tile} on_open={set_open} /> : <FileTile key={item.id} {...tile} />;
+      })}
       <Lightbox image={open} on_close={() => set_open(null)} />
     </div>
   );

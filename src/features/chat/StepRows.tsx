@@ -29,6 +29,7 @@ const notice_titles: Record<NoticeKind, MessageKey> = {
   plan_blocked: "chat.notice_plan_blocked",
   output_limit: "chat.notice_output_limit",
   todos_carried: "chat.notice_todos_carried",
+  model_switch: "chat.notice_model_switch",
   context_trimmed: "chat.notice_context_trimmed",
   agent_roster: "chat.notice_agent_roster",
   peer_message: "chat.notice_peer_message",
@@ -60,10 +61,9 @@ export const NoticeRow = memo(({ step }: { step: NoticeStep }) => {
   }
   return (
     <div className="notice-row enter-fade-up" data-notice={step.notice}>
-      <InfoIcon size={14} />
+      <InfoIcon />
       <div className="notice-row-text">
         <span>{t(notice_titles[step.notice])}</span>
-        {step.text && <span className="notice-row-detail">{step.text}</span>}
       </div>
     </div>
   );
@@ -87,7 +87,7 @@ export const CompactionRow = memo(({ step }: { step: CompactionStep }) => {
   const live = step.status === "running" || step.status === "waiting";
   return (
     <div className="compaction-row enter-fade-up" data-status={step.status} title={step.error?.message}>
-      <TextSelectIcon size={16} />
+      <TextSelectIcon />
       {live ? (
         <span className="compaction-text is-working">
           <WorkingLetters text={text} />

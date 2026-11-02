@@ -68,7 +68,10 @@ export const cancel_agent_tool = define_tool<{ agent_id: string }>({
 });
 
 const not_running = (agent: AgentRecord) =>
-  failed(`Agent ${agent.agent_id} ${unreachable_state(agent)}, so it cannot receive a message. Use continue_agent to start a new run on its kept context once it has ended.`);
+  failed(`Agent ${agent.agent_id} ${unreachable_state(agent)}, so it cannot receive a message. Use continue_agent to start a new run on its kept context once it has ended.`, {
+    kind: "agent_not_running",
+    name: agent.name,
+  });
 
 export const message_agent_tool = define_tool<{ agent_id: string; text: string }>({
   spec: {

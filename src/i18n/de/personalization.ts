@@ -29,7 +29,6 @@ export const personalization: Record<keyof typeof en, string> = {
   "personalization.mem_confirmed": "bestätigt",
   "personalization.mem_legacy": "alte Erinnerungen quarantänisiert",
   "personalization.mem_legacy_sub": "Alte Erinnerungen bleiben erhalten, werden dem Agenten aber nicht mehr mitgegeben.",
-  "personalization.mem_empty": "Keine Erinnerungsvorschläge warten auf Prüfung.",
   "personalization.mem_accept": "Behalten",
   "personalization.mem_reject": "Verwerfen",
   "personalization.mem_kind_preference": "Globale Präferenz",
@@ -40,6 +39,5 @@ export const personalization: Record<keyof typeof en, string> = {
   "personalization.mem_remove": "Erinnerung entfernen",
   "personalization.mem_reset_title": "Alle Erinnerungen zurücksetzen?",
   "personalization.mem_saved": "Gespeicherte Erinnerungen",
-  "personalization.mem_saved_empty": "Noch keine Erinnerungen gespeichert",
   "personalization.save_failed": "Speichern fehlgeschlagen",
 };
