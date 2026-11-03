@@ -1,6 +1,8 @@
 import type { ModelEntry } from "../../shared/models.ts";
 import type { StoredContext } from "../context/calibration.ts";
 import { harness_facts } from "../context/facts.ts";
+import { chat_project } from "../hooks/store.ts";
+import { turn_hooks } from "../hooks/turn-hooks.ts";
 import { wait_for_decision } from "../permissions/approvals.ts";
 import { chat_decisions, merge_decisions, mirror_decision } from "../permissions/decisions.ts";
 import { agent_review } from "../permissions/review-records.ts";
@@ -139,5 +141,16 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
     compaction: { audience: "agent", facts: async () => agent_facts(live, request.project_root) },
     stored_context: stored,
     reasoning_status,
+    hooks: turn_hooks({
+      chat_id: agent.chat_id,
+      turn_id: run.run_id,
+      cwd: request.project_root,
+      project_path: chat_project(agent.chat_id),
+      mode: request.mode,
+      plan: false,
+      agent: { id: agent.agent_id, name: agent.name, profile: agent.profile },
+      emit: live.emit,
+      signal: live.controller.signal,
+    }),
   };
 };

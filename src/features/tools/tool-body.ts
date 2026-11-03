@@ -3,6 +3,7 @@ import { is_shell_run } from "../../../shared/shell.ts";
 import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
 import type { Translate } from "../../i18n/translate.ts";
 import { failure_text } from "./failure-text.ts";
+import { step_hooks } from "./hook-runs.ts";
 import { live_draft } from "./live-draft.ts";
 import { step_outcome, type OutcomeNote } from "./review-notes.ts";
 import { is_command_step, is_reviewing } from "./review-phase.ts";
@@ -57,6 +58,8 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
     case "plan":
     case "memory":
       return view.text !== "";
+    case "hooks":
+      return view.hooks.length > 0;
     case "background":
     case "peer_message":
       return true;
@@ -112,4 +115,5 @@ export const has_body = (t: Translate, step: ToolStep): boolean =>
     live_command(step) ||
     live_draft(step) !== null ||
     denial_note(t, step) !== null ||
+    step_hooks(step).length > 0 ||
     (step.view ? view_content(t, step, step.view) : step.status !== "denied" && !is_active_status(step.status) && step.result_text !== ""));

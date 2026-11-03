@@ -2,13 +2,15 @@ import { randomUUID } from "node:crypto";
 import type { AssistantReference, Attachment, SteerMessage } from "../../shared/chat.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import type { Emitter } from "./session.ts";
-import { add_authorization } from "../permissions/context.ts";
+
+export type SteerAdmit = (steer: SteerMessage) => Promise<Attachment[]>;
 
 export type ActiveTurn = {
   controller: AbortController;
   message_id: string;
   steers: SteerMessage[];
-  notes: Map<string, Promise<Attachment[]>>;
+  admissions: Map<string, Promise<Attachment[]>>;
+  admit: SteerAdmit | null;
   ended: boolean;
   emit: Emitter;
   model: ModelEntry;
@@ -89,7 +91,8 @@ export const register_active = (chat_id: string, message_id: string, emit: Emitt
     controller: new AbortController(),
     message_id,
     steers: [],
-    notes: new Map(),
+    admissions: new Map(),
+    admit: null,
     ended: false,
     model,
     effort,
@@ -139,15 +142,36 @@ export const steer_target = (chat_id: string): ActiveTurn | null => {
   return turn && !turn.ended && !turn.controller.signal.aborted ? turn : null;
 };
 
+const admitted = (turn: ActiveTurn, admit: SteerAdmit, steer: SteerMessage): Promise<Attachment[]> => {
+  const known = turn.admissions.get(steer.id);
+  if (known) {
+    return known;
+  }
+  const started = admit(steer);
+  started.catch((error: unknown) => console.error(`[turn] admitting steer ${steer.id} into turn ${turn.message_id} failed:`, error));
+  turn.admissions.set(steer.id, started);
+  return started;
+};
+
+export const admit_steers = (turn: ActiveTurn, admit: SteerAdmit): SteerAdmit => {
+  turn.admit = admit;
+  for (const steer of turn.steers) {
+    admitted(turn, admit, steer);
+  }
+  return (steer) => admitted(turn, admit, steer);
+};
+
 export const push_steer = (chat_id: string, text: string, id: string = randomUUID(), attachments: Attachment[] = [], assistant_reference = active_assistant_reference(chat_id)): boolean => {
   const turn = steer_target(chat_id);
   if (!turn) {
     return false;
   }
   if (!turn.steers.some((entry) => entry.id === id)) {
-    const at = Date.now();
-    turn.steers.push({ id, text, at, attachments, ...(assistant_reference ? { assistant_reference } : {}) });
-    add_authorization(chat_id, id, text, assistant_reference, attachments, at);
+    const steer: SteerMessage = { id, text, at: Date.now(), attachments, ...(assistant_reference ? { assistant_reference } : {}) };
+    turn.steers.push(steer);
+    if (turn.admit) {
+      admitted(turn, turn.admit, steer);
+    }
   }
   return true;
 };
@@ -169,7 +193,7 @@ export const take_steer_active = (chat_id: string, steer_id: string): SteerMessa
   if (!turn || at < 0) {
     return null;
   }
-  turn.notes.delete(steer_id);
+  turn.admissions.delete(steer_id);
   return turn.steers.splice(at, 1)[0] ?? null;
 };
 

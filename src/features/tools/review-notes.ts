@@ -80,6 +80,8 @@ export const approval_lines = (t: Translate, request: ApprovalRequest): NoteLine
     case "agent_message":
     case "secret_read":
       return note_lines(t, request.review);
+    case "hook":
+      return [];
   }
 };
 

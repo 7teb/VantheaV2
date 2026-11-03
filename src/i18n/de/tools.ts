@@ -111,6 +111,7 @@ export const tools: Record<keyof typeof en, string> = {
   "tools.move_full": "Zu viele Background Tasks laufen, brich zuerst einen ab",
   "tools.move_failed": "Der Befehl konnte nicht verschoben werden",
   "tools.sources_more": "{n} weitere anzeigen",
+  "tools.sources": "Quellen",
   "tools.diff_empty": "Keine Änderungen",
   "tools.diff_gap": "…",
   "tools.status_failed": "Fehlgeschlagen",

@@ -5,6 +5,7 @@ import { read_attachment_tool } from "./attachments/index.ts";
 import { browser_tools } from "./browser/index.ts";
 import { check_page_tool } from "./check/index.ts";
 import { fs_tools } from "./fs/index.ts";
+import { hook_tools } from "./hooks/index.ts";
 import { generate_image_tool } from "./image/index.ts";
 import { present_images_tool } from "./image/present.ts";
 import { show_images_tool } from "./image/show.ts";
@@ -28,6 +29,7 @@ const groups: Tool[][] = [
   vision_tools,
   browser_tools,
   [add_mcp_server_tool],
+  hook_tools,
   [web_search_tool],
   [generate_image_tool, present_images_tool, show_images_tool],
   [visualize_tool],

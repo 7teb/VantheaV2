@@ -1,8 +1,9 @@
 import type { ComponentType } from "react";
-import { BookOpenIcon, GlobeCheckIcon, ImageIcon, PlugIcon, ShieldCheckIcon, SlidersIcon, SmileIcon, type IconComponent } from "../../components/icons.tsx";
+import { BookOpenIcon, GlobeCheckIcon, HookIcon, ImageIcon, PlugIcon, ShieldCheckIcon, SlidersIcon, SmileIcon, type IconComponent } from "../../components/icons.tsx";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { GeneralPane } from "./GeneralPane.tsx";
 import { pane_search } from "./pane-keywords.ts";
+import { HooksAddAction, HooksPane } from "./panes/HooksPane.tsx";
 import { ImagePane } from "./panes/ImagePane.tsx";
 import { McpAddAction, McpPane } from "./panes/McpPane.tsx";
 import { PersonalizationPane } from "./panes/PersonalizationPane.tsx";
@@ -34,5 +35,6 @@ export const settings_sections: SettingsSection[] = [
   { id: "web_search", group: "integrations", icon: GlobeCheckIcon, Pane: WebSearchPane, ...pane_search.web_search },
   { id: "image_gen", group: "integrations", icon: ImageIcon, Pane: ImagePane, ...pane_search.image_gen },
   { id: "mcp", group: "integrations", icon: PlugIcon, Pane: McpPane, Action: McpAddAction, ...pane_search.mcp },
+  { id: "hooks", group: "integrations", icon: HookIcon, Pane: HooksPane, Action: HooksAddAction, ...pane_search.hooks },
   { id: "skills", group: "integrations", icon: BookOpenIcon, Pane: SkillsPane, ...pane_search.skills },
 ];

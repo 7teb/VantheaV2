@@ -49,7 +49,14 @@ const inject_steers = async (session: TurnSession, round: number, api_messages: 
     if (session.signal.aborted) {
       return taken;
     }
+    const gate = session.hooks?.steer ? await session.hooks.steer(steer, round) : null;
+    if (gate?.kind === "aborted") {
+      return taken;
+    }
     source.take(steer.id);
+    if (gate?.kind === "blocked") {
+      continue;
+    }
     session.emit({
       type: "steer",
       round,
@@ -60,6 +67,7 @@ const inject_steers = async (session: TurnSession, round: number, api_messages: 
       ...(steer.assistant_reference ? { assistant_reference: steer.assistant_reference } : {}),
     });
     api_messages.push(await steer_message(steer.text, attachments, session.model));
+    push_notes(session.emit, gate?.notes ?? [], round, api_messages);
     taken = true;
   }
   return taken;
@@ -83,12 +91,27 @@ const drop_old_results = (session: TurnSession, round: number, api_messages: Api
   }
 };
 
+type StopState = { active: boolean };
+
+const stop_continues = async (session: TurnSession, round: number, last_text: string, api_messages: ApiMessage[], state: StopState, filtered = false): Promise<boolean> => {
+  const gate = session.hooks ? await session.hooks.stop(round, last_text, state.active) : null;
+  if (gate?.kind !== "continue" || filtered) {
+    return false;
+  }
+  push_notes(session.emit, [gate.note], round + 1, api_messages);
+  state.active = true;
+  return true;
+};
+
 export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessage[]): Promise<void> => {
   let calibration = session.stored_context?.calibration ?? null;
   let floor = session.stored_context?.floor ?? 0;
   let carried_floor = floor;
+  let round = 0;
+  const stop_state: StopState = { active: false };
   try {
-    for (let round = 0; ; round += 1) {
+    push_notes(session.emit, (await session.hooks?.start?.()) ?? [], 0, api_messages);
+    for (; ; round += 1) {
       if (session.signal.aborted) {
         session.emit({ type: "end", status: "stopped", error: null });
         return;
@@ -124,8 +147,14 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
         session.emit({ type: "end", status: "stopped", error: null });
         return;
       }
+      if (outcome.tool_calls > 0) {
+        stop_state.active = false;
+      }
       if (outcome.plan_presented) {
         if (await inject_steers(session, round + 1, api_messages)) {
+          continue;
+        }
+        if (await stop_continues(session, round, outcome.text, api_messages, stop_state)) {
           continue;
         }
         session.emit({ type: "end", status: session.signal.aborted ? "stopped" : "done", error: null });
@@ -137,10 +166,11 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
           api_messages.push({ role: "user", content: continuation_text });
           continue;
         }
-        if (await inject_steers(session, round + 1, api_messages)) {
+        if ((await inject_steers(session, round + 1, api_messages)) || (outcome.finish_reason !== "content_filter" && session.idle && (await session.idle()))) {
+          stop_state.active = false;
           continue;
         }
-        if (outcome.finish_reason !== "content_filter" && session.idle && (await session.idle())) {
+        if (await stop_continues(session, round, outcome.text, api_messages, stop_state, outcome.finish_reason === "content_filter")) {
           continue;
         }
         session.emit({ type: "end", status: session.signal.aborted ? "stopped" : "done", error: null });
@@ -152,7 +182,12 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
       session.emit({ type: "end", status: "stopped", error: null });
       return;
     }
-    session.emit({ type: "end", status: end_status(error), error: end_error(error) });
+    const turn_error = end_error(error);
+    try {
+      await session.hooks?.stop_failure(round, turn_error);
+    } finally {
+      session.emit({ type: "end", status: end_status(error), error: turn_error });
+    }
   }
 };
 

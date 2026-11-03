@@ -81,6 +81,13 @@ const files_detail = (t: Translate, view: Extract<ToolView, { kind: "files" }>):
   return t(n === 1 ? "tools.files_count_one" : "tools.files_count_other", { n });
 };
 
+const hooks_detail = (t: Translate, count: number): string => {
+  if (count === 0) {
+    return t("hooks.count_none");
+  }
+  return t(count === 1 ? "hooks.count_one" : "hooks.count_other", { n: count });
+};
+
 export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unknown_status): string => {
   const view = step.view;
   switch (view?.kind) {
@@ -90,6 +97,8 @@ export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unk
       return step.status === "done" ? web_detail(t, view) : "";
     case "files":
       return step.status === "done" ? files_detail(t, view) : "";
+    case "hooks":
+      return step.status === "done" && view.action === "list" ? hooks_detail(t, view.hooks.length) : "";
     case "peer_message": {
       const key = kept_peer_outcomes[view.outcome];
       return key ? t(key) : "";
@@ -153,6 +162,7 @@ const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
   todos: ["tools.combine_todos_one", "tools.combine_todos_other"],
   web: ["tools.combine_web_one", "tools.combine_web_other"],
   memory: ["tools.combine_memory_one", "tools.combine_memory_other"],
+  hooks: ["hooks.combine_one", "hooks.combine_other"],
   images: ["tools.combine_images_one", "tools.combine_images_other"],
   questions: ["tools.combine_questions_one", "tools.combine_questions_other"],
   visuals: ["tools.combine_visuals_one", "tools.combine_visuals_other"],

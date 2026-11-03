@@ -5,6 +5,7 @@ import { parse_peer_alerts } from "../../shared/peer-notes.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import { alert_note_content, digest_note_content, report_note_content, update_note_content } from "../agents/reports.ts";
 import { compacted_messages, window_meter } from "../context/compact.ts";
+import { hook_notice_content } from "../hooks/text.ts";
 import type { ApiAssistantMessage, ApiMessage } from "../model/types.ts";
 import { stopped_text } from "../permissions/verdict-text.ts";
 import { media_mime } from "../media/files.ts";
@@ -146,6 +147,11 @@ const lead_messages = async (steps: Step[], { model, read_image, agent_tools }: 
       out.push({ role: "user", content: model_switch_content(step.text) });
     } else if (step.notice === "background_task") {
       out.push({ role: "user", content: step.text });
+    } else if (step.notice === "hook") {
+      const content = hook_notice_content(step.text);
+      if (content) {
+        out.push({ role: "user", content });
+      }
     }
   }
   return out;

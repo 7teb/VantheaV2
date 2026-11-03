@@ -175,6 +175,7 @@ const start_live = async (run: LiveWorkflow, call: CallState, plan: AgentPlan): 
       without_tools: [],
       effort,
       model,
+      model_id: plan.model_id,
     });
     call.agent_id = started.agent.agent_id;
     patch_agent(run, call.index, { status: "running", agent_id: started.agent.agent_id, agent_run_id: started.run.run_id, started_at: started.run.started_at });

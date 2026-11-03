@@ -1,3 +1,4 @@
+import { coerce_hook_runs } from "../../shared/hook-notes.ts";
 import type { Sequenced, StreamEventBody } from "../../shared/events.ts";
 import type { AgentProfile, AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
 import { coerce_context_usage } from "../context/calibration.ts";
@@ -168,6 +169,11 @@ export const parse_event = (value: unknown, chat_id: string): StoredEvent | null
   if (value.type === "context") {
     const usage = coerce_context_usage(value.usage);
     return usage ? { type: "context", usage, seq: value.seq, at: value.at } : null;
+  }
+  if (value.type === "tool_end" && "hooks" in value) {
+    const { hooks, ...rest } = value;
+    const runs = coerce_hook_runs(hooks);
+    return (runs.length ? { ...rest, hooks: runs } : rest) as StoredEvent;
   }
   return event_types.includes(value.type as StreamEventBody["type"]) ? (value as StoredEvent) : null;
 };

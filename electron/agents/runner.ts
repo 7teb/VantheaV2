@@ -62,7 +62,7 @@ export type RunContext = {
   workflow?: WorkflowAgentLink;
 };
 
-export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description" | "topic" | "scope" | "profile" | "without_tools" | "effort"> & { model: ModelEntry };
+export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description" | "topic" | "scope" | "profile" | "without_tools" | "effort"> & { model: ModelEntry; model_id?: string };
 
 export type StartedRun = { agent: AgentSummary; run: AgentRunSummary };
 
@@ -304,7 +304,7 @@ export const deploy_agent = (request: DeployRequest): StartedRun => {
     description: request.description,
     topic: request.topic,
     scope: request.scope,
-    model: request.model.id,
+    model: request.model_id ?? request.model.id,
     effort: request.effort,
     profile: request.profile,
     without_tools: request.without_tools,

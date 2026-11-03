@@ -5,6 +5,7 @@ import type { ModelEntry } from "../../shared/models.ts";
 import type { Language, Settings } from "../../shared/settings.ts";
 import type { StoredContext } from "../context/calibration.ts";
 import type { CompactAudience } from "../context/compact-text.ts";
+import type { TurnHooks } from "../hooks/turn-hooks.ts";
 import type { Transport } from "../model/transport.ts";
 import type { RoundCallbacks, RoundRequest, RoundResult } from "../model/types.ts";
 import type { ActorReview, PeerSend, SideModelCall, Tool, ToolImage, ToolProfile } from "../tools/types.ts";
@@ -67,4 +68,5 @@ export type TurnSession = {
   stored_context?: StoredContext;
   reasoning_status?: ReasoningStatusCall;
   before_tools?: () => Promise<void>;
+  hooks?: TurnHooks;
 };

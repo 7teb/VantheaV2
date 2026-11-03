@@ -18,6 +18,7 @@ import {
   FilePenIcon,
   GlobeCheckIcon,
   GlobeIcon,
+  HookIcon,
   HourglassIcon,
   ImageIcon,
   KeyboardIcon,
@@ -45,11 +46,14 @@ import {
 import { use_t } from "../../i18n/index.ts";
 import { AgentBody, BackgroundBody, CommandBody } from "./bodies-run.tsx";
 import { EditBody, FilesBody, GrepBody, OutlineBody } from "./bodies-files.tsx";
+import { HooksBody } from "./bodies-hooks.tsx";
 import { ModelsBody } from "./bodies-models.tsx";
 import { ImageBody, WebSearchBody } from "./bodies-web.tsx";
 import { McpBody, MemoryBody, PeerMessageBody, PlanBody, TextBody } from "./bodies-work.tsx";
 import type { BodyProps } from "./body-types.ts";
 import { DraftCode } from "./DraftCode.tsx";
+import { hook_blocked, step_hooks } from "./hook-runs.ts";
+import { BlockedCall, HookRuns } from "./HookRuns.tsx";
 import { live_draft } from "./live-draft.ts";
 import { LiveCommand } from "./LiveCommand.tsx";
 import { OutputBlock } from "./OutputBlock.tsx";
@@ -76,6 +80,7 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   agent: CritterMark,
   workflow: WorkflowIcon,
   memory: WormIcon,
+  hook: HookIcon,
   skill: BookOpenIcon,
   browser: GlobeIcon,
   browser_tabs: AppWindowIcon,
@@ -116,6 +121,7 @@ export const view_bodies: Bodies = {
   image: ImageBody,
   mcp: McpBody,
   memory: MemoryBody,
+  hooks: HooksBody,
   models: ModelsBody,
   text: TextBody,
 };
@@ -138,8 +144,10 @@ export const ToolBody = ({ step, chat_id }: { step: ToolStep; chat_id: string })
   const draft = live_draft(step);
   const error = shown_error(t, step);
   const note = denial_note(t, step);
+  const runs = step_hooks(step);
   return (
     <div className="tool-body">
+      {hook_blocked(step) && <BlockedCall step={step} />}
       {is_reviewing(step) && <ReviewBody step={step} />}
       {error && <div className="tool-body-error">{error}</div>}
       {draft && <DraftCode draft={draft} />}
@@ -147,6 +155,7 @@ export const ToolBody = ({ step, chat_id }: { step: ToolStep; chat_id: string })
       {step.view && view_content(t, step, step.view) && <ViewBody view={step.view} step={step} />}
       {note && <ReviewNotice note={note} />}
       {!step.view && !live && !error && step.status !== "denied" && step.result_text && <OutputBlock text={step.result_text} />}
+      {runs.length > 0 && <HookRuns runs={runs} />}
     </div>
   );
 };

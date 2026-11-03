@@ -1,3 +1,5 @@
+import type { Message, UserOrigin } from "../../shared/chat.ts";
+import { passed_prompts, without_blocked_prompts } from "../../shared/hook-notes.ts";
 import type { SendRequest } from "../../shared/ipc/chats.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import { major_wait_ms, take_agent_notes, wait_for_input } from "../agents/reports.ts";
@@ -5,6 +7,9 @@ import { roster_facts } from "../agents/roster.ts";
 import { flush_chat, get_chat, set_streaming, set_summary, update_message } from "../chats/store.ts";
 import { stored_context } from "../context/calibration.ts";
 import { harness_facts } from "../context/facts.ts";
+import type { HookIdentity } from "../hooks/input.ts";
+import { prompt_hooks, turn_hooks } from "../hooks/turn-hooks.ts";
+import { server_of_tool } from "../mcp/servers.ts";
 import { save_tool_images } from "../media/files.ts";
 import { major_effort } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
@@ -21,18 +26,20 @@ import { get_settings } from "../settings/store.ts";
 import { side_model } from "../side/model.ts";
 import { reasoning_status_call } from "../side/reasoning-status.ts";
 import { review_call } from "../side/review.ts";
+import { start_title } from "../side/title.ts";
 import { describe_attachment_image } from "../side/vision.ts";
 import { error_text } from "../storage/coerce.ts";
 import { defer_mcp, is_mcp_tool } from "../tools/mcp/deferred.ts";
 import { mcp_tools } from "../tools/mcp/tools.ts";
 import { tools_for } from "../tools/registry.ts";
 import { turn_diffs } from "../turn-diff/index.ts";
-import { drop_untaken_steers, unregister_active, type ActiveTurn } from "./active.ts";
+import { admit_steers, drop_untaken_steers, unregister_active, type ActiveTurn } from "./active.ts";
 import { carried_todos_note } from "./carried-todos.ts";
 import { model_switch_note } from "./model-switch.ts";
 import { build_api_messages } from "./history.ts";
 import { run_compaction_turn, run_turn_loop } from "./loop.ts";
 import type { CompactionHooks, TurnNote, TurnSession } from "./session.ts";
+import { admit_steer } from "./steer-admission.ts";
 import { note_newest_user } from "./vision-notes.ts";
 
 export type TurnPlan = {
@@ -45,6 +52,7 @@ export type TurnPlan = {
   compact_only: boolean;
   user_request: string;
   project_root: string;
+  origin: UserOrigin;
 };
 
 let turn_finished: ((chat_id: string, message_id: string) => void) | null = null;
@@ -77,6 +85,25 @@ const chat_compaction = ({ chat_id, message_id, project_root }: TurnPlan): Compa
   save: ({ note, facts, through_round }) => set_summary(chat_id, { text: note, through_message_id: message_id, through_round, facts }),
 });
 
+const opening_hooks = async (plan: TurnPlan, identity: HookIdentity, messages: Message[]): Promise<TurnNote[] | null> => {
+  if (plan.compact_only) {
+    return [];
+  }
+  const gate = await prompt_hooks(identity, plan.user_request, plan.origin);
+  if (gate.kind === "aborted") {
+    identity.emit({ type: "end", status: "stopped", error: { kind: "hook", message: "stopped before the UserPromptSubmit hooks finished" } });
+    return null;
+  }
+  if (gate.kind === "blocked") {
+    identity.emit({ type: "end", status: "blocked", error: gate.error });
+    return null;
+  }
+  if (passed_prompts(messages).length === 1) {
+    start_title(plan.chat_id, plan.user_request);
+  }
+  return gate.notes;
+};
+
 export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => {
   const signal = turn.controller.signal;
   try {
@@ -84,16 +111,35 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     if (!loaded) {
       throw new Error(`chat ${plan.chat_id} is no longer available`);
     }
+    const identity: HookIdentity = {
+      chat_id: plan.chat_id,
+      turn_id: plan.message_id,
+      cwd: plan.project_root,
+      project_path: loaded.project_path,
+      mode: plan.mode,
+      plan: plan.plan,
+      agent: null,
+      emit: turn.emit,
+      signal,
+      mcp_server: server_of_tool,
+    };
+    const prompt_notes = await opening_hooks(plan, identity, loaded.messages);
+    if (!prompt_notes) {
+      return;
+    }
     const settings = get_settings();
-    const history = await note_newest_user(
+    const noted = await note_newest_user(
       loaded.messages.filter((message) => message.id !== plan.message_id),
       plan.model,
       signal,
       describe_attachment_image,
       (user) => update_message(plan.chat_id, user.id, () => user),
     );
-    set_authorization(plan.chat_id, history, turn.steers);
+    const history = without_blocked_prompts(noted);
+    set_authorization(plan.chat_id, history);
     await instruction_snapshot(plan.chat_id, plan.project_root, human_requests_of(plan.chat_id));
+    const hooks = turn_hooks(identity);
+    const admitted = admit_steers(turn, (steer) => admit_steer({ chat_id: plan.chat_id, model: plan.model, signal, describe: describe_attachment_image, check: hooks.check_steer }, steer));
     const profile = plan.plan ? "plan" : "main";
     const all_tools = tools_for(profile, settings, plan.model, mcp_tools());
     const offered = defer_mcp(all_tools);
@@ -115,7 +161,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     const api_messages = await build_api_messages({ system, summary: loaded.summary, messages: history, model: plan.model, agent_tools });
     const carried = offered.some((tool) => tool.spec.name === "update_todos") ? carried_todos_note(history) : null;
     const switched = model_switch_note(history, plan.model, await model_catalog());
-    let opening_notes: TurnNote[] = [switched, carried].filter((note): note is TurnNote => note !== null);
+    let opening_notes: TurnNote[] = [...prompt_notes, ...[switched, carried].filter((note): note is TurnNote => note !== null)];
     const session: TurnSession = {
       chat_id: plan.chat_id,
       message_id: plan.message_id,
@@ -136,7 +182,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       human_decisions: () => chat_decisions(plan.chat_id),
       steers: {
         next: () => turn.steers[0] ?? null,
-        noted: (steer) => turn.notes.get(steer.id) ?? Promise.resolve(steer.attachments),
+        noted: admitted,
         take: (steer_id) => {
           take_main_steer(plan.chat_id, steer_id);
         },
@@ -152,6 +198,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       stored_context: stored_context(history, plan.model.id),
       reasoning_status: reasoning_status_call,
       before_tools: () => turn_diffs.ready(plan.chat_id, plan.message_id, signal),
+      hooks,
     };
     await (plan.compact_only ? run_compaction_turn(session, api_messages) : run_turn_loop(session, api_messages));
   } catch (error) {

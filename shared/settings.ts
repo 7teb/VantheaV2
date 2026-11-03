@@ -1,5 +1,6 @@
 import type { McpTier } from "./approval.ts";
 import type { PermissionMode } from "./chat.ts";
+import type { HooksConfig } from "./hooks.ts";
 
 export type Language = "en" | "de";
 
@@ -41,6 +42,7 @@ export type Settings = {
   mcp_tools: Record<string, McpToolOverride>;
   skills: { disabled: string[] };
   model_context: Record<string, ModelContext>;
+  hooks: HooksConfig;
 };
 
 export type SecretName = "openrouter" | "tavily";

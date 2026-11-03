@@ -1,3 +1,4 @@
+import type { HookAction, HookFields } from "./hooks.ts";
 import type { ReviewNote } from "./review.ts";
 import type { ShellKind } from "./shell.ts";
 import type { DiffLine } from "./tool-view.ts";
@@ -24,7 +25,10 @@ type ApprovalAsk =
   | { kind: "skill_install"; name: string; description: string; files: string[]; source: string; replaces: string | null; content: string; review?: ReviewNote }
   | { kind: "memory"; action: "remember" | "forget"; text: string; review?: ReviewNote }
   | { kind: "agent_message"; tool: AgentTextTool; to_name: string; to_id: string | null; about: string; text: string; without_tools?: string[]; review?: ReviewNote }
-  | ({ kind: "secret_read"; review?: ReviewNote } & SecretRead);
+  | ({ kind: "secret_read"; review?: ReviewNote } & SecretRead)
+  | { kind: "hook"; action: HookAction; scope: HookCardScope; hook: HookFields; previous: HookFields | null; review?: ReviewNote };
+
+export type HookCardScope = { kind: "global" } | { kind: "project"; path: string; name: string };
 
 export type ApprovalRequest = ApprovalAsk & { expires_at?: number };
 

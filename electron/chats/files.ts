@@ -3,6 +3,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { brotliCompress, brotliCompressSync, brotliDecompress, constants as zlib_constants } from "node:zlib";
 import type { Chat, ChatMeta, ChatSummary, Message, RoundReasoning, Step, StepImage, ToolStep } from "../../shared/chat.ts";
+import { coerce_hook_runs } from "../../shared/hook-notes.ts";
 import { flex_base, speed_tiers, type ModelChoice } from "../../shared/models.ts";
 import { coerce_context_usage } from "../context/calibration.ts";
 import { is_media_id } from "../media/files.ts";
@@ -89,6 +90,15 @@ const parse_step_images = (step: ToolStep): ToolStep => {
   return valid.length ? { ...rest, images: valid } : rest;
 };
 
+const parse_step_hooks = (step: ToolStep): ToolStep => {
+  if (!("hooks" in step)) {
+    return step;
+  }
+  const { hooks, ...rest } = step;
+  const valid = coerce_hook_runs(hooks);
+  return valid.length ? { ...rest, hooks: valid } : rest;
+};
+
 const parse_step = (step: Step, chat_id: string): Step => {
   if (is_record(step) && step.kind === "steer" && step.attachments !== undefined) {
     return { ...step, attachments: parse_attachments(step.attachments, chat_id) };
@@ -97,7 +107,7 @@ const parse_step = (step: Step, chat_id: string): Step => {
     return step;
   }
   const call_id = as_string(step.call_id);
-  const imaged = parse_step_images(step);
+  const imaged = parse_step_hooks(parse_step_images(step));
   const viewed = is_record(imaged.view) && imaged.view.kind === "questions" ? { ...imaged, view: coerce_questions_view(imaged.view, chat_id, call_id) } : imaged;
   if (!("reviews" in viewed)) {
     return viewed;

@@ -1,4 +1,5 @@
 import { user_steers, type AssistantMessage, type Chat, type Message, type UserMessage } from "../../shared/chat.ts";
+import { hook_blocked_turn, without_blocked_prompts } from "../../shared/hook-notes.ts";
 import { get_settings } from "../settings/store.ts";
 import { error_text } from "../storage/coerce.ts";
 import type { SideMessage, SideModelCall } from "../tools/types.ts";
@@ -27,7 +28,7 @@ const message_text = (message: Message): string => (message.role === "user" ? me
 export const finished_turn = (chat: Chat, message_id: string): Turn | null => {
   const at = chat.messages.findIndex((message) => message.id === message_id);
   const assistant = chat.messages[at];
-  if (assistant?.role !== "assistant" || assistant.status === "streaming") {
+  if (assistant?.role !== "assistant" || assistant.status === "streaming" || hook_blocked_turn(assistant)) {
     return null;
   }
   const user_index = chat.messages.slice(0, at).findLastIndex((message) => message.role === "user");
@@ -35,7 +36,8 @@ export const finished_turn = (chat: Chat, message_id: string): Turn | null => {
   if (user?.role !== "user" || user.origin !== "user") {
     return null;
   }
-  return { previous: chat.messages.slice(Math.max(0, user_index - 2), user_index), user, assistant };
+  const earlier = without_blocked_prompts(chat.messages.slice(0, user_index));
+  return { previous: earlier.slice(Math.max(0, earlier.length - 2)), user, assistant };
 };
 
 export const source_text = (turn: Turn): string =>

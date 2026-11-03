@@ -34,6 +34,7 @@ const error_keys: Record<TurnErrorKind, MessageKey> = {
   credits: "chat.error_credits",
   bad_request: "chat.error_bad_request",
   app_closed: "chat.error_app_closed",
+  hook: "hooks.error_turn",
   internal: "chat.error_internal",
 };
 

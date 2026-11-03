@@ -1,13 +1,15 @@
 import type { TurnErrorKind } from "../../shared/chat.ts";
+
+type ModelErrorKind = Exclude<TurnErrorKind, "hook">;
 import { as_number, as_record, as_string } from "./json.ts";
 import { redact_key } from "./key.ts";
 
 export class ModelError extends Error {
-  readonly kind: TurnErrorKind;
+  readonly kind: ModelErrorKind;
   readonly status: number | null;
   readonly retry_after_ms: number;
 
-  constructor(kind: TurnErrorKind, message: string, status: number | null = null, retry_after_ms = 0) {
+  constructor(kind: ModelErrorKind, message: string, status: number | null = null, retry_after_ms = 0) {
     super(message);
     this.name = "ModelError";
     this.kind = kind;
@@ -27,7 +29,7 @@ export type ProviderError = {
   raw: string;
 };
 
-const retryable_kinds = new Set<TurnErrorKind>(["rate_limited", "provider_unavailable", "stream_interrupted", "timeout"]);
+const retryable_kinds = new Set<ModelErrorKind>(["rate_limited", "provider_unavailable", "stream_interrupted", "timeout"]);
 
 const policy_types = new Set(["content_policy_violation", "refusal", "permission_denied"]);
 
@@ -122,7 +124,7 @@ export const parse_error_body = (text: string): ProviderError | null => {
   }
 };
 
-const kind_for = (status: number | null, error: ProviderError | null, retry_after_ms: number): TurnErrorKind => {
+const kind_for = (status: number | null, error: ProviderError | null, retry_after_ms: number): ModelErrorKind => {
   const type = error?.error_type ?? "";
   const provider_code = error?.provider_code ?? "";
   if (type === "context_length_exceeded" || provider_code === "context_length_exceeded" || context_phrase.test(error?.message ?? "")) {

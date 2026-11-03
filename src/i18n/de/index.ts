@@ -13,6 +13,7 @@ import { files } from "./files.ts";
 import { git_actions } from "./git-actions.ts";
 import { git } from "./git.ts";
 import { github } from "./github.ts";
+import { hooks } from "./hooks.ts";
 import { image } from "./image.ts";
 import { mcp } from "./mcp.ts";
 import { memories } from "./memories.ts";
@@ -57,6 +58,7 @@ export const de: Record<MessageKey, string> = {
   ...git,
   ...git_actions,
   ...github,
+  ...hooks,
   ...image,
   ...mcp,
   ...memories,

@@ -1,4 +1,5 @@
 import type { ApprovalRequest, HumanDecision } from "./approval.ts";
+import type { HookRun } from "./hook-notes.ts";
 import type { ModelChoice } from "./models.ts";
 import type { QuestionStates } from "./questions.ts";
 import type { ReviewRecord } from "./review.ts";
@@ -90,6 +91,7 @@ export type ToolStep = {
   failure?: ToolFailure;
   result_text: string;
   images?: StepImage[];
+  hooks?: HookRun[];
   started_at: number | null;
   ended_at: number | null;
 };
@@ -114,7 +116,8 @@ export type NoticeKind =
   | "peer_status"
   | "peer_digest"
   | "workflow_result"
-  | "background_task";
+  | "background_task"
+  | "hook";
 
 export type NoticeStep = { id: string; round: number; kind: "notice"; notice: NoticeKind; text: string };
 
@@ -148,11 +151,12 @@ export type TurnErrorKind =
   | "credits"
   | "bad_request"
   | "app_closed"
+  | "hook"
   | "internal";
 
 export type TurnError = { kind: TurnErrorKind; message: string };
 
-export type CompactionErrorKind = TurnErrorKind | "empty_note";
+export type CompactionErrorKind = Exclude<TurnErrorKind, "hook"> | "empty_note";
 
 export type CompactionError = { kind: CompactionErrorKind; message: string };
 

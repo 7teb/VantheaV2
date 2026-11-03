@@ -1,4 +1,5 @@
 import type { Todo } from "./chat.ts";
+import type { HookAction, HookFields, ScopedHook } from "./hooks.ts";
 import type { PeerType } from "./peer-notes.ts";
 import type { AskQuestion } from "./questions.ts";
 import type { WorkflowStatus } from "./workflow.ts";
@@ -64,6 +65,7 @@ export type ToolView =
   | { kind: "mcp"; server: string; tool: string; text: string; is_error: boolean }
   | { kind: "tool_load"; names: string[] }
   | { kind: "memory"; action: "remember" | "forget" | "list"; text: string }
+  | { kind: "hooks"; action: HookAction | "list"; hooks: ScopedHook[]; previous: HookFields | null }
   | { kind: "skill"; action: "read" | "install"; name: string }
   | { kind: "models"; models: ModelPrice[] }
   | { kind: "questions"; questions: AskQuestion[] }

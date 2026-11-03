@@ -11,6 +11,7 @@ import {
   ForkIcon,
   GaugeIcon,
   GitBranchPlusIcon,
+  HookIcon,
   LayersIcon,
   PercentIcon,
   PinIcon,
@@ -28,6 +29,7 @@ import { compact_now, set_draft_text, toggle_draft_chip, toggle_plan } from "../
 import { open_panel } from "../../state/composer-panel.ts";
 import { toggle_pro, toggle_tier } from "../../state/model-choice.ts";
 import { set_auto_compact, set_context_limit } from "../../state/settings.ts";
+import { open_settings } from "../../state/ui.ts";
 import { command_row, type CommandContext, type ComposerCommand } from "./command-menu.ts";
 import { auto_compact_options, chosen_hint, command_options, context_limit_options } from "./context-options.ts";
 
@@ -122,6 +124,14 @@ export const composer_commands: ComposerCommand[] = [
     label: ({ t }) => t("memories.title"),
     keywords: ["memory", "remember"],
     run: ({ draft_key }) => open_panel(draft_key, "memories"),
+  },
+  {
+    id: "hooks",
+    needs: "none",
+    icon: () => HookIcon,
+    label: ({ t }) => t("hooks.command"),
+    keywords: ["hook", "PreToolUse", "PostToolUse", "Stop", "automation"],
+    run: () => open_settings("hooks"),
   },
   {
     id: "init",

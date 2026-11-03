@@ -4,7 +4,10 @@ import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
 import { visual_tool_name } from "../../../shared/visual.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
-import type { Label, ToolCategory, ToolIconName, ToolMeta } from "./tool-meta-types.ts";
+import { hook_blocked } from "./hook-runs.ts";
+import { entry, fixed, with_x } from "./tool-meta-entry.ts";
+import { hook_metas, hook_target_key } from "./tool-meta-hooks.ts";
+import type { Label, ToolCategory, ToolMeta } from "./tool-meta-types.ts";
 
 export const view_kinds = [
   "files",
@@ -27,6 +30,7 @@ export const view_kinds = [
   "mcp",
   "tool_load",
   "memory",
+  "hooks",
   "skill",
   "models",
   "questions",
@@ -68,10 +72,6 @@ const step_path = (step: ToolStep): string => {
 const command_of = (step: ToolStep) => view_of(step, "command")?.command ?? (text_arg(step, "command") || view_of(step, "background")?.command || "");
 
 export const compact_command = (command: string) => !command.includes("\n") && command.length <= 64;
-
-const fixed = (key: MessageKey): Label => (t) => t(key);
-
-const with_x = (key: MessageKey, pick: (step: ToolStep) => string): Label => (t, step) => t(key, { x: pick(step) });
 
 const file_name = (step: ToolStep) => base_name(step_path(step));
 
@@ -157,12 +157,12 @@ const edit_active: Label = (t, step) => {
   return t(step.name === "write_file" ? "tool_label.writing" : "tool_label.editing", { x: name });
 };
 
-const read_urls = (step: ToolStep): string[] => {
+export const read_urls = (step: ToolStep): string[] => {
   const urls: unknown = view_of(step, "web_search")?.urls ?? step.args.urls;
   return Array.isArray(urls) ? urls.filter((url): url is string => typeof url === "string") : [];
 };
 
-const web_query = (step: ToolStep) => view_of(step, "web_search")?.query || text_arg(step, "query");
+export const web_query = (step: ToolStep) => view_of(step, "web_search")?.query || text_arg(step, "query");
 
 const web_label = (search: Label, one_page: MessageKey, pages: MessageKey): Label => (t, step) => {
   const failed = view_of(step, "web_search")?.failed?.map((entry) => entry.url) ?? [];
@@ -190,8 +190,6 @@ const workflow_label = (named_key: MessageKey, plain: MessageKey): Label => (t, 
   const name = workflow_name(step);
   return name ? t(named_key, { x: name }) : t(plain);
 };
-
-const entry = (icon: ToolIconName, category: ToolCategory, active: Label, done: Label = active, attempt: Label = done): ToolMeta => ({ icon, category, active, done, attempt });
 
 const named: Record<string, ToolMeta> = {
   run_command: entry("terminal", "commands", command_label(true), command_label(false), command_attempt),
@@ -243,6 +241,7 @@ const named: Record<string, ToolMeta> = {
   add_mcp_server: entry("mcp", "mcp_servers", with_x("tool_label.adding_mcp", server_name), with_x("tool_label.added_mcp", server_name), with_x("tool_label.add_mcp", server_name)),
   load_mcp_tools: entry("mcp", "tool_loads", fixed("tool_label.loading_tools"), fixed("tool_label.loaded_tools")),
   check_page: entry("page_check", "other", with_x("tool_label.check_page", (step) => base_name(text_arg(step, "path"))), with_x("tool_label.check_page_done", (step) => base_name(text_arg(step, "path")))),
+  ...hook_metas,
 };
 
 const browser_target = (step: ToolStep) => text_arg(step, "ref") || text_arg(step, "target");
@@ -332,6 +331,7 @@ const by_kind: Record<ToolViewKind, ToolMeta> = {
   mcp: mcp_meta,
   tool_load: named.load_mcp_tools,
   memory: named.list_memories,
+  hooks: hook_metas.list_hooks,
   skill: named.read_skill,
   models: named.list_models,
   questions: named.ask_user,
@@ -363,13 +363,17 @@ const denied_target = (t: Translate, step: ToolStep): string => {
   if (tool_meta(step) === mcp_meta) {
     return t("tool_label.mcp", mcp_parts(step));
   }
+  const hook_key = hook_target_key(step.name);
+  if (hook_key) {
+    return t(hook_key);
+  }
   return command_of(step) || step_path(step) || query_of(step) || agent_name(step) || skill_name(step) || workflow_name(step) || step.name;
 };
 
 export const tool_label = (t: Translate, step: ToolStep): string => {
   const meta = tool_meta(step);
   if (step.status === "denied") {
-    return t("tool_label.denied", { x: denied_target(t, step) });
+    return t(hook_blocked(step) ? "hooks.blocked_label" : "tool_label.denied", { x: denied_target(t, step) });
   }
   if (step.status === "drafting" && !labels_while_drafting.has(meta.category)) {
     return t("tool_label.drafting");

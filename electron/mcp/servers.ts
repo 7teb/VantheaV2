@@ -1,7 +1,7 @@
 import type { McpTier } from "../../shared/approval.ts";
 import type { McpServerStatus, McpToolStatus } from "../../shared/ipc/extensions.ts";
 import { mcp_tool_key, type McpServerConfig, type McpToolOverride, type Settings, type SettingsPatch } from "../../shared/settings.ts";
-import { kill_all_servers_sync, on_servers_changed, reconnect_server, server_runtime, sync_servers, type McpToolInfo } from "./client.ts";
+import { kill_all_servers_sync, on_servers_changed, ready_servers, reconnect_server, server_runtime, sync_servers, type McpToolInfo } from "./client.ts";
 import { apply_override } from "./risk.ts";
 
 export type SettingsAccess = { get: () => Settings; update: (patch: SettingsPatch) => Promise<unknown> };
@@ -78,6 +78,11 @@ const without_server_tools = (name: string) => {
 };
 
 export const server_exists = (name: string) => Object.hasOwn(current_settings().mcp_servers, name);
+
+export const server_of_tool = (spec_name: string): { name: string } | null => {
+  const server = ready_servers().find((entry) => entry.tools.some((tool) => tool.spec_name === spec_name));
+  return server ? { name: server.name } : null;
+};
 
 export const upsert_server = async (name: string, config: McpServerConfig, options: { reset_trust: boolean } = { reset_trust: false }) => {
   const previous = current_settings().mcp_servers[name];

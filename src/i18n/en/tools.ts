@@ -109,6 +109,7 @@ export const tools = {
   "tools.move_full": "Too many background tasks are running, cancel one first",
   "tools.move_failed": "The command could not be moved",
   "tools.sources_more": "Show {n} more",
+  "tools.sources": "Sources",
   "tools.diff_empty": "No changes",
   "tools.diff_gap": "…",
   "tools.status_failed": "Failed",

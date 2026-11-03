@@ -42,6 +42,7 @@ export const grant_options = (request: ApprovalRequest): GrantOption[] => {
     case "memory":
     case "agent_message":
     case "secret_read":
+    case "hook":
       return [once];
   }
 };
@@ -64,5 +65,7 @@ export const approval_question = (request: ApprovalRequest): { key: MessageKey; 
       return { key: agent_questions[request.tool], vars: { x: request.to_name } };
     case "secret_read":
       return { key: "approval.question_secret_read", vars: { x: request.path } };
+    case "hook":
+      return { key: `hooks.approve_${request.action}`, vars: {} };
   }
 };

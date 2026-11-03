@@ -18,6 +18,7 @@ import { has_body, is_agent_message, opens_by_itself } from "./tool-body.ts";
 import { is_active_status, started_run, tool_label, tool_meta } from "./tool-meta.ts";
 import { step_hint } from "./tool-summary.ts";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
+import { WebSearchRow, shows_web_row } from "./WebSearchRow.tsx";
 import { workflow_view } from "./workflow-model.ts";
 import { WorkflowRow } from "./WorkflowRow.tsx";
 import "./tools.css";
@@ -111,5 +112,8 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
 
 export const ToolRow = memo((props: ToolRowProps) => {
   const view = workflow_view(props.step);
-  return view ? <WorkflowRow chat_id={props.chat_id} view={view} /> : <PlainToolRow {...props} />;
+  if (view) {
+    return <WorkflowRow chat_id={props.chat_id} view={view} />;
+  }
+  return shows_web_row(props.step) ? <WebSearchRow chat_id={props.chat_id} step={props.step} /> : <PlainToolRow {...props} />;
 });

@@ -101,11 +101,18 @@ const GroupRow = ({ chat_id, step, streaming, main_chat }: GroupRowProps) => {
   return <ThoughtRow step={step} live={streaming} />;
 };
 
+const web_only = (steps: WorkStep[]) => {
+  const tools = work_tools(steps);
+  return tools.length > 0 && tools.every((step) => step.name === "web_search");
+};
+
 type StepGroupProps = { chat_id: string; steps: WorkStep[]; streaming: boolean; pending: boolean; run?: RunRef };
 
 const StepGroup = ({ chat_id, steps, streaming, pending, run }: StepGroupProps) => {
   const t = use_t();
-  const [open, set_open] = useState(false);
+  const [chosen, set_chosen] = useState<boolean | null>(null);
+  const web = web_only(steps);
+  const open = chosen ?? web;
   const live = use_live_workflow(steps);
   const latest = group_head(t, steps, streaming, pending, live);
   const head = use_held_label(latest.key, latest);
@@ -116,8 +123,8 @@ const StepGroup = ({ chat_id, steps, streaming, pending, run }: StepGroupProps) 
   const shown = progress ?? head;
   const working = shown.kind !== "done";
   return (
-    <div className="work-group" data-open={open} data-live={streaming || undefined} data-running={running || undefined} data-review={reviewing || undefined}>
-      <button type="button" className="work-group-head" aria-expanded={open} onClick={() => set_open(!open)}>
+    <div className="work-group" data-open={open} data-web={web || undefined} data-live={streaming || undefined} data-running={running || undefined} data-review={reviewing || undefined}>
+      <button type="button" className="work-group-head" aria-expanded={open} onClick={() => set_chosen(!open)}>
         <span className="tool-row-icon">
           <LabelMorph morph_key={running ? "spinner" : "icon"}>{running ? <DotSpinner /> : <GroupIcon chat_id={chat_id} steps={steps} />}</LabelMorph>
         </span>

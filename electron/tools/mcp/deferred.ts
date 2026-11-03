@@ -80,7 +80,7 @@ const load_tool = (mcp: Tool[]): Tool => {
 
 type CallArgs = { name: string; arguments: Record<string, unknown> };
 
-const tool_arguments = (value: unknown): unknown => {
+export const tool_arguments = (value: unknown): unknown => {
   if (typeof value !== "string") {
     return value;
   }

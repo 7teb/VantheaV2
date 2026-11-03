@@ -1,4 +1,5 @@
 import type { ProjectEntry, SecretName, Settings, SettingsPatch, SettingsView } from "../../shared/settings.ts";
+import { drop_project_hooks, rekey_project_hooks } from "../hooks/scope.ts";
 import { as_record, as_string } from "../storage/coerce.ts";
 import { keep_corrupt, read_json, write_json } from "../storage/json-file.ts";
 import { folder_name, path_key } from "../storage/paths.ts";
@@ -167,7 +168,7 @@ export const set_project_folder = async (project_path: string, folder: { path: s
   }
   const default_name = existing.name === folder_name(existing.path);
   const next: ProjectEntry = { ...existing, ...folder, name: default_name ? folder_name(folder.path) : existing.name };
-  return update_settings({ projects: current.projects.map((item) => (item === existing ? next : item)) });
+  return update_settings({ projects: current.projects.map((item) => (item === existing ? next : item)), hooks: rekey_project_hooks(current.hooks, existing.path, next.path) });
 };
 
 export const update_project = async (project_path: string, patch: { name?: string; pinned?: boolean }): Promise<SettingsView> => {
@@ -184,4 +185,4 @@ export const update_project = async (project_path: string, patch: { name?: strin
 };
 
 export const remove_project = async (project_path: string): Promise<SettingsView> =>
-  update_settings({ projects: current.projects.filter((item) => !same_project(item.path, project_path)) });
+  update_settings({ projects: current.projects.filter((item) => !same_project(item.path, project_path)), hooks: drop_project_hooks(current.hooks, project_path) });

@@ -1,0 +1,120 @@
+@layer components {
+  .hook-runs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .hook-run-card .output-block-pre {
+    display: block;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    mask: none;
+  }
+
+  .hook-preview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .hook-preview > .command-card,
+  .hook-preview > .edit-card {
+    margin-top: 0;
+  }
+
+  .hook-facts {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 4px var(--space-4);
+    margin: 0;
+    font-size: var(--font-size-ui);
+    line-height: 19.5px;
+  }
+
+  .hook-fact {
+    display: contents;
+  }
+
+  .hook-fact dt {
+    color: var(--text-tertiary);
+  }
+
+  .hook-fact dd {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-2);
+    min-width: 0;
+    margin: 0;
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+  }
+
+  .hook-fact-code {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-code);
+  }
+
+  .hook-fact-before {
+    color: var(--text-tertiary);
+    text-decoration: line-through;
+  }
+
+  .hook-list > .hook-list-scope {
+    padding: 6px var(--space-3) 2px;
+    font-size: var(--font-size-caption);
+    font-weight: var(--weight-semibold);
+    color: var(--text-tertiary);
+  }
+
+  .hook-list > .hook-list-scope:first-child {
+    padding-top: 2px;
+  }
+
+  .hook-list-item {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .hook-list-event {
+    flex: none;
+    color: var(--text-secondary);
+  }
+
+  .hook-list-matcher {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-tertiary);
+  }
+
+  .hook-list-command {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-tertiary);
+  }
+
+  .hook-list-off {
+    flex: none;
+    margin-left: auto;
+    font-size: var(--font-size-caption);
+    color: var(--text-tertiary);
+  }
+
+  .hook-list-item > span:not(.hook-list-off) {
+    transition: opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .hook-list-item[data-enabled="false"] > span:not(.hook-list-off) {
+    opacity: 0.45;
+  }
+}

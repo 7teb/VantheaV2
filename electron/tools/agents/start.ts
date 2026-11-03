@@ -97,20 +97,21 @@ export const deploy_agent_tool = define_tool<DeployArgs>({
         throw new Error("Agents can only be deployed from a running turn of this chat.");
       }
       ensure_capacity(ctx.chat_id);
-      const model = await find_agent_model(args.model ?? parent.model.id);
+      const model_id = args.model ?? parent.model.id;
+      const model = await find_agent_model(model_id);
       const effort = resolve_effort(model, args.effort ?? parent.effort);
       const without_tools = validate_without_tools(args.profile, args.without_tools, ctx.settings, model);
       const scope = args.scope.map((entry) => scope_entry(ctx.project_root, entry));
-      const subject = task_subject(`deploy_agent, new sub-agent ${args.name}, profile ${profile_text({ profile: args.profile, without_tools })}, model ${model.id}`, { topic: args.topic, scope }, args.prompt);
+      const subject = task_subject(`deploy_agent, new sub-agent ${args.name}, profile ${profile_text({ profile: args.profile, without_tools })}, model ${model_id}`, { topic: args.topic, scope }, args.prompt);
       const gate = await agent_text_gate(ctx, { tool: "deploy_agent", to_name: args.name, to_id: null, about: args.topic, text: args.prompt, without_tools }, subject);
       if (gate.kind !== "pass") {
         return { status: "denied", text: gate.text, view: null };
       }
-      const started = deploy_agent({ ...run_context(ctx, args.prompt), name: args.name, description: args.description, topic: args.topic, scope, profile: args.profile, without_tools, model, effort });
+      const started = deploy_agent({ ...run_context(ctx, args.prompt), name: args.name, description: args.description, topic: args.topic, scope, profile: args.profile, without_tools, model, model_id, effort });
       const id = started.agent.agent_id;
       return {
         status: "done",
-        text: `Deployed agent ${label_of(started.agent)} (id ${id}, ${profile_text(started.agent)}, model ${model.id}${effort ? `, effort ${effort}` : ""}, topic ${args.topic}). It runs in the background; its report arrives automatically when it finishes. ${running_peers(ctx.chat_id, id)}`,
+        text: `Deployed agent ${label_of(started.agent)} (id ${id}, ${profile_text(started.agent)}, model ${started.agent.model}${effort ? `, effort ${effort}` : ""}, topic ${args.topic}). It runs in the background; its report arrives automatically when it finishes. ${running_peers(ctx.chat_id, id)}`,
         view: agent_view(started.agent, started.run),
       };
     }),

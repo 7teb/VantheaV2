@@ -2,7 +2,7 @@ import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import type { ShellKind } from "../../shared/shell.ts";
 import { git_bash_path } from "./git-bash.ts";
 
-export type ShellSpawner = (command: string, cwd: string) => ChildProcess;
+export type ShellSpawner = (command: string, cwd: string, input?: string) => ChildProcess;
 
 export type ShellExit = { exit_code: number | null; signal: string | null };
 
@@ -22,24 +22,24 @@ const msys_quoted = (text: string): string => `"${text.replace(/\\/g, "\\\\").re
 
 export const bash_args = (command: string): string[] => ["-c", msys_quoted(`${bash_prelude}${command}`)];
 
-const piped = (child: ChildProcess, shell: string, cwd: string): ChildProcess => {
+const piped = (child: ChildProcess, shell: string, cwd: string, input: string | undefined): ChildProcess => {
   child.stdin?.on("error", (error) => console.warn(`[shell] stdin of ${shell} in ${cwd} failed: ${error.message}`));
-  child.stdin?.end();
+  child.stdin?.end(input);
   child.stdout?.setEncoding("utf8");
   child.stderr?.setEncoding("utf8");
   return child;
 };
 
-export const spawn_powershell: ShellSpawner = (command, cwd) =>
-  piped(spawn("powershell.exe", powershell_args(command), { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"] }), "powershell", cwd);
+export const spawn_powershell: ShellSpawner = (command, cwd, input) =>
+  piped(spawn("powershell.exe", powershell_args(command), { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"] }), "powershell", cwd, input);
 
-export const spawn_bash: ShellSpawner = (command, cwd) => {
+export const spawn_bash: ShellSpawner = (command, cwd, input) => {
   const bash = git_bash_path();
   if (!bash) {
     throw new Error("Git Bash was not found on this PC");
   }
   const child = spawn(bash, bash_args(command), { cwd, windowsHide: true, shell: false, windowsVerbatimArguments: true, argv0: `"${bash}"`, stdio: ["pipe", "pipe", "pipe"] });
-  return piped(child, "bash", cwd);
+  return piped(child, "bash", cwd, input);
 };
 
 export const shell_spawners: Record<ShellKind, ShellSpawner> = { powershell: spawn_powershell, bash: spawn_bash };

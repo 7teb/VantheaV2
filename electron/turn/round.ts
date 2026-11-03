@@ -18,6 +18,8 @@ import type { ApiAssistantMessage, ApiMessage, ApiToolCall, RoundRequest, RoundR
 import { failure_of, type ContextReading, type Tool, type ToolContext, type ToolImage, type ToolProfile } from "../tools/types.ts";
 import { tool_batches } from "./batches.ts";
 import { carrier, image_url, type CarrierImage } from "./carriers.ts";
+import type { HookCall } from "../hooks/input.ts";
+import type { PostToolGate } from "../hooks/turn-hooks.ts";
 import { create_status_driver } from "./reasoning-status.ts";
 import type { Emitter, TurnSession } from "./session.ts";
 
@@ -28,6 +30,7 @@ export type RoundOutcome = {
   usage: RoundUsage | null;
   estimate: number;
   plan_presented: boolean;
+  text: string;
 };
 
 const progress_interval_ms = 100;
@@ -191,14 +194,38 @@ const keep_images = async (session: TurnSession, call_id: string, images: ToolIm
   }
 };
 
+const hook_call = (session: TurnSession, call: RoundCall): HookCall | null =>
+  session.hooks && call.tool && call.args ? { name: call.name, args: call.args, tool_use_id: api_call_id(session.call_scope ?? session.message_id, call.engine_id) } : null;
+
+const after_hooks = (session: TurnSession, hooked: HookCall | null, outcome: ToolOutcome, duration_ms: number): Promise<PostToolGate> | null =>
+  hooked && session.hooks && (outcome.status === "done" || outcome.status === "failed")
+    ? session.hooks.post_tool(hooked, { status: outcome.status, text: outcome.result_text, view: outcome.view, duration_ms })
+    : null;
+
 const run_call = async (session: TurnSession, call: RoundCall, profile: ToolProfile, image_count: number, context: () => ContextReading): Promise<CallResult> => {
   session.emit({ type: "tool_start", call_id: call.engine_id });
+  const hooked = hook_call(session, call);
+  const pre = hooked && session.hooks ? await session.hooks.pre_tool(hooked) : null;
+  if (pre?.kind === "aborted") {
+    return { aborted: true };
+  }
+  if (pre?.kind === "blocked") {
+    session.emit({ type: "tool_end", call_id: call.engine_id, status: "denied", view: null, error: null, result_text: pre.text, hooks: pre.runs });
+    return { aborted: false, result_text: pre.text, carried: [], plan: false };
+  }
+  const started = Date.now();
   const outcome = await execute_tool(session, call.tool, call.engine_id, call.name, call.args, profile, image_count, context);
   if (outcome.aborted) {
     return { aborted: true };
   }
+  const post = await after_hooks(session, hooked, outcome, Date.now() - started);
+  if (post?.kind === "aborted") {
+    return { aborted: true };
+  }
+  const runs = [...(pre?.runs ?? []), ...(post?.runs ?? [])];
+  const tool_text = post?.result_text ?? outcome.result_text;
   const kept = await keep_images(session, call.engine_id, outcome.images);
-  const result_text = kept.note ? `${outcome.result_text}\n${kept.note}` : outcome.result_text;
+  const result_text = kept.note ? `${tool_text}\n${kept.note}` : tool_text;
   session.emit({
     type: "tool_end",
     call_id: call.engine_id,
@@ -208,6 +235,7 @@ const run_call = async (session: TurnSession, call: RoundCall, profile: ToolProf
     ...(outcome.failure ? { failure: outcome.failure } : {}),
     result_text,
     ...(kept.stored.length ? { images: kept.stored } : {}),
+    ...(runs.length ? { hooks: runs } : {}),
   });
   return { aborted: false, result_text, carried: kept.carried, plan: call.name === "present_plan" && outcome.status === "done" };
 };
@@ -226,6 +254,7 @@ const aborted_outcome = (result: RoundResult, estimate: number): RoundOutcome =>
   usage: result.usage,
   estimate,
   plan_presented: false,
+  text: result.content,
 });
 
 export const round_profile = (session: TurnSession): ToolProfile => session.profile ?? (session.plan ? "plan" : "main");
@@ -277,7 +306,7 @@ export const run_round = async (session: TurnSession, round: number, api_message
     session.emit({ type: "reasoning_details", round, details: result.reasoning_details });
   }
   if (!result.tool_calls.length) {
-    return { aborted: false, tool_calls: 0, finish_reason: result.finish_reason, usage: result.usage, estimate, plan_presented: false };
+    return { aborted: false, tool_calls: 0, finish_reason: result.finish_reason, usage: result.usage, estimate, plan_presented: false, text: result.content };
   }
   const scope = session.call_scope ?? session.message_id;
   const calls: RoundCall[] = result.tool_calls.map((call, position) => ({
@@ -344,5 +373,5 @@ export const run_round = async (session: TurnSession, round: number, api_message
   if (carried.length) {
     api_messages.push(carrier(carried));
   }
-  return { aborted: false, tool_calls: calls.length, finish_reason: result.finish_reason, usage: result.usage, estimate, plan_presented };
+  return { aborted: false, tool_calls: calls.length, finish_reason: result.finish_reason, usage: result.usage, estimate, plan_presented, text: result.content };
 };

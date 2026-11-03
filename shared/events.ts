@@ -1,4 +1,5 @@
 import type { ApprovalRequest, HumanDecision } from "./approval.ts";
+import type { HookRun } from "./hook-notes.ts";
 import type { ReviewRecord } from "./review.ts";
 import type {
   AssistantMessage,
@@ -43,9 +44,10 @@ export type StreamEventBody =
       failure?: ToolFailure;
       result_text: string;
       images?: StepImage[];
+      hooks?: HookRun[];
     }
   | { type: "steer"; round: number; text: string; pushed_at?: number; steer_id?: string; attachments?: Attachment[]; assistant_reference?: AssistantReference }
-  | { type: "notice"; round: number; notice: NoticeKind; text: string }
+  | { type: "notice"; round: number; notice: NoticeKind; text: string; steer_id?: string }
   | {
       type: "compaction";
       round: number;

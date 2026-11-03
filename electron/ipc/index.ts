@@ -8,6 +8,7 @@ import { register_files_ipc } from "./files.ts";
 import { register_git_actions_ipc } from "./git-actions.ts";
 import { register_git_ipc } from "./git.ts";
 import { register_github_ipc } from "./github.ts";
+import { register_hooks_ipc } from "./hooks.ts";
 import { register_mcp_ipc } from "./mcp.ts";
 import { register_media_ipc } from "./media.ts";
 import { register_models_ipc } from "./models.ts";
@@ -30,6 +31,7 @@ export const register_ipc = () => {
   register_media_ipc();
   register_browser_ipc();
   register_mcp_ipc();
+  register_hooks_ipc();
   register_background_ipc();
   register_agents_ipc();
   register_workflows_ipc();

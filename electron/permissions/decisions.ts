@@ -28,6 +28,11 @@ const request_subject = (request: ApprovalRequest): { tool: string; subject: str
       return { tool: request.tool, subject: `${request.to_name}: ${request.text}`, cwd: "", reason: request.review?.reason ?? "" };
     case "secret_read":
       return { tool: request.tool, subject: secret_read_subject(request), cwd: "", reason: request.review?.reason ?? "" };
+    case "hook": {
+      const matcher = request.hook.matcher ? ` [${request.hook.matcher}]` : "";
+      const subject = `${request.action} ${request.hook.event}${matcher} (${request.hook.shell}): ${request.hook.command}`;
+      return { tool: request.action === "delete" ? "delete_hook" : "save_hook", subject, cwd: request.scope.kind === "project" ? request.scope.path : "", reason: request.review?.reason ?? "" };
+    }
   }
 };
 

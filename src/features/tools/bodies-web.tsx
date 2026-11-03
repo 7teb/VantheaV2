@@ -13,7 +13,7 @@ import "./bodies-web.css";
 
 const visible_sources = 4;
 
-const host_of = (url: string) => {
+export const host_of = (url: string) => {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch (error) {
@@ -22,7 +22,7 @@ const host_of = (url: string) => {
   }
 };
 
-const follow = (event: MouseEvent<HTMLAnchorElement>, url: string) => {
+export const follow = (event: MouseEvent<HTMLAnchorElement>, url: string) => {
   event.preventDefault();
   open_external(url);
 };
@@ -32,7 +32,7 @@ const published = (raw: string, language: string) => {
   return Number.isNaN(date.getTime()) ? raw : date.toLocaleDateString(language, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 };
 
-const SourceIcon = ({ host }: { host: string }) => {
+export const SourceIcon = ({ host }: { host: string }) => {
   const [failed, set_failed] = useState(false);
   if (failed) {
     return <GlobeIcon />;

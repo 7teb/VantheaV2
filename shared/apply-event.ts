@@ -217,6 +217,7 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
             result_text: event.result_text,
             ...(event.failure ? { failure: event.failure } : {}),
             ...(event.images?.length ? { images: event.images } : {}),
+            ...(event.hooks?.length ? { hooks: event.hooks } : {}),
             approval: null,
             progress: null,
             ended_at: event.at,

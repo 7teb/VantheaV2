@@ -4,18 +4,11 @@ import { Collapsible } from "../../components/Collapsible.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { ApprovalEnv } from "./ApprovalEnv.tsx";
 import { EditCard } from "./bodies-files.tsx";
+import { HookPreview } from "./HookApproval.tsx";
+import { PreviewText } from "./PreviewText.tsx";
 import { WorkflowApproval } from "./WorkflowApproval.tsx";
 
 const Command = ({ text }: { text: string }) => <pre className="approval-command inset-surface">{text}</pre>;
-
-const PreviewText = ({ text, prompt = "" }: { text: string; prompt?: string }) => (
-  <div className="command-card-command">
-    <pre className="command-card-text approval-preview-text">
-      {prompt && <span className="command-card-prompt">{prompt}</span>}
-      {text}
-    </pre>
-  </div>
-);
 
 const McpArgs = ({ args, scope }: { args: string; scope: string | null }) => (
   <div className="command-card">
@@ -101,6 +94,15 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
             <span className="command-card-lead">{request.tool}</span>
           </div>
         </div>
+      );
+    case "hook":
+      return (
+        <HookPreview
+          hook={request.hook}
+          previous={request.action === "change" ? request.previous : null}
+          scope={request.scope.kind === "global" ? t("hooks.scope_global") : request.scope.name}
+          scope_title={request.scope.kind === "project" ? request.scope.path : ""}
+        />
       );
   }
 };

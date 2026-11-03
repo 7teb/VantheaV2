@@ -1,6 +1,7 @@
 import { app, Menu, protocol } from "electron";
 import { init_services, report_startup_failure, shutdown_services } from "./app/lifecycle.ts";
-import { create_window, main_window } from "./app/window.ts";
+import { init_tray, mark_quitting, show_window, shutdown_tray } from "./app/tray.ts";
+import { create_window } from "./app/window.ts";
 import { init_dock } from "./browser/dock.ts";
 import { check_scheme } from "./check/session.ts";
 import { emit } from "./ipc/handle.ts";
@@ -14,27 +15,24 @@ const start = async () => {
   Menu.setApplicationMenu(null);
   await init_services();
   register_ipc();
-  init_dock(create_window((state) => emit("window:changed", state)));
+  const window = create_window((state) => emit("window:changed", state));
+  init_tray(window);
+  init_dock(window);
 };
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.setAppUserModelId("dev.local.vantheax");
-  app.on("second-instance", () => {
-    const window = main_window();
-    if (!window) {
-      return;
-    }
-    if (window.isMinimized()) {
-      window.restore();
-    }
-    window.focus();
-  });
+  app.on("second-instance", show_window);
   app.on("window-all-closed", () => {
     app.quit();
   });
-  app.on("before-quit", shutdown_services);
+  app.on("before-quit", () => {
+    mark_quitting();
+    shutdown_tray();
+    shutdown_services();
+  });
   app
     .whenReady()
     .then(start)

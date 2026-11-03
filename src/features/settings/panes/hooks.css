@@ -1,0 +1,150 @@
+.hook-row .pane-item-text {
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.hook-row[data-enabled="false"] .pane-item-text {
+  opacity: 0.45;
+}
+
+.hook-row-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.hook-row-event {
+  flex: none;
+}
+
+.hook-row-matcher {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-caption);
+  color: var(--text-tertiary);
+}
+
+.hook-row-matcher.is-all {
+  font-family: var(--font-ui);
+}
+
+.hook-row-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.hook-row-shell {
+  flex: none;
+}
+
+.hook-row-command {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+
+.hook-confirm-command {
+  max-height: 160px;
+  margin: var(--space-3) 0 0;
+  padding: 10px var(--space-3);
+  overflow: auto;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-code);
+  line-height: 20px;
+  color: var(--text-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.hook-dialog {
+  width: min(540px, 100%);
+}
+
+.hook-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--space-6);
+}
+
+.hook-dialog-title {
+  margin-bottom: 6px;
+  font-size: var(--font-size-title);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.hook-form-select.select {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.hook-form-code .text-field-input,
+.hook-form-command.text-area {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-code);
+}
+
+.hook-form-command.text-area {
+  min-height: 0;
+}
+
+.hook-form-timeout {
+  width: 96px;
+}
+
+.hook-form-matcher {
+  margin-top: -10px;
+}
+
+.hook-form-matcher .dialog-field {
+  padding-top: 10px;
+}
+
+.hook-form-matcher .hook-note {
+  padding-top: 10px;
+}
+
+.hook-form-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--size-control);
+  font-size: var(--font-size-ui);
+  color: var(--text-secondary);
+}
+
+.hook-note {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
+  overflow-wrap: anywhere;
+}
+
+.hook-note.is-danger {
+  color: var(--text-danger);
+}
+
+.hook-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 600px) {
+  .hook-row-meta {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .hook-row-command {
+    flex-basis: 100%;
+  }
+}

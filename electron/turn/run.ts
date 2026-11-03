@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { AssistantMessage, Attachment, Message, UserMessage } from "../../shared/chat.ts";
 import { file_changes, undoable_turn } from "../../shared/file-changes.ts";
+import { passed_prompts } from "../../shared/hook-notes.ts";
 import type { CompactResult, SendRequest, TurnStarted } from "../../shared/ipc/chats.ts";
 import type { CommandOrigin, UserOrigin } from "../../shared/chat.ts";
 import { chat_choice, with_choice, type ModelChoice, type ModelEntry } from "../../shared/models.ts";
@@ -13,11 +14,8 @@ import { forget_scan } from "../memory/store.ts";
 import { resolve_effort } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { cancel_chat } from "../permissions/approvals.ts";
-import { refresh_instruction_snapshot } from "../permissions/instruction-files.ts";
 import { context_model } from "../settings/model-context.ts";
 import { get_settings } from "../settings/store.ts";
-import { describe_attachment_image } from "../side/vision.ts";
-import { start_title } from "../side/title.ts";
 import { turn_diffs } from "../turn-diff/index.ts";
 import {
   abort_turn,
@@ -39,7 +37,6 @@ import { git_init_request_text } from "./git-init-request.ts";
 import { init_request_text } from "./init-request.ts";
 import { review_request_text } from "./review-request.ts";
 import { undo_request_text } from "./undo-request.ts";
-import { note_images } from "./vision-notes.ts";
 import { stop_chat_workflows } from "../workflows/runtime.ts";
 
 const app_closed_message = "The app was closed while this turn was still running.";
@@ -71,7 +68,7 @@ const with_reservation = async <T>(chat_id: string, work: () => Promise<T>): Pro
 
 type Launched = { started: TurnStarted; finished: Promise<void> };
 
-const last_request = (messages: Message[]): string => messages.findLast((message): message is UserMessage => message.role === "user" && message.origin === "user")?.text ?? "";
+const last_request = (messages: Message[]): string => passed_prompts(messages).findLast((message) => message.origin === "user")?.text ?? "";
 
 const turn_model = async (choice: ModelChoice): Promise<ModelEntry> => {
   const listed = (await model_catalog()).models.find((model) => model.id === choice.model);
@@ -109,7 +106,6 @@ const launch = async (input: BeginInput): Promise<Launched> => {
   let user_message_id: string;
   let user_request: string;
   if (input.trigger.kind === "new") {
-    const first_user = !chat.messages.some((message) => message.role === "user");
     const user: UserMessage = {
       id: randomUUID(),
       role: "user",
@@ -122,9 +118,6 @@ const launch = async (input: BeginInput): Promise<Launched> => {
     await append_message(input.chat_id, user);
     user_message_id = user.id;
     user_request = input.trigger.text;
-    if (first_user) {
-      start_title(input.chat_id, input.trigger.text);
-    }
   } else if (input.trigger.kind === "existing") {
     user_message_id = input.trigger.message_id;
     user_request = input.trigger.text;
@@ -164,6 +157,7 @@ const launch = async (input: BeginInput): Promise<Launched> => {
     compact_only: input.trigger.kind === "compact",
     user_request,
     project_root,
+    origin: input.origin,
   };
   const finished = new Promise<void>((resolve) => {
     setImmediate(() => {
@@ -325,11 +319,7 @@ export const steer_turn = async (chat_id: string, text: string, attachments: Att
   if (!push_steer(chat_id, text, steer_id, attachments)) {
     return null;
   }
-  if (!turn.notes.has(steer_id)) {
-    turn.notes.set(steer_id, note_images(attachments, turn.model, turn.controller.signal, describe_attachment_image));
-  }
   await unarchive_chat(chat_id);
-  await refresh_instruction_snapshot(chat_id);
   wake_idle(chat_id);
   return turn.message_id;
 };

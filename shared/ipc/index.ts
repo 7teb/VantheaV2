@@ -7,6 +7,7 @@ import { files_channels } from "./files.ts";
 import { git_actions_channels } from "./git-actions.ts";
 import { git_channels } from "./git.ts";
 import { github_channels } from "./github.ts";
+import { hooks_channels } from "./hooks.ts";
 import { media_channels } from "./media.ts";
 import { panels_channels } from "./panels.ts";
 import { questions_channels } from "./questions.ts";
@@ -25,6 +26,7 @@ export const channels = {
   ...work_channels,
   ...workflows_channels,
   ...extensions_channels,
+  ...hooks_channels,
   ...panels_channels,
   ...browser_channels,
   ...questions_channels,

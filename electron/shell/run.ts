@@ -15,10 +15,11 @@ export type ShellRun = {
   on_output: (output: OutputView) => void;
   on_detachable?: (detach: ShellDetach) => void;
   shell?: ShellKind;
+  input?: string;
 };
 
 export type ShellOutcome =
-  | { kind: "exited"; exit_code: number | null; output: OutputView; timed_out: boolean; duration_ms: number }
+  | { kind: "exited"; exit_code: number | null; output: OutputView; stdout: OutputView; stderr: OutputView; timed_out: boolean; duration_ms: number; start_error?: string }
   | { kind: "detached"; task_id: string; output: OutputView; duration_ms: number };
 
 export const run_shell = (run: ShellRun, spawner: ShellSpawner = shell_spawners[run.shell ?? "powershell"]): Promise<ShellOutcome> =>
@@ -30,11 +31,14 @@ export const run_shell = (run: ShellRun, spawner: ShellSpawner = shell_spawners[
     const shell = run.shell ?? "powershell";
     const started = Date.now();
     const output = output_collector();
-    const child = spawner(run.command, run.cwd);
+    const stdout = output_collector();
+    const stderr = output_collector();
+    const child = spawner(run.command, run.cwd, run.input);
     let settled = false;
     let exited = false;
     let exit_code: number | null = null;
     let exit_signal: string | null = null;
+    let start_error: string | null = null;
     let grace: ReturnType<typeof setTimeout> | null = null;
     const cleanup = () => {
       settled = true;
@@ -53,7 +57,7 @@ export const run_shell = (run: ShellRun, spawner: ShellSpawner = shell_spawners[
       if (exit.signal && !timed_out) {
         output.append(`\n${signal_note(exit.signal)}`);
       }
-      resolve({ kind: "exited", exit_code: exit.exit_code, output, timed_out, duration_ms: Date.now() - started });
+      resolve({ kind: "exited", exit_code: exit.exit_code, output, stdout, stderr, timed_out, duration_ms: Date.now() - started, ...(start_error === null ? {} : { start_error }) });
     };
     const on_abort = () => {
       if (settled) {
@@ -75,9 +79,20 @@ export const run_shell = (run: ShellRun, spawner: ShellSpawner = shell_spawners[
       output.append(chunk);
       run.on_output(output);
     };
+    const on_stdout = (chunk: string) => {
+      if (!settled) {
+        stdout.append(chunk);
+      }
+    };
+    const on_stderr = (chunk: string) => {
+      if (!settled) {
+        stderr.append(chunk);
+      }
+    };
     const on_error = (error: Error) => {
       console.warn(`[shell] running ${run.command.slice(0, 200)} in ${run.cwd} failed: ${error.message}`);
       output.append(`\n[failed to start ${shell_labels[shell]}: ${error.message}]`);
+      start_error = error.message;
       finish(false);
     };
     const on_exit = (code: number | null, signal: NodeJS.Signals | null) => {
@@ -98,6 +113,8 @@ export const run_shell = (run: ShellRun, spawner: ShellSpawner = shell_spawners[
       cleanup();
       child.stdout?.off("data", on_data);
       child.stderr?.off("data", on_data);
+      child.stdout?.off("data", on_stdout);
+      child.stderr?.off("data", on_stderr);
       child.off("error", on_error);
       child.off("exit", on_exit);
       child.off("close", on_close);
@@ -107,6 +124,8 @@ export const run_shell = (run: ShellRun, spawner: ShellSpawner = shell_spawners[
     run.signal.addEventListener("abort", on_abort, { once: true });
     child.stdout?.on("data", on_data);
     child.stderr?.on("data", on_data);
+    child.stdout?.on("data", on_stdout);
+    child.stderr?.on("data", on_stderr);
     child.once("error", on_error);
     child.once("exit", on_exit);
     child.once("close", on_close);

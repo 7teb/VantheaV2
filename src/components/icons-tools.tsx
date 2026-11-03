@@ -86,6 +86,14 @@ export const ShieldTerminalIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const HookIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="10.5" cy="3" r="1.5" />
+    <path d="M10.5 4.5V10a3.5 3.5 0 0 1-7 0V8" />
+    <path d="M3.5 8l2 2" />
+  </Icon>
+);
+
 export const ShieldAlertIcon = (props: IconProps) => (
   <Icon {...lucide} {...props}>
     <path d={shield} />

@@ -1,0 +1,192 @@
+@property --web-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@layer components {
+  @keyframes web-elbow-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+
+  .web-sources-row {
+    position: relative;
+    padding-left: 23px;
+  }
+
+  .web-sources-elbow {
+    position: absolute;
+    top: calc(var(--web-row-height) / 2 - 14px);
+    left: 7px;
+    pointer-events: none;
+  }
+
+  .web-sources-elbow path {
+    stroke: var(--rail);
+    stroke-width: 1;
+    stroke-dasharray: 1;
+  }
+
+  .web-sources-toggle {
+    display: flex;
+    align-items: center;
+    min-height: var(--web-row-height);
+    margin-left: -4px;
+    padding: 0 4px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-body);
+    color: var(--text-secondary);
+  }
+
+  .web-avatar-stack {
+    display: flex;
+    align-items: center;
+    margin-left: var(--space-2);
+    transition: width var(--duration-spring) var(--ease-spring) 70ms;
+  }
+
+  .web-avatar {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--ring-avatar);
+    border-radius: var(--radius-full);
+    background: var(--surface-avatar);
+    color: var(--text-tertiary);
+  }
+
+  .web-avatar + .web-avatar {
+    margin-left: -6px;
+  }
+
+  .web-avatar > :is(img, svg) {
+    width: 12px;
+    height: 12px;
+  }
+
+  .web-sources-more {
+    margin-left: var(--space-2);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
+  }
+
+  .web-sources-chevron {
+    flex: none;
+    margin-left: var(--space-1);
+    color: var(--text-tertiary);
+    rotate: 90deg;
+    transition:
+      rotate var(--duration-slower) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .web-sources-toggle:hover .web-sources-chevron {
+    color: var(--text-secondary);
+  }
+
+  .web-sources-row[data-open="true"] .web-sources-chevron {
+    rotate: 270deg;
+  }
+
+  .web-source-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .web-source-item {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--duration-height-open) var(--ease-out);
+  }
+
+  .web-source-item[data-shown="true"] {
+    grid-template-rows: 1fr;
+  }
+
+  .web-source-clip {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .web-source-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: var(--web-row-height);
+    padding: 0 4px;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .web-source-link:hover {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .web-avatar-slot {
+    flex: none;
+    width: 20px;
+    height: 20px;
+  }
+
+  .web-source-text {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-out);
+  }
+
+  .web-source-item[data-shown="true"] .web-source-text {
+    opacity: 1;
+    transition-delay: 50ms;
+  }
+
+  .web-sources-extra {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-top: var(--space-1);
+  }
+
+  :is(.work-single, .work-group)[data-live] .web-sources-row {
+    interpolate-size: allow-keywords;
+    mask-image: linear-gradient(to bottom, var(--mask) calc(100% - var(--web-fade)), transparent);
+    transition:
+      height var(--duration-slow) var(--ease-height),
+      opacity var(--duration-enter) var(--ease-out),
+      translate var(--duration-enter) var(--ease-out),
+      filter var(--duration-enter) var(--ease-out),
+      --web-fade var(--duration-enter) var(--ease-out),
+      overflow-y 0s allow-discrete var(--duration-slow);
+  }
+
+  @starting-style {
+    :is(.work-single, .work-group)[data-live] .web-sources-row {
+      height: 0;
+      overflow-y: clip;
+      opacity: 0;
+      translate: 0 4px;
+      filter: blur(6px);
+      --web-fade: 22px;
+    }
+  }
+
+  :is(.work-single, .work-group)[data-live] .web-sources-elbow path {
+    animation: web-elbow-draw 140ms linear 120ms backwards;
+  }
+}

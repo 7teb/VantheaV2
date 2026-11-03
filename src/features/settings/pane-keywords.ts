@@ -1,6 +1,6 @@
 import type { MessageKey } from "../../i18n/translate.ts";
 
-export type PaneId = "personalization" | "privacy" | "web_search" | "image_gen" | "mcp" | "skills";
+export type PaneId = "personalization" | "privacy" | "web_search" | "image_gen" | "mcp" | "hooks" | "skills";
 
 export type PaneSearch = { label: MessageKey; keywords: MessageKey[] };
 
@@ -36,6 +36,19 @@ export const pane_search: Record<PaneId, PaneSearch> = {
   mcp: {
     label: "settings.tab_mcp",
     keywords: ["mcp.add", "mcp.tools", "mcp.reconnect", "mcp.trust_dangerous", "mcp.log", "mcp.choose_plugin", "mcp.tier_dangerous"],
+  },
+  hooks: {
+    label: "hooks.tab",
+    keywords: [
+      "hooks.add",
+      "hooks.event_label",
+      "hooks.command_label",
+      "hooks.matcher_label_tool",
+      "hooks.event_user_prompt_submit",
+      "hooks.event_pre_tool_use",
+      "hooks.event_post_tool_use",
+      "hooks.event_stop",
+    ],
   },
   skills: {
     label: "settings.tab_skills",

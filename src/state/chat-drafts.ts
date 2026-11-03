@@ -1,4 +1,5 @@
 import type { Attachment } from "../../shared/chat.ts";
+import type { StreamEventBody } from "../../shared/events.ts";
 import { visual_tool_name } from "../../shared/visual.ts";
 
 export type DraftUpload = {
@@ -180,6 +181,9 @@ export const set_steering = (state: ComposerState, chat_id: string, id: string, 
       ? { ...entry, steering, steer_failed: false, steer_id: steer_id ?? entry.steer_id, steer_turn_id: steer_turn_id ?? entry.steer_turn_id }
       : entry),
   );
+
+export const taken_steer_id = (event: StreamEventBody): string | null =>
+  (event.type === "steer" || event.type === "notice") && event.steer_id ? event.steer_id : null;
 
 export const acknowledge_steer = (state: ComposerState, chat_id: string, steer_id: string): ComposerState => {
   const entry = queue_of(state, chat_id).find((item) => item.steer_id === steer_id);
