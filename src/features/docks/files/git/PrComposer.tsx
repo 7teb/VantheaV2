@@ -7,7 +7,7 @@ import { TextArea, TextField } from "../../../../components/TextField.tsx";
 import { use_t, type Translate } from "../../../../i18n/index.ts";
 import { open_external } from "../../../../state/chat-actions.ts";
 import { files_store, shown_view } from "../../../../state/files.ts";
-import { close_pr, create_pr, git_pr_store, pr_of, set_pr_text, type PrDraft } from "../../../../state/git-pr.ts";
+import { close_pr, create_pr, git_pr_store, pr_of, retry_pr, set_pr_text, type PrDraft } from "../../../../state/git-pr.ts";
 import { shown_root } from "../../../../state/git.ts";
 import { github_store, github_view_of } from "../../../../state/github.ts";
 import { use_store } from "../../../../state/use-store.ts";
@@ -97,7 +97,8 @@ export const PrComposer = () => {
   }
   const note = push_note(t, draft, git.primary_remote);
   const exists = draft.issue?.kind === "exists" ? draft.issue.url : null;
-  const ready = !draft.writing && !draft.creating && draft.cli === null && draft.base !== null && draft.title.trim() !== "" && !busy;
+  const ready = !draft.writing && !draft.creating && !busy && (draft.cli !== null || (draft.base !== null && draft.title.trim() !== ""));
+  const submit_key = draft.cli ? "common.retry" : "git_actions.create";
   return (
     <div className="pr-composer-slot">
       <section className="pr-composer" aria-label={t("git_actions.pr_label")}>
@@ -126,8 +127,8 @@ export const PrComposer = () => {
           <Button size="sm" variant="ghost" onClick={() => close_pr(root)}>
             {t("common.cancel")}
           </Button>
-          <Button size="sm" disabled={!ready} onClick={() => void create_pr()}>
-            {draft.creating ? <span className="is-working"><WorkingLetters text={t("git_actions.creating")} /></span> : t("git_actions.create")}
+          <Button size="sm" disabled={!ready} onClick={() => void (draft.cli ? retry_pr() : create_pr())}>
+            {draft.creating ? <span className="is-working"><WorkingLetters text={t("git_actions.creating")} /></span> : t(submit_key)}
           </Button>
         </footer>
       </section>

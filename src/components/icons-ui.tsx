@@ -264,6 +264,18 @@ export const SmartphoneIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const PlayIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M5.5 3.5v9l7-4.5z" />
+  </Icon>
+);
+
+export const PauseIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M6.5 5v6M9.5 5v6" />
+  </Icon>
+);
+
 export const SkipForwardIcon = (props: IconProps) => (
   <Icon {...lucide} {...props}>
     <path d="M21 4v16" />

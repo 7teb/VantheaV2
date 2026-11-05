@@ -277,6 +277,7 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
         retry: null,
         ended_at: new Date(event.at).toISOString(),
         steps: settle_steps(state.steps, event.at),
+        ...(event.quiet ? { quiet: true as const } : {}),
       };
   }
   return state;

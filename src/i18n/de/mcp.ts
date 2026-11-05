@@ -14,7 +14,7 @@ export const mcp: Record<keyof typeof en, string> = {
   "mcp.remove": "Entfernen",
   "mcp.reconnect": "Neu verbinden",
   "mcp.empty": "Noch keine MCP-Server. Füg einen hinzu, um dem Modell extra Tools zu geben.",
-  "mcp.add_help": "Am einfachsten: oben den Ordner des Servers wählen, dann erkennt die App selbst, wie er gestartet wird. Sonst die Config aus der README einfügen (dasselbe JSON wie bei Claude Desktop) oder Name und Befehl von Hand eintragen.",
+  "mcp.add_help": "Am einfachsten: oben den Ordner des Servers wählen, dann erkennt die App selbst, wie er gestartet wird. Sonst die Config aus der README einfügen oder Name und Befehl von Hand eintragen.",
   "mcp.paste_placeholder": "Server-Config hier einfügen, z.B.\n{ \"command\": \"uvx\", \"args\": [\"ida-pro-mcp\"] }",
   "mcp.or_manual": "oder von Hand ausfüllen",
   "mcp.choose_plugin": "Plugin-Ordner wählen",

@@ -74,6 +74,26 @@ export const save_now = (chat_id: string): Promise<void> => {
   return enqueue_write(chat_id, state);
 };
 
+export const save_edit = (meta: ChatMeta, body: ChatBody, publish: () => void): Promise<void> => {
+  const state = save_state(meta.id);
+  clear_timer(state);
+  const run = state.chain.then(async () => {
+    if (closed || !metas.has(meta.id)) throw new Error(`chat ${meta.id} is no longer available for editing`);
+    state.writing = true;
+    try {
+      const packed = await encode_chat(meta, body);
+      if (closed || !metas.has(meta.id)) throw new Error(`chat ${meta.id} closed while preparing the edit`);
+      await write_file_atomic(chat_file(meta.id), packed);
+      if (closed || !metas.has(meta.id)) throw new Error(`chat ${meta.id} closed before publishing the edit`);
+      publish();
+    } finally {
+      state.writing = false;
+    }
+  });
+  state.chain = run.catch((error) => console.error(`[chats] editing chat ${meta.id} failed:`, error));
+  return run;
+};
+
 export const schedule_save = (chat_id: string) => {
   const state = save_state(chat_id);
   state.dirty = true;

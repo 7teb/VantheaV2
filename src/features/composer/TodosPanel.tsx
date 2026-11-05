@@ -1,5 +1,4 @@
-import { useState } from "react";
-import type { Message } from "../../../shared/chat.ts";
+import { useEffect, useState } from "react";
 import { latest_todos } from "../../../shared/todos.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
@@ -8,23 +7,20 @@ import { LabelMorph } from "../../components/LabelMorph.tsx";
 import { ProgressRing } from "../../components/ProgressRing.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { chat_view_store } from "../../state/chat-view.ts";
-import type { ChatViewState } from "../../state/chat-view-reduce.ts";
+import { set_todos_hidden, todos_hidden_store } from "../../state/todos-hidden.ts";
 import { use_store } from "../../state/use-store.ts";
 import { TodoList } from "../tools/TodoList.tsx";
-import { use_chat_busy } from "./composer-hooks.ts";
+import { chat_messages, use_chat_busy } from "./composer-hooks.ts";
 import { shown_todos, type ShownTodos } from "./todos-shown.ts";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./TodosPanel.css";
 
-const no_messages: Message[] = [];
-
-const messages_of = (state: ChatViewState, chat_id: string): Message[] => state.entries[chat_id]?.chat?.messages ?? no_messages;
-
 export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
   const t = use_t();
   const [open, set_open] = useState(true);
-  const todos = use_store(chat_view_store, (state) => latest_todos(messages_of(state, chat_id))?.todos ?? null);
-  const streaming = use_store(chat_view_store, (state) => latest_todos(messages_of(state, chat_id))?.streaming ?? false);
+  const hidden = use_store(todos_hidden_store, (state) => state.has(chat_id));
+  const todos = use_store(chat_view_store, (state) => latest_todos(chat_messages(state, chat_id))?.todos ?? null);
+  const streaming = use_store(chat_view_store, (state) => latest_todos(chat_messages(state, chat_id))?.streaming ?? false);
   const ready = use_store(chat_view_store, (state) => state.entries[chat_id]?.status === "ready");
   const busy = use_chat_busy(chat_id);
   const [shown, set_shown] = useState<ShownTodos>(() => shown_todos(todos, null));
@@ -36,6 +32,12 @@ export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
   if (!next && ready && !waited) {
     set_waited(true);
   }
+  const gone = next === null;
+  useEffect(() => {
+    if (gone) {
+      set_todos_hidden(chat_id, false);
+    }
+  }, [gone, chat_id]);
   if (!next) {
     return null;
   }
@@ -46,6 +48,8 @@ export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
     <div
       className="todos-panel composer-dock-card raised-surface enter-fade-up"
       data-open={open}
+      data-hidden={hidden}
+      inert={hidden}
       data-leaving={next.leaving}
       data-entering={waited}
       onAnimationEnd={(event) => {

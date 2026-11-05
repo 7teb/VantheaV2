@@ -3,6 +3,8 @@ import { copy_location, join_locations, type LocationState, type Matcher } from 
 import { concat, copy_values, group_items, join_value_states, poison_variables, resolved, unresolved, word_value, type Value, type ValueState } from "./command-values.ts";
 import type { Piece, Word } from "./shell-words.ts";
 import type { Dialect } from "./statements.ts";
+import { powershell_entry } from "./powershell-arguments.ts";
+export { powershell_switch, powershell_takes_value } from "./powershell-arguments.ts";
 
 export type WalkState = { values: ValueState; location: LocationState; defined: Set<string>; joined: boolean };
 
@@ -60,12 +62,6 @@ export const keywords = new Set(["if", "elseif", "else", "switch", "foreach", "f
 export const follows: Record<string, RegExp> = { if: /^(?:elseif|else)$/, elseif: /^(?:elseif|else)$/, try: /^(?:catch|finally)$/, catch: /^(?:catch|finally)$/, do: /^(?:while|until)$/ };
 
 const shells: Record<string, Dialect> = { cmd: "cmd", powershell: "powershell", pwsh: "powershell", bash: "posix", sh: "posix" };
-
-const powershell_values = ["executionpolicy", "windowstyle", "inputformat", "outputformat", "configurationname", "version", "psconsolefile", "workingdirectory", "settingsfile", "custompipename", "ep", "wd", "if", "of"];
-
-export const powershell_switch = (raw: string): string => /^[-/\u2013\u2014\u2015](\w+):?$/.exec(raw)?.[1]?.toLowerCase() ?? "";
-
-export const powershell_takes_value = (name: string): boolean => powershell_values.some((value) => value.startsWith(name));
 
 export const copy_state = (state: WalkState): WalkState => ({ values: copy_values(state.values), location: copy_location(state.location), defined: new Set(state.defined), joined: state.joined });
 
@@ -230,14 +226,10 @@ export const payload_of = (exe: string, words: StepWord[], at: number, input: Va
     return flag >= 0 ? payload("posix", args.slice(flag + 1, flag + 2), null, ctx) : null;
   }
   if (dialect !== "powershell") return null;
-  for (let index = 0; index < args.length; index += 1) {
-    const flag = powershell_switch(args[index]?.word.raw ?? "");
-    if (!flag || "file".startsWith(flag)) return null;
-    if ("command".startsWith(flag)) return payload("powershell", args.slice(index + 1), null, ctx);
-    if (flag === "ec" || "encodedcommand".startsWith(flag)) return payload("powershell", args.slice(index + 1, index + 2), null, ctx, true);
-    if (powershell_takes_value(flag)) index += 1;
-  }
-  return null;
+  const entry = powershell_entry(exe, args.map((arg) => "values" in arg.value && arg.value.values.length === 1 ? arg.value.values[0] ?? arg.word.raw : arg.word.raw));
+  if (!entry || entry.kind === "file") return null;
+  const selected = entry.kind === "encoded" ? args.slice(entry.at, entry.at + 1) : args.slice(entry.at);
+  return payload("powershell", selected, input, ctx, entry.kind === "encoded");
 };
 
 export const child_state = (state: WalkState): WalkState => ({

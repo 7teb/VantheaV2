@@ -1,6 +1,6 @@
 # Hooks
 
-A hook is a shell command that VantheaX runs automatically at a fixed point of a turn: before or after a tool call, when a message is sent, when a turn or a sub-agent finishes, when a turn fails, when a sub-agent starts. The model follows Claude Code's hooks (events, a matcher, the event as JSON on stdin, exit codes, JSON output), adapted to VantheaX's tools. VantheaX has no other hook handler types: no HTTP, prompt or agent hooks, no async hooks.
+A hook is a shell command that VantheaX runs automatically at a fixed point of a turn: before or after a tool call, when a message is sent, when a turn or a sub-agent finishes, when a turn fails, when a sub-agent starts. Hooks use events, optional matchers, event data as JSON on stdin, exit codes and JSON output. VantheaX has no other hook handler types: no HTTP, prompt or agent hooks, no async hooks.
 
 ## Where hooks live
 

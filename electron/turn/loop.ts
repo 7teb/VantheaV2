@@ -11,9 +11,7 @@ import type { ToolSpec } from "../tools/types.ts";
 import { compact_context, compaction_turn_error } from "./compaction.ts";
 import { round_profile, run_round } from "./round.ts";
 import type { TurnNote, TurnSession } from "./session.ts";
-import { steer_message } from "./user-input.ts";
-
-const continuation_text = "Your last message hit the model's maximum output length and was cut off. Continue exactly where you left off and keep going until the task is finished. Do not start over or repeat what you already wrote.";
+import { continuation_text, steer_message } from "./user-input.ts";
 
 const interrupted_kinds = new Set<TurnError["kind"]>(["stream_interrupted", "timeout", "provider_unavailable"]);
 

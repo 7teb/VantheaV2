@@ -15,7 +15,7 @@ import { own_worktree, same_paths, type RepoPaths } from "./repo.ts";
 import { git_failure_line, type GitTool, type GitVersion } from "./run.ts";
 import { create_ssh_hosts } from "./ssh.ts";
 import { parse_project_status, same_status } from "./status.ts";
-import { assemble_view, special_of, type ViewParts } from "./view.ts";
+import { assemble_view, special_of, tool_special_of, type ViewParts } from "./view.ts";
 import { tree_collector, type GitDirWatch, type GitWatchDir, type GitWatchKind } from "./watch.ts";
 
 export type SessionDeps = {
@@ -241,31 +241,38 @@ export const create_git_session = (root: FilesRoot, deps: SessionDeps): GitSessi
 
   const detect_run = async (full: boolean) => {
     const ticket = ++epoch;
-    const found = await readers.tool(needed, full);
-    if (ticket !== epoch) return;
-    if (found.kind === "missing" || !version_at_least(found.tool.numbers, minimum_git)) {
-      const location = await readers.location(root.path);
+    try {
+      const found = await readers.tool(needed, full);
       if (ticket !== epoch) return;
-      needed = minimum_git;
-      settle_special(!location ? { kind: "none" } : found.kind === "missing" ? { kind: "git_missing" } : { kind: "git_too_old", version: found.tool.version, reason: "minimum" });
-      return flush();
+      if (found.kind === "missing" || !version_at_least(found.tool.numbers, minimum_git)) {
+        const location = await readers.location(root.path);
+        if (ticket !== epoch) return;
+        needed = minimum_git;
+        settle_special(tool_special_of(location, found));
+        return flush();
+      }
+      const current = found.tool;
+      const detected = await readers.detect(current, root.path, controller.signal);
+      if (ticket !== epoch) return;
+      if (detected.kind !== "repo") {
+        settle_special(special_of(detected));
+        return flush();
+      }
+      const same = parts.paths !== null && same_paths(parts.paths, detected.paths) && tool !== null && guard !== null;
+      tool = current;
+      parts.paths = detected.paths;
+      set_special(null);
+      const guard_fresh = !same || full;
+      if (guard_fresh && !(await accept_guard(ticket, current, detected.paths, null))) return flush();
+      watch_dirs(detected.paths);
+      await read_parts(ticket, guard_fresh ? ["status", "refs", "remotes"] : ["status", "refs"], guard_fresh);
+      flush();
+    } catch (error) {
+      if (stopped || ticket !== epoch) return;
+      console.error(`[git] detecting the repository in ${root.path} failed:`, error);
+      set_special({ kind: "error", message: git_failure_line(error) ?? error_text(error), broken_gitfile: false });
+      flush();
     }
-    const current = found.tool;
-    const detected = await readers.detect(current, root.path, controller.signal);
-    if (ticket !== epoch) return;
-    if (detected.kind !== "repo") {
-      settle_special(special_of(detected));
-      return flush();
-    }
-    const same = parts.paths !== null && same_paths(parts.paths, detected.paths) && tool !== null && guard !== null;
-    tool = current;
-    parts.paths = detected.paths;
-    set_special(null);
-    const guard_fresh = !same || full;
-    if (guard_fresh && !(await accept_guard(ticket, current, detected.paths, null))) return flush();
-    watch_dirs(detected.paths);
-    await read_parts(ticket, guard_fresh ? ["status", "refs", "remotes"] : ["status", "refs"], guard_fresh);
-    flush();
   };
 
   const part_run = async (part: Part) => {

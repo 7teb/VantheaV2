@@ -1,3 +1,4 @@
+import type { GrepMatch } from "../../../shared/tool-view.ts";
 import { grep_project, grep_target, max_grep_matches, type GrepQuery } from "../../project/grep.ts";
 import { file_outline } from "../../project/outline.ts";
 import { read_boolean, read_string, require_string } from "../browser/common.ts";
@@ -6,9 +7,10 @@ import { guarded } from "./common.ts";
 import { read_profiles, readable_file } from "./read.ts";
 import { secret_read_refused } from "./secret-read.ts";
 
-const search_header = (query: GrepQuery, count: number, files: number | null, mode: string) => {
-  const scope = files === null ? " (searched file count unavailable)" : ` in ${files} ${files === 1 ? "file" : "files"}`;
-  return `${count} matching lines for ${JSON.stringify(query.query)} (${mode}, ${query.case_sensitive ? "case-sensitive" : "case-insensitive"})${scope}${query.path ? ` under ${query.path}` : ""}`;
+export const search_header = (query: GrepQuery, matches: GrepMatch[], capped: boolean, mode: string) => {
+  const files = new Set(matches.map((match) => match.path)).size;
+  const scope = files === 0 ? "" : ` in ${capped ? "at least " : ""}${files} ${files === 1 ? "file" : "files"}`;
+  return `${matches.length} matching lines for ${JSON.stringify(query.query)} (${mode}, ${query.case_sensitive ? "case-sensitive" : "case-insensitive"})${scope}${query.path ? ` under ${query.path}` : ""}`;
 };
 
 export const grep_files_tool = define_tool<GrepQuery>({
@@ -58,7 +60,7 @@ export const grep_files_tool = define_tool<GrepQuery>({
       const lines = result.matches.map((match) => `${match.path}:${match.line}: ${match.text}`);
       return {
         status: "done",
-        text: [search_header(args, result.matches.length, result.files_scanned, result.mode), ...notes, ...lines].join("\n"),
+        text: [search_header(args, result.matches, result.capped, result.mode), ...notes, ...lines].join("\n"),
         view: { kind: "grep", query: args.query, matches: result.matches, total: result.matches.length, truncated: result.capped, incomplete: result.incomplete !== null },
       };
     }),

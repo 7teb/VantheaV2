@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import type { ChatMeta } from "../../../shared/chat.ts";
 import { remote_client } from "../../api/bridge.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
 import { ArchiveIcon, ComposeIcon, FolderOpenIcon, FolderPlusIcon, PlusSmallIcon, SettingsIcon } from "../../components/icons.tsx";
 import { Menu } from "../../components/Menu.tsx";
 import { Tooltip } from "../../components/Tooltip.tsx";
+import { use_minute_clock } from "../../components/use-clock.ts";
 import { use_t } from "../../i18n/index.ts";
 import { chats_store, load_chats } from "../../state/chats.ts";
 import { choose_project } from "../../state/projects.ts";
 import { settings_store } from "../../state/settings.ts";
 import { open_settings, start_new_chat, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
+import { ScheduledNav } from "../scheduled/ScheduledNav.tsx";
 import { shortcut_hint } from "../shell/shortcuts.ts";
 import { ActivityView } from "./ActivityView.tsx";
 import { ArchivedDialog } from "./ArchivedDialog.tsx";
@@ -22,15 +24,6 @@ import { SidebarSection as Section } from "./SidebarSection.tsx";
 import { SidebarSkeleton } from "./SidebarSkeleton.tsx";
 import { use_row_motion } from "./use-row-motion.ts";
 import "./Sidebar.css";
-
-const use_minute_clock = () => {
-  const [now, set_now] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => set_now(Date.now()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
-  return now;
-};
 
 const report = (action: string) => (error: unknown) => console.error(`[sidebar] ${action} failed`, error);
 
@@ -51,6 +44,7 @@ export const Sidebar = () => {
   const view = use_store(ui_store, (state) => state.sidebar_view);
   const active_chat_id = use_store(ui_store, (state) => state.active_chat_id);
   const project_path = use_store(ui_store, (state) => state.project_path);
+  const scheduled_open = use_store(ui_store, (state) => state.scheduled_open);
   const collapsed_projects = use_store(ui_store, (state) => state.collapsed_projects);
   const chats = use_store(chats_store, (state) => state);
   const projects = use_store(settings_store, (view) => view?.projects ?? null);
@@ -119,7 +113,7 @@ export const Sidebar = () => {
               group={group}
               chat_total={totals.get(normalize_path(group.project.path)) ?? 0}
               collapsed={collapsed_projects.includes(group.project.path)}
-              selected={active_chat_id === null && project_path === group.project.path}
+              selected={active_chat_id === null && !scheduled_open && project_path === group.project.path}
             >
               {rows(group.chats)}
             </ProjectGroup>
@@ -135,6 +129,7 @@ export const Sidebar = () => {
       <div className="sidebar-inner">
         <nav className="sidebar-nav">
           <NavButton icon={<ComposeIcon />} label={t("sidebar.new_chat")} hint={shortcut_hint("new_chat")} on_click={() => start_new_chat(project_path)} />
+          <ScheduledNav />
         </nav>
         <div className="sidebar-scroll">{body()}</div>
         <div className="sidebar-footer">

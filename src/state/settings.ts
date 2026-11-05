@@ -19,8 +19,9 @@ export const reload_settings = async () => {
   }
 };
 
-const set_model_context = (model_id: string, next: ModelContext) =>
-  update_settings({ model_context: { ...(settings_store.get()?.model_context ?? {}), [model_id]: next } });
+const set_model_context = async (model_id: string, next: ModelContext): Promise<void> => {
+  await update_settings({ model_context: { ...(settings_store.get()?.model_context ?? {}), [model_id]: next } });
+};
 
 const model_setting = (model: ModelEntry): ModelContext | undefined => context_setting(model, settings_store.get()?.model_context[model.id]);
 
@@ -40,11 +41,13 @@ export const update_settings = async (patch: SettingsPatch) => {
     if (request === latest_request) {
       settings_store.set(view);
     }
+    return true;
   } catch (error) {
     console.error("[settings] settings:update failed for patch", patch, error);
     if (request === latest_request) {
       await reload_settings();
     }
+    return false;
   } finally {
     pending_requests -= 1;
   }

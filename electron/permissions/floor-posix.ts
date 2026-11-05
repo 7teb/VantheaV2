@@ -16,6 +16,7 @@ import { literal_view } from "./floor-quotes.ts";
 import { is_msys_root_target, msys_resolve, msys_translate, type MsysPath } from "./msys-paths.ts";
 import { basename, head_index, is_flag, posix_literal } from "./posix-command.ts";
 import { shell_words, type Word } from "./shell-words.ts";
+import { powershell_entry } from "./powershell-arguments.ts";
 import { posix_script, type PosixPipeline } from "./statements-posix.ts";
 import type { StatementElement } from "./statements.ts";
 
@@ -95,17 +96,45 @@ const locate = (value: string, state: State): MsysPath => {
   return translated.kind === "relative" && state.location ? msys_resolve(state.location, translated.token) : translated;
 };
 
-const classifier = (scope: FloorScope, state: State) => (token: string): Classification => {
+const classifier = (scope: FloorScope, state: State, ancestors = false) => (token: string): Classification => {
   const expanded = expand_posix(token.trim(), state.variables);
   if (/[$`]/.test(expanded)) return unresolved_class(expanded);
   const target = locate(expanded, state);
   if (target.kind === "relative") return "none";
   if (target.kind === "msys_root") return is_msys_system(target.rest) ? "system" : "none";
-  return is_system_path(target.path) ? "system" : hits_app(target.path, scope) ? "app" : "none";
+  if (is_system_path(target.path)) return "system";
+  return hits_app(target.path, scope, ancestors) ? "app" : "none";
 };
 
 const targets_of = (words: Word[], at: number): string[] =>
   words.slice(at + 1).filter((word) => !is_flag(word)).map(posix_literal).filter((value): value is string => value !== null);
+
+const move_sources = (words: Word[], at: number): string[] => {
+  const sources: string[] = [];
+  let destination = false;
+  let literal = false;
+  for (let index = at + 1; index < words.length; index += 1) {
+    const word = words[index] as Word;
+    if (!literal && word.raw === "--") {
+      literal = true;
+      continue;
+    }
+    if (!literal && is_flag(word)) {
+      const flag = word.raw.split("=")[0];
+      if (flag === "-t" || flag === "--target-directory") {
+        destination = true;
+      }
+      if (!word.raw.includes("=") && (flag === "-t" || flag === "--target-directory" || flag === "-S" || flag === "--suffix")) {
+        index += 1;
+      }
+      continue;
+    }
+    const text = posix_literal(word);
+    if (text === null) return [];
+    sources.push(text);
+  }
+  return destination || sources.length < 2 ? sources : sources.slice(0, -1);
+};
 
 const find_roots = (rest: Word[]): Word[] => {
   let index = 0;
@@ -165,17 +194,11 @@ const launch_cross = (statement: string): string[] => {
   const { verb, at } = head_index(words);
   const rest = words.slice(at + 1);
   if (verb === "powershell" || verb === "pwsh") {
-    const flag = rest.findIndex((word) => /^-(?:c|command|ec|e|enc|encodedcommand)$/i.test(word.raw));
-    if (flag >= 0) {
-      const value = posix_literal(rest[flag + 1]);
-      if (value === null) return [];
-      return /^-(?:ec|e|enc|encodedcommand)$/i.test(rest[flag]?.raw ?? "") ? [Buffer.from(value, "base64").toString("utf16le")] : [value];
-    }
-    if (rest.some((word) => /^-(?:file|psconsolefile)$/i.test(word.raw))) return [];
-    let index = 0;
-    while (index < rest.length && is_flag(rest[index] as Word)) index += 1;
-    const payload = rest.slice(index).map((word) => word.raw).join(" ");
-    return payload ? [payload] : [];
+    const args = rest.map((word) => posix_literal(word) ?? word.raw);
+    const entry = powershell_entry(verb, args);
+    if (!entry || entry.kind === "file") return [];
+    const text = entry.kind === "encoded" ? Buffer.from(args[entry.at] ?? "", "base64").toString("utf16le") : args.slice(entry.at).join(" ");
+    return text ? [text] : [];
   }
   if (verb === "cmd") {
     const flag = rest.findIndex((word) => /^\/\/?[ck]$/i.test(word.raw));
@@ -206,17 +229,19 @@ const apply_simple = (stage: StatementElement, state: State): boolean => {
   return false;
 };
 
-const classify_stage = (stage: StatementElement, classify: (token: string) => Classification): string => {
+const classify_stage = (stage: StatementElement, classify: (token: string) => Classification, ancestor_classify: (token: string) => Classification): string => {
   const words = shell_words(stage.text, "posix");
   const { verb, at } = head_index(words);
+  if (verb === "mv" && move_sources(words, at).some((token) => ancestor_classify(token) === "app")) return app_reason;
   if (verb === "find") {
-    const reason = find_reason(words, at, classify);
+    const reason = find_reason(words, at, ancestor_classify);
     if (reason) return reason;
   }
   if (delete_verbs.has(verb) || removal_verbs.has(verb)) {
     const tokens = targets_of(words, at);
-    if (delete_verbs.has(verb) && tokens.some((token) => classify(token) === "system")) return system_delete_reason;
-    if (removal_verbs.has(verb) && tokens.some((token) => classify(token) === "app")) return app_reason;
+    const target_classify = delete_verbs.has(verb) ? ancestor_classify : classify;
+    if (delete_verbs.has(verb) && tokens.some((token) => target_classify(token) === "system")) return system_delete_reason;
+    if (removal_verbs.has(verb) && tokens.some((token) => target_classify(token) === "app")) return app_reason;
   }
   return "";
 };
@@ -234,9 +259,10 @@ const walk_pipeline = (pipeline: PosixPipeline, scope: FloorScope, cross: CrossF
   }
   const cd = pipeline.simple ? apply_simple(pipeline.stages[0] as StatementElement, state) : false;
   const classify = classifier(scope, state);
+  const ancestor_classify = classifier(scope, state, true);
   if (!cd) {
     for (const stage of pipeline.stages) {
-      const reason = classify_stage(stage, classify);
+      const reason = classify_stage(stage, classify, ancestor_classify);
       if (reason) return reason;
     }
     const feed = feeds_removal(pipeline.stages, classify);

@@ -3,11 +3,13 @@ import { api } from "../api/bridge.ts";
 import { reload_settings, settings_store } from "./settings.ts";
 import { start_new_chat, ui_store } from "./ui.ts";
 
-const adopt = async (entry: ProjectEntry | null) => {
+const adopt = async (entry: ProjectEntry | null, accept: () => boolean = () => true) => {
   if (!entry) {
     return;
   }
-  start_new_chat(entry.path);
+  if (accept()) {
+    start_new_chat(entry.path);
+  }
   await reload_settings();
 };
 
@@ -19,8 +21,8 @@ export const choose_project = async (): Promise<ProjectEntry | null> => {
 
 export const pick_project_folder = () => api.invoke("projects:pick_folder");
 
-export const create_project = async (name: string, folder: string | null) => {
-  await adopt(await api.invoke("projects:create", { name, folder }));
+export const create_project = async (name: string, folder: string | null, accept?: () => boolean) => {
+  await adopt(await api.invoke("projects:create", { name, folder }), accept);
 };
 
 export const rename_project = async (path: string, name: string) => {

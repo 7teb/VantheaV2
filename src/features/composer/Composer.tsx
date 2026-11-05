@@ -136,7 +136,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     return () => window.removeEventListener("keydown", on_escape);
   }, [dictating]);
 
-  const finish_dictating = async (then_send: boolean) => {
+  const finish_dictating = async (action: "send" | "queue" | "insert") => {
     const key = draft_key;
     const spoken = await finish_dictation();
     if (spoken === null) {
@@ -152,14 +152,16 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
       return;
     }
     area.current?.focus({ preventScroll: true });
-    if (then_send && model !== null) {
+    if (action === "queue" && chat_id !== null) {
+      void queue_draft(chat_id);
+    } else if (action === "send" && model !== null) {
       void submit(chat_id, project_path);
     }
   };
 
   const send = () => {
     if (dictating === "recording") {
-      void finish_dictating(true);
+      void finish_dictating("send");
       return;
     }
     const review = parse_review_command(draft.text);
@@ -181,7 +183,11 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     }
     if (event.key === "Tab" && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey && busy && chat_id !== null && sendable) {
       event.preventDefault();
-      void queue_draft(chat_id);
+      if (dictating === "recording") {
+        void finish_dictating("queue");
+      } else {
+        void queue_draft(chat_id);
+      }
       return;
     }
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) {
@@ -318,7 +324,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
         {chat_id === null && <WorktreeChip draft_key={draft_key} project_path={project_path} />}
         <DraftChips draft_key={draft_key} chips={draft.chips} />
         <span className="composer-spacer" />
-        <DictationButton draft_key={draft_key} on_stop={() => void finish_dictating(false)} />
+        <DictationButton draft_key={draft_key} on_stop={() => void finish_dictating("insert")} />
         {action()}
       </div>
       {dragging && <div className="composer-drop">{t("composer.drop")}</div>}

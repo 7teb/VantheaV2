@@ -6,6 +6,7 @@ import { chat } from "./chat.ts";
 import { commands } from "./commands.ts";
 import { common } from "./common.ts";
 import { composer } from "./composer.ts";
+import { computer } from "./computer.ts";
 import { context } from "./context.ts";
 import { dictation } from "./dictation.ts";
 import { docks } from "./docks.ts";
@@ -24,6 +25,7 @@ import { projects } from "./projects.ts";
 import { questions } from "./questions.ts";
 import { remote } from "./remote.ts";
 import { review } from "./review.ts";
+import { scheduled } from "./scheduled.ts";
 import { search } from "./search.ts";
 import { settings } from "./settings.ts";
 import { shell } from "./shell.ts";
@@ -49,6 +51,7 @@ export const en = {
   ...commands,
   ...common,
   ...composer,
+  ...computer,
   ...context,
   ...dictation,
   ...docks,
@@ -67,6 +70,7 @@ export const en = {
   ...questions,
   ...remote,
   ...review,
+  ...scheduled,
   ...search,
   ...settings,
   ...shell,

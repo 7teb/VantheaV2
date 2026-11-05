@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Personality } from "../../../../shared/settings.ts";
 import { Button } from "../../../components/Button.tsx";
 import { ConfirmDialog } from "../../../components/Dialog.tsx";
@@ -27,18 +27,28 @@ const InstructionsRow = ({ saved }: { saved: string }) => {
   const [base, set_base] = useState(saved);
   const [draft, set_draft] = useState(saved);
   const [state, set_state] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const saving = useRef(false);
+  const version = useRef(0);
+  const committed = useRef(0);
 
-  if (saved !== base) {
+  if (saved !== base && !saving.current) {
     set_base(saved);
-    if (draft === base) {
+    if (version.current === committed.current) {
       set_draft(saved);
     }
   }
 
   const save = async () => {
+    if (saving.current) return;
+    const submitted = version.current;
+    saving.current = true;
     set_state("saving");
-    await update_settings({ custom_instructions: draft });
-    set_state(settings_store.get()?.custom_instructions === draft ? "saved" : "failed");
+    const accepted = await update_settings({ custom_instructions: draft });
+    if (accepted) {
+      committed.current = submitted;
+    }
+    saving.current = false;
+    set_state(accepted ? "saved" : "failed");
   };
 
   return (
@@ -56,13 +66,14 @@ const InstructionsRow = ({ saved }: { saved: string }) => {
           placeholder={t("personalization.instructions_placeholder")}
           aria-label={t("personalization.instructions")}
           on_change={(value) => {
+            version.current += 1;
             set_draft(value);
             set_state("idle");
           }}
         />
         <div className="instructions-footer">
           <Button
-            disabled={draft === saved || state === "saving"}
+            disabled={(draft === saved && state !== "failed") || saving.current}
             icon={state === "saved" && draft === saved ? <CheckIcon /> : undefined}
             onClick={() => void save()}
           >

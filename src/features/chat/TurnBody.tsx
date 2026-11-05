@@ -1,5 +1,6 @@
 import { memo, useState, type ReactNode } from "react";
 import { manual_compaction_only, type UserMessage } from "../../../shared/chat.ts";
+import { is_quiet_answer, quiet_answer_prefix } from "../../../shared/scheduled.ts";
 import { IconButton } from "../../components/Button.tsx";
 import { ForkIcon, InfoIcon, RetryIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
@@ -9,6 +10,7 @@ import { edit_message, fork_chat, type ActionResult } from "../../state/chat-act
 import { ImageBody, ShownImagesBody } from "../tools/bodies-web.tsx";
 import { WorkGroup } from "../tools/WorkGroup.tsx";
 import { answer_text, shows_thinking, thinks_in_group, type Block } from "./assistant-blocks.ts";
+import { ComputerLiveNote } from "./ComputerLiveNote.tsx";
 import { PlanCard } from "./PlanCard.tsx";
 import { ReasoningRow } from "./ReasoningRow.tsx";
 import { CompactionRow, NoticeRow, SteerRow } from "./StepRows.tsx";
@@ -18,9 +20,11 @@ import { turn_info } from "./turn-info.ts";
 import { RetryBanner, TurnOutcome } from "./TurnStatus.tsx";
 import { VisualBlock } from "./VisualBlock.tsx";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
+import "./ScheduledRun.css";
 
 type BlockViewProps = {
   block: Block;
+  quiet: boolean;
   chat_id: string;
   message_id: string;
   streaming: boolean;
@@ -41,12 +45,17 @@ const ImageStep = ({ block }: { block: Extract<Block, { kind: "image" }> }) => {
   );
 };
 
-const BlockView = ({ block, chat_id, message_id, streaming, tail, pending, can_accept, accepted }: BlockViewProps) => {
+const QuietAnswer = () => {
+  const t = use_t();
+  return <p className="quiet-answer">{t("scheduled.no_new_activity")}</p>;
+};
+
+const BlockView = ({ block, quiet, chat_id, message_id, streaming, tail, pending, can_accept, accepted }: BlockViewProps) => {
   switch (block.kind) {
     case "reasoning":
       return <ReasoningRow step={block.step} live={streaming} />;
     case "text":
-      return <Markdown text={block.step.text} className="assistant-text" />;
+      return quiet && is_quiet_answer(block.step.text) ? <QuietAnswer /> : <Markdown text={block.step.text} className="assistant-text" />;
     case "work":
       return <WorkGroup chat_id={chat_id} steps={block.steps} streaming={streaming} tail={tail} pending={pending} />;
     case "plan":
@@ -77,18 +86,23 @@ type TurnBodyProps = {
   file_card: ReactNode;
   turn_started_at: string;
   retry_from: UserMessage | null;
+  scheduled_run: boolean;
 };
 
-export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, busy, last_plan, plan_accepted, file_card, turn_started_at, retry_from }: TurnBodyProps) => {
+const holds_marker = (block: Block | undefined): boolean => block?.kind === "text" && quiet_answer_prefix(block.step.text);
+
+export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, busy, last_plan, plan_accepted, file_card, turn_started_at, retry_from, scheduled_run }: TurnBodyProps) => {
   const t = use_t();
-  const { message, blocks } = facts;
+  const { message } = facts;
   const streaming = message.status === "streaming";
+  const blocks = scheduled_run && streaming && holds_marker(facts.blocks.at(-1)) ? facts.blocks.slice(0, -1) : facts.blocks;
   const grouped_thinking = thinks_in_group(streaming, message.retry !== null, blocks);
   const [action_error, set_action_error] = useState("");
   const settle = (result: ActionResult) => set_action_error(result.ok ? "" : result.error);
   const fork = async () => settle(await fork_chat(chat_id, message.id));
   const regenerate = async (source: UserMessage) => settle(await edit_message(chat_id, source.id, source.text));
-  const answer = answer_text(message);
+  const quiet = message.quiet === true && message.status === "done";
+  const answer = quiet ? "" : answer_text(message);
   const outcome = (
     <>
       {message.retry && <RetryBanner retry={message.retry} />}
@@ -102,6 +116,7 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
           <BlockView
             key={block.id}
             block={block}
+            quiet={quiet}
             chat_id={chat_id}
             message_id={message.id}
             streaming={streaming}
@@ -124,6 +139,7 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
           <span className="is-working"><WorkingLetters text={t("chat.thinking")} /></span>
         </div>
       )}
+      {streaming && <ComputerLiveNote chat_id={chat_id} />}
       {final ? outcome : <FoldItem folded={folded}>{outcome}</FoldItem>}
       {final && file_card}
       {final && !streaming && !manual_compaction_only(message) && (

@@ -3,9 +3,11 @@ import { shell_labels } from "../../../shared/shell.ts";
 import { Collapsible } from "../../components/Collapsible.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { ApprovalEnv } from "./ApprovalEnv.tsx";
+import { ComputerApproval } from "./ComputerApproval.tsx";
 import { EditCard } from "./bodies-files.tsx";
 import { HookPreview } from "./HookApproval.tsx";
 import { PreviewText } from "./PreviewText.tsx";
+import { ScheduledPreview } from "./ScheduledApproval.tsx";
 import { WorkflowApproval } from "./WorkflowApproval.tsx";
 
 const Command = ({ text }: { text: string }) => <pre className="approval-command inset-surface">{text}</pre>;
@@ -104,6 +106,10 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
           scope_title={request.scope.kind === "project" ? request.scope.path : ""}
         />
       );
+    case "scheduled_task":
+      return <ScheduledPreview task={request.task} previous={request.previous} />;
+    case "computer_use":
+      return <ComputerApproval request={request} />;
   }
 };
 

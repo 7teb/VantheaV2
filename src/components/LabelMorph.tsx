@@ -35,6 +35,10 @@ export const LabelMorph = ({ morph_key, children }: { morph_key: string; childre
     if (leaving === null || node === null || before === null || after === null) {
       return;
     }
+    if (node.closest("[inert]")) {
+      set_glide(null);
+      return;
+    }
     const from = node.dataset.glide === undefined ? natural_width(before) : node.getBoundingClientRect().width;
     const to = natural_width(after);
     set_glide((current) => (Math.abs(to - from) < 0.5 ? null : { id: leaving.id, from, to, turn: current?.turn === 0 ? 1 : 0 }));

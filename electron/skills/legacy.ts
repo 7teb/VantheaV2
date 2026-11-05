@@ -37,14 +37,28 @@ const legacy_registry = async (legacy_root: string): Promise<SkillRegistry> => {
   return stored.status === "ok" ? parse_registry(stored.value) : {};
 };
 
+const executable_files = async (dir: string, relative = ""): Promise<string[]> => {
+  const blocked: string[] = [];
+  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+    const name = relative ? `${relative}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      blocked.push(...await executable_files(path.join(dir, entry.name), name));
+    } else if (entry.isSymbolicLink()) {
+      blocked.push(name);
+    } else {
+      blocked.push(...executable_names([name]));
+    }
+  }
+  return blocked;
+};
+
 const import_folder = async (source: string, target: string): Promise<boolean> => {
   if (!(await exists(path.join(source, "SKILL.md"))) || (await exists(target))) {
     return false;
   }
-  const names = (await fs.readdir(source, { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name);
-  const executables = executable_names(names);
+  const executables = await executable_files(source);
   if (executables.length) {
-    console.warn(`[skills] legacy skill ${source} ships executable files (${executables.join(", ")}) and was not imported`);
+    console.warn(`[skills] legacy skill ${source} ships executable or linked files (${executables.join(", ")}) and was not imported`);
     return false;
   }
   await fs.cp(source, target, { recursive: true, errorOnExist: true, force: false });

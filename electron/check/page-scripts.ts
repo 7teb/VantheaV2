@@ -9,7 +9,7 @@ export const scroll_top = "window.scrollTo(0, 0)";
 export const find_stage =
   "(() => { const s = document.querySelector('.stage, .ad'); if (!s) return null; s.scrollIntoView({block:'center'}); const r = s.getBoundingClientRect(); return {x:r.left, y:r.top, w:r.width, h:r.height}; })()";
 
-export const stage_box = "(() => { const r = document.querySelector('.stage, .ad').getBoundingClientRect(); return {x:r.left, y:r.top, w:r.width, h:r.height}; })()";
+export const stage_box = "(() => { const s = document.querySelector('.stage, .ad'); if (!s) return null; const r = s.getBoundingClientRect(); return {x:r.left, y:r.top, w:r.width, h:r.height}; })()";
 
 export const list_controls = `(() => {
     const out = [];
@@ -18,10 +18,10 @@ export const list_controls = `(() => {
     }); return out; })()`;
 
 export const scroll_to_control = (index: number) =>
-  `(() => { document.documentElement.style.scrollBehavior = 'auto'; document.querySelector('[data-live="${index}"]').scrollIntoView({block:'center'}); })()`;
+  `(() => { document.documentElement.style.scrollBehavior = 'auto'; document.querySelector('[data-live="${index}"]')?.scrollIntoView({block:'center'}); })()`;
 
 export const control_box = (index: number) =>
-  `(() => { const r = document.querySelector('[data-live="${index}"]').getBoundingClientRect(); return {x:r.left, y:r.top, w:r.width, h:r.height}; })()`;
+  `(() => { const el = document.querySelector('[data-live="${index}"]'); if (!el) return null; const r = el.getBoundingClientRect(); return {x:r.left, y:r.top, w:r.width, h:r.height}; })()`;
 
 export const ad_format = "(document.querySelector('.ad') || {dataset:{}}).dataset.format";
 

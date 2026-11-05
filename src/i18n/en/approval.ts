@@ -35,4 +35,10 @@ export const approval = {
   "approval.agent_about": "About {x}",
   "approval.agent_without": "Without: {x}",
   "approval.question_secret_read": "May I read {x}? It can contain keys or credentials.",
+  "approval.previous": "Before",
+  "approval.question_computer_use": "May I control your computer?",
+  "approval.allow_computer": "Yes, allow it in this chat until VantheaX quits",
+  "approval.computer_display": "Display {x} · {w} × {h}",
+  "approval.computer_screens": "While I work, screenshots of your screen are sent to the model provider.",
+  "approval.computer_confirm": "I will ask you before anything that sends, buys, deletes or publishes.",
 };

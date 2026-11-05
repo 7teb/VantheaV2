@@ -38,7 +38,7 @@ const rename_with_retry = async (from: string, to: string, superseded: () => boo
       return false;
     }
     try {
-      await fsp.rename(from, to);
+      fs.renameSync(from, to);
       return true;
     } catch (error) {
       if (!retry_codes.has(error_code(error)) || attempt + 1 >= rename_attempts) {
@@ -188,20 +188,20 @@ export const keep_corrupt = async (file: string): Promise<string> => {
 export const sweep_tmp = async (dirs: string[]): Promise<number> => {
   let removed = 0;
   for (const dir of dirs) {
-    let names: string[];
+    let names: fs.Dirent[];
     try {
-      names = await fsp.readdir(dir);
+      names = await fsp.readdir(dir, { withFileTypes: true });
     } catch (error) {
       if (error_code(error) === "ENOENT") {
         continue;
       }
       throw error;
     }
-    for (const name of names) {
-      if (!name.endsWith(".tmp")) {
+    for (const entry of names) {
+      if (!entry.isFile() || !/\.[1-9]\d*\.[a-f0-9]{8}\.tmp$/.test(entry.name)) {
         continue;
       }
-      await fsp.rm(path.join(dir, name), { force: true });
+      await fsp.rm(path.join(dir, entry.name), { force: true });
       removed += 1;
     }
   }

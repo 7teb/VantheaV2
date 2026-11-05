@@ -24,9 +24,9 @@ export const create_chat = async (project_path: string, key: string, message: Ou
     composer_store.update((state) => move_draft(state, key, meta.id));
     if (!worktree) {
       adopt_terminals(key, meta.id);
+      adopt_files(key, meta.id);
+      adopt_git(key, meta.id);
     }
-    adopt_files(key, meta.id);
-    adopt_git(key, meta.id);
     clear_worktree_choice(key);
     open_chat(meta.id, meta.project_path);
     return meta.id;

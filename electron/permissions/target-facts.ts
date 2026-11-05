@@ -314,8 +314,9 @@ const worktree_state = async (file: string, entry: IndexEntry, index_mtime_ns: b
     return `state unknown (${failure(error)})`;
   }
   if (!info || Number(info.size) !== entry.size) return "modified";
-  const same_time = entry.mtime_ns % 1000000000n === 0n ? info.mtimeNs / 1000000000n === entry.mtime_ns / 1000000000n : info.mtimeNs === entry.mtime_ns;
-  return !same_time || entry.mtime_ns >= index_mtime_ns ? "modified" : "unmodified";
+  const precision = entry.mtime_ns % 1000000000n === 0n ? 1000000000n : 1n;
+  const same_time = info.mtimeNs / precision === entry.mtime_ns / precision;
+  return !same_time || info.mtimeNs / precision >= index_mtime_ns / precision ? "modified" : "unmodified";
 };
 
 const git_text = async (facts: GitFacts, relative: string, file: string, shape: Shape): Promise<string> => {

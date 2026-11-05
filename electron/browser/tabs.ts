@@ -176,7 +176,11 @@ const create_tab = (chat_id: string): BrowserTab => {
     waiters: new Set(),
     release: () => undefined,
   };
-  secure_guest(tab.guest, (url) => start_load(create_tab(tab.chat_id), url));
+  secure_guest(tab.guest, (url) => {
+    if (is_open(tab) && chat_tabs(tab.chat_id).length < 16) {
+      start_load(create_tab(tab.chat_id), url);
+    }
+  });
   tab.release = watch_tab(
     tab,
     () => publish(tab.chat_id),

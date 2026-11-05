@@ -85,7 +85,8 @@
     white-space: nowrap;
   }
 
-  .composer-strip-context {
+  .composer-strip-context,
+  .composer-strip-todos {
     display: inline-flex;
     flex: none;
     align-items: center;
@@ -103,6 +104,11 @@
       color var(--duration-fast) var(--ease-out);
   }
 
+  .composer-strip:has(.composer-strip-todos) .composer-strip-context {
+    margin-left: calc(2px - var(--space-3));
+  }
+
+  .composer-strip-todos:hover,
   .composer-strip-context:hover,
   .composer-strip-context[aria-expanded="true"] {
     background: var(--fill-hover);

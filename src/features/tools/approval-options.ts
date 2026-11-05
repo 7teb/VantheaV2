@@ -43,7 +43,10 @@ export const grant_options = (request: ApprovalRequest): GrantOption[] => {
     case "agent_message":
     case "secret_read":
     case "hook":
+    case "scheduled_task":
       return [once];
+    case "computer_use":
+      return [{ grant: "chat", label: "approval.allow_computer", vars: {} }];
   }
 };
 
@@ -67,5 +70,9 @@ export const approval_question = (request: ApprovalRequest): { key: MessageKey; 
       return { key: "approval.question_secret_read", vars: { x: request.path } };
     case "hook":
       return { key: `hooks.approve_${request.action}`, vars: {} };
+    case "scheduled_task":
+      return { key: `scheduled.approve_${request.action}`, vars: {} };
+    case "computer_use":
+      return { key: "approval.question_computer_use", vars: {} };
   }
 };

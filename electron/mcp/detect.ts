@@ -13,6 +13,7 @@ const error_text = (error: unknown) => (error instanceof Error ? error.message :
 
 const collect_files = async (root: string, max_files = 4000, max_depth = 5) => {
   const files: string[] = [];
+  const interpreters: string[] = [];
   const walk = async (dir: string, depth: number) => {
     if (depth > max_depth || files.length >= max_files) {
       return;
@@ -24,6 +25,27 @@ const collect_files = async (root: string, max_files = 4000, max_depth = 5) => {
       console.warn(`[mcp] detect: reading ${dir} failed: ${error_text(error)}`);
       return;
     }
+    if (entries.some((entry) => entry.isFile() && entry.name.toLowerCase() === "pyvenv.cfg")) {
+      for (const relative of process.platform === "win32" ? ["Scripts/python.exe"] : ["bin/python", "Scripts/python.exe"]) {
+        const file = path.join(dir, relative);
+        const info = await stat(file).catch((error: unknown) => {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+            console.warn(`[mcp] detect: checking ${file} failed: ${error_text(error)}`);
+          }
+          return null;
+        });
+        if (info?.isFile()) {
+          interpreters.push(file);
+          files.push(file);
+          break;
+        }
+      }
+      return;
+    }
+    for (const entry of entries.filter((entry) => entry.isFile())) {
+      if (files.length >= max_files) return;
+      files.push(path.join(dir, entry.name));
+    }
     for (const entry of entries) {
       if (files.length >= max_files) {
         return;
@@ -31,13 +53,11 @@ const collect_files = async (root: string, max_files = 4000, max_depth = 5) => {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory() && !skipped_dirs.has(entry.name.toLowerCase())) {
         await walk(full, depth + 1);
-      } else if (entry.isFile()) {
-        files.push(full);
       }
     }
   };
   await walk(root, 0);
-  return files;
+  return { files, interpreter: interpreters[0] ?? null };
 };
 
 export const balanced_json = (text: string, start: number): string | null => {
@@ -182,13 +202,12 @@ const node_entry = async (package_file: string) => {
   }
 };
 
-const heuristic_launch = async (root: string, files: string[]): Promise<(Launch & { source: Detection["source"]; note: string }) | null> => {
+const heuristic_launch = async (root: string, files: string[], interpreter: string | null): Promise<(Launch & { source: Detection["source"]; note: string }) | null> => {
   const metas: FileMeta[] = files.map((file) => ({ file, base: path.basename(file).toLowerCase(), relative: path.relative(root, file).replace(/\\/g, "/").toLowerCase() }));
-  const venv = metas.find((meta) => /(^|\/)(\.venv|venv|env)\/scripts\/python\.exe$/i.test(meta.relative));
   const best = metas.reduce<FileMeta | null>((winner, meta) => (python_score(meta) > (winner ? python_score(winner) : 0) ? meta : winner), null);
   if (best) {
-    const note = venv ? "Python entry detected, using the folder's venv." : "Python entry detected. If it fails to start, set the command to the full path of your python.exe.";
-    return { name: "", command: venv ? venv.file : "python", args: [best.file], env: {}, source: "python", note };
+    const note = interpreter ? "Python entry detected, using the folder's venv." : "Python entry detected. If it fails to start, set the command to the full path of your python.exe.";
+    return { name: "", command: interpreter ?? "python", args: [best.file], env: {}, source: "python", note };
   }
   const package_meta = metas.find((meta) => meta.base === "package.json" && meta.relative.split("/").length <= 2);
   const node = package_meta ? await node_entry(package_meta.file) : null;
@@ -198,10 +217,10 @@ const heuristic_launch = async (root: string, files: string[]): Promise<(Launch 
 const config_for = (launch: Launch, root: string): McpServerConfig => ({ command: launch.command, args: launch.args, cwd: root, env: launch.env, enabled: true });
 
 const read_readme = async (root: string, files: string[]) => {
-  const readme = files.find((file) => {
+  const readme = files.filter((file) => {
     const relative = path.relative(root, file).replace(/\\/g, "/");
     return relative.split("/").length <= 2 && /(^|\/)readme(\.(md|txt|rst))?$/i.test(relative);
-  });
+  }).sort((a, b) => path.relative(root, a).split(path.sep).length - path.relative(root, b).split(path.sep).length)[0];
   if (!readme) {
     return null;
   }
@@ -225,10 +244,10 @@ export const detect_server = async (folder: string): Promise<Detection> => {
   }
   const folder_name = path.basename(root);
   const base_name = sanitize_server_name(folder_name.replace(/[-_]?mcp([-_](bridge|server))?$/i, "")) || sanitize_server_name(folder_name) || "server";
-  const files = await collect_files(root);
+  const { files, interpreter } = await collect_files(root);
   const readme = await read_readme(root, files);
   const from_readme = readme ? launch_from_readme(readme) : null;
-  const detected = from_readme ? { ...resolve_paths(from_readme, files), source: "readme" as const, note: "Config taken from the server's README." } : await heuristic_launch(root, files);
+  const detected = from_readme ? { ...resolve_paths(from_readme, files), source: "readme" as const, note: "Config taken from the server's README." } : await heuristic_launch(root, files, interpreter);
   if (!detected) {
     return empty(base_name, "Could not detect the launch command. Paste the server's config from its README or enter the command and arguments.");
   }

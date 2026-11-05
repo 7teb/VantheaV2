@@ -1,5 +1,5 @@
 import type { WebFailure } from "../../../shared/tool-view.ts";
-import { estimate_tokens, result_cap_tokens, token_prefix } from "../../context/estimate.ts";
+import { cap_text, estimate_tokens, result_cap_tokens, token_prefix } from "../../context/estimate.ts";
 import { error_text } from "../../storage/coerce.ts";
 import { failure_of, type ToolResult } from "../types.ts";
 import { source_heading, untrusted_note, view_sources, type WebSearchDeps } from "./search.ts";
@@ -79,10 +79,19 @@ export const read_pages = async (input: PageReadInput, deps: WebSearchDeps): Pro
   if (input.offset > 0 && first && input.offset >= first.content.length) {
     return { status: "failed", text: `offset ${input.offset} is past the end of ${first.url}, which has ${first.content.length} characters.`, view: view(pages, failed) };
   }
-  const windows = page_windows(pages, input.offset, result_cap_tokens - reserve_tokens);
   const subject = pages.length === 1 ? first.url : `${pages.length} pages`;
   const header = `Read ${subject}. ${untrusted_note}`;
   const notes = failed.length ? [`These pages could not be read: ${failure_lines(failed).join("; ")}`] : [];
-  const blocks = windows.map((window, index) => `${source_heading(window.source, index)}\n${range_line(window)}\n\n${window.source.content.slice(window.start, window.end)}`);
-  return { status: "done", text: [header, ...notes, blocks.join("\n\n---\n\n")].join("\n\n"), view: view(pages, failed) };
+  const render = (windows: PageWindow[]) => {
+    const blocks = windows.map((window, index) => `${source_heading(window.source, index)}\n${range_line(window)}\n\n${window.source.content.slice(window.start, window.end)}`);
+    return [header, ...notes, blocks.join("\n\n---\n\n")].join("\n\n");
+  };
+  let budget = result_cap_tokens - reserve_tokens;
+  for (;;) {
+    const text = render(page_windows(pages, input.offset, budget));
+    const excess = estimate_tokens(text) - result_cap_tokens;
+    if (excess <= 0) return { status: "done", text, view: view(pages, failed) };
+    if (budget === 0) return { status: "done", text: cap_text(text, result_cap_tokens - 100), view: view(pages, failed) };
+    budget = Math.max(0, budget - excess);
+  }
 };

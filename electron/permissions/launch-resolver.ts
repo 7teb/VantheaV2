@@ -38,6 +38,33 @@ export const launch_resolver = (host: LaunchHost) => {
   const programs: ProgramFact[] = [];
   const inputs: LaunchInput[] = [];
   const lookup = path_lookup();
+  const search_path = async (listed: Value, names: string[], step: Step, ref: LaunchRef, required = true): Promise<PathMatch[] | null> => {
+    if ("unresolved" in listed) {
+      if (required) {
+        host.gap(launch_gap(ref.written, "PATH changed to an unresolved value"));
+      }
+      return null;
+    }
+    const paths: string[] = [];
+    for (const dir of listed.values.flatMap(path_dirs)) {
+      const located = against_location(resolved([dir]), step.location);
+      if ("unresolved" in located) {
+        if (required) {
+          host.gap(launch_gap(ref.written, located.unresolved));
+        }
+        return null;
+      }
+      paths.push(...located.values.filter((entry) => !paths.includes(entry)));
+    }
+    const matches = await lookup(names, paths.filter((dir) => !network_path(dir)));
+    for (const dir of paths) {
+      if (dir === matches[0]?.dir) break;
+      if (required && network_path(dir)) {
+        host.gap(launch_gap(ref.written, "network PATH directory was not read: " + dir));
+      }
+    }
+    return matches;
+  };
   const marked = (file: string, sha256: string | null, times: FileTimes) => change_mark(host.scope.chat_id, host.scope.chat_started_at, file, sha256, times);
   const add_fact = (fact: ProgramFact) => {
     const same = (known: ProgramFact) => known.written === fact.written && known.how === fact.how && known.origin === fact.origin && known.path.toLowerCase() === fact.path.toLowerCase();
@@ -110,7 +137,8 @@ export const launch_resolver = (host: LaunchHost) => {
   };
   const builtin_launch = async (name: string, builtin: string, names: string[], ref: LaunchRef, step: Step): Promise<WalkState> => {
     const listed = env_value(step.state, "path");
-    const shadows = builtin !== name.toLowerCase() && "values" in listed && (await lookup(names, listed.values.flatMap(path_dirs))).length > 0;
+    const matches = builtin.toLowerCase() !== name.toLowerCase() && "values" in listed ? await search_path(listed, names, step, ref, false) : [];
+    const shadows = matches !== null && matches.length > 0;
     if (!ref.literal || shadows) program(ref, step, builtin, "builtin");
     return step.state;
   };
@@ -140,11 +168,8 @@ export const launch_resolver = (host: LaunchHost) => {
       return launch_file(file, { ...ref, mode: "path" }, step, depth);
     }
     const listed = env_value(step.state, "path");
-    if ("unresolved" in listed) {
-      host.gap(launch_gap(ref.written, "PATH changed to an unresolved value"));
-      return null;
-    }
-    const matches = await lookup(names, listed.values.flatMap(path_dirs));
+    const matches = await search_path(listed, names, step, ref);
+    if (!matches) return null;
     if (!matches.length) {
       if (nearby[0] && script_extension.test(name)) return launch_file(nearby[0], { ...ref, mode: "path" }, step, depth);
       if (own) program(ref, step, name, "not_found");

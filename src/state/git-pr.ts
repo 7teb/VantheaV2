@@ -88,6 +88,19 @@ export const create_pr = async () => {
   }
 };
 
+export const retry_pr = async () => {
+  const at = action_target();
+  if (!at) return;
+  const draft = pr_of(git_pr_store.get(), at.root);
+  if (!draft.cli || draft.writing || draft.creating) return;
+  if (draft.base !== null && draft.title.trim() !== "") {
+    patch(at.root, { cli: null });
+    await create_pr();
+    return;
+  }
+  await open_pr();
+};
+
 const settle_branches = () => {
   const moved = Object.entries(git_pr_store.get().drafts).filter(([root, draft]) => draft.open && git_store.get().views[root]?.kind === "repo" && draft.branch !== branch_of(root));
   for (const [root] of moved) close_pr(root);

@@ -2,6 +2,7 @@ import { app_channels } from "./app.ts";
 import { browser_channels } from "./browser.ts";
 import type { Emit, Invoke, Send } from "./channel.ts";
 import { chats_channels } from "./chats.ts";
+import { computer_channels } from "./computer.ts";
 import { extensions_channels } from "./extensions.ts";
 import { files_channels } from "./files.ts";
 import { git_actions_channels } from "./git-actions.ts";
@@ -12,6 +13,7 @@ import { media_channels } from "./media.ts";
 import { panels_channels } from "./panels.ts";
 import { questions_channels } from "./questions.ts";
 import { remote_channels } from "./remote.ts";
+import { scheduled_channels } from "./scheduled.ts";
 import { settings_channels } from "./settings.ts";
 import { turn_diff_channels } from "./turn-diff.ts";
 import { work_channels } from "./work.ts";
@@ -27,8 +29,10 @@ export const channels = {
   ...workflows_channels,
   ...extensions_channels,
   ...hooks_channels,
+  ...scheduled_channels,
   ...panels_channels,
   ...browser_channels,
+  ...computer_channels,
   ...questions_channels,
   ...files_channels,
   ...git_channels,

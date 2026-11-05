@@ -27,7 +27,7 @@
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   padding-bottom: 18px;
 }
 

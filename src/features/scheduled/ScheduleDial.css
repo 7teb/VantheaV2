@@ -1,0 +1,55 @@
+@layer components {
+  @keyframes dial-fill {
+    from {
+      stroke-dashoffset: var(--dial-length);
+    }
+  }
+
+  .schedule-dial {
+    --dial-length: 113.1;
+    grid-area: dial;
+    align-self: start;
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+  }
+
+  .schedule-dial > .progress-ring {
+    position: absolute;
+    inset: 0;
+  }
+
+  .schedule-dial .progress-ring-value {
+    animation: dial-fill var(--duration-spring) var(--ease-out) backwards;
+    animation-delay: calc(min(var(--row, 0), 8) * 40ms + 120ms);
+  }
+
+  .schedule-dial:not([data-state="idle"]) .progress-ring-value {
+    display: none;
+  }
+
+  .schedule-dial[data-state="off"] .progress-ring-track {
+    stroke-dasharray: 2 3.655;
+  }
+
+  .scheduled-card[data-soonest="true"] .progress-ring-value {
+    stroke: var(--text-primary);
+  }
+
+  .schedule-dial-centre {
+    display: grid;
+    place-items: center;
+    min-width: 16px;
+    color: var(--text-tertiary);
+  }
+
+  .schedule-dial-text {
+    font-size: var(--font-size-caption);
+    font-weight: var(--weight-semibold);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+}

@@ -1,3 +1,6 @@
+import { quote_of, skip_group, skip_quoted, comment_end } from "./powershell-lex.ts";
+import { shell_words, type Word } from "./shell-words.ts";
+import { powershell_entry } from "./powershell-arguments.ts";
 import { split_pipelines_posix, split_statements_posix, statement_parts_posix } from "./statements-posix.ts";
 
 export type Dialect = "powershell" | "cmd" | "posix" | "unknown";
@@ -6,102 +9,7 @@ export type StatementElement = { text: string; start: number };
 
 export type StatementPart = { text: string; start: number; line: number; joiner: "" | "&&" | "||"; elements: StatementElement[] };
 
-const closers: Record<string, string> = { "(": ")", "{": "}", "[": "]" };
-
-const here_open = /[ \t]*\r?\n/y;
-
-const single_quotes = "'\u2018\u2019\u201a\u201b";
-
-const double_quotes = '"\u201c\u201d\u201e';
-
-export const quote_of = (char: string | undefined): "'" | '"' | "" => {
-  if (!char) return "";
-  if (single_quotes.includes(char)) return "'";
-  return double_quotes.includes(char) ? '"' : "";
-};
-
-export const here_string_end = (source: string, at: number): number => {
-  const quote = quote_of(source[at + 1]);
-  if (source[at] !== "@" || !quote || /[\w$`]/.test(source[at - 1] ?? "")) return -1;
-  here_open.lastIndex = at + 2;
-  if (!here_open.test(source)) return -1;
-  for (let close = source.indexOf("\n", at + 2); close >= 0; close = source.indexOf("\n", close + 1)) {
-    if (quote_of(source[close + 1]) === quote && source[close + 2] === "@") return close + 3;
-  }
-  return source.length;
-};
-
-export const skip_quoted = (source: string, start: number): number => {
-  const quote = quote_of(source[start]);
-  const here = source[start - 1] === "@" ? here_string_end(source, start - 1) : -1;
-  if (here >= 0) return here;
-  let index = start + 1;
-  while (index < source.length) {
-    const char = source[index];
-    if (quote === '"' && char === "`") {
-      index += 2;
-      continue;
-    }
-    if (quote_of(char) === quote) {
-      if (quote_of(source[index + 1]) === quote) {
-        index += 2;
-        continue;
-      }
-      return index + 1;
-    }
-    if (quote === '"' && char === "$" && source[index + 1] === "(") {
-      index = skip_group(source, index + 1);
-      continue;
-    }
-    index += 1;
-  }
-  return source.length;
-};
-
-const token_before = (source: string, index: number): boolean =>
-  /[\s;|&(){}]/.test(source[index - 1] ?? " ") && !(source[index - 1] === "{" && source[index - 2] === "$");
-
-export const comment_end = (source: string, index: number): number => {
-  const block = source[index] === "<";
-  const end = block ? source.indexOf("#>", index + 2) : source.indexOf("\n", index);
-  if (end < 0) return source.length;
-  return block ? end + 2 : end;
-};
-
-export const skip_group = (source: string, start: number): number => {
-  const close = closers[source[start] ?? ""];
-  let depth = 0;
-  let index = start;
-  let string_end = false;
-  while (index < source.length) {
-    const char = source[index] ?? "";
-    const token_start: boolean = string_end || token_before(source, index);
-    string_end = false;
-    if (quote_of(char)) {
-      index = skip_quoted(source, index);
-      string_end = token_start;
-      continue;
-    }
-    if (char === "`") {
-      index += 2;
-      continue;
-    }
-    if (token_start && (char === "#" || (char === "<" && source[index + 1] === "#"))) {
-      index = comment_end(source, index);
-      continue;
-    }
-    if (char === source[start]) {
-      depth += 1;
-    } else if (char === close) {
-      depth -= 1;
-      if (depth === 0) {
-        return index + 1;
-      }
-    }
-    index += 1;
-  }
-  return source.length;
-};
+export { here_string_end, quote_of, skip_group, skip_quoted, comment_end } from "./powershell-lex.ts";
 
 const inner_groups = (text: string): string[] => {
   const groups: string[] = [];
@@ -319,8 +227,6 @@ export const statement_parts = (text: string, dialect: Dialect = "powershell"): 
   return parts;
 };
 
-const shell_launch = /^(?:&\s*)?["']?(?:[^"'\s]*[\\/])?(powershell|pwsh|cmd)(?:\.exe)?["']?(?=\s|$)([\s\S]*)$/i;
-
 const unquote = (text: string) => {
   const value = text.trim();
   const quoted = value.length > 1 && (value[0] === '"' || value[0] === "'") && value.at(-1) === value[0];
@@ -329,26 +235,33 @@ const unquote = (text: string) => {
 
 const expression_launch = /^(?:invoke-expression|iex)\s+(?:-command\s+)?([\s\S]+)$/i;
 
+const word_text = (word: Word): string => {
+  if (word.pieces.every((piece) => piece.kind === "text")) {
+    return word.pieces.map((piece) => piece.kind === "text" ? piece.text : "").join("");
+  }
+  return word.raw;
+};
+
 const nested_payloads = (statement: string): string[] => {
   const expression = expression_launch.exec(statement.trim());
   if (expression) {
     return [unquote(expression[1] ?? "")];
   }
-  const match = shell_launch.exec(statement.trim());
-  if (!match) {
-    return [];
-  }
-  const rest = match[2] ?? "";
-  if ((match[1] ?? "").toLowerCase() === "cmd") {
+  const words = shell_words(statement.trim(), "powershell");
+  const at = words[0]?.raw === "&" ? 1 : 0;
+  const head = words[at];
+  const exe = head ? (word_text(head).split(/[\\/]/).pop() ?? "").toLowerCase().replace(/\.exe$/, "") : "";
+  if (exe !== "cmd" && exe !== "powershell" && exe !== "pwsh") return [];
+  const rest = statement.trim().slice((head?.start ?? 0) + (head?.raw.length ?? 0));
+  if (exe === "cmd") {
     const payload = /(?:^|\s)\/[ck]\s+([\s\S]*)$/i.exec(rest);
     return payload ? [unquote(payload[1] ?? "").replace(/(?<!&)&(?!&)/g, ";")] : [];
   }
-  const encoded = /(?:^|\s)-(?:encodedcommand|enc|ec|e)\s+([A-Za-z0-9+/=]+)/i.exec(rest);
-  if (encoded) {
-    return [Buffer.from(encoded[1] ?? "", "base64").toString("utf16le")];
-  }
-  const payload = /(?:^|\s)-(?:command|c)\s+([\s\S]*)$/i.exec(rest);
-  return payload ? [unquote(payload[1] ?? "")] : [];
+  const args = words.slice(at + 1).filter((word, index, all) => !word.op && !all[index - 1]?.op).map(word_text);
+  const entry = powershell_entry(exe, args);
+  if (!entry || entry.kind === "file") return [];
+  const text = entry.kind === "encoded" ? Buffer.from(args[entry.at] ?? "", "base64").toString("utf16le") : args.slice(entry.at).join(" ");
+  return text ? [text] : [];
 };
 
 const split_recursive = (command: string, split_pipes: boolean): string[] => {

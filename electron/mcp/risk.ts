@@ -82,25 +82,23 @@ export const extract_command_arg = (args: Record<string, unknown>): string | nul
   return null;
 };
 
-export const collect_arg_strings = (value: unknown, depth = 0, out: string[] = []): string[] => {
-  if (depth > 6 || out.length > 200) {
-    return out;
-  }
-  if (typeof value === "string") {
-    if (value) {
-      out.push(value);
+export const collect_arg_strings = (value: unknown): string[] => {
+  const out: string[] = [];
+  const pending = [value];
+  const visited = new WeakSet<object>();
+  while (pending.length) {
+    const item = pending.pop();
+    if (typeof item === "string") {
+      if (item) {
+        out.push(item);
+      }
+      continue;
     }
-    return out;
-  }
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      collect_arg_strings(item, depth + 1, out);
-    }
-    return out;
-  }
-  if (value && typeof value === "object") {
-    for (const item of Object.values(value)) {
-      collect_arg_strings(item, depth + 1, out);
+    if (!item || typeof item !== "object" || visited.has(item)) continue;
+    visited.add(item);
+    const values = Array.isArray(item) ? item : Object.values(item);
+    for (let index = values.length - 1; index >= 0; index -= 1) {
+      pending.push(values[index]);
     }
   }
   return out;

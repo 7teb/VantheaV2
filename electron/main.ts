@@ -7,17 +7,19 @@ import { check_scheme } from "./check/session.ts";
 import { emit } from "./ipc/handle.ts";
 import { register_ipc } from "./ipc/index.ts";
 import { media_scheme } from "./media/protocol.ts";
+import { start_scheduled_tasks } from "./scheduled/index.ts";
 
 protocol.registerSchemesAsPrivileged([media_scheme, check_scheme]);
 app.commandLine.appendSwitch("disable-lcd-text");
 
 const start = async () => {
   Menu.setApplicationMenu(null);
-  await init_services();
+  const { mcp_settled } = await init_services();
   register_ipc();
   const window = create_window((state) => emit("window:changed", state));
   init_tray(window);
   init_dock(window);
+  start_scheduled_tasks(mcp_settled);
 };
 
 if (!app.requestSingleInstanceLock()) {

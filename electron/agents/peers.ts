@@ -9,7 +9,7 @@ import { live_run, reachable_live, unreachable_state, type LiveRun } from "./liv
 import { received_message, sent_message, sent_messages, type SentMessage } from "./peer-steps.ts";
 import { answer_question, ask_question, close_question, close_questions_to, forget_chat_questions } from "./questions.ts";
 import { current_run, type AgentRecord, type RunRecord } from "./records.ts";
-import { deliver_alert, queue_digest } from "./reports.ts";
+import { queue_digest } from "./reports.ts";
 import { label_of } from "./roster.ts";
 import { find_agent, get_agent, hold_message } from "./store.ts";
 
@@ -61,7 +61,7 @@ const same_message = (sent: SentMessage, request: PeerRequest): boolean =>
 const loop_text = (other: string) =>
   `You and ${other} are messaging each other without working in between. Continue with your task; an open disagreement belongs in your report.`;
 
-const track_exchange = (sender: PeerSender, target: AgentRecord, target_live: LiveRun, empty: boolean, line: string) => {
+const track_exchange = (sender: PeerSender, target: AgentRecord, target_live: LiveRun, empty: boolean) => {
   const key = pair_key(sender.agent.chat_id, sender.agent.agent_id, target.agent_id);
   if (!empty) {
     streaks.delete(key);
@@ -76,14 +76,6 @@ const track_exchange = (sender: PeerSender, target: AgentRecord, target_live: Li
   const [from, to] = [label_of(sender.agent), label_of(target)];
   deliver_to(sender.live, { from: "app", text: loop_text(to) });
   deliver_to(target_live, { from: "app", text: loop_text(from) });
-  deliver_alert({
-    chat_id: sender.agent.chat_id,
-    agent_id: sender.agent.agent_id,
-    run_id: sender.run.run_id,
-    name: sender.agent.name,
-    cause: "loop",
-    body: `${from} and ${to} sent each other two messages in a row without any other tool call in between. Latest: ${line}. Both were told to continue their tasks. Steer them with message_agent or stop one with cancel_agent if they are stuck.`,
-  });
 };
 
 const hold_answer = (target: AgentRecord, entry: PeerEntry, line: string) => {
@@ -162,7 +154,7 @@ export const send_peer = async (sender: PeerSender, request: PeerRequest): Promi
   }
   queue_digest(sender.agent.chat_id, line);
   if (!answered) {
-    track_exchange(sender, target, live, empty, line);
+    track_exchange(sender, target, live, empty);
   }
   return { status: "done", text: queued_text(to, message_id, request), view: view(message_id, "queued") };
 };

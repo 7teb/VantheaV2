@@ -63,14 +63,9 @@ const GroupMeta = ({ steps, running, live_start }: { steps: WorkStep[]; running:
   return span === null ? null : <span className="tool-row-duration">{format_duration(span)}</span>;
 };
 
-const GroupCounts = ({ failed, denied }: { failed: number; denied: number }) => {
+const DeniedCount = ({ denied }: { denied: number }) => {
   const t = use_t();
-  return (
-    <>
-      {failed > 0 && <span className="tool-row-status is-failed">{t(failed === 1 ? "tools.group_failed_one" : "tools.group_failed_other", { n: failed })}</span>}
-      {denied > 0 && <span className="tool-row-status is-denied">{t(denied === 1 ? "tools.group_denied_one" : "tools.group_denied_other", { n: denied })}</span>}
-    </>
-  );
+  return denied > 0 ? <span className="tool-row-status is-denied">{t(denied === 1 ? "tools.group_denied_one" : "tools.group_denied_other", { n: denied })}</span> : null;
 };
 
 const GroupIcon = ({ chat_id, steps }: { chat_id: string; steps: WorkStep[] }) => {
@@ -88,7 +83,7 @@ const GroupIcon = ({ chat_id, steps }: { chat_id: string; steps: WorkStep[] }) =
 
 type GroupRowProps = { chat_id: string; step: WorkStep; streaming: boolean; main_chat: boolean };
 
-const GroupRow = ({ chat_id, step, streaming, main_chat }: GroupRowProps) => {
+const GroupRow = memo(({ chat_id, step, streaming, main_chat }: GroupRowProps) => {
   if (step.kind === "tool") {
     return <ToolRow chat_id={chat_id} step={step} main_chat={main_chat} />;
   }
@@ -99,7 +94,7 @@ const GroupRow = ({ chat_id, step, streaming, main_chat }: GroupRowProps) => {
     return <MainMessageRow chat_id={chat_id} />;
   }
   return <ThoughtRow step={step} live={streaming} />;
-};
+});
 
 const web_only = (steps: WorkStep[]) => {
   const tools = work_tools(steps);
@@ -135,7 +130,7 @@ const StepGroup = ({ chat_id, steps, streaming, pending, run }: StepGroupProps) 
             </LabelMorph>
           </span>
         )}
-        {shown.kind === "done" && <GroupCounts failed={shown.failed} denied={shown.denied} />}
+        {shown.kind === "done" && <DeniedCount denied={shown.denied} />}
         <LabelMorph morph_key={running ? "elapsed" : "duration"}>
           <GroupMeta steps={steps} running={running} live_start={head.kind === "workflow" ? head.started_at : null} />
         </LabelMorph>

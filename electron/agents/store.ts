@@ -32,6 +32,8 @@ type Listener = (summary: AgentSummary) => void;
 
 const agents = new Map<string, AgentRecord>();
 
+const starting = new Set<AgentRecord>();
+
 const listeners = new Set<Listener>();
 
 let root: string | null = null;
@@ -74,6 +76,7 @@ const changed = (record: AgentRecord) => {
 export const init_agent_store = async (dir: string): Promise<void> => {
   root = dir;
   agents.clear();
+  starting.clear();
   const file = index_file();
   const stored = await read_json(file);
   if (stored.status === "missing") {
@@ -110,6 +113,15 @@ export const on_agents_changed = (listener: Listener): (() => void) => {
 };
 
 export const get_agent = (agent_id: string): AgentRecord | null => agents.get(agent_id) ?? null;
+
+export const retain_agent = (record: AgentRecord): (() => void) => {
+  if (agents.get(record.agent_id) !== record) throw new Error(`Agent ${record.agent_id} is no longer available.`);
+  if (starting.has(record)) throw new Error(`Agent ${record.agent_id} is already starting.`);
+  starting.add(record);
+  return () => {
+    starting.delete(record);
+  };
+};
 
 export const chat_agents = (chat_id: string): AgentRecord[] => [...agents.values()].filter((record) => record.chat_id === chat_id).sort(newest_first);
 
@@ -152,7 +164,7 @@ export const remove_agents = async (agent_ids: string[]): Promise<void> => {
 
 const prune = () => {
   const in_running_workflow = (record: AgentRecord) => record.workflow !== undefined && get_run(record.workflow.run_id)?.summary.status === "running";
-  const idle = [...agents.values()].filter((record) => !is_running(record) && !in_running_workflow(record)).sort(newest_first);
+  const idle = [...agents.values()].filter((record) => record.runs.length > 0 && !starting.has(record) && !is_running(record) && !in_running_workflow(record)).sort(newest_first);
   const excess = agents.size - max_stored_agents;
   if (excess > 0) {
     void remove_agents(idle.slice(-excess).map((record) => record.agent_id));

@@ -117,22 +117,31 @@ export const visual_tab_id = (screenshot_id: string) => {
 const capture = (tab: BrowserTab, signal: AbortSignal) => settle_within(tab.guest.capturePage(), signal, capture_timeout_ms, "Browser screenshot");
 
 export const capture_view = async (tab: BrowserTab, signal: AbortSignal): Promise<CapturedView> => {
+  const epoch = tab.epoch;
+  const url = tab_url(tab);
   const image = await capture(tab, signal);
   const size = image.getSize();
   if (!size.width || !size.height) {
     throw new Error("Browser screenshot is empty: the tab has not painted a frame yet. Wait for the page to load and try again.");
   }
-  return { image, width: size.width, height: size.height, view: await viewport(tab, signal) };
+  const view = await viewport(tab, signal);
+  if (epoch !== tab.epoch || url !== tab_url(tab)) {
+    throw new Error("The page changed while the screenshot was taken. Capture the page again.");
+  }
+  return { image, width: size.width, height: size.height, view };
 };
 
 export const analyze_page = async (tab: BrowserTab, question: string, signal: AbortSignal): Promise<VisionResult> => {
   if (!analyzer) {
     throw new Error("Browser vision analysis is not configured.");
   }
-  const { image, view, ...size } = await capture_view(tab, signal);
   const epoch = tab.epoch;
   const url = tab_url(tab);
+  const { image, view, ...size } = await capture_view(tab, signal);
   const reply = await analyzer(image.toPNG(), vision_instructions(question), signal);
+  if (epoch !== tab.epoch || url !== tab_url(tab)) {
+    throw new Error("The page changed during its visual analysis. Call browser_visual_analyze again.");
+  }
   const analysis = parse_analysis(reply.text, reply.finish_reason === "length");
   const visual: Visual = {
     screenshot_id: random_id(`visual-${tab.tab_id}`),
@@ -177,6 +186,9 @@ export const verify_region = async (tab: BrowserTab, visual: Visual, crop: Box, 
     throw changed;
   }
   const current = await capture(tab, signal);
+  if (visual.epoch !== tab.epoch || visual.url !== tab_url(tab) || visual.zoom_factor !== tab.guest.getZoomFactor()) {
+    throw changed;
+  }
   const size = current.getSize();
   if (size.width !== visual.capture_width || size.height !== visual.capture_height) {
     throw changed;

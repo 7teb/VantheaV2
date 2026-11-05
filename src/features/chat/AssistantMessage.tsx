@@ -51,6 +51,7 @@ type AssistantMessageProps = {
   undoable_id: string | null;
   summary_after: string | null;
   retry_from: UserMessage | null;
+  scheduled_run: boolean;
 };
 
 const same_turn = (before: AssistantMessageProps, after: AssistantMessageProps) =>
@@ -61,10 +62,11 @@ const same_turn = (before: AssistantMessageProps, after: AssistantMessageProps) 
   before.undoable_id === after.undoable_id &&
   before.summary_after === after.summary_after &&
   before.retry_from === after.retry_from &&
+  before.scheduled_run === after.scheduled_run &&
   before.messages.length === after.messages.length &&
   before.messages.every((message, index) => message === after.messages[index] && before.accepted.has(message.id) === after.accepted.has(message.id));
 
-export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_plan_id, accepted, undoable_id, summary_after, retry_from }: AssistantMessageProps) => {
+export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_plan_id, accepted, undoable_id, summary_after, retry_from, scheduled_run }: AssistantMessageProps) => {
   const members = messages.filter((message): message is AssistantMessageData => message.role === "assistant");
   const layout = turn_layout(messages);
   const facts = members.map((member) => facts_with(member, layout.lead.get(member.id)));
@@ -119,6 +121,7 @@ export const AssistantMessage = memo(({ chat_id, messages, last_id, busy, last_p
               file_card={index === members.length - 1 ? file_card : null}
               turn_started_at={leader.created_at}
               retry_from={index === members.length - 1 ? retry_from : null}
+              scheduled_run={scheduled_run && index === 0}
             />
             {summary}
           </Fragment>

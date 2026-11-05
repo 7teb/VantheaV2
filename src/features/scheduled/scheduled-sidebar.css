@@ -1,0 +1,29 @@
+.scheduled-nav[aria-current="page"] {
+  background: var(--fill-active);
+}
+
+.scheduled-nav[aria-current="page"] svg {
+  color: var(--text-primary);
+}
+
+.scheduled-nav .chat-row-status {
+  margin-right: -2px;
+}
+
+.scheduled-mark {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  color: var(--text-tertiary);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.sidebar-row:hover .scheduled-mark,
+.sidebar-row[data-active="true"] .scheduled-mark {
+  color: var(--text-secondary);
+}
+
+.scheduled-mark[data-enabled="false"] {
+  color: var(--text-quaternary);
+}

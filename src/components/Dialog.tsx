@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./Button.tsx";
 import { class_names } from "./class-names.ts";
@@ -11,8 +11,18 @@ type DialogProps = {
   label: string;
   className?: string;
   backdrop_className?: string;
-  initial_focus?: "first" | "panel";
+  initial_focus?: "first" | "panel" | RefObject<HTMLElement | null>;
   children: ReactNode;
+};
+
+const initial_focus_target = (node: HTMLElement, initial_focus: DialogProps["initial_focus"]) => {
+  if (typeof initial_focus === "object") {
+    return initial_focus.current ?? node;
+  }
+  if (initial_focus === "first") {
+    return focusable_within(node)[0] ?? node;
+  }
+  return node;
 };
 
 export const Dialog = ({ open, on_close, label, className, backdrop_className, initial_focus = "first", children }: DialogProps) => {
@@ -26,7 +36,7 @@ export const Dialog = ({ open, on_close, label, className, backdrop_className, i
     if (!open || !node) {
       return;
     }
-    const target = initial_focus === "first" ? (focusable_within(node)[0] ?? node) : node;
+    const target = initial_focus_target(node, initial_focus);
     target.focus({ preventScroll: true });
   }, [open, initial_focus, presence.mounted]);
 

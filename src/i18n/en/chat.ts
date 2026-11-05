@@ -40,6 +40,7 @@ export const chat = {
   "chat.origin_continue": "Continued",
   "chat.origin_agent_report": "Agent report",
   "chat.origin_workflow": "Workflow result",
+  "chat.origin_scheduled": "Scheduled task · {time}",
   "chat.origin_agent_update": "Agent update",
   "chat.notice_agent_report": "Agent report",
   "chat.notice_agent_update": "Agent update",
@@ -51,6 +52,7 @@ export const chat = {
   "chat.notice_todos_carried": "Open todos carried over",
   "chat.notice_model_switch": "Told the model about the model switch",
   "chat.notice_background_task": "Told the model a background task finished",
+  "chat.notice_scheduled_run": "Scheduled run",
   "chat.notice_context_trimmed": "Older context was trimmed to fit",
   "chat.retry_in": "retrying in {n}s",
   "chat.error_rate_limited": "The provider is rate limiting requests. Wait a moment and try again.",
@@ -74,6 +76,5 @@ export const chat = {
   "chat.notice_workflow_result": "Workflow result",
   "chat.peer_alert_from": "Agent messages need attention: {x}",
   "chat.peer_alert_blocked": "Blocked",
-  "chat.peer_alert_loop": "Loop",
   "chat.visual_error": "Script error in this visualization: {error}",
 };

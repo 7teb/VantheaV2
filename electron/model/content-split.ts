@@ -73,15 +73,15 @@ export const create_content_splitter = (): ContentSplitter => {
         continue;
       }
       emit(before);
+      if (code.inside()) {
+        emit(match[0]);
+        continue;
+      }
       if (tag.startsWith("<think")) {
         state = "think";
         continue;
       }
       if (tag.startsWith("</")) {
-        continue;
-      }
-      if (code.inside()) {
-        emit(match[0]);
         continue;
       }
       state = "held";
@@ -99,7 +99,7 @@ export const create_content_splitter = (): ContentSplitter => {
     if (state === "think") {
       return { text: "", reasoning: is_think_prefix(rest) ? "" : rest, held: "" };
     }
-    return { text: is_think_prefix(rest) ? "" : rest, reasoning: "", held: "" };
+    return { text: !code.inside() && is_think_prefix(rest) ? "" : rest, reasoning: "", held: "" };
   };
 
   return { push, finish };

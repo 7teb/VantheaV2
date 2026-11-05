@@ -12,6 +12,7 @@ import { chat_marks_store } from "../../state/chat-marks.ts";
 import { delete_chat, rename_chat, set_chat_archived, set_chat_pinned } from "../../state/chats.ts";
 import { open_chat } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
+import { ScheduledMark } from "../scheduled/ScheduledMark.tsx";
 import { InlineRename } from "./InlineRename.tsx";
 import { chat_label } from "./sidebar-model.ts";
 import { StatusMark } from "./StatusMark.tsx";
@@ -55,6 +56,7 @@ export const ChatRow = memo(({ chat, active, now, detail }: ChatRowProps) => {
         />
       ) : (
         <button type="button" className="sidebar-row-main" aria-current={active ? "page" : undefined} onClick={() => open_chat(chat.id, chat.project_path)}>
+          <ScheduledMark chat_id={chat.id} />
           {detail === undefined ? (
             <span className="sidebar-row-label">{chat_label(t, chat.title)}</span>
           ) : (

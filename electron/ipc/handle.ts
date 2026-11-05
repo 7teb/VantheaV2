@@ -45,20 +45,20 @@ export const dispatch_send = (client: ClientId, name: SendName, args: unknown[])
   }
 };
 
-const register_invoke = (name: InvokeName, dispatcher: InvokeDispatcher) => {
+const register_invoke = (name: InvokeName, dispatcher: InvokeDispatcher, additional?: (event: IpcMainInvokeEvent) => boolean) => {
   invoke_handlers.set(name, dispatcher);
   ipcMain.handle(name, async (event, ...args) => {
-    if (!trusted(event)) {
+    if (!trusted(event) && !additional?.(event)) {
       throw new Error(`ipc ${name}: untrusted sender`);
     }
     return dispatch_invoke(window_client, name, args);
   });
 };
 
-const register_send = (name: SendName, dispatcher: SendDispatcher) => {
+const register_send = (name: SendName, dispatcher: SendDispatcher, additional?: (event: IpcMainEvent) => boolean) => {
   send_handlers.set(name, dispatcher);
   ipcMain.on(name, (event, ...args) => {
-    if (!trusted(event)) {
+    if (!trusted(event) && !additional?.(event)) {
       return;
     }
     dispatch_send(window_client, name, args);
@@ -78,6 +78,12 @@ export const listen = <K extends SendName>(name: K, handler: (...args: SendArgs<
 
 export const listen_client = <K extends SendName>(name: K, handler: (client: ClientId, ...args: SendArgs<K>) => void) =>
   register_send(name, (client, args) => handler(client, ...(args as SendArgs<K>)));
+
+export const handle_window = <K extends InvokeName>(name: K, accepts: (event: IpcMainInvokeEvent) => boolean, handler: (...args: InvokeArgs<K>) => InvokeResult<K>) =>
+  register_invoke(name, (_client, args) => handler(...(args as InvokeArgs<K>)), accepts);
+
+export const listen_window = <K extends SendName>(name: K, accepts: (event: IpcMainEvent) => boolean, handler: (...args: SendArgs<K>) => void) =>
+  register_send(name, (_client, args) => handler(...(args as SendArgs<K>)), accepts);
 
 export const set_event_tap = (tap: EventTap | null): void => {
   event_tap = tap;

@@ -2,6 +2,9 @@ import type { sidebar as en } from "../en/sidebar.ts";
 
 export const sidebar: Record<keyof typeof en, string> = {
   "sidebar.new_chat": "Neuer Chat",
+  "sidebar.scheduled": "Geplante Aufgaben",
+  "sidebar.scheduled_mark": "Geplante Aufgabe",
+  "sidebar.scheduled_mark_off": "Geplante Aufgabe, pausiert",
   "sidebar.search": "Suche",
   "sidebar.settings": "Einstellungen",
   "sidebar.projects": "Projekte",

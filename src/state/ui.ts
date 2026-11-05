@@ -19,6 +19,7 @@ export type UiState = {
   settings_open: boolean;
   settings_section: string;
   search_open: boolean;
+  scheduled_open: boolean;
   collapsed_projects: string[];
   collapsed_task_sections: TaskSection[];
   new_chat_pro: boolean;
@@ -81,6 +82,7 @@ export const ui_store = create_store<UiState>({
   settings_open: false,
   settings_section: "general",
   search_open: false,
+  scheduled_open: false,
   collapsed_projects: remembered_strings(collapsed_projects_key),
   collapsed_task_sections: remembered_strings(collapsed_task_sections_key).filter(is_task_section),
   new_chat_pro: false,
@@ -108,6 +110,7 @@ export const open_chat = (chat_id: string, project_path: string) => {
     project_path,
     settings_open: false,
     search_open: false,
+    scheduled_open: false,
     sidebar_collapsed: collapsed_after_choice(state.sidebar_collapsed),
   }));
 };
@@ -132,11 +135,22 @@ export const start_new_chat = (project_path: string) => {
     project_path,
     settings_open: false,
     search_open: false,
+    scheduled_open: false,
     new_chat_pro: false,
     new_chat_tier: null,
     sidebar_collapsed: collapsed_after_choice(state.sidebar_collapsed),
   }));
 };
+
+export const open_scheduled = () =>
+  ui_store.update((state) => ({
+    ...state,
+    active_chat_id: null,
+    settings_open: false,
+    search_open: false,
+    scheduled_open: true,
+    sidebar_collapsed: collapsed_after_choice(state.sidebar_collapsed),
+  }));
 
 export const toggle_dock = (kind: DockKind) =>
   ui_store.update((state) => ({

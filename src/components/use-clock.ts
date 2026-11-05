@@ -12,3 +12,12 @@ export const use_clock = (ticking: boolean) => {
   }, [ticking]);
   return now;
 };
+
+export const use_minute_clock = () => {
+  const [now, set_now] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => set_now(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return now;
+};

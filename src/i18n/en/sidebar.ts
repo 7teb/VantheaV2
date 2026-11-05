@@ -1,5 +1,8 @@
 export const sidebar = {
   "sidebar.new_chat": "New chat",
+  "sidebar.scheduled": "Scheduled tasks",
+  "sidebar.scheduled_mark": "Scheduled task",
+  "sidebar.scheduled_mark_off": "Scheduled task, paused",
   "sidebar.search": "Search",
   "sidebar.settings": "Settings",
   "sidebar.projects": "Projects",

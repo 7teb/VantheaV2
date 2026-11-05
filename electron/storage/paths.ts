@@ -17,6 +17,7 @@ export type StoragePaths = {
   artifacts: string;
   retired_snapshots: string;
   background: string;
+  scheduled: string;
   agents: string;
   workflows: string;
   memories: string;
@@ -50,6 +51,7 @@ const storage_paths_for = (user_data: string): StoragePaths => {
     artifacts: path.join(root, "artifacts.json"),
     retired_snapshots: path.join(root, "snapshots"),
     background: path.join(root, "background.json"),
+    scheduled: path.join(root, "scheduled-tasks.json"),
     agents: path.join(root, "agents"),
     workflows: path.join(root, "workflows"),
     memories: path.join(root, "memories.json"),

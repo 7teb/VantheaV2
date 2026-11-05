@@ -1,9 +1,10 @@
-import { compact_fraction, type ContextUsage } from "../../../shared/chat.ts";
+import { compact_fraction, type ContextUsage, type Message } from "../../../shared/chat.ts";
 import { context_setting, with_context_setting, type ModelChoice, type ModelEntry } from "../../../shared/models.ts";
 import type { ModelContext } from "../../../shared/settings.ts";
+import { latest_todos, open_todos } from "../../../shared/todos.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import { chats_store } from "../../state/chats.ts";
-import { entry_streaming, last_assistant } from "../../state/chat-view-reduce.ts";
+import { entry_streaming, last_assistant, type ChatViewState } from "../../state/chat-view-reduce.ts";
 import { chat_view_store } from "../../state/chat-view.ts";
 import { layout_store } from "../../state/layout.ts";
 import { resolve_choice } from "../../state/model-choice.ts";
@@ -17,6 +18,16 @@ export const use_chat_busy = (chat_id: string | null): boolean => {
   const listed = use_store(chats_store, (state) => (chat_id ? (state.list.find((chat) => chat.id === chat_id)?.streaming ?? false) : false));
   return streaming ?? listed;
 };
+
+const no_messages: Message[] = [];
+
+export const chat_messages = (state: ChatViewState, chat_id: string): Message[] => state.entries[chat_id]?.chat?.messages ?? no_messages;
+
+export const use_open_todo_count = (chat_id: string | null): number =>
+  use_store(chat_view_store, (state) => {
+    const todos = chat_id === null ? null : latest_todos(chat_messages(state, chat_id))?.todos;
+    return todos ? open_todos(todos).length : 0;
+  });
 
 export const focus_composer_input = (node: Element) =>
   node.closest(".composer-slot")?.querySelector<HTMLElement>("textarea.composer-input")?.focus({ preventScroll: true });

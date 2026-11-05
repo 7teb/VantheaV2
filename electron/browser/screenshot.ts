@@ -6,7 +6,7 @@ import { draw_marks, type Mark } from "./marks.ts";
 import { fit_native, jpeg_quality } from "./model-image.ts";
 import { sweep_stores } from "./refs.ts";
 import { take_snapshot } from "./snapshot.ts";
-import type { Box, BrowserTab, Visual } from "./state.ts";
+import { tab_url, type Box, type BrowserTab, type Visual } from "./state.ts";
 import { capture_view, click_with_fallback, verify_region } from "./vision.ts";
 
 export type ScreenshotRef = { ref: string; line: string; box: Box };
@@ -39,6 +39,7 @@ const labeled_jpeg = (fitted: NativeImage, image: Size, refs: ScreenshotRef[]): 
 
 export const take_screenshot = async (tab: BrowserTab, labels: boolean, rules: NativeSize[], signal: AbortSignal): Promise<Screenshot> => {
   const epoch = tab.epoch;
+  const url = tab_url(tab);
   const captured = await capture_view(tab, signal);
   const { view } = captured;
   if (!view.width || !view.height) {
@@ -55,7 +56,7 @@ export const take_screenshot = async (tab: BrowserTab, labels: boolean, rules: N
   if (after.x !== view.x || after.y !== view.y) {
     throw new Error(`The page scrolled while the screenshot was taken. ${retake}`);
   }
-  if (tab.epoch !== epoch) {
+  if (tab.epoch !== epoch || tab_url(tab) !== url) {
     throw new Error(`The page changed while the screenshot was taken. ${retake}`);
   }
   const refs = snapshot.lines.flatMap((entry) => (entry.box ? [{ ref: entry.ref, line: entry.line, box: box_to_image(entry.box, css, image) }] : []));

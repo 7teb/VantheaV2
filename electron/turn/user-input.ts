@@ -14,6 +14,8 @@ type Piece = { text: string } | { image: string };
 export const steer_prefix =
   "[The user sent this while you were working on this turn. Reply to it in your next visible output before your next tool call, in one or two sentences, then keep working. It does not end the turn.]";
 
+export const continuation_text = "Your last message hit the model's maximum output length and was cut off. Continue exactly where you left off and keep going until the task is finished. Do not start over or repeat what you already wrote.";
+
 export const counted_image: ImageReader = async () => "";
 
 export const escape_markup = (text: string): string => text.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");

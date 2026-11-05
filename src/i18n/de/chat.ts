@@ -42,6 +42,7 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.origin_continue": "Fortgesetzt",
   "chat.origin_agent_report": "Agent-Bericht",
   "chat.origin_workflow": "Workflow-Ergebnis",
+  "chat.origin_scheduled": "Geplante Aufgabe · {time}",
   "chat.origin_agent_update": "Agent-Update",
   "chat.notice_agent_report": "Agent-Bericht",
   "chat.notice_agent_update": "Zwischenstand eines Agenten",
@@ -53,6 +54,7 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.notice_todos_carried": "Offene To-dos übernommen",
   "chat.notice_model_switch": "Modell über den Modellwechsel informiert",
   "chat.notice_background_task": "Modell über einen fertigen Hintergrund-Task informiert",
+  "chat.notice_scheduled_run": "Geplanter Lauf",
   "chat.notice_context_trimmed": "Älterer Kontext wurde gekürzt",
   "chat.retry_in": "neuer Versuch in {n} s",
   "chat.error_rate_limited": "Der Anbieter drosselt gerade Anfragen. Warte kurz und versuch es erneut.",
@@ -76,6 +78,5 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.notice_workflow_result": "Workflow-Ergebnis",
   "chat.peer_alert_from": "Agenten-Nachrichten brauchen Aufmerksamkeit: {x}",
   "chat.peer_alert_blocked": "Blockiert",
-  "chat.peer_alert_loop": "Schleife",
   "chat.visual_error": "Skriptfehler in dieser Visualisierung: {error}",
 };

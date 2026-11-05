@@ -7,9 +7,10 @@ import { ChevronRightIcon, ClipboardListIcon, CritterMark, MessageSquareIcon, Re
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { AgentNoteRow } from "./AgentNoteRow.tsx";
+import { ScheduledRunNote } from "./RunDivider.tsx";
 import { WorkflowNoteRow } from "./WorkflowNoteRow.tsx";
 
-const notes: Record<Exclude<UserOrigin, "user" | "background" | CommandOrigin>, { icon: IconComponent; label: MessageKey }> = {
+const notes: Record<Exclude<UserOrigin, "user" | "background" | "scheduled" | CommandOrigin>, { icon: IconComponent; label: MessageKey }> = {
   plan_accept: { icon: ClipboardListIcon, label: "chat.origin_plan_accept" },
   undo: { icon: UndoIcon, label: "chat.origin_undo" },
   continue: { icon: RetryIcon, label: "chat.origin_continue" },
@@ -33,6 +34,9 @@ export const OriginNote = ({ message }: { message: UserMessage }) => {
   const [open, set_open] = useState(false);
   if (message.origin === "user" || message.origin === "background" || message.origin === "init" || message.origin === "git_init" || message.origin === "review") {
     return null;
+  }
+  if (message.origin === "scheduled") {
+    return <ScheduledRunNote message={message} />;
   }
   const workflow_notes = message.origin === "workflow" ? split_workflow_notices(message.text).flatMap((text) => parse_workflow_notice(text) ?? []) : [];
   if (workflow_notes.length) {

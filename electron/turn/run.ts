@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
-import type { AssistantMessage, Attachment, Message, UserMessage } from "../../shared/chat.ts";
+import type { AssistantMessage, Attachment, Chat, Message, PermissionMode, UserMessage } from "../../shared/chat.ts";
 import { file_changes, undoable_turn } from "../../shared/file-changes.ts";
 import { passed_prompts } from "../../shared/hook-notes.ts";
+import type { StreamEventBody } from "../../shared/events.ts";
 import type { CompactResult, SendRequest, TurnStarted } from "../../shared/ipc/chats.ts";
 import type { CommandOrigin, UserOrigin } from "../../shared/chat.ts";
 import { chat_choice, with_choice, type ModelChoice, type ModelEntry } from "../../shared/models.ts";
 import { wake_idle } from "../agents/reports.ts";
-import { attachment_ids, hold_ids, release_ids } from "../chats/refs.ts";
-import { append_message, flush_chat, get_chat, set_streaming, truncate_after, unarchive_chat, update_message, update_meta } from "../chats/store.ts";
+import { replace_tail } from "../chats/edit.ts";
+import { append_message, flush_chat, get_chat, set_streaming, unarchive_chat, update_message, update_meta } from "../chats/store.ts";
 import { chat_root } from "../chats/workspace.ts";
 import { emit } from "../ipc/handle.ts";
 import { forget_scan } from "../memory/store.ts";
@@ -31,11 +32,12 @@ import {
   reserve_chat,
 } from "./active.ts";
 import { drive, type TurnPlan } from "./drive.ts";
-import { create_emitter, type EmitDeps } from "./emit.ts";
+import { create_emitter, type EmitDeps, type QuietEnd } from "./emit.ts";
 import { uncompacted_work } from "./history.ts";
 import { git_init_request_text } from "./git-init-request.ts";
 import { init_request_text } from "./init-request.ts";
 import { review_request_text } from "./review-request.ts";
+import type { Emitter, OpeningNotes } from "./session.ts";
 import { undo_request_text } from "./undo-request.ts";
 import { stop_chat_workflows } from "../workflows/runtime.ts";
 
@@ -51,9 +53,21 @@ const emit_deps: EmitDeps = {
 
 const iso = () => new Date().toISOString();
 
-type Trigger = { kind: "new"; text: string; attachments: Attachment[] } | { kind: "existing"; message_id: string; text: string } | { kind: "compact" };
+type Trigger = { kind: "new"; text: string; attachments: Attachment[] } | { kind: "edit"; message_id: string; user: UserMessage } | { kind: "compact" };
 
-type BeginInput = { chat_id: string; choice: ModelChoice; mode: SendRequest["mode"]; plan: boolean; origin: UserOrigin; command_arg?: string; trigger: Trigger };
+type BeginInput = {
+  chat_id: string;
+  choice: ModelChoice;
+  mode: SendRequest["mode"];
+  plan: boolean;
+  origin: UserOrigin;
+  command_arg?: string;
+  trigger: Trigger;
+  notes?: OpeningNotes;
+  quiet_end?: QuietEnd;
+  keep_order?: boolean;
+  watch?: (body: StreamEventBody) => void;
+};
 
 const with_reservation = async <T>(chat_id: string, work: () => Promise<T>): Promise<T> => {
   if (!reserve_chat(chat_id)) {
@@ -66,7 +80,9 @@ const with_reservation = async <T>(chat_id: string, work: () => Promise<T>): Pro
   }
 };
 
-type Launched = { started: TurnStarted; finished: Promise<void> };
+export type Launched = { started: TurnStarted; finished: Promise<void> };
+
+export type InternalTurn = Pick<BeginInput, "notes" | "quiet_end" | "keep_order" | "watch"> & { choice?: ModelChoice; mode?: PermissionMode };
 
 const last_request = (messages: Message[]): string => passed_prompts(messages).findLast((message) => message.origin === "user")?.text ?? "";
 
@@ -88,7 +104,17 @@ const chat_request = async (chat_id: string): Promise<{ choice: ModelChoice; mod
   return { choice: chat_choice(chat?.choice, chat?.messages, await model_catalog(), fallback), mode: settings.mode };
 };
 
-const launch = async (input: BeginInput): Promise<Launched> => {
+const watched = (emitter: Emitter, watch: BeginInput["watch"]): Emitter =>
+  watch
+    ? (body) => {
+        emitter(body);
+        watch(body);
+      }
+    : emitter;
+
+type PreparedTurn = { chat: Chat; model: ModelEntry; effort: string; project_root: string };
+
+const prepare_turn = async (input: Pick<BeginInput, "chat_id" | "choice">): Promise<PreparedTurn> => {
   const chat = await get_chat(input.chat_id);
   if (!chat) {
     throw new Error(`chat ${input.chat_id} not found`);
@@ -98,11 +124,18 @@ const launch = async (input: BeginInput): Promise<Launched> => {
   }
   const model = await turn_model(input.choice);
   const effort = resolve_effort(model, input.choice.effort);
-  if (!same_choice(chat.choice, input.choice)) {
+  const project_root = await chat_root(chat);
+  return { chat, model, effort, project_root };
+};
+
+const launch = async (input: BeginInput, prepared?: PreparedTurn): Promise<Launched> => {
+  const { chat, model, effort, project_root } = prepared ?? await prepare_turn(input);
+  if (input.trigger.kind !== "edit" && !same_choice(chat.choice, input.choice)) {
     await update_meta(input.chat_id, { choice: input.choice });
   }
-  const project_root = await chat_root(chat);
-  await unarchive_chat(input.chat_id);
+  if (input.trigger.kind !== "edit" && input.origin !== "scheduled") {
+    await unarchive_chat(input.chat_id);
+  }
   let user_message_id: string;
   let user_request: string;
   if (input.trigger.kind === "new") {
@@ -115,12 +148,12 @@ const launch = async (input: BeginInput): Promise<Launched> => {
       ...(input.command_arg === undefined ? {} : { command_arg: input.command_arg }),
       created_at: iso(),
     };
-    await append_message(input.chat_id, user);
+    await append_message(input.chat_id, user, !input.keep_order);
     user_message_id = user.id;
     user_request = input.trigger.text;
-  } else if (input.trigger.kind === "existing") {
-    user_message_id = input.trigger.message_id;
-    user_request = input.trigger.text;
+  } else if (input.trigger.kind === "edit") {
+    user_message_id = input.trigger.user.id;
+    user_request = input.trigger.user.text;
   } else {
     user_message_id = "";
     user_request = last_request(chat.messages);
@@ -143,9 +176,16 @@ const launch = async (input: BeginInput): Promise<Launched> => {
     context: null,
     last_seq: 0,
   };
-  await append_message(input.chat_id, placeholder);
+  if (input.trigger.kind === "edit") {
+    await replace_tail(input.chat_id, input.trigger.message_id, input.trigger.user, placeholder, input.choice);
+    if (input.trigger.user.id === input.trigger.message_id) {
+      emit("chats:message_replaced", { chat_id: input.chat_id, message: input.trigger.user });
+    }
+  } else {
+    await append_message(input.chat_id, placeholder, !input.keep_order);
+  }
   set_streaming(input.chat_id, true);
-  const turn = register_active(input.chat_id, message_id, create_emitter(input.chat_id, message_id, emit_deps), model, effort);
+  const turn = register_active(input.chat_id, message_id, watched(create_emitter(input.chat_id, message_id, emit_deps, input.quiet_end), input.watch), model, effort);
   if (input.trigger.kind !== "compact") turn_diffs.begin(input.chat_id, message_id, project_root);
   const turn_plan: TurnPlan = {
     chat_id: input.chat_id,
@@ -158,6 +198,7 @@ const launch = async (input: BeginInput): Promise<Launched> => {
     user_request,
     project_root,
     origin: input.origin,
+    notes: input.notes,
   };
   const finished = new Promise<void>((resolve) => {
     setImmediate(() => {
@@ -179,20 +220,30 @@ export const start_turn = (request: SendRequest, attachments: Attachment[], orig
     trigger: { kind: "new", text: request.text, attachments },
   });
 
-export const start_internal_turn = async (chat_id: string, origin: UserOrigin, text: string): Promise<TurnStarted | null> => {
+export const launch_internal_turn = async (chat_id: string, origin: UserOrigin, text: string, turn: InternalTurn = {}): Promise<Launched | null> => {
   if (is_active(chat_id)) {
     return null;
   }
-  try {
-    const { choice, mode } = await chat_request(chat_id);
-    return await begin({
+  return with_reservation(chat_id, async () => {
+    const request = await chat_request(chat_id);
+    return launch({
       chat_id,
-      choice,
-      mode,
+      choice: turn.choice ?? request.choice,
+      mode: turn.mode ?? request.mode,
       plan: false,
       origin,
       trigger: { kind: "new", text, attachments: [] },
+      notes: turn.notes,
+      quiet_end: turn.quiet_end,
+      keep_order: turn.keep_order,
+      watch: turn.watch,
     });
+  });
+};
+
+export const start_internal_turn = async (chat_id: string, origin: UserOrigin, text: string): Promise<TurnStarted | null> => {
+  try {
+    return (await launch_internal_turn(chat_id, origin, text))?.started ?? null;
   } catch (error) {
     console.error(`[turn] internal turn for chat ${chat_id} did not start:`, error);
     return null;
@@ -214,23 +265,11 @@ export const edit_turn = (chat_id: string, message_id: string, text: string): Pr
       throw new Error(`message ${message_id} is not an editable user message in chat ${chat_id}`);
     }
     const { choice, mode } = await chat_request(chat_id);
-    const prior = chat.messages[at - 1];
-    if (prior) {
-      const kept = attachment_ids([target]);
-      hold_ids(kept);
-      try {
-        await truncate_after(chat_id, prior.id);
-        return (await launch({ chat_id, choice, mode, plan: false, origin: "user", trigger: { kind: "new", text, attachments: target.attachments } })).started;
-      } finally {
-        release_ids(kept);
-      }
-    }
-    await truncate_after(chat_id, message_id);
-    const edited: UserMessage = { ...target, text };
-    update_message(chat_id, message_id, () => edited);
-    emit("chats:message_replaced", { chat_id, message: edited });
+    const prepared = await prepare_turn({ chat_id, choice });
+    const user: UserMessage = at === 0 ? { ...target, text } : { ...target, id: randomUUID(), text, origin: "user", created_at: iso() };
+    const launched = await launch({ chat_id, choice, mode, plan: false, origin: "user", trigger: { kind: "edit", message_id, user } }, prepared);
     forget_scan(message_id).catch((error) => console.error(`[memory] forgetting the memory scan of edited message ${message_id} in chat ${chat_id} failed:`, error));
-    return (await launch({ chat_id, choice, mode, plan: false, origin: "user", trigger: { kind: "existing", message_id, text } })).started;
+    return launched.started;
   });
 
 export const continue_turn = async (chat_id: string): Promise<TurnStarted> => {

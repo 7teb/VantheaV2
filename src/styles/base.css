@@ -143,6 +143,10 @@
     color: var(--text-tertiary);
   }
 
+  .mode-danger-icon {
+    color: var(--text-danger);
+  }
+
   .side-section-label {
     font-size: var(--font-size-ui);
     font-weight: var(--weight-semibold);

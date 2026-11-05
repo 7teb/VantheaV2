@@ -2,6 +2,7 @@ import type { Todo } from "./chat.ts";
 import type { HookAction, HookFields, ScopedHook } from "./hooks.ts";
 import type { PeerType } from "./peer-notes.ts";
 import type { AskQuestion } from "./questions.ts";
+import type { ScheduledAction, ScheduledCard, ScheduledTaskView } from "./scheduled.ts";
 import type { WorkflowStatus } from "./workflow.ts";
 
 export type DiffLine = { kind: "context" | "add" | "remove" | "gap"; text: string; old_line: number | null; new_line: number | null };
@@ -35,6 +36,17 @@ export type ModelPrice = {
 
 export type PeerOutcome = "queued" | "held" | "denied" | "declined" | "not_running" | "duplicate";
 
+export type ComputerShotRef = { message_id: string; call_id: string };
+
+export type ComputerButton = "left" | "right" | "middle";
+
+export type ComputerView =
+  | { kind: "computer"; action: "screenshot"; image_w: number; image_h: number }
+  | { kind: "computer"; action: "click"; x: number; y: number; button: ComputerButton; count: 1 | 2 | 3; modifiers: string[]; shot?: ComputerShotRef }
+  | { kind: "computer"; action: "move" | "scroll"; x: number; y: number; shot?: ComputerShotRef }
+  | { kind: "computer"; action: "drag"; x: number; y: number; to_x: number; to_y: number; button: ComputerButton; shot?: ComputerShotRef }
+  | { kind: "computer"; action: "type" | "key" | "wait" };
+
 export type ToolView =
   | { kind: "files"; root: string; files: string[]; directories: number; truncated: boolean }
   | { kind: "read"; path: string; start_line: number; end_line: number; total_lines: number; truncated: boolean }
@@ -62,10 +74,12 @@ export type ToolView =
   | { kind: "generated_images"; images: GeneratedImage[] }
   | { kind: "shown_images"; images: ShownImage[] }
   | { kind: "browser"; action: string; url: string; title: string; detail: string }
+  | ComputerView
   | { kind: "mcp"; server: string; tool: string; text: string; is_error: boolean }
   | { kind: "tool_load"; names: string[] }
   | { kind: "memory"; action: "remember" | "forget" | "list"; text: string }
   | { kind: "hooks"; action: HookAction | "list"; hooks: ScopedHook[]; previous: HookFields | null }
+  | { kind: "scheduled_tasks"; action: ScheduledAction | "list"; tasks: ScheduledTaskView[]; previous: ScheduledCard | null }
   | { kind: "skill"; action: "read" | "install"; name: string }
   | { kind: "models"; models: ModelPrice[] }
   | { kind: "questions"; questions: AskQuestion[] }

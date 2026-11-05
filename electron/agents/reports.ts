@@ -1,6 +1,6 @@
 import { report_file_notice, report_notice_context, report_notice_text, update_notice_text } from "../../shared/agent-notes.ts";
 import type { AgentRunStatus } from "../../shared/ipc/work.ts";
-import { peer_alert_intro, peer_alert_text, type PeerAlertCause } from "../../shared/peer-notes.ts";
+import { peer_alert_intro } from "../../shared/peer-notes.ts";
 import { has_steers, is_active, user_stopped } from "../turn/active.ts";
 import type { TurnNote } from "../turn/session.ts";
 import { workflow_note_content, type WorkflowReport } from "../workflows/notice.ts";
@@ -24,12 +24,9 @@ export type AgentReport = {
 
 export type AgentUpdate = { chat_id: string; agent_id: string; run_id: string; name: string; text: string };
 
-export type AgentAlert = { chat_id: string; agent_id: string; run_id: string; name: string; cause: PeerAlertCause; body: string };
-
 export type AgentNotice =
   | { kind: "report"; report: AgentReport }
   | { kind: "update"; update: AgentUpdate }
-  | { kind: "alert"; alert: AgentAlert }
   | { kind: "workflow"; workflow: WorkflowReport };
 
 export const major_wait_ms = 30 * 60 * 1000;
@@ -69,8 +66,6 @@ const notice_source = (notice: AgentNotice): { chat_id: string; run_id: string }
       return notice.report;
     case "update":
       return notice.update;
-    case "alert":
-      return notice.alert;
     case "workflow":
       return notice.workflow;
   }
@@ -108,15 +103,6 @@ export const deliver_report = (report: AgentReport): void => {
   wake_idle(report.chat_id);
 };
 
-export const deliver_alert = (alert: AgentAlert): void => {
-  if (is_active(alert.chat_id)) {
-    set_pending(alert.chat_id, [...(pending.get(alert.chat_id) ?? []), { kind: "alert", alert }]);
-  } else {
-    continue_with({ kind: "alert", alert });
-  }
-  wake_idle(alert.chat_id);
-};
-
 export const deliver_workflow = (workflow: WorkflowReport): void => {
   if (workflow.held || is_active(workflow.chat_id)) {
     set_pending(workflow.chat_id, [...(pending.get(workflow.chat_id) ?? []), { kind: "workflow", workflow }]);
@@ -151,8 +137,6 @@ export const report_note_content = (text: string, agent_tools = true): string =>
 export const update_note_content = (text: string): string =>
   `[Internal app event, not a user message. One of your sub-agents is still running and sent you this update. Use it to avoid duplicating its work or to adjust your plan; do not redo what it says it covers. Routine updates need no acknowledgment or fresh summary of the task; when nothing changes, end the response with one short sentence that says what you are waiting for. Speak at length only if a new result, changed action, blocker or user decision makes an update useful. Its final report notification still arrives when it finishes.]\n\n${text}`;
 
-export const alert_text = (alert: AgentAlert): string => peer_alert_text({ cause: alert.cause, name: alert.name, agent_id: alert.agent_id, body: alert.body });
-
 export const alert_note_content = (text: string): string => `${peer_alert_intro}\n\n${text}`;
 
 export const digest_note_content = (text: string): string =>
@@ -161,10 +145,6 @@ export const digest_note_content = (text: string): string =>
 const turn_note = (note: AgentNotice, agent_tools: boolean): TurnNote => {
   if (note.kind === "workflow") {
     return { kind: "notice", notice: "workflow_result", text: note.workflow.text, content: workflow_note_content(note.workflow.text) };
-  }
-  if (note.kind === "alert") {
-    const text = alert_text(note.alert);
-    return { kind: "notice", notice: "agent_update", text, content: alert_note_content(text) };
   }
   if (note.kind === "update") {
     const text = update_notice_text(note.update.name, note.update.agent_id, note.update.text);

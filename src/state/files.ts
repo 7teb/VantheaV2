@@ -255,15 +255,14 @@ export const sync_files = async () => {
   const scope = shown_scope();
   const key = view_key(scope);
   const shown_root = view_of(key)?.root.root?.path ?? null;
-  const root = await ensure_root(key, scope);
+  const root = view_of(key)?.root.root?.worktree ? await load_root(key, scope) : await ensure_root(key, scope);
   const view = view_of(key);
   if (root && view && root.path === shown_root) {
     reload(key, view, { paths: [], overflow: true });
   }
 };
 
-export const reload_files_root = async () => {
-  const scope = shown_scope();
+export const reload_files_root = async (scope: FilesScope = shown_scope()) => {
   await load_root(view_key(scope), scope);
 };
 

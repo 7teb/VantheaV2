@@ -77,8 +77,14 @@ function* walk_statement(elements: StatementElement[], base: number, state: Walk
       const prefix = /^(?:(?:if|then|else|elif|do|while|until|time|!)\s+|\w+=\S*\s+)*/.exec(element.text)?.[0] ?? "";
       const rest = element.text.slice(prefix.length);
       const group = /^\{\s([\s\S]*)\}$/.exec(rest);
-      if (group) current = yield* walk_text(group[1] ?? "", base + element.start + prefix.length + 2, current, ctx, null);
-      else if (rest && !/^(?:fi|done|esac|then|else|do|[{}])$/.test(rest)) [current] = yield* walk_element(rest, base + element.start + prefix.length, current, ctx, "pipe", null);
+      const definition = /^(?:function\s+[A-Za-z_][\w-]*(?:\s*\(\s*\))?|[A-Za-z_][\w-]*\s*\(\s*\))\s*\{\s([\s\S]*)\}$/.exec(rest);
+      if (definition) {
+        current = join_states(current, yield* walk_text(definition[1] ?? "", base + element.start + prefix.length + rest.indexOf("{") + 2, copy_state(current), ctx, null));
+      } else if (group) {
+        current = yield* walk_text(group[1] ?? "", base + element.start + prefix.length + 2, current, ctx, null);
+      } else if (rest && !/^(?:fi|done|esac|then|else|do|[{}])$/.test(rest)) {
+        [current] = yield* walk_element(rest, base + element.start + prefix.length, current, ctx, "pipe", null);
+      }
     }
     return current;
   }

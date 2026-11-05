@@ -199,7 +199,8 @@ export const install_target = (name: string): InstallTarget => {
   if (entries.some((entry) => !entry.builtin && entry.group.toLowerCase() === slug)) {
     throw new Error(`the skills folder has a group folder named ${slug}, a skill named "${name.slice(0, 120)}" cannot be installed over it`);
   }
-  return { slug, dir: path.join(skills_root(), slug), replaces: installed_skill(slug) };
+  const replaces = entries.find((entry) => !entry.builtin && entry.slug.toLowerCase() === slug) ?? null;
+  return { slug: replaces?.slug ?? slug, dir: replaces?.dir ?? path.join(skills_root(), slug), replaces };
 };
 
 const move_aside = async (from: string, to: string): Promise<boolean> => {
@@ -260,6 +261,9 @@ const install = async (prepared: PreparedSkill): Promise<SkillRecord> => {
   if (!installed || installed.error) {
     throw new Error(`skill ${slug} was written but does not load: ${installed?.error ?? "folder missing after install"}`);
   }
+  if (!backed_up && disabled_set().has(slug.toLowerCase())) {
+    await set_skill_enabled(slug, true);
+  }
   return installed;
 };
 
@@ -286,6 +290,10 @@ export const remove_skill = (slug: string): Promise<void> =>
     if (removed) {
       registry = rest;
       await persist_registry();
+    }
+    const disabled = get_settings().skills.disabled.filter((entry) => entry.toLowerCase() !== slug.toLowerCase());
+    if (disabled.length !== get_settings().skills.disabled.length) {
+      await update_settings({ skills: { disabled } });
     }
     await rescan();
   });

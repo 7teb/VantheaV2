@@ -45,7 +45,6 @@ export const hooks: Record<keyof typeof en, string> = {
   "hooks.approve_enable": "Darf ich diesen Hook einschalten?",
   "hooks.approve_disable": "Darf ich diesen Hook ausschalten?",
   "hooks.approve_delete": "Darf ich diesen Hook entfernen?",
-  "hooks.previous": "Vorher",
   "hooks.state_label": "Status",
   "hooks.state_on": "An",
   "hooks.state_off": "Aus",

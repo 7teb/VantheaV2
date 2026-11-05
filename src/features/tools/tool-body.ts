@@ -2,6 +2,7 @@ import type { ToolStep } from "../../../shared/chat.ts";
 import { is_shell_run } from "../../../shared/shell.ts";
 import type { ToolView, ToolViewKind } from "../../../shared/tool-view.ts";
 import type { Translate } from "../../i18n/translate.ts";
+import { shows_shot } from "./computer-shots.ts";
 import { failure_text } from "./failure-text.ts";
 import { step_hooks } from "./hook-runs.ts";
 import { live_draft } from "./live-draft.ts";
@@ -60,6 +61,10 @@ export const view_content = (t: Translate, step: ToolStep, view: ToolView): bool
       return view.text !== "";
     case "hooks":
       return view.hooks.length > 0;
+    case "scheduled_tasks":
+      return view.tasks.length > 0;
+    case "computer":
+      return shows_shot(step, view);
     case "background":
     case "peer_message":
       return true;

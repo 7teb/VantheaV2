@@ -29,10 +29,9 @@ const normalized = (path: string): string => {
 };
 
 const link_path = (href: string): string =>
-  decoded(href)
+  decoded(href.replace(/#.*$/, ""))
     .trim()
     .replace(/^file:\/\/\/?/i, "")
-    .replace(/#.*$/, "")
     .replace(/:\d+(?::\d+)?$/, "")
     .replace(/\\/g, "/")
     .replace(/^\/(?=[a-z]:\/)/i, "");

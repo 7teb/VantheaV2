@@ -43,7 +43,6 @@ export const hooks = {
   "hooks.approve_enable": "May I turn on this hook?",
   "hooks.approve_disable": "May I turn off this hook?",
   "hooks.approve_delete": "May I remove this hook?",
-  "hooks.previous": "Before",
   "hooks.state_label": "State",
   "hooks.state_on": "On",
   "hooks.state_off": "Off",

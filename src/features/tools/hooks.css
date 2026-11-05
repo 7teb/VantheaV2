@@ -25,43 +25,6 @@
     margin-top: 0;
   }
 
-  .hook-facts {
-    display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    gap: 4px var(--space-4);
-    margin: 0;
-    font-size: var(--font-size-ui);
-    line-height: 19.5px;
-  }
-
-  .hook-fact {
-    display: contents;
-  }
-
-  .hook-fact dt {
-    color: var(--text-tertiary);
-  }
-
-  .hook-fact dd {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 var(--space-2);
-    min-width: 0;
-    margin: 0;
-    color: var(--text-secondary);
-    overflow-wrap: anywhere;
-  }
-
-  .hook-fact-code {
-    font-family: var(--font-mono);
-    font-size: var(--font-size-code);
-  }
-
-  .hook-fact-before {
-    color: var(--text-tertiary);
-    text-decoration: line-through;
-  }
-
   .hook-list > .hook-list-scope {
     padding: 6px var(--space-3) 2px;
     font-size: var(--font-size-caption);

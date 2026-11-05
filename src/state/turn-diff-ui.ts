@@ -42,7 +42,7 @@ export const open_turn_diff = (span: TurnSpan, path: string | null = null) => {
 };
 
 export const show_changed_file = (path: string) => {
-  if (git_ui_of(git_store.get(), files_store.get().key).surface === "diff") {
+  if (git_ui_of(git_store.get(), files_store.get().key).surface !== "files") {
     set_surface("files");
   }
   show_file(path);

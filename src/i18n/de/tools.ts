@@ -121,8 +121,6 @@ export const tools: Record<keyof typeof en, string> = {
   "tools.peer_outcome_not_running": "Läuft nicht",
   "tools.peer_outcome_duplicate": "Schon gesendet",
   "tools.running_alongside": "{x} und {n} weitere",
-  "tools.group_failed_one": "{n} fehlgeschlagen",
-  "tools.group_failed_other": "{n} fehlgeschlagen",
   "tools.group_denied_one": "{n} abgelehnt",
   "tools.group_denied_other": "{n} abgelehnt",
   "tools.failure_not_in_project": "{x} gibt es im Projekt nicht",

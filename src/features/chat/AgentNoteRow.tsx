@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import type { AgentNote } from "../../../shared/agent-notes.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon, CritterIcon, MessageSquareIcon, RetryIcon, ShieldAlertIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon, CritterIcon, MessageSquareIcon, ShieldAlertIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
@@ -17,7 +17,6 @@ const status_keys: Partial<Record<string, MessageKey>> = {
 
 const alert_keys: Partial<Record<string, MessageKey>> = {
   blocked: "chat.peer_alert_blocked",
-  loop: "chat.peer_alert_loop",
 };
 
 const labels: Record<AgentNote["kind"], MessageKey> = {
@@ -33,7 +32,7 @@ const NoteIcon = ({ note }: { note: AgentNote }) => {
   if (note.kind === "update") {
     return <MessageSquareIcon />;
   }
-  return note.status === "loop" ? <RetryIcon /> : <ShieldAlertIcon />;
+  return <ShieldAlertIcon />;
 };
 
 export const AgentNoteRow = memo(({ note }: { note: AgentNote }) => {

@@ -1,4 +1,4 @@
-import { useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { api, remote_client } from "../../api/bridge.ts";
 import { Button, IconButton } from "../../components/Button.tsx";
 import { Dialog } from "../../components/Dialog.tsx";
@@ -19,24 +19,48 @@ export const CreateProjectDialog = ({ open, on_close }: CreateProjectDialogProps
   const [busy, set_busy] = useState(false);
   const [error, set_error] = useState<string | null>(null);
   const [dropping, set_dropping] = useState(false);
+  const field = useRef<HTMLInputElement>(null);
+  const session = useRef(0);
   const trimmed = name.trim();
 
+  useEffect(() => {
+    session.current += 1;
+    if (!open) {
+      set_name("");
+      set_folder(null);
+      set_error(null);
+      set_busy(false);
+      set_dropping(false);
+    }
+    return () => {
+      session.current += 1;
+    };
+  }, [open]);
+
+  const current = (ticket: number) => open && session.current === ticket;
+
   const close = () => {
+    session.current += 1;
     set_name("");
     set_folder(null);
     set_error(null);
+    set_busy(false);
+    set_dropping(false);
     on_close();
   };
 
   const pick = async () => {
+    const ticket = session.current;
     try {
       const chosen = await pick_project_folder();
-      if (chosen) {
+      if (chosen && current(ticket)) {
         choose(chosen);
       }
     } catch (failure) {
       console.error("[projects] choosing a project folder failed", failure);
-      set_error(ipc_error_text(failure));
+      if (current(ticket)) {
+        set_error(ipc_error_text(failure));
+      }
     }
   };
 
@@ -76,19 +100,26 @@ export const CreateProjectDialog = ({ open, on_close }: CreateProjectDialogProps
     }
     set_busy(true);
     set_error(null);
+    const ticket = session.current;
     try {
-      await create_project(trimmed, folder);
-      close();
+      await create_project(trimmed, folder, () => current(ticket));
+      if (current(ticket)) {
+        close();
+      }
     } catch (failure) {
       console.error(`[projects] creating the project ${trimmed} failed`, failure);
-      set_error(t("projects.create_failed", { error: ipc_error_text(failure) }));
+      if (current(ticket)) {
+        set_error(t("projects.create_failed", { error: ipc_error_text(failure) }));
+      }
     } finally {
-      set_busy(false);
+      if (current(ticket)) {
+        set_busy(false);
+      }
     }
   };
 
   return (
-    <Dialog open={open} on_close={close} label={t("projects.create_title")} className="create-project-dialog">
+    <Dialog open={open} on_close={close} label={t("projects.create_title")} className="create-project-dialog" initial_focus={field}>
       <form onSubmit={(event) => void submit(event)}>
         <div className="create-project-head">
           <h2 className="confirm-title">{t("projects.create_title")}</h2>
@@ -97,13 +128,13 @@ export const CreateProjectDialog = ({ open, on_close }: CreateProjectDialogProps
           </IconButton>
         </div>
         <TextField
+          ref={field}
           value={name}
           on_change={set_name}
           icon={<FolderIcon />}
           placeholder={t("projects.name_placeholder")}
           aria-label={t("projects.name_placeholder")}
           maxLength={120}
-          autoFocus
         />
         <div className="create-project-label dialog-field-label">{t("projects.folder_label")}</div>
         <div className="create-project-folder" data-drop={dropping || undefined} {...drop_target}>

@@ -8,6 +8,8 @@ const js_literal = /"(?:\\.|[^"\\\r\n])*"?|'(?:\\.|[^'\\\r\n])*'?|\x60(?:\\.|[^\
 
 const comment_start = /^(?:\/[/*]|#)/;
 
+const python_literal = /(?:(?<![\w$])[rRuUbBfF]{1,2}(?=["']))?(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|#[^\r\n]*/g;
+
 const regex_end = (text: string, start: number): number => {
   let in_class = false;
   for (let index = start + 1; index < text.length; index += 1) {
@@ -45,10 +47,11 @@ const js_mask = (text: string, strings: boolean): string => {
   return out;
 };
 
-export const code_mask = (text: string, language: SourceLanguage | null = null, strings = true): string =>
-  language === "js"
-    ? js_mask(text, strings)
-    : text.replace(/(?:(?<![\w$])[rRuUbBfF]{1,2}(?=["']))?(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|\x60(?:\\.|[^\x60\\])*\x60|\/{2}[^\r\n]*|\/\*[\s\S]*?\*\/|#[^\r\n]*/g, (piece) => (strings || comment_start.test(piece) ? blank(piece) : piece));
+export const code_mask = (text: string, language: SourceLanguage | null = null, strings = true): string => {
+  if (language === "js") return js_mask(text, strings);
+  const pattern = language === "python" ? python_literal : /(?:(?<![\w$])[rRuUbBfF]{1,2}(?=["']))?(?:"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|\x60(?:\\.|[^\x60\\])*\x60|\/{2}[^\r\n]*|\/\*[\s\S]*?\*\/|#[^\r\n]*/g;
+  return text.replace(pattern, (piece) => (strings || comment_start.test(piece) ? blank(piece) : piece));
+};
 
 export const top_level = (text: string, separator: string, language: SourceLanguage | null = null): string[] => {
   const masked = code_mask(text, language);

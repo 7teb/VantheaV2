@@ -23,7 +23,13 @@ export const count_brief_scenes = (brief: string): number => brief.split(line_br
 
 export const page_facts = async (folder: string): Promise<PageFacts> => {
   const html = await fs.readFile(path.join(folder, "index.html"), "utf8");
-  const is_ad = html.includes('class="ad');
+  const markup = html.replace(/<!--[\s\S]*?-->|<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
+  const tags = [...markup.matchAll(/<[a-z][\w:-]*((?:[^"'<>]|"[^"]*"|'[^']*')*)>/gi)];
+  const is_ad = tags.some((tag) =>
+    [...tag[1].matchAll(/\s+([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g)].some(
+      (attribute) => attribute[1].toLowerCase() === "class" && (attribute[2] ?? attribute[3] ?? attribute[4] ?? "").split(/[\t\n\f\r ]+/).includes("ad"),
+    ),
+  );
   const entries = await fs.readdir(folder, { withFileTypes: true });
   const scripts = entries.filter((entry) => entry.isFile() && path.extname(entry.name) === ".js" && entry.name !== "helpers.js");
   const sources = await Promise.all(scripts.map((entry) => fs.readFile(path.join(folder, entry.name), "utf8")));

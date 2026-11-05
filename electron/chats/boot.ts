@@ -16,11 +16,17 @@ const adopt_chat = async (chat: Chat) => {
 
 const rebuild_index = async (dirs: ChatDirs) => {
   let rebuilt = 0;
-  for (const name of await fs.readdir(dirs.data_dir)) {
-    const chat_id = name.endsWith(".vxc") ? name.slice(0, -".vxc".length) : "";
+  let present = false;
+  for (const entry of await fs.readdir(dirs.data_dir, { withFileTypes: true })) {
+    if (!entry.isFile()) {
+      continue;
+    }
+    const name = entry.name;
+    const chat_id = name.toLowerCase().endsWith(".vxc") ? name.slice(0, -".vxc".length) : "";
     if (!chat_id_pattern.test(chat_id)) {
       continue;
     }
+    present = true;
     try {
       const stored = await read_chat_file(chat_id);
       if (!stored) {
@@ -34,6 +40,7 @@ const rebuild_index = async (dirs: ChatDirs) => {
     }
   }
   console.info(`[chats] rebuilt the chat index from ${rebuilt} chat files`);
+  return present;
 };
 
 export const load_chat_index = async (dirs: ChatDirs, legacy_root: string) => {
@@ -48,7 +55,9 @@ export const load_chat_index = async (dirs: ChatDirs, legacy_root: string) => {
     console.error(`[chats] ${dirs.index_file} is not valid JSON (${stored.error}), keeping a copy at ${await keep_corrupt(dirs.index_file)}`);
     await rebuild_index(dirs);
   } else {
-    await import_legacy_chats(legacy_root, adopt_chat);
+    if (!(await rebuild_index(dirs))) {
+      await import_legacy_chats(legacy_root, adopt_chat);
+    }
   }
   await persist_index();
 };

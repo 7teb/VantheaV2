@@ -23,6 +23,8 @@ const unchanged = async (tree: AgentTree): Promise<boolean> => {
 const drop_branch = async (tree: AgentTree): Promise<void> => {
   const tool = await require_git_tool();
   const { name, base, repo_dir } = tree.branch;
+  const registered = await exec_git(tool, { cwd: repo_dir, args: ["worktree", "list", "--porcelain"], flags: fsmonitor_off });
+  if (git_ok(registered, `git worktree list in ${repo_dir}`).toString("utf8").split(/\r?\n/).some((line) => line === `branch refs/heads/${name}`)) return;
   const dropped = await exec_git(tool, { cwd: repo_dir, args: ["update-ref", "-d", `refs/heads/${name}`, base], flags: fsmonitor_off });
   if (dropped.code !== 0) {
     console.warn(`[worktrees] the branch ${name} of the removed agent worktree ${tree.path} stays: ${dropped.stderr.trim()}`);

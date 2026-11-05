@@ -79,8 +79,10 @@ export const approval_lines = (t: Translate, request: ApprovalRequest): NoteLine
     case "skill_install":
     case "agent_message":
     case "secret_read":
+    case "scheduled_task":
       return note_lines(t, request.review);
     case "hook":
+    case "computer_use":
       return [];
   }
 };

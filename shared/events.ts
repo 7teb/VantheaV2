@@ -59,7 +59,7 @@ export type StreamEventBody =
       wait_ms?: number;
     }
   | { type: "context"; usage: ContextUsage }
-  | { type: "end"; status: FinalStatus; error: TurnError | null };
+  | { type: "end"; status: FinalStatus; error: TurnError | null; quiet?: true };
 
 export type Sequenced = { seq: number; at: number };
 
@@ -69,5 +69,5 @@ export type AgentEvent = Sequenced & StreamEventBody & { agent_id: string; run_i
 
 export type TranscriptState = Pick<
   AssistantMessage,
-  "status" | "steps" | "reasoning_details" | "retry" | "error" | "context" | "last_seq" | "ended_at"
+  "status" | "steps" | "reasoning_details" | "retry" | "error" | "context" | "last_seq" | "ended_at" | "quiet"
 >;

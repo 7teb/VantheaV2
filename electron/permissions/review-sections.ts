@@ -135,8 +135,10 @@ export const fit_actions = (actions: ActionLine[], level: TrimLevel, earlier_com
   if (!trimmed(level, "actions")) {
     return [...runs, ...actions.map((line) => line.full)];
   }
-  let lines = build(20, true);
-  for (let keep = actions.length; bytes(lines) > cap && keep > 20; keep -= 1) lines = build(keep - 1, false);
+  let lines = build(actions.length, false);
+  for (let keep = actions.length; bytes(lines) > cap && keep > 1; keep -= 1) {
+    lines = build(keep - 1, false);
+  }
   if (bytes(lines) > cap) lines = build(20, true);
   if (bytes(lines) > cap) lines = build(5, true);
   return lines;

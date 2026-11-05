@@ -9,6 +9,8 @@ import { close_chat_tabs } from "../browser/tabs.ts";
 import { chat_file } from "../chats/files.ts";
 import { chat_meta, flush_all_sync, get_chat, on_chat_removed } from "../chats/store.ts";
 import { chat_home_of, chat_root } from "../chats/workspace.ts";
+import { init_computer } from "../computer/runtime.ts";
+import { clear_computer, close_computer } from "../computer/service.ts";
 import { git_service, init_git, shutdown_git } from "../git/index.ts";
 import { entry_kind } from "../git/repo.ts";
 import { init_github, shutdown_github } from "../github/index.ts";
@@ -47,6 +49,8 @@ import { system_probe } from "../shell/git-bash-probe.ts";
 import { init_persistence } from "../storage/init.ts";
 import { flush_pending_sync } from "../storage/json-file.ts";
 import { remove_retired_snapshots, storage_paths } from "../storage/paths.ts";
+import { load_scheduled_tasks, stop_scheduled_tasks } from "../scheduled/index.ts";
+import { forget_scheduled_chat } from "../scheduled/store.ts";
 import { clear_mcp_chat, set_command_gate } from "../tools/mcp/decide.ts";
 import { tools_for } from "../tools/registry.ts";
 import { active_turn, active_turns, forget_user_stop, on_active_turns_changed, turn_settled } from "../turn/active.ts";
@@ -138,8 +142,10 @@ const wire_hooks = () => {
     close_full_window(chat_id);
     forget_chat_approvals(chat_id);
     clear_mcp_chat(chat_id);
+    clear_computer(chat_id);
     remove_chat_background(chat_id);
     forget_answers(chat_id);
+    forget_scheduled_chat(chat_id);
     close_chat_tabs(chat_id);
     close_chat_terminals(chat_id);
     stop_chat_files_watch(chat_id);
@@ -153,9 +159,12 @@ const wire_hooks = () => {
   });
 };
 
-export const init_services = async (): Promise<void> => {
+export type StartedServices = { mcp_settled: Promise<void> };
+
+export const init_services = async (): Promise<StartedServices> => {
   wire_hooks();
   await run_step("storage", init_persistence);
+  await run_step("scheduled tasks", load_scheduled_tasks);
   const swept = sweep_worktree_ledger().catch((error: unknown) => {
     console.error("[worktrees] finishing worktree steps left over from the last run failed:", error);
     return [];
@@ -197,13 +206,17 @@ export const init_services = async (): Promise<void> => {
   await run_step("memory and skills", init_extensions);
   await run_step("project folders", check_project_folders);
   await run_step("browser", init_browser);
-  init_mcp().catch((error) => console.error("[mcp] starting configured servers failed:", error));
+  await run_step("computer use", () => init_computer(stop_turn));
+  const mcp_settled = init_mcp().catch((error) => console.error("[mcp] starting configured servers failed:", error));
+  return { mcp_settled };
 };
 
 export const shutdown_services = (): void => {
   shutting_down = true;
+  stop_scheduled_tasks();
   shutdown_remote();
   interrupt_all_turns();
+  close_computer();
   turn_diffs.shutdown();
   shutdown_workflows_sync();
   shutdown_agents_sync();

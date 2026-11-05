@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { ChatSlot } from "../chat/ChatSlot.tsx";
 import { ComposerSlot } from "../composer/ComposerSlot.tsx";
+import { ScheduledPage } from "../scheduled/ScheduledPage.tsx";
 import { ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
 import { Hero } from "./Hero.tsx";
@@ -9,9 +10,10 @@ import "./MainArea.css";
 export const MainArea = () => {
   const chat_id = use_store(ui_store, (state) => state.active_chat_id);
   const project_path = use_store(ui_store, (state) => state.project_path);
+  const scheduled_open = use_store(ui_store, (state) => state.scheduled_open);
   const main = useRef<HTMLElement>(null);
   const dock = useRef<HTMLDivElement>(null);
-  const docked = chat_id !== null;
+  const docked = chat_id !== null && !scheduled_open;
 
   useLayoutEffect(() => {
     const main_node = main.current;
@@ -26,6 +28,14 @@ export const MainArea = () => {
       main_node.style.removeProperty("--composer-dock-height");
     };
   }, [docked]);
+
+  if (scheduled_open) {
+    return (
+      <main ref={main} className="main-area">
+        <ScheduledPage />
+      </main>
+    );
+  }
 
   if (chat_id === null) {
     return (

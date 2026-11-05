@@ -88,8 +88,11 @@ export const restore_worktree = async (chat_id: string) => {
   worktree_store.update((state) => ({ ...state, restoring: { ...state.restoring, [chat_id]: true }, restore_errors: without(state.restore_errors, chat_id) }));
   try {
     await api.invoke("worktrees:restore", chat_id);
-    await Promise.all([load_head(chat_id), reload_files_root()]);
-    watch_files();
+    const project_path = chats_store.get().list.find((chat) => chat.id === chat_id)?.project_path ?? "";
+    await Promise.all([load_head(chat_id), reload_files_root({ chat_id, project_path })]);
+    if (ui_store.get().active_chat_id === chat_id && ui_store.get().dock.kind === "files") {
+      watch_files();
+    }
   } catch (error) {
     console.error(`[worktree] worktrees:restore failed for chat ${chat_id}`, error);
     worktree_store.update((state) => ({ ...state, restore_errors: { ...state.restore_errors, [chat_id]: ipc_error_text(error) } }));

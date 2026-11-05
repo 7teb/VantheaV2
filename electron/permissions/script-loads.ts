@@ -54,9 +54,6 @@ const resolve_python = async (bases: string[], dotted: string): Promise<string[]
   return [];
 };
 
-const strip_comments = (text: string, python: boolean): string =>
-  python ? text.replace(/#[^\r\n]*/g, "") : text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:\\"'])\/\/[^\r\n]*/g, "$1");
-
 const literal = (expression: string): string | null => {
   const match = /^\s*(["'])([^"'\r\n]+)\1\s*$/.exec(expression) ?? /^\s*`([^`$\r\n]+)`\s*$/.exec(expression);
   return match ? (match[2] ?? match[1] ?? null) : null;
@@ -65,7 +62,7 @@ const literal = (expression: string): string | null => {
 const relative_spec = (spec: string) => /^\.{1,2}[\\/]/.test(spec) || path.isAbsolute(spec);
 
 const js_imports = async (text: string, file: string, location: string): Promise<Loads> => {
-  const code = strip_comments(text, false);
+  const code = code_mask(text, "js", false);
   const where = file || "node -e code";
   const specs: string[] = [];
   const gaps: string[] = [];
@@ -91,7 +88,7 @@ const js_imports = async (text: string, file: string, location: string): Promise
 };
 
 export const python_imports = async (text: string, file: string, location: string): Promise<Loads> => {
-  const code = strip_comments(text, true);
+  const code = code_mask(text, "python", false);
   const here = file ? path.dirname(file) : location;
   const where = file || "python -c code";
   const folders = import_folders(text, file, location);
@@ -222,12 +219,19 @@ export const expand_entry = async (entry: string, location: string, accept: RegE
       return { files: [], gaps: [`Interpreter entry source could not be read: ${entry} (${failure(error)}).`] };
     }
   }
-  const pattern = glob ? glob_pattern(posix) : null;
+  const absolute = path.isAbsolute(posix);
+  const glob_regex = (): RegExp | null => {
+    if (glob) return glob_pattern(absolute ? path.resolve(location, posix).replaceAll("\\", "/") : posix);
+    return null;
+  };
+  const pattern = glob_regex();
   const files: string[] = [];
   const gaps: string[] = [];
   const complete = await walk(base, (file) => {
-    const relative = path.relative(location, file).replaceAll("\\", "/");
-    if (accept.test(file) && (!pattern || pattern.test(relative))) files.push(file);
+    const target = absolute ? file : path.relative(location, file);
+    if (accept.test(file) && (!pattern || pattern.test(target.replaceAll("\\", "/")))) {
+      files.push(file);
+    }
   }, gaps);
   return { files: files.sort(), gaps: complete ? gaps : [...gaps, `Directory or pattern walk exceeded ${walk_limit.toLocaleString("en-US")} entries: ${entry}.`] };
 };

@@ -48,6 +48,7 @@ export const load_chat = async (chat_id: string) => {
   } catch (error) {
     console.error(`[chat-view] chats:get failed for chat ${chat_id}`, error);
     chat_view_store.update((state) => fail_load(state, chat_id));
+    return;
   }
   reload_stale();
 };

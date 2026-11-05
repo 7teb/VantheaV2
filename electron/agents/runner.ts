@@ -29,7 +29,7 @@ import {
   chat_agents,
   create_agent,
   end_run,
-  get_agent,
+  get_agent, retain_agent,
   init_agent_store,
   load_context,
   remove_agents,
@@ -315,6 +315,7 @@ export const deploy_agent = (request: DeployRequest): StartedRun => {
 };
 
 const ensure_idle = (agent: AgentRecord) => {
+  if (get_agent(agent.agent_id) !== agent) throw new Error(`Agent ${agent.agent_id} is no longer available.`);
   if (current_run(agent)?.status === "running") {
     throw new Error(`Agent ${agent.agent_id} is still running; steer it with message_agent or wait for its report.`);
   }
@@ -329,13 +330,18 @@ export const ensure_continuable = (agent: AgentRecord, project_root: string): vo
 
 export const continue_agent = async (agent: AgentRecord, request: RunContext): Promise<StartedRun> => {
   ensure_continuable(agent, request.project_root);
-  const model = await find_agent_model(agent.model);
-  const saved = await load_context(agent);
-  const context = model.vision ? saved : without_images(saved);
-  const stored = await stored_agent_context(agent);
-  ensure_idle(agent);
-  ensure_capacity(agent.chat_id);
-  return launch(agent, request, model, context, stored);
+  const release = retain_agent(agent);
+  try {
+    const model = await find_agent_model(agent.model);
+    const saved = await load_context(agent);
+    const context = model.vision ? saved : without_images(saved);
+    const stored = await stored_agent_context(agent);
+    ensure_idle(agent);
+    ensure_capacity(agent.chat_id);
+    return launch(agent, request, model, context, stored);
+  } finally {
+    release();
+  }
 };
 
 export const cancel_agent = (agent: AgentRecord): boolean => {

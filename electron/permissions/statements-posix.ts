@@ -1,11 +1,13 @@
-import { backtick_end, body_end, brace_end, dollar_single_end, double_end, feeds_shell, heredoc, paren_end, single_end, token_boundary } from "./posix-lex.ts";
+import { backtick_end, body_end, brace_end, case_head, case_keyword, case_pattern, dollar_single_end, double_end, parameter_end, paren_end, single_end, token_boundary, word_end, type CaseFrame, type CaseGroup } from "./posix-lex.ts";
 import { head_index, is_flag, posix_literal } from "./posix-command.ts";
+import { heredoc_word, script_input, shell_feeders, shell_mode } from "./posix-heredoc.ts";
 import { shell_words, type Word } from "./shell-words.ts";
+import { inner_groups, inner_in_double } from "./posix-groups.ts";
 import type { StatementElement, StatementPart } from "./statements.ts";
 
 type Separator = ";" | "&&" | "||" | "|" | "|&" | "&" | "\n" | "";
 
-type Segment = { text: string; start: number; end: number; after: Separator };
+type Segment = { text: string; start: number; end: number; after: Separator; group?: CaseGroup };
 
 export type PosixPipeline = { stages: StatementElement[]; nested: string[]; simple: boolean };
 
@@ -13,13 +15,51 @@ const scan_posix = (source: string, payloads: string[]): Segment[] => {
   const segments: Segment[] = [];
   let begin = 0;
   let index = 0;
-  let heredocs: { tag: string; dashed: boolean; expands: boolean }[] = [];
+  const cases: CaseFrame[] = [];
+  let strings: { value: string; feeds: boolean }[] = [];
+  let heredocs: { tag: string; dashed: boolean; expands: boolean; feeds: boolean; end: number | null }[] = [];
+  const mark_feeds = () => {
+    if (!script_input(source.slice(begin, index))) return;
+    for (const entry of strings) {
+      entry.feeds = true;
+    }
+    for (const entry of heredocs) {
+      if (entry.end === null) {
+        entry.feeds = true;
+      }
+    }
+  };
   const cut = (after: Separator, next: number) => {
-    segments.push({ text: source.slice(begin, index), start: begin, end: index, after });
+    mark_feeds();
+    if (after !== "|" && after !== "|&") {
+      payloads.push(...strings.filter((entry) => entry.feeds).map((entry) => entry.value));
+      strings = [];
+      for (const entry of heredocs) {
+        if (entry.end === null) {
+          entry.end = index;
+        }
+      }
+    }
+    segments.push({ text: source.slice(begin, index), start: begin, end: index, after, group: cases[0]?.root });
     index = next;
     begin = next;
   };
   while (index < source.length) {
+    const frame = cases.at(-1);
+    if (frame?.pattern) {
+      const pattern = case_pattern(source, index);
+      for (const entry of pattern.expansions) {
+        frame.root.expansions.push(...inner_groups(entry.text, entry.start, frame.root.expressions));
+      }
+      if (pattern.closed) {
+        cases.pop();
+      } else {
+        frame.pattern = false;
+        frame.body = pattern.end;
+      }
+      index = begin = pattern.end;
+      continue;
+    }
     const char = source[index] ?? "";
     const prev = source[index - 1];
     if (char === "'") {
@@ -47,9 +87,32 @@ const scan_posix = (source: string, payloads: string[]): Segment[] => {
       index = stop < 0 ? source.length : stop;
       continue;
     }
+    const header = char === "c" ? case_head(source, index, begin) : -1;
+    if (header >= 0) {
+      cut("", index);
+      const expressions: StatementElement[] = [];
+      const group: CaseGroup = { branches: [], expansions: inner_groups(source.slice(index, header), index, expressions), expressions };
+      cases.push({ group, root: cases[0]?.root ?? group, pattern: true, body: header });
+      segments.push({ text: "", start: index, end: header, after: "", group: cases[0]?.root });
+      if (cases.length > 1) {
+        cases[0]?.root.expansions.push(...group.expansions);
+        cases[0]?.root.expressions.push(...group.expressions);
+      }
+      index = begin = header;
+      continue;
+    }
+    const closed = frame && char === "e" ? case_keyword(source, index, "esac") : -1;
+    if (closed >= 0 && !source.slice(begin, index).replace(/\\\r?\n/g, "").trim()) {
+      if (frame === cases[0]) {
+        frame.group.branches.push({ start: frame.body, end: index });
+      }
+      cut("", index);
+      cases.pop();
+      index = begin = closed;
+      continue;
+    }
     if (char === "$" && source[index + 1] === "{") {
-      const close = source.indexOf("}", index + 2);
-      index = close < 0 ? source.length : close + 1;
+      index = parameter_end(source, index);
       continue;
     }
     if ((char === "$" || char === "<" || char === ">") && source[index + 1] === "(") {
@@ -67,23 +130,39 @@ const scan_posix = (source: string, payloads: string[]): Segment[] => {
     if (char === "<" && source[index + 1] === "<" && source[index + 2] === "<") {
       index += 3;
       while (index < source.length && (source[index] === " " || source[index] === "\t")) index += 1;
-      const word = shell_words(source.slice(index), "posix")[0];
+      const end = word_end(source, index);
+      const word = shell_words(source.slice(index, end), "posix")[0];
       if (word) {
         const value = posix_literal(word);
-        if (value !== null && feeds_shell.test(source.slice(begin, index))) payloads.push(value);
-        index += word.start + word.raw.length;
+        if (value !== null) {
+          strings.push({ value, feeds: false });
+        }
       }
+      index = end;
       continue;
     }
     if (char === "<" && source[index + 1] === "<" && source[index + 2] !== "&") {
-      const match = heredoc.exec(source.slice(index));
-      if (match) {
-        heredocs.push({ tag: match[3] ?? match[4] ?? "", dashed: match[1] === "-", expands: match[4] !== undefined && !match[0].includes("\\") });
-        index += match[0].length;
+      const dashed = source[index + 2] === "-";
+      let from = index + (dashed ? 3 : 2);
+      while (source[from] === " " || source[from] === "\t") {
+        from += 1;
+      }
+      const end = word_end(source, from);
+      if (end > from) {
+        const raw = source.slice(from, end);
+        const word = heredoc_word(raw);
+        if (word) {
+          heredocs.push({ ...word, dashed, feeds: false, end: null });
+        }
+        index = end;
         continue;
       }
     }
     if (char === "|") {
+      if (source[index + 1] === "|") {
+        cut("||", index + 2);
+        continue;
+      }
       const amp = source[index + 1] === "&";
       cut(amp ? "|&" : "|", index + (amp ? 2 : 1));
       continue;
@@ -101,19 +180,31 @@ const scan_posix = (source: string, payloads: string[]): Segment[] => {
       continue;
     }
     if (char === ";") {
+      const ending = frame ? /^(?:;;&|;;|;&)/.exec(source.slice(index))?.[0] : "";
+      if (frame && ending) {
+        if (frame === cases[0]) {
+          frame.group.branches.push({ start: frame.body, end: index });
+        }
+        cut(";", index + ending.length);
+        frame.pattern = true;
+        continue;
+      }
       cut(";", index + 1);
       continue;
     }
     if (char === "\n" || char === "\r") {
       const resume = index + (char === "\r" && source[index + 1] === "\n" ? 2 : 1);
       if (heredocs.length) {
-        const feeds = feeds_shell.test(source.slice(begin, index));
+        mark_feeds();
         let pos = resume;
         for (const entry of heredocs) {
-          if (!entry.tag) continue;
           const { body, next } = body_end(source, pos, entry.tag, entry.dashed);
-          if (body && feeds) payloads.push(body);
-          if (!feeds && entry.expands) payloads.push(...inner_in_double(body));
+          if (body && entry.feeds) {
+            payloads.push(body);
+          }
+          if (!entry.feeds && entry.expands) {
+            payloads.push(...inner_in_double(body));
+          }
           pos = next;
         }
         heredocs = [];
@@ -129,107 +220,6 @@ const scan_posix = (source: string, payloads: string[]): Segment[] => {
   return segments;
 };
 
-const inner_groups = (statement: string): string[] => {
-  const groups: string[] = [];
-  let index = 0;
-  while (index < statement.length) {
-    const char = statement[index] ?? "";
-    const prev = statement[index - 1];
-    if (char === "'") {
-      index = single_end(statement, index);
-      continue;
-    }
-    if (char === "$" && statement[index + 1] === "'") {
-      index = dollar_single_end(statement, index);
-      continue;
-    }
-    if (char === '"') {
-      const end = double_end(statement, index);
-      groups.push(...inner_in_double(statement.slice(index + 1, Math.max(index + 1, end - 1))));
-      index = end;
-      continue;
-    }
-    if (char === "`") {
-      const end = backtick_end(statement, index);
-      groups.push(statement.slice(index + 1, Math.max(index + 1, end - 1)).replace(/\\([$`\\])/g, "$1"));
-      index = end;
-      continue;
-    }
-    if (char === "\\") {
-      index += 2;
-      continue;
-    }
-    if ((char === "$" || char === "<" || char === ">") && statement[index + 1] === "(") {
-      const end = paren_end(statement, index + 1);
-      groups.push(statement.slice(index + 2, Math.max(index + 2, end - 1)));
-      index = end;
-      continue;
-    }
-    if (char === "(" && token_boundary(prev)) {
-      const end = paren_end(statement, index);
-      groups.push(statement.slice(index + 1, Math.max(index + 1, end - 1)));
-      index = end;
-      continue;
-    }
-    if (char === "{" && token_boundary(prev) && /\s/.test(statement[index + 1] ?? "")) {
-      const end = brace_end(statement, index);
-      groups.push(statement.slice(index + 1, Math.max(index + 1, end - 1)));
-      index = end;
-      continue;
-    }
-    index += 1;
-  }
-  return groups;
-};
-
-const inner_in_double = (text: string): string[] => {
-  const groups: string[] = [];
-  let index = 0;
-  while (index < text.length) {
-    const char = text[index] ?? "";
-    if (char === "\\") {
-      index += 2;
-      continue;
-    }
-    if (char === "`") {
-      const end = backtick_end(text, index);
-      groups.push(text.slice(index + 1, Math.max(index + 1, end - 1)).replace(/\\([$`\\])/g, "$1"));
-      index = end;
-      continue;
-    }
-    if (char === "$" && text[index + 1] === "(") {
-      const end = paren_end(text, index + 1);
-      groups.push(text.slice(index + 2, Math.max(index + 2, end - 1)));
-      index = end;
-      continue;
-    }
-    index += 1;
-  }
-  return groups;
-};
-
-const shell_feeders = new Set(["bash", "sh", "dash"]);
-
-const combined_c = /^-[a-z]*c$/i;
-
-const shell_c_payload = (rest: Word[]): string | null => {
-  let command = false;
-  let index = 0;
-  while (index < rest.length) {
-    const raw = (rest[index] as Word).raw;
-    if (!/^[-+]/.test(raw)) break;
-    index += 1;
-    if (raw === "--" || raw === "-") break;
-    if (raw.startsWith("--")) {
-      if (raw === "--rcfile" || raw === "--init-file") index += 1;
-      continue;
-    }
-    if (raw.startsWith("-") && raw.includes("c")) command = true;
-    index += raw.match(/o/gi)?.length ?? 0;
-  }
-  return command ? posix_literal(rest[index]) : null;
-};
-
 const command_payloads = (statement: string): string[] => {
   const words = shell_words(statement, "posix");
   const { verb, at } = head_index(words);
@@ -240,7 +230,7 @@ const command_payloads = (statement: string): string[] => {
     return value ? [value] : [];
   }
   if (shell_feeders.has(verb)) {
-    const value = shell_c_payload(rest);
+    const value = shell_mode(rest).payload;
     return value ? [value] : [];
   }
   return [];
@@ -262,7 +252,7 @@ const pipeline_fed = (stages: StatementElement[]): string[] => {
   const payloads: string[] = [];
   for (let stage = 1; stage < heads.length; stage += 1) {
     const sink = heads[stage] as (typeof heads)[number];
-    if (!shell_feeders.has(sink.verb) || sink.words.slice(sink.at + 1).some((word) => combined_c.test(word.raw))) continue;
+    if (!shell_feeders.has(sink.verb) || !shell_mode(sink.words.slice(sink.at + 1)).stdin) continue;
     for (let source = 0; source < stage; source += 1) {
       const feed = heads[source] as (typeof heads)[number];
       if (/^(?:echo|printf)$/.test(feed.verb)) {
@@ -277,7 +267,12 @@ const pipeline_fed = (stages: StatementElement[]): string[] => {
 const split_top_level = (source: string, split_pipes: boolean, payloads: string[]): string[] => {
   const parts: string[] = [];
   let current = "";
+  const groups = new Set<CaseGroup>();
   for (const segment of scan_posix(source, payloads)) {
+    if (segment.group && !groups.has(segment.group)) {
+      groups.add(segment.group);
+      payloads.push(...segment.group.expansions);
+    }
     current += segment.text;
     if (!split_pipes && (segment.after === "|" || segment.after === "|&")) {
       current += segment.after;
@@ -313,6 +308,7 @@ export const posix_script = (command: string): { pipelines: PosixPipeline[]; pay
   const payloads: string[] = [];
   const pipelines: PosixPipeline[] = [];
   let stages: StatementElement[] = [];
+  const groups = new Set<CaseGroup>();
   const flush = () => {
     if (!stages.length) return;
     const nested: string[] = [];
@@ -322,6 +318,14 @@ export const posix_script = (command: string): { pipelines: PosixPipeline[]; pay
     stages = [];
   };
   for (const segment of scan_posix(String(command || ""), payloads)) {
+    if (segment.group) {
+      flush();
+      if (!groups.has(segment.group)) {
+        groups.add(segment.group);
+        pipelines.push({ stages: [], nested: [...segment.group.expansions, ...segment.group.branches.map((branch) => command.slice(branch.start, branch.end))], simple: false });
+      }
+      continue;
+    }
     const raw = segment.text;
     const lead = raw.length - raw.trimStart().length;
     if (raw.trim()) stages.push({ text: raw.trim(), start: segment.start + lead });
@@ -337,6 +341,7 @@ export const statement_parts_posix = (text: string): StatementPart[] => {
   let elements: StatementElement[] = [];
   let joiner: StatementPart["joiner"] = "";
   const payloads: string[] = [];
+  const groups = new Set<CaseGroup>();
   const flush = (next: StatementPart["joiner"]) => {
     const first = elements[0];
     const last = elements.at(-1);
@@ -347,11 +352,17 @@ export const statement_parts_posix = (text: string): StatementPart[] => {
     joiner = next;
   };
   for (const segment of scan_posix(text, payloads)) {
+    if (segment.group && !groups.has(segment.group)) {
+      groups.add(segment.group);
+      for (const entry of segment.group.expressions) {
+        parts.push({ text: entry.text, start: entry.start, line: 1, joiner: "", elements: [entry] });
+      }
+    }
     const raw = segment.text;
     const lead = raw.length - raw.trimStart().length;
     if (raw.trim()) elements.push({ text: raw.trim(), start: segment.start + lead });
     if (segment.after === "|" || segment.after === "|&") continue;
     flush(segment.after === "&&" || segment.after === "||" ? segment.after : "");
   }
-  return parts;
+  return parts.sort((a, b) => a.start - b.start);
 };

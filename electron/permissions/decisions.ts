@@ -33,10 +33,16 @@ const request_subject = (request: ApprovalRequest): { tool: string; subject: str
       const subject = `${request.action} ${request.hook.event}${matcher} (${request.hook.shell}): ${request.hook.command}`;
       return { tool: request.action === "delete" ? "delete_hook" : "save_hook", subject, cwd: request.scope.kind === "project" ? request.scope.path : "", reason: request.review?.reason ?? "" };
     }
+    case "scheduled_task": {
+      const subject = `${request.action} ${request.task.name} every ${request.task.interval} (${request.task.mode}): ${request.task.prompt}`;
+      return { tool: request.action === "delete" ? "delete_scheduled_task" : "save_scheduled_task", subject, cwd: request.task.project_path, reason: request.review?.reason ?? "" };
+    }
+    case "computer_use":
+      return { tool: "computer_use", subject: `display ${request.display} (${request.real_width}x${request.real_height})`, cwd: "", reason: "" };
   }
 };
 
-const review_of = (request: ApprovalRequest): string | null => request.review?.id ?? null;
+const review_of = (request: ApprovalRequest): string | null => (request.kind === "computer_use" ? null : (request.review?.id ?? null));
 
 export const human_decision = (request: ApprovalRequest, decision: ApprovalDecision, actor: ReviewActor, last_human_id: string | null): HumanDecision => {
   const { tool, subject, cwd, reason } = request_subject(request);

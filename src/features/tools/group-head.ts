@@ -8,7 +8,7 @@ import { live_thought, work_tools, type WorkStep } from "./work-steps.ts";
 import { workflow_label } from "./workflow-model.ts";
 
 export type GroupHead =
-  | { kind: "done"; key: string; label: string; failed: number; denied: number }
+  | { kind: "done"; key: string; label: string; denied: number }
   | { kind: "thinking"; key: string; label: string }
   | { kind: "tool"; key: string; label: string }
   | { kind: "workflow"; key: string; label: string; started_at: number }
@@ -16,13 +16,23 @@ export type GroupHead =
 
 const count_status = (tools: ToolStep[], status: ToolStep["status"]) => tools.filter((step) => step.status === status).length;
 
+const counted = (step: ToolStep) => step.status === "done" || (step.status === "failed" && step.view?.kind === "command");
+
+const settled_label = (t: Translate, tools: ToolStep[]): string => {
+  if (tools.length === 1 && tools[0].status !== "done") {
+    return tool_label(t, tools[0]);
+  }
+  if (!tools.some((step) => step.status === "done" || step.status === "failed" || step.status === "denied")) {
+    return group_label(t, tools);
+  }
+  const shown = tools.filter(counted);
+  return shown.length > 0 ? group_label(t, shown) : tool_label(t, tools[tools.length - 1]);
+};
+
 const settled_head = (t: Translate, tools: ToolStep[]): GroupHead => {
-  const single = tools.length === 1 && tools[0].status !== "done" ? tools[0] : null;
-  const settled = tools.some((step) => step.status === "done" || step.status === "failed" || step.status === "denied");
-  const label = single ? tool_label(t, single) : group_label(t, settled ? tools.filter((step) => step.status === "done") : tools);
-  const failed = count_status(tools, "failed");
-  const denied = single?.status === "denied" ? 0 : count_status(tools, "denied");
-  return { kind: "done", key: `done:${label}:${failed}:${denied}`, label, failed, denied };
+  const label = settled_label(t, tools);
+  const denied = tools.length === 1 && tools[0].status === "denied" ? 0 : count_status(tools, "denied");
+  return { kind: "done", key: `done:${label}:${denied}`, label, denied };
 };
 
 export const open_head = (t: Translate, steps: WorkStep[]): GroupHead | null => {

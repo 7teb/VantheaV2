@@ -15,6 +15,7 @@ import {
 } from "./floor-shared.ts";
 import { posix_floor_reason } from "./floor-posix.ts";
 import { literal_view } from "./floor-quotes.ts";
+import { is_flag, move_sources } from "./powershell-move.ts";
 import { shell_words, type Piece, type Word } from "./shell-words.ts";
 import { quote_of, split_pipelines, split_statements, statement_parts, type Dialect, type StatementElement } from "./statements.ts";
 
@@ -148,8 +149,6 @@ const literal = (word: Word): string | null => {
   return text;
 };
 
-const is_flag = (word: Word) => /^[-\u2013\u2014\u2015]/.test(word.raw) || /^\/[a-z?](?::\S*)?$/i.test(word.raw);
-
 const resolve_target = (token: string, walk: Walk): string | null => {
   const expanded = expand(token.trim(), walk.variables);
   if (expanded === null || (walk.location === null && !path.win32.isAbsolute(expanded))) {
@@ -169,7 +168,7 @@ const unexplained = (text: string, walk: Walk): boolean => {
 const unexplained_word = (word: Word, walk: Walk): boolean => {
   const text = literal(word);
   if (text !== null) {
-    return text.split(",").some((token) => !in_project(resolve_target(token, walk), walk.scope));
+    return !in_project(resolve_target(text, walk), walk.scope);
   }
   return word.pieces.some((piece) => (piece.kind === "text" ? mentions_app(piece.text) : piece.kind !== "splat" && unexplained(piece.text, walk)));
 };
@@ -185,13 +184,15 @@ const moved_location = (args: Word[], walk: Walk): string | null => {
 
 const uses_app_variable = (text: string, walk: Walk) => [...text.matchAll(variable_use)].some((match) => walk.app_variables.has((match[1] ?? "").toLowerCase()));
 
-const literal_hits = (word: Word, walk: Walk): boolean => {
+const literal_hits = (word: Word, walk: Walk, ancestors: boolean): boolean => {
   const text = is_flag(word) ? null : literal(word);
-  return text !== null && text.split(",").some((token) => hits_app(resolve_target(token, walk), walk.scope));
+  return text !== null && hits_app(resolve_target(text, walk), walk.scope, ancestors);
 };
 
-const app_arguments = (text: string, args: Word[], walk: Walk): boolean =>
-  args.some((word) => literal_hits(word, walk)) || uses_app_variable(text, walk) || unexplained(text, walk);
+const app_arguments = (text: string, args: Word[], walk: Walk, ancestors = false): boolean =>
+  args.some((word) => literal_hits(word, walk, ancestors)) || uses_app_variable(text, walk) || unexplained(text, walk);
+
+const system_arguments = (args: Word[], walk: Walk): boolean => args.filter((word) => !is_flag(word)).map(literal).some((text) => text !== null && is_system_path(resolve_target(text, walk) ?? ""));
 
 const command_of = (statement: string): Command => {
   let text = statement.trim();
@@ -216,21 +217,33 @@ const value_expression = (text: string) => quote_of(text[0]) !== "" || /^[$@(]/.
 
 const app_source = (command: Command, walk: Walk): boolean => {
   if (listing_verb.test(command.verb)) {
-    return app_arguments(command.text, command.args, walk);
+    const children = /^(?:get-childitem|gci|ls|dir)$/i.test(command.verb);
+    const files = command.args.some((word) => /^-file$/i.test(word.raw));
+    const recursive = command.args.some((word) => /^-r(?:e(?:c(?:u(?:r(?:s(?:e)?)?)?)?)?)?$/i.test(word.raw));
+    return app_arguments(command.text, command.args, walk, !children || !files || recursive);
   }
-  return value_expression(command.text) && app_arguments(command.text, command.words, walk);
+  if (/^(?:write-output|echo)$/i.test(command.verb)) return app_arguments(command.text, command.args, walk, true);
+  return value_expression(command.text) && app_arguments(command.text, command.words, walk, true);
 };
 
-const feeds_removal = (elements: StatementElement[], walk: Walk): boolean => {
-  let carries = false;
+const carried_reason = (command: Command, walk: Walk, carries: string): string => {
+  if (pass_through_verb.test(command.verb)) return carries;
+  if (app_source(command, walk)) return app_reason;
+  if (!(listing_verb.test(command.verb) || /^(?:write-output|echo)$/i.test(command.verb) || value_expression(command.text))) return "";
+  const targets = value_expression(command.text) ? command.words : command.args;
+  return system_arguments(targets, walk) ? system_delete_reason : "";
+};
+
+const feeds_removal = (elements: StatementElement[], walk: Walk): string => {
+  let carries = "";
   for (const element of elements) {
     const command = command_of(element.text);
     if (carries && (removes(command) || (each_verb.test(command.verb) && removes_each_item(command.text)))) {
-      return true;
+      return carries;
     }
-    carries = pass_through_verb.test(command.verb) ? carries : app_source(command, walk);
+    carries = carried_reason(command, walk, carries);
   }
-  return false;
+  return "";
 };
 
 const track_assignment = (name: string, value: string, walk: Walk): void => {
@@ -257,24 +270,35 @@ const track_loop = (command: Command, walk: Walk): void => {
   }
 };
 
-const touches_app_data = (command: string, statements: string[], scope: FloorScope): boolean => {
-  const walk: Walk = { scope, location: scope.cwd ? path.win32.resolve(scope.cwd) : null, variables: new Map(), app_variables: new Set() };
-  for (const statement of statements) {
-    const current = command_of(statement);
-    if (location_verb.test(current.verb)) {
-      walk.location = moved_location(current.args, walk);
-      continue;
+const walk_floor_reason = (command: string, statements: string[], scope: FloorScope): string => {
+  for (const sequence of [statements, split_pipelines(command)]) {
+    const walk: Walk = { scope, location: scope.cwd ? path.win32.resolve(scope.cwd) : null, variables: new Map(), app_variables: new Set() };
+    for (const pipeline of sequence) {
+      for (const part of statement_parts(pipeline)) {
+        const feed = feeds_removal(part.elements, walk);
+        if (feed) return feed;
+        for (const element of part.elements) {
+          const current = command_of(element.text);
+          if (location_verb.test(current.verb)) {
+            walk.location = moved_location(current.args, walk);
+            continue;
+          }
+          const moving_parent = /^(?:move-item|mi|mv|move|rename-item|rni|ren)$/i.test(current.verb) && move_sources(current.args).some((word) => literal_hits(word, walk, true));
+          const method = current.text.search(dotnet_delete) === 0 ? current.args[0]?.pieces[0] : undefined;
+          const targets = method?.kind === "group" ? shell_words(method.text, "powershell").slice(0, 1) : current.args;
+          const system_target = system_arguments(targets, walk);
+          if ((delete_verb.test(current.verb) || dotnet_delete.test(current.text)) && system_target) return system_delete_reason;
+          if (removes(current) && (moving_parent || app_arguments(current.text, targets, walk, delete_verb.test(current.verb) || dotnet_delete.test(current.text)))) return app_reason;
+          const assigned = assignment.exec(element.text);
+          if (assigned) {
+            track_assignment((assigned[1] ?? "").toLowerCase(), (assigned[2] ?? "").trim(), walk);
+          }
+          track_loop(current, walk);
+        }
+      }
     }
-    if (removes(current) && app_arguments(current.text, current.args, walk)) {
-      return true;
-    }
-    const assigned = assignment.exec(statement);
-    if (assigned) {
-      track_assignment((assigned[1] ?? "").toLowerCase(), (assigned[2] ?? "").trim(), walk);
-    }
-    track_loop(current, walk);
   }
-  return split_pipelines(command).some((pipeline) => statement_parts(pipeline).some((part) => feeds_removal(part.elements, walk)));
+  return "";
 };
 
 const bash_head = /(?:^|[\\/])(?:bash|sh|dash)(?:\.exe)?$/i;
@@ -348,7 +372,7 @@ const powershell_floor_reason = (command: string, scope: FloorScope): string => 
   if (nested) {
     return nested;
   }
-  return touches_app_data(String(command || ""), statements, scope) ? app_reason : "";
+  return walk_floor_reason(String(command || ""), statements, scope);
 };
 
 export const floor_reason = (command: string, scope: FloorScope, dialect: Dialect = "powershell"): string =>

@@ -1,12 +1,12 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { spawn } from "node:child_process";
+import type { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import package_json from "../../package.json" with { type: "json" };
 import type { McpTier } from "../../shared/approval.ts";
 import type { McpServerConfig } from "../../shared/settings.ts";
 import { kill_tree_sync } from "../shell/process.ts";
 import { classify_risk } from "./risk.ts";
 import { build_spec_name, format_result, type McpResultText } from "./specs.ts";
+import { TreeTransport } from "./transport.ts";
 
 export type ServerState = "starting" | "ready" | "error";
 
@@ -64,29 +64,13 @@ const config_signature = (config: McpServerConfig) => JSON.stringify([config.com
 
 const inherited_env = () => Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
 
-const kill_tree = (pid: number) =>
-  new Promise<void>((resolve) => {
-    const killer = spawn("taskkill", ["/PID", String(pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
-    killer.once("error", (error) => {
-      console.warn(`[mcp] taskkill for pid ${pid} failed: ${error.message}`);
-      resolve();
-    });
-    killer.once("exit", () => resolve());
-  });
-
 const close_handles = async (entry: Entry) => {
   const { client, transport } = entry;
   entry.client = null;
   entry.transport = null;
-  const pid = transport?.pid ?? null;
-  if (pid && process.platform === "win32") {
-    await kill_tree(pid);
-  }
-  if (!client) {
-    return;
-  }
   try {
-    await client.close();
+    await transport?.close();
+    await client?.close();
   } catch (error) {
     console.warn(`[mcp] closing server ${entry.name} failed: ${error_text(error)}`);
   }
@@ -157,7 +141,7 @@ const start_server = async (name: string, config: McpServerConfig) => {
   const entry: Entry = { name, signature: config_signature(config), state: "starting", error: "", client: null, transport: null, tools: [], stderr: "" };
   entries.set(name, entry);
   changed();
-  const transport = new StdioClientTransport({
+  const transport = new TreeTransport({
     command: config.command,
     args: config.args,
     env: { ...inherited_env(), ...config.env },

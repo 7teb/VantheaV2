@@ -5,6 +5,7 @@ import { error_code, missing_path } from "../storage/coerce.ts";
 import { path_key } from "../storage/paths.ts";
 import { entry_kind, fsmonitor_off, gitfile_target, type RepoPaths } from "./repo.ts";
 import { exec_git, git_ok, type GitConfigPair, type GitTool } from "./run.ts";
+import { filter_config } from "./filter-config.ts";
 
 export type ConfigEntry = { scope: string; key: string; value: string | null };
 
@@ -71,6 +72,11 @@ const program_key = (key: string): string | null => {
   return [section, subsection, program_variables[variable] ?? variable].filter((part) => part !== null).join(".");
 };
 
+const filter_value = (trusted: ConfigEntry | undefined, variable: string): string => {
+  if (trusted) return trusted.value ?? (variable === "required" ? "true" : "");
+  return variable === "required" ? "false" : "";
+};
+
 export const guard_from = (repo: ConfigEntry[], submodules: ConfigEntry[]): GuardRules => {
   const owned = [...repo.filter((entry) => owned_scopes.has(entry.scope)), ...submodules];
   const read_config: GitConfigPair[] = [];
@@ -82,7 +88,12 @@ export const guard_from = (repo: ConfigEntry[], submodules: ConfigEntry[]): Guar
     return section === "filter" && subsection !== null ? [subsection] : [];
   }));
   for (const name of [...filters].sort()) {
-    read_config.push([`filter.${name}.clean`, ""], [`filter.${name}.process`, ""], [`filter.${name}.required`, "false"]);
+    for (const variable of ["clean", "process", "required"]) {
+      const key = `filter.${name}.${variable}`;
+      const trusted = repo.findLast((entry) => !owned_scopes.has(entry.scope) && entry.key === key);
+      if (variable === "process" && !trusted && !owned.some((entry) => entry.key === key) && repo.some((entry) => !owned_scopes.has(entry.scope) && entry.key === `filter.${name}.clean`)) continue;
+      read_config.push([key, filter_value(trusted, variable)]);
+    }
   }
   const remotes = new Map<string, RemoteFetchConfig>();
   for (const entry of repo) {
@@ -203,15 +214,41 @@ const file_config = async (tool: GitTool, top: string, file: string, signal?: Ab
   return parse_config_list(git_ok(output, `git config --file ${file}`).toString("utf8"), false);
 };
 
+const escape_glob_char = (char: string): string => {
+  if (char === "[") return "[[]";
+  if (char === "]") return "[]]";
+  return `[${char}]`;
+};
+
 export const read_guard = async (tool: GitTool, paths: RepoPaths, previous: GitGuard | null, signal?: AbortSignal): Promise<GitGuard> => {
   const repo = await repo_config(tool, paths.top, signal);
   const { trees, work_trees, loose_dirs } = await find_submodules(tool, paths, previous?.trees ?? [], signal);
   const submodules: ConfigEntry[] = [];
+  const conditional: GitConfigPair[] = [];
+  const include_module = async (dir: string | null, entries: ConfigEntry[]) => {
+    const names = [...new Set(entries.flatMap((entry) => {
+      const key = split_key(entry.key);
+      if (!dir || key.section !== "filter" || key.subsection === null || key.variable !== "process") return [];
+      const prefix = `filter.${key.subsection}.`;
+      if (repo.some((candidate) => owned_scopes.has(candidate.scope) && candidate.key.startsWith(prefix))) return [];
+      const trusted = repo.filter((candidate) => !owned_scopes.has(candidate.scope));
+      return trusted.some((candidate) => candidate.key === prefix + "clean") && !trusted.some((candidate) => candidate.key === prefix + "process") ? [key.subsection] : [];
+    }))];
+    submodules.push(...entries.filter((entry) => {
+      const key = split_key(entry.key);
+      return key.section !== "filter" || !names.includes(key.subsection ?? "");
+    }));
+    if (dir && names.length) {
+      const pattern = (await fs.realpath(dir)).replaceAll("\\", "/").replace(/[?*[\]]/g, escape_glob_char);
+      conditional.push([`includeIf.gitdir/i:${pattern}.path`, await filter_config(names)]);
+    }
+  };
   for (const work_tree of work_trees) {
-    submodules.push(...(await repo_config(tool, work_tree, signal)).filter((entry) => owned_scopes.has(entry.scope)));
+    await include_module(await linked_git_dir(work_tree), (await repo_config(tool, work_tree, signal)).filter((entry) => owned_scopes.has(entry.scope)));
   }
   for (const dir of loose_dirs) {
-    submodules.push(...(await file_config(tool, paths.top, path.join(dir, "config"), signal)));
+    await include_module(dir, await file_config(tool, paths.top, path.join(dir, "config"), signal));
   }
-  return { ...guard_from(repo, submodules), trees };
+  const rules = guard_from(repo, submodules);
+  return { ...rules, read_config: [...rules.read_config, ...conditional], trees };
 };

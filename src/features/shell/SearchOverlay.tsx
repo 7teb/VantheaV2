@@ -24,10 +24,11 @@ const use_search = (query: string): Results => {
   useEffect(() => {
     const trimmed = query.trim();
     if (trimmed === "") {
+      set_results({ query: "", status: "ready", hits: [] });
       return;
     }
     let alive = true;
-    set_results((current) => ({ ...current, query: trimmed, status: "loading" }));
+    set_results({ query: trimmed, status: "loading", hits: [] });
     const timer = window.setTimeout(() => {
       api
         .invoke("chats:search", trimmed)
@@ -48,7 +49,7 @@ const use_search = (query: string): Results => {
       window.clearTimeout(timer);
     };
   }, [query]);
-  return results;
+  return results.query === query.trim() ? results : { query: query.trim(), status: "loading", hits: [] };
 };
 
 const SearchPanel = () => {

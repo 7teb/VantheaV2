@@ -58,9 +58,9 @@ export const begin_load = (state: ChatViewState, chat_id: string): ChatViewState
   const entry: ChatEntry = {
     status: "loading",
     chat: current?.chat ?? null,
-    held: [],
-    waiting: {},
-    stale: false,
+    held: current?.status === "loading" ? current.held : [],
+    waiting: current?.waiting ?? {},
+    stale: current?.status === "loading" ? current.stale : false,
     context: current?.context ?? null,
   };
   return open_entry(with_entry(state, chat_id, entry), chat_id);
@@ -161,7 +161,7 @@ export const finish_load = (state: ChatViewState, chat_id: string, chat: Chat | 
   if (!chat) {
     return with_entry(state, chat_id, { ...entry, status: "failed", chat: null, held: [] });
   }
-  const ready: ReadyEntry = { ...entry, status: "ready", chat, held: [] };
+  const ready = chat.messages.reduce((current, message) => apply_waiting(current, message.id), { ...entry, status: "ready", chat, held: [] } as ReadyEntry);
   return entry.held.reduce(receive_one, with_entry(state, chat_id, ready));
 };
 
@@ -171,7 +171,7 @@ export const fail_load = (state: ChatViewState, chat_id: string): ChatViewState 
     return state;
   }
   if (entry.chat) {
-    return with_entry(state, chat_id, { ...entry, status: "ready", chat: entry.chat, held: [] });
+    return entry.held.reduce(receive_one, with_entry(state, chat_id, { ...entry, status: "ready", chat: entry.chat, held: [], stale: true }));
   }
   return with_entry(state, chat_id, { ...entry, status: "failed", chat: null, held: [] });
 };

@@ -34,10 +34,8 @@ export const CircleCheckIcon = (props: IconProps) => (
 );
 
 export const CircleAlertIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <circle cx="8" cy="8" r="6.5" />
-    <path d="M7.5 4.5v4" />
-    <path d="M7 11.5h1" strokeLinecap="butt" />
+  <Icon {...codicon} {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M8 1.5a6.5 6.5 0 1 1 0 13a6.5 6.5 0 1 1 0-13zM7 4v5h2V4zm0 6v2h2v-2z" />
   </Icon>
 );
 

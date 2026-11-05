@@ -3,6 +3,7 @@ import type { Settings } from "../../shared/settings.ts";
 import { agent_tools } from "./agents/index.ts";
 import { read_attachment_tool } from "./attachments/index.ts";
 import { browser_tools } from "./browser/index.ts";
+import { computer_tools } from "./computer/index.ts";
 import { check_page_tool } from "./check/index.ts";
 import { fs_tools } from "./fs/index.ts";
 import { hook_tools } from "./hooks/index.ts";
@@ -13,6 +14,7 @@ import { add_mcp_server_tool } from "./mcp/add-server.ts";
 import { memory_tools } from "./memory/index.ts";
 import { meta_tools } from "./meta/index.ts";
 import { list_models_tool } from "./meta/models.ts";
+import { scheduled_tools } from "./scheduled/index.ts";
 import { shell_tools } from "./shell/index.ts";
 import { skill_tools } from "./skills/index.ts";
 import type { Tool, ToolProfile } from "./types.ts";
@@ -28,8 +30,10 @@ const groups: Tool[][] = [
   [list_models_tool],
   vision_tools,
   browser_tools,
+  computer_tools,
   [add_mcp_server_tool],
   hook_tools,
+  scheduled_tools,
   [web_search_tool],
   [generate_image_tool, present_images_tool, show_images_tool],
   [visualize_tool],

@@ -6,6 +6,7 @@ import {
   AppWindowIcon,
   BookOpenIcon,
   BracesIcon,
+  CalendarClockIcon,
   CameraIcon,
   ChartPieIcon,
   CircleHelpIcon,
@@ -27,8 +28,11 @@ import {
   ListChecksIcon,
   MessageSquareIcon,
   MonitorCheckIcon,
+  MonitorIcon,
   MouseIcon,
   MousePointerClickIcon,
+  MousePointerIcon,
+  MoveIcon,
   OutlineIcon,
   PlugIcon,
   ScanEyeIcon,
@@ -44,13 +48,15 @@ import {
   type IconComponent,
 } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
+import { ComputerBody } from "./bodies-computer.tsx";
 import { AgentBody, BackgroundBody, CommandBody } from "./bodies-run.tsx";
 import { EditBody, FilesBody, GrepBody, OutlineBody } from "./bodies-files.tsx";
 import { HooksBody } from "./bodies-hooks.tsx";
 import { ModelsBody } from "./bodies-models.tsx";
+import { ScheduledBody } from "./bodies-scheduled.tsx";
 import { ImageBody, WebSearchBody } from "./bodies-web.tsx";
 import { McpBody, MemoryBody, PeerMessageBody, PlanBody, TextBody } from "./bodies-work.tsx";
-import type { BodyProps } from "./body-types.ts";
+import type { ChatBodyProps } from "./body-types.ts";
 import { DraftCode } from "./DraftCode.tsx";
 import { hook_blocked, step_hooks } from "./hook-runs.ts";
 import { BlockedCall, HookRuns } from "./HookRuns.tsx";
@@ -81,6 +87,7 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   workflow: WorkflowIcon,
   memory: WormIcon,
   hook: HookIcon,
+  schedule: CalendarClockIcon,
   skill: BookOpenIcon,
   browser: GlobeIcon,
   browser_tabs: AppWindowIcon,
@@ -96,6 +103,15 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   browser_screenshot: CameraIcon,
   browser_look: ScanEyeIcon,
   page_check: MonitorCheckIcon,
+  computer: MonitorIcon,
+  computer_screenshot: CameraIcon,
+  computer_click: MousePointerClickIcon,
+  computer_move: MousePointerIcon,
+  computer_drag: MoveIcon,
+  computer_scroll: MouseIcon,
+  computer_type: TextCursorInputIcon,
+  computer_key: KeyboardIcon,
+  computer_wait: HourglassIcon,
   mcp: PlugIcon,
   clock: ClockIcon,
   gauge: GaugeIcon,
@@ -105,7 +121,7 @@ export const tool_icons: Record<ToolIconName, IconComponent> = {
   text: MessageSquareIcon,
 };
 
-type Bodies = { [K in ToolViewKind]?: ComponentType<BodyProps<K>> };
+type Bodies = { [K in ToolViewKind]?: ComponentType<ChatBodyProps<K>> };
 
 export const view_bodies: Bodies = {
   files: FilesBody,
@@ -122,7 +138,9 @@ export const view_bodies: Bodies = {
   mcp: McpBody,
   memory: MemoryBody,
   hooks: HooksBody,
+  scheduled_tasks: ScheduledBody,
   models: ModelsBody,
+  computer: ComputerBody,
   text: TextBody,
 };
 
@@ -133,9 +151,9 @@ type LiveBodyProps = { step: ToolStep; live: string | null; chat_id: string };
 const LiveBody = ({ step, live, chat_id }: LiveBodyProps) =>
   is_shell_run(step.name) ? <LiveCommand step={step} output={live} chat_id={chat_id} /> : live && <OutputBlock text={live} />;
 
-const ViewBody = ({ view, step }: { view: ToolView; step: ToolStep }) => {
-  const Body = view_bodies[view.kind] as ComponentType<{ view: ToolView; step: ToolStep }> | undefined;
-  return Body ? <Body view={view} step={step} /> : null;
+const ViewBody = ({ view, step, chat_id }: { view: ToolView; step: ToolStep; chat_id: string }) => {
+  const Body = view_bodies[view.kind] as ComponentType<{ view: ToolView; step: ToolStep; chat_id: string }> | undefined;
+  return Body ? <Body view={view} step={step} chat_id={chat_id} /> : null;
 };
 
 export const ToolBody = ({ step, chat_id }: { step: ToolStep; chat_id: string }) => {
@@ -152,7 +170,7 @@ export const ToolBody = ({ step, chat_id }: { step: ToolStep; chat_id: string })
       {error && <div className="tool-body-error">{error}</div>}
       {draft && <DraftCode draft={draft} />}
       {(live || live_command(step)) && <LiveBody step={step} live={live} chat_id={chat_id} />}
-      {step.view && view_content(t, step, step.view) && <ViewBody view={step.view} step={step} />}
+      {step.view && view_content(t, step, step.view) && <ViewBody view={step.view} step={step} chat_id={chat_id} />}
       {note && <ReviewNotice note={note} />}
       {!step.view && !live && !error && step.status !== "denied" && step.result_text && <OutputBlock text={step.result_text} />}
       {runs.length > 0 && <HookRuns runs={runs} />}

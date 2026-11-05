@@ -219,11 +219,9 @@ const run_call = async (session: TurnSession, call: RoundCall, profile: ToolProf
     return { aborted: true };
   }
   const post = await after_hooks(session, hooked, outcome, Date.now() - started);
-  if (post?.kind === "aborted") {
-    return { aborted: true };
-  }
-  const runs = [...(pre?.runs ?? []), ...(post?.runs ?? [])];
-  const tool_text = post?.result_text ?? outcome.result_text;
+  const finished = post?.kind === "done" ? post : null;
+  const runs = [...(pre?.runs ?? []), ...(finished?.runs ?? [])];
+  const tool_text = finished?.result_text ?? outcome.result_text;
   const kept = await keep_images(session, call.engine_id, outcome.images);
   const result_text = kept.note ? `${tool_text}\n${kept.note}` : tool_text;
   session.emit({
@@ -237,6 +235,9 @@ const run_call = async (session: TurnSession, call: RoundCall, profile: ToolProf
     ...(kept.stored.length ? { images: kept.stored } : {}),
     ...(runs.length ? { hooks: runs } : {}),
   });
+  if (post?.kind === "aborted") {
+    return { aborted: true };
+  }
   return { aborted: false, result_text, carried: kept.carried, plan: call.name === "present_plan" && outcome.status === "done" };
 };
 

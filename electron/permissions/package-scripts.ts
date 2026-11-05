@@ -32,6 +32,16 @@ const manifest_folder = async (location: string, root: string): Promise<string> 
   }
 };
 
+const hooked_names = (call: PackageCall): string[] => {
+  if (call.lifecycle) return [...lifecycle, ...(call.test ? ["pretest", "test", "posttest"] : [])];
+  return ["pre" + call.name, call.name, "post" + call.name];
+};
+
+const explicit_names = (call: PackageCall): string[] => {
+  if (call.lifecycle) return call.test ? ["test"] : [];
+  return [call.name];
+};
+
 export const package_runner = (host: PackageHost) => {
   const manifests = new Map<string, Record<string, string>>();
   const raw = new Map<string, string>();
@@ -44,7 +54,7 @@ export const package_runner = (host: PackageHost) => {
     if (!raw.has(manifest.abs)) raw.set(manifest.abs, manifest.text ?? "");
     const selected = manifests.get(manifest.abs) ?? {};
     const parsed = JSON.parse(raw.get(manifest.abs) ?? "") as { scripts?: Record<string, string> };
-    const key = manifest_path + ":" + call.name;
+    const key = `${manifest_path}:${call.name}:${call.lifecycle ? "lifecycle" : "script"}:${call.test ? "test" : ""}:${call.ignore_scripts ? "ignore" : "hooks"}`;
     if (!call.lifecycle && typeof parsed.scripts?.[call.name] !== "string") {
       host.gap("Package script is missing: " + call.name);
       return;
@@ -57,8 +67,8 @@ export const package_runner = (host: PackageHost) => {
     done.add(key);
     active.add(key);
     try {
-      const names = call.lifecycle ? lifecycle : ["pre" + call.name, call.name, "post" + call.name];
-      for (const entry of call.ignore_scripts ? (call.lifecycle ? [] : [call.name]) : names) {
+      const names = hooked_names(call);
+      for (const entry of call.ignore_scripts ? explicit_names(call) : names) {
         const body = parsed.scripts?.[entry];
         if (typeof body !== "string") continue;
         selected[entry] = body;

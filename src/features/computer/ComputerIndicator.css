@@ -1,0 +1,42 @@
+@layer components {
+  .indicator-page {
+    background: transparent;
+  }
+
+  .computer-indicator-stage {
+    width: max-content;
+    padding: var(--space-3) var(--space-3) var(--space-5);
+  }
+
+  .computer-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 4px 4px 4px var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--surface-shell);
+    box-shadow: var(--shadow-dock);
+    font-size: var(--font-size-body);
+    color: var(--text-summary);
+    white-space: nowrap;
+    user-select: none;
+    -webkit-app-region: drag;
+  }
+
+  .computer-indicator > svg {
+    flex: none;
+    color: var(--text-secondary);
+  }
+
+  .computer-indicator-keys {
+    font-family: var(--font-ui);
+    font-size: var(--font-size-caption);
+    color: var(--text-tertiary);
+  }
+
+  .computer-indicator .button {
+    flex: none;
+    border-radius: var(--radius-full);
+    -webkit-app-region: no-drag;
+  }
+}

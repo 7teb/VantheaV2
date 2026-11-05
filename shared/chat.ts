@@ -8,6 +8,8 @@ import type { ToolView } from "./tool-view.ts";
 
 export type PermissionMode = "ask" | "auto" | "full";
 
+export const permission_modes: readonly PermissionMode[] = ["ask", "auto", "full"];
+
 export type AttachmentModel = { id: string; width: number; height: number };
 
 export type Attachment = {
@@ -23,7 +25,7 @@ export type Attachment = {
   source_path?: string;
 };
 
-export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "git_init" | "review" | "continue" | "background" | "agent_report" | "agent_update" | "workflow";
+export type UserOrigin = "user" | "plan_accept" | "undo" | "init" | "git_init" | "review" | "continue" | "background" | "agent_report" | "agent_update" | "workflow" | "scheduled";
 
 export type CommandOrigin = Extract<UserOrigin, "init" | "git_init" | "review">;
 
@@ -117,7 +119,8 @@ export type NoticeKind =
   | "peer_digest"
   | "workflow_result"
   | "background_task"
-  | "hook";
+  | "hook"
+  | "scheduled_run";
 
 export type NoticeStep = { id: string; round: number; kind: "notice"; notice: NoticeKind; text: string };
 
@@ -188,6 +191,7 @@ export type AssistantMessage = {
   error: TurnError | null;
   context: ContextUsage | null;
   last_seq: number;
+  quiet?: true;
 };
 
 export type Message = UserMessage | AssistantMessage;

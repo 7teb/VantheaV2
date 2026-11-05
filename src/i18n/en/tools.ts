@@ -119,8 +119,6 @@ export const tools = {
   "tools.peer_outcome_not_running": "Not running",
   "tools.peer_outcome_duplicate": "Already sent",
   "tools.running_alongside": "{x} and {n} more",
-  "tools.group_failed_one": "{n} failed",
-  "tools.group_failed_other": "{n} failed",
   "tools.group_denied_one": "{n} denied",
   "tools.group_denied_other": "{n} denied",
   "tools.failure_not_in_project": "{x} does not exist in the project",

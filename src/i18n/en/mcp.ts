@@ -12,7 +12,7 @@ export const mcp = {
   "mcp.remove": "Remove",
   "mcp.reconnect": "Reconnect",
   "mcp.empty": "No MCP servers yet. Add one to give the model extra tools.",
-  "mcp.add_help": "Easiest: choose the server's folder above and the app detects how to launch it. Otherwise paste the config from its README (the same JSON Claude Desktop uses), or fill in the name and command by hand.",
+  "mcp.add_help": "Easiest: choose the server's folder above and the app detects how to launch it. Otherwise paste the config from its README, or fill in the name and command by hand.",
   "mcp.paste_placeholder": "Paste a server config here, e.g.\n{ \"command\": \"uvx\", \"args\": [\"ida-pro-mcp\"] }",
   "mcp.or_manual": "or fill in by hand",
   "mcp.choose_plugin": "Choose plugin folder",

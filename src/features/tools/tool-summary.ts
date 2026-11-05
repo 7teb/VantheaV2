@@ -81,11 +81,11 @@ const files_detail = (t: Translate, view: Extract<ToolView, { kind: "files" }>):
   return t(n === 1 ? "tools.files_count_one" : "tools.files_count_other", { n });
 };
 
-const hooks_detail = (t: Translate, count: number): string => {
+const count_detail = (t: Translate, count: number, [none, one, other]: [MessageKey, MessageKey, MessageKey]): string => {
   if (count === 0) {
-    return t("hooks.count_none");
+    return t(none);
   }
-  return t(count === 1 ? "hooks.count_one" : "hooks.count_other", { n: count });
+  return t(count === 1 ? one : other, { n: count });
 };
 
 export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unknown_status): string => {
@@ -98,7 +98,9 @@ export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unk
     case "files":
       return step.status === "done" ? files_detail(t, view) : "";
     case "hooks":
-      return step.status === "done" && view.action === "list" ? hooks_detail(t, view.hooks.length) : "";
+      return step.status === "done" && view.action === "list" ? count_detail(t, view.hooks.length, ["hooks.count_none", "hooks.count_one", "hooks.count_other"]) : "";
+    case "scheduled_tasks":
+      return step.status === "done" && view.action === "list" ? count_detail(t, view.tasks.length, ["scheduled.count_none", "scheduled.count_one", "scheduled.count_other"]) : "";
     case "peer_message": {
       const key = kept_peer_outcomes[view.outcome];
       return key ? t(key) : "";
@@ -145,6 +147,7 @@ const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
   searches: ["tools.combine_searches_one", "tools.combine_searches_other"],
   edits: ["tools.combine_edits_one", "tools.combine_edits_other"],
   browser: ["tools.combine_browser_one", "tools.combine_browser_other"],
+  computer: ["computer.combine_one", "computer.combine_other"],
   mcp: ["tools.combine_mcp_one", "tools.combine_mcp_other"],
   agents: ["tools.combine_agents_one", "tools.combine_agents_other"],
   agent_runs: ["tools.combine_agent_runs_one", "tools.combine_agent_runs_other"],
@@ -163,6 +166,7 @@ const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
   web: ["tools.combine_web_one", "tools.combine_web_other"],
   memory: ["tools.combine_memory_one", "tools.combine_memory_other"],
   hooks: ["hooks.combine_one", "hooks.combine_other"],
+  scheduled: ["scheduled.combine_one", "scheduled.combine_other"],
   images: ["tools.combine_images_one", "tools.combine_images_other"],
   questions: ["tools.combine_questions_one", "tools.combine_questions_other"],
   visuals: ["tools.combine_visuals_one", "tools.combine_visuals_other"],

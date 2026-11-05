@@ -1,4 +1,4 @@
-import { normalize_browser_target } from "../../browser/guest-policy.ts";
+import { normalize_browser_page } from "../../browser/guest-policy.ts";
 import { navigate, type NavigateAction } from "../../browser/navigate.ts";
 import { tab_title, tab_url } from "../../browser/state.ts";
 import { close_tab, list_tabs, open_tab, owned_tab, run_on_tab, select_tab } from "../../browser/tabs.ts";
@@ -34,15 +34,18 @@ export const browser_tabs_tool = define_tool<Record<string, never>>({
 
 type TabArgs = { action: "new"; url: string } | { action: "select" | "close"; tab_id: string | null };
 
+const page_refusal =
+  "only http and https URLs and local .html, .htm, .xhtml or .svg files given by an absolute Windows path (C:\\...) or a file:/// URL can be opened; secret files and network paths are refused";
+
 const parse_tab_args = (raw: Record<string, unknown>): TabArgs => {
   const action = read_choice(raw, "action", ["new", "select", "close"] as const, null);
   if (action !== "new") {
     return { action, tab_id: read_string(raw, "tab_id") };
   }
   const target = read_string(raw, "url");
-  const url = target === null ? "about:blank" : normalize_browser_target(target);
+  const url = target === null ? "about:blank" : normalize_browser_page(target);
   if (!url) {
-    throw new ToolArgumentError("only http and https URLs can be opened");
+    throw new ToolArgumentError(page_refusal);
   }
   return { action, url };
 };
@@ -56,7 +59,7 @@ export const browser_tab_tool = define_tool<TabArgs>({
       type: "object",
       properties: {
         action: { type: "string", enum: ["new", "select", "close"] },
-        url: { type: "string", description: "For new: http or https URL, a bare host, or search words." },
+        url: { type: "string", description: "For new: http or https URL, a bare host, search words, or the absolute path of a local .html file (C:\\...\\page.html or file:///C:/.../page.html)." },
         tab_id: { type: "string", description: "For select and close. Defaults to the active tab." },
       },
       required: ["action"],
@@ -93,9 +96,9 @@ const parse_navigate_args = (raw: Record<string, unknown>): NavigateArgs => {
   if (action !== "goto") {
     return { action, url: "", tab_id };
   }
-  const url = normalize_browser_target(read_string(raw, "url") ?? "");
+  const url = normalize_browser_page(read_string(raw, "url") ?? "");
   if (!url || url === "about:blank") {
-    throw new ToolArgumentError("goto needs an http or https URL");
+    throw new ToolArgumentError(`goto needs a target: ${page_refusal}`);
   }
   return { action, url, tab_id };
 };
@@ -103,7 +106,8 @@ const parse_navigate_args = (raw: Record<string, unknown>): NavigateArgs => {
 export const browser_navigate_tool = define_tool<NavigateArgs>({
   spec: {
     name: "browser_navigate",
-    description: "Navigate one of this chat's in-app browser tabs with goto, back, forward or reload. Only http and https URLs are accepted. goto waits up to 20 seconds for the page to load.",
+    description:
+      "Navigate one of this chat's in-app browser tabs with goto, back, forward or reload. goto takes an http or https URL or the absolute path of a local .html, .htm, .xhtml or .svg file (C:\\...\\page.html or file:///C:/.../page.html). goto waits up to 20 seconds for the page to load.",
     parameters: {
       type: "object",
       properties: {

@@ -14,7 +14,17 @@ export const token_prefix = (text: string, max_tokens: number): string => {
   while (kept.length > 2000 && estimate_tokens(kept) > max_tokens) {
     kept = kept.slice(0, Math.floor(kept.length * 0.85));
   }
-  return kept;
+  let low = 0;
+  let high = kept.length;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (estimate_tokens(kept.slice(0, middle)) <= max_tokens) {
+      low = middle;
+    } else {
+      high = middle - 1;
+    }
+  }
+  return kept.slice(0, low);
 };
 
 export const cap_text = (text: string, max_tokens: number): string => {

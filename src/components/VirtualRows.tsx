@@ -35,11 +35,14 @@ export const VirtualRows = <T,>({ items, row_height, scroller, render, className
     host.addEventListener("scroll", measure, { passive: true });
     const observer = new ResizeObserver(measure);
     observer.observe(host);
+    const mutations = new MutationObserver(measure);
+    mutations.observe(host, { childList: true, subtree: true, attributes: true, characterData: true });
     return () => {
       host.removeEventListener("scroll", measure);
       observer.disconnect();
+      mutations.disconnect();
     };
-  }, [scroller, count, row_height]);
+  });
 
   const rows: ReactNode[] = [];
   for (let index = shown.start; index < Math.min(shown.end, count); index += 1) {

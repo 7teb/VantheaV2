@@ -14,7 +14,7 @@ export type Block =
   | { kind: "notice"; id: string; step: NoticeStep }
   | { kind: "compaction"; id: string; step: CompactionStep };
 
-const hidden_notices: ReadonlySet<NoticeKind> = new Set(["peer_digest", "agent_roster", "todos_carried", "update_reminder", "model_switch", "background_task"]);
+const hidden_notices: ReadonlySet<NoticeKind> = new Set(["peer_digest", "agent_roster", "todos_carried", "update_reminder", "model_switch", "background_task", "scheduled_run"]);
 
 const work_notices: ReadonlySet<NoticeKind> = new Set(["agent_report", "agent_update", "peer_message", "peer_status", "workflow_result", "hook"]);
 

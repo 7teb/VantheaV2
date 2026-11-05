@@ -2,9 +2,10 @@ import type { FetchState, GitBranch, GitOperation, GitRemote, GitView } from "..
 import type { FilesRoot } from "../../shared/ipc/files.ts";
 import type { StatusBranch } from "../../shared/git/status-parse.ts";
 import { idle_fetch } from "./fetch.ts";
+import type { GitFound } from "./locate.ts";
 import { refs_fingerprint, type RefsRead } from "./refs.ts";
 import { last_fetch_at, primary_remote, type RemotesRead } from "./remotes.ts";
-import { repo_info, type RepoDetect, type RepoPaths } from "./repo.ts";
+import { repo_info, type GitLocation, type RepoDetect, type RepoPaths } from "./repo.ts";
 import type { ProjectStatus } from "./status.ts";
 
 export type ViewParts = {
@@ -35,6 +36,12 @@ export const special_of = (detected: Exclude<RepoDetect, { kind: "repo" }>): Git
   if (detected.kind === "ownership") return { kind: "blocked_ownership", path: detected.path };
   if (detected.kind === "error") return { kind: "error", message: detected.message, broken_gitfile: detected.broken_gitfile };
   return { kind: "none" };
+};
+
+export const tool_special_of = (location: GitLocation | null, found: GitFound): GitView => {
+  if (!location) return { kind: "none" };
+  if (found.kind === "missing") return { kind: "git_missing" };
+  return { kind: "git_too_old", version: found.tool.version, reason: "minimum" };
 };
 
 export type FetchOf = (remote: GitRemote, fetch_head_at: string | null) => FetchState;

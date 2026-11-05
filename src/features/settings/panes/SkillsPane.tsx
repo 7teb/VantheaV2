@@ -34,7 +34,7 @@ const skill_sections = (skills: SkillEntry[]): SkillSection[] => {
 const SkillRow = ({ skill }: { skill: SkillEntry }) => {
   const t = use_t();
   const [open, set_open] = useState(false);
-  const [text, set_text] = useState<string | null>(null);
+  const [body, set_body] = useState<{ skill: SkillEntry; text: string } | null>(null);
   const [confirming, set_confirming] = useState(false);
   const [error, set_error] = useState<string | null>(null);
 
@@ -48,20 +48,28 @@ const SkillRow = ({ skill }: { skill: SkillEntry }) => {
     }
   };
 
-  const toggle_body = async () => {
-    set_open(!open);
-    if (open || text !== null) {
-      return;
-    }
+  const text = body?.skill === skill ? body.text : null;
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    set_body(null);
     set_error(null);
-    try {
-      set_text(await skill_body(skill.slug));
-    } catch (failure) {
+    skill_body(skill.slug).then((value) => {
+      if (alive) {
+        set_body({ skill, text: value });
+      }
+    }).catch((failure) => {
       console.error(`[settings] skills:body failed for skill ${skill.slug}`, failure);
-      set_open(false);
-      set_error(ipc_error_text(failure));
-    }
-  };
+      if (alive) {
+        set_open(false);
+        set_error(ipc_error_text(failure));
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [open, skill]);
 
   const meta = skill.files.length > 0 ? ` · ${t("skills.files", { n: skill.files.length })}` : "";
 
@@ -81,7 +89,7 @@ const SkillRow = ({ skill }: { skill: SkillEntry }) => {
           {error && <div className="pane-item-error">{error}</div>}
         </div>
         <div className="pane-item-actions is-visible">
-          <IconButton size="sm" label={open ? t("skills.hide") : t("skills.view")} onClick={() => void toggle_body()}>
+          <IconButton size="sm" label={open ? t("skills.hide") : t("skills.view")} onClick={() => set_open((current) => !current)}>
             {open ? <EyeOffIcon /> : <EyeIcon />}
           </IconButton>
           {!skill.builtin && (

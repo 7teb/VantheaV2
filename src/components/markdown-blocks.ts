@@ -14,8 +14,9 @@ const closes_fence = (line: string, fence: string): boolean => {
   if (fence === "$$") {
     return math_fence_pattern.test(line);
   }
-  const trimmed = line.trim();
-  return trimmed.length >= fence.length && trimmed === fence[0].repeat(trimmed.length);
+  const match = /^ {0,3}(`{3,}|~{3,})[ \t\r]*$/.exec(line);
+  const run = match?.[1] ?? "";
+  return run.length >= fence.length && run[0] === fence[0];
 };
 
 const without_trailing_blank = (lines: string[]): string => {
@@ -28,12 +29,15 @@ const without_trailing_blank = (lines: string[]): string => {
 
 const definition_pattern = /^ {0,3}\[\^?[^\]\n]+\]:/;
 
+const block_list_marker = /^ {0,3}(?:([-+*])|\d{1,9}([.)]))(?=[ \t]|$)/;
+
 export const split_blocks = (text: string): string[] => {
   const blocks: string[] = [];
   let current: string[] = [];
   let fence: string | null = null;
   let gap = false;
   let defines = false;
+  let list: string | null = null;
   for (const line of text.split("\n")) {
     if (fence !== null) {
       current.push(line);
@@ -49,9 +53,15 @@ export const split_blocks = (text: string): string[] => {
       }
       continue;
     }
-    if (gap && !/^[ \t]/.test(line)) {
+    const marker = block_list_marker.exec(line);
+    const next_list = marker ? marker[1] ?? marker[2] : null;
+    if (gap && !/^[ \t]/.test(line) && (list === null || list !== next_list)) {
       blocks.push(without_trailing_blank(current));
       current = [];
+      list = null;
+    }
+    if (next_list !== null) {
+      list = next_list;
     }
     gap = false;
     current.push(line);
@@ -125,11 +135,11 @@ const scan_line = (scan: CodeScan, source: string): boolean => {
     const indent = advance(lead, 0);
     if (scan.fence !== null) {
       if (!content || indent >= scan.fence_base) {
-        const tilde = scan.fence.startsWith("~");
+        const code = scan.fence !== "$$";
         if (indent - scan.fence_base < 4 && closes_fence(content, scan.fence)) {
           scan.fence = null;
         }
-        return tilde;
+        return code;
       }
       scan.fence = null;
     }
@@ -158,7 +168,7 @@ const scan_line = (scan: CodeScan, source: string): boolean => {
         scan.fence = fence;
         scan.fence_base = base;
         scan.flow = null;
-        return fence.startsWith("~");
+        return fence !== "$$";
       }
       if (html_start_pattern.test(content)) {
         scan.items.length = matched;
@@ -232,9 +242,37 @@ const code_regions = (text: string): string[] => {
   return regions;
 };
 
-const code_span_pattern = /(```[\s\S]*?(?:```|$)|`[^`\n]*`)/g;
+const inline_regions = (text: string): string[] => {
+  const regions: string[] = [];
+  const runs = [...text.matchAll(/`+/g)];
+  const next = new Map<number, number>();
+  const closes: number[] = [];
+  for (let index = runs.length - 1; index >= 0; index -= 1) {
+    const length = runs[index][0].length;
+    closes[index] = next.get(length) ?? -1;
+    next.set(length, index);
+  }
+  let from = 0;
+  for (let index = 0; index < runs.length; index += 1) {
+    const open = runs[index];
+    const at = open.index;
+    let start = at;
+    while (text[start - 1] === "\\") {
+      start -= 1;
+    }
+    if ((at - start) % 2 === 1) continue;
+    const close = closes[index];
+    if (close < 0) continue;
+    const end = runs[close].index + runs[close][0].length;
+    regions.push(text.slice(from, at), text.slice(at, end));
+    from = end;
+    index = close;
+  }
+  regions.push(text.slice(from));
+  return regions;
+};
 
-const split_code = (text: string): string[] => code_regions(text).flatMap((region, index) => (index % 2 === 1 ? [region] : region.split(code_span_pattern)));
+const split_code = (text: string): string[] => code_regions(text).flatMap((region, index) => (index % 2 === 1 ? [region] : inline_regions(region)));
 
 const single_dollar = (text: string, at: number) => text[at] === "$" && text[at - 1] !== "$" && text[at + 1] !== "$" && text[at - 1] !== "\\";
 

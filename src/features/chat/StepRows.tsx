@@ -1,7 +1,7 @@
 import { memo, useState, type CSSProperties } from "react";
 import { parse_agent_notice } from "../../../shared/agent-notes.ts";
 import { parse_hook_notice } from "../../../shared/hook-notes.ts";
-import { parse_peer_alerts, parse_peer_notice } from "../../../shared/peer-notes.ts";
+import { holds_peer_alert, parse_peer_alerts, parse_peer_notice } from "../../../shared/peer-notes.ts";
 import { parse_workflow_notice } from "../../../shared/workflow-notes.ts";
 import type { CompactionStep, NoticeKind, NoticeStep, SteerStep } from "../../../shared/chat.ts";
 import { InfoIcon, TextSelectIcon } from "../../components/icons.tsx";
@@ -40,6 +40,7 @@ const notice_titles: Record<NoticeKind, MessageKey> = {
   workflow_result: "chat.notice_workflow_result",
   background_task: "chat.notice_background_task",
   hook: "hooks.body_output",
+  scheduled_run: "chat.notice_scheduled_run",
 };
 
 const agent_note_of = (step: NoticeStep) => {
@@ -54,6 +55,9 @@ export const NoticeRow = memo(({ step }: { step: NoticeStep }) => {
   const note = agent_note_of(step);
   if (note) {
     return <AgentNoteRow note={note} />;
+  }
+  if (step.notice === "agent_update" && holds_peer_alert(step.text)) {
+    return null;
   }
   const peer = step.notice === "peer_message" ? parse_peer_notice(step.text) : null;
   if (peer) {

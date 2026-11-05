@@ -1,5 +1,6 @@
 import { input_values, type InputRef } from "./build-inputs.ts";
-import { against_location, concat, powershell_switch, powershell_takes_value, resolved, unresolved, type Step, type StepWord, type Value } from "./command-walk.ts";
+import { against_location, concat, resolved, unresolved, type Step, type StepWord, type Value } from "./command-walk.ts";
+import { powershell_entry } from "./powershell-arguments.ts";
 import { launch_gap } from "./launch-targets.ts";
 import { local_build_dirs, package_call, type PackageCall } from "./package-calls.ts";
 import type { SourceLanguage } from "./script-constants.ts";
@@ -151,27 +152,20 @@ const code_flag = (program: string, raw: string): boolean => {
   return raw === "-e" || (program === "php" && raw === "-r");
 };
 
-const powershell_interpreter = (args: Arg[], at: Launcher): void => {
-  for (let index = 0; index < args.length; index += 1) {
-    const name = powershell_switch(single(args[index]?.value) ?? "");
-    const next = args[index + 1];
-    if (!name) {
-      script(at, args[index] as Arg);
-      return;
-    }
-    if ("command".startsWith(name) || name === "ec" || "encodedcommand".startsWith(name)) return;
-    if ("file".startsWith(name)) {
-      if (next) script(at, next);
-      else at.refs.gaps.push("Script interpreter has no file argument.");
-      return;
-    }
-    if (powershell_takes_value(name)) index += 1;
+const powershell_interpreter = (program: string, args: Arg[], at: Launcher): void => {
+  const entry = powershell_entry(program, args.map((arg) => single(arg.value) ?? arg.written));
+  if (!entry || entry.kind !== "file") return;
+  const file = args[entry.at];
+  if (file) {
+    script(at, file);
+  } else {
+    at.refs.gaps.push("Script interpreter has no file argument.");
   }
 };
 
 const interpreter = (program: string, args: Arg[], at: Launcher): void => {
   if (program === "powershell" || program === "pwsh") {
-    powershell_interpreter(args, at);
+    powershell_interpreter(program, args, at);
     return;
   }
   const python = /^(?:python|py)/.test(program);

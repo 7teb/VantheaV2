@@ -132,7 +132,9 @@ const posix_target = (args: LocationArg[]): Target => {
   if (!value || "unresolved" in value) return value ? { value, literal: true } : { unknown: true };
   const native = value.values.map((entry) => (entry === "-" ? null : msys_native(entry, mounts)));
   const known = native.filter((entry): entry is string => entry !== null);
-  return known.length === native.length ? { value: resolved(known, value.maybe_unset), literal: true } : { unknown: true };
+  const bare = (args[0] as LocationArg).word.raw.replace(/\$'(?:\\[\s\S]|[^'\\])*'|\\[\s\S]|"(?:\\[\s\S]|[^"\\])*"|'[^']*'/g, "");
+  const literal = !/[*?[$`]/.test(bare);
+  return known.length === native.length ? { value: resolved(known, value.maybe_unset), literal } : { unknown: true };
 };
 
 const target_paths = (target: Value, literal: boolean, location: Value, dialect: Dialect, matches: Matcher | undefined): Value => {
@@ -179,6 +181,9 @@ export const location_change = (name: string, args: LocationArg[], state: Locati
     if (args.some((arg) => flag_of(arg.word) !== "passthru") || !alternatives_of(state)) return lost();
     return moved(state, (entry) => ({ current: entry.stack.at(-1) ?? entry.current, stack: entry.stack.slice(0, -1) }), state.current);
   }
+  if (push && dialect === "posix" && !args.length) {
+    return moved(state, (entry) => entry.stack.length ? { current: entry.stack.at(-1) as Value, stack: [...entry.stack.slice(0, -1), entry.current] } : entry, state.current);
+  }
   let target: Value | null;
   let literal = false;
   if (dialect === "cmd") {
@@ -191,7 +196,7 @@ export const location_change = (name: string, args: LocationArg[], state: Locati
     target = found.value;
     literal = found.literal;
   }
-  const current = target_paths(target, literal || dialect === "posix", state.current, dialect, matches);
+  const current = target_paths(target, literal, state.current, dialect, matches);
   if (current !== state.current && "unresolved" in current) return lost();
   if (push && dialect === "cmd" && "values" in current && current.values.some((entry) => /^[\\/]{2}/.test(entry))) return lost();
   return moved(state, (entry) => ({ current, stack: push ? [...entry.stack, entry.current] : entry.stack }), current);

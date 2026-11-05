@@ -1,4 +1,7 @@
-import { here_string_end, quote_of, skip_group, skip_quoted, type Dialect } from "./statements.ts";
+import { here_string_end, quote_of, skip_group, skip_quoted } from "./powershell-lex.ts";
+import type { Dialect } from "./statements.ts";
+import { double_end, paren_end } from "./posix-lex.ts";
+import { posix_string } from "./posix-string.ts";
 
 type Quote = "none" | "single" | "double" | "single_here" | "double_here" | "verbatim";
 
@@ -335,7 +338,7 @@ const plain_words = (source: string, dialect: "cmd" | "posix"): Word[] => {
     };
     const group = char === "(";
     if (group) {
-      const end = cmd_group_end(source, index);
+      const end = dialect === "posix" ? paren_end(source, index) : cmd_group_end(source, index);
       const closed = source[end - 1] === ")";
       pieces.push({ kind: "group", open: "(", text: source.slice(index + 1, closed ? end - 1 : end), start: index + 1 });
       index = end;
@@ -358,6 +361,12 @@ const plain_words = (source: string, dialect: "cmd" | "posix"): Word[] => {
       }
       if (current === '"' || (dialect === "posix" && current === "'")) {
         flush("none");
+        if (dialect === "posix" && current === '"') {
+          const end = double_end(source, index);
+          pieces.push(...posix_string(source, index, end));
+          index = end;
+          continue;
+        }
         let end = index + 1;
         while (end < source.length && source[end] !== current) end += dialect === "posix" && current === '"' && source[end] === "\\" ? 2 : 1;
         end = Math.min(end, source.length);
@@ -369,7 +378,7 @@ const plain_words = (source: string, dialect: "cmd" | "posix"): Word[] => {
       }
       if (dialect === "posix" && current === "$" && source[index + 1] === "(") {
         flush("none");
-        const end = skip_group(source, index + 1);
+        const end = paren_end(source, index + 1);
         pieces.push({ kind: "group", open: "$(", text: source.slice(index + 2, Math.max(index + 2, end - 1)), start: index + 2 });
         index = end;
         continue;

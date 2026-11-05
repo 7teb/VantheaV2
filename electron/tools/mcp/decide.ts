@@ -120,7 +120,7 @@ export const decide = async (call: McpCall, ctx: ToolContext, review: McpReview,
     return shell_verdict(call, ctx, changed);
   }
   if (mode === "full") {
-    return call.trusted || call.tier !== "dangerous" ? run : ask("Dangerous MCP tool (memory write, patch, inject or execute), needs your approval.");
+    return call.trusted || call.tier !== "dangerous" || has_grant(ctx.chat_id, call) ? run : ask("Dangerous MCP tool (memory write, patch, inject or execute), needs your approval.");
   }
   if (mode === "ask") {
     return has_grant(ctx.chat_id, call) ? run : ask("Ask mode confirms every MCP tool call.");

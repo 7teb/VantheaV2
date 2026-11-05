@@ -8,6 +8,8 @@ import { regenerable_turn, turn_segments } from "../../state/turn-groups.ts";
 import { AssistantMessage } from "./AssistantMessage.tsx";
 import { last_own_send, plan_state } from "./assistant-blocks.ts";
 import { stepless_summary_after, summary_line_step } from "./compaction-line.ts";
+import { chat_rows } from "./quiet-runs.ts";
+import { QuietRun } from "./QuietRun.tsx";
 import { CompactionRow } from "./StepRows.tsx";
 import { use_follow_bottom } from "./use-follow-bottom.ts";
 import { UserMessage } from "./UserMessage.tsx";
@@ -25,13 +27,18 @@ export const MessageList = ({ chat_id, chat }: MessageListProps) => {
   const busy = last_assistant(chat)?.status === "streaming";
   const last_id = messages.at(-1)?.id ?? "";
   const summary_after = useMemo(() => stepless_summary_after(messages, chat.summary), [messages, chat.summary]);
+  const rows = useMemo(() => chat_rows(segments, summary_after), [segments, summary_after]);
 
   return (
     <div className="chat-slot">
       <div className="chat-scroll" ref={scroller}>
         <div className="chat-column" ref={content}>
-          {segments.map((segment) =>
-            segment.kind === "user" ? (
+          {rows.map((row) => {
+            if (row.kind === "quiet") {
+              return <QuietRun key={`quiet:${row.id}`} chat_id={chat_id} runs={row.runs} />;
+            }
+            const segment = row.segment;
+            return segment.kind === "user" ? (
               <Fragment key={segment.message.id}>
                 <UserMessage chat_id={chat_id} message={segment.message} busy={busy} />
                 {summary_after === segment.message.id && <CompactionRow step={summary_line_step} />}
@@ -48,9 +55,10 @@ export const MessageList = ({ chat_id, chat }: MessageListProps) => {
                 undoable_id={undoable_id}
                 summary_after={summary_after}
                 retry_from={segment === segments.at(-1) ? regenerable : null}
+                scheduled_run={row.scheduled_run}
               />
-            ),
-          )}
+            );
+          })}
         </div>
       </div>
       {away && (

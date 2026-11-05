@@ -24,7 +24,7 @@ const tab_text = (value: unknown) => {
 
 const url_text = (value: unknown) => {
   if (typeof value !== "string" || !is_guest_url_allowed(value, true)) {
-    throw new Error("url must be an http or https address or about:blank");
+    throw new Error("url must be an http or https address, a local .html, .xhtml or .svg file, or about:blank");
   }
   return value;
 };

@@ -15,7 +15,7 @@ export { search_chats } from "./search.ts";
 
 export type ChatsInit = { dirs: ChatDirs; legacy_root: string; events: ChatEvents };
 
-export type MetaPatch = Partial<Pick<ChatMeta, "title" | "pinned" | "archived" | "workspace" | "project_path" | "choice">>;
+export type MetaPatch = Partial<Pick<ChatMeta, "title" | "pinned" | "archived" | "workspace" | "project_path" | "choice" | "updated_at">>;
 
 const max_cached_chats = 16;
 
@@ -158,6 +158,7 @@ export const create_chat = async (project_path: string, worktree: ChatWorktree |
     streaming: false,
   };
   metas.set(meta.id, meta);
+  schedule_save(meta.id);
   cache_body(meta.id, { summary: null, messages: [], questions: {} });
   await save_now(meta.id);
   await persist_index();
@@ -176,6 +177,7 @@ export const update_meta = async (chat_id: string, patch: MetaPatch): Promise<Ch
     workspace: patch.workspace ?? meta.workspace,
     project_path: patch.project_path ?? meta.project_path,
     ...(patch.choice ? { choice: patch.choice } : {}),
+    updated_at: patch.updated_at ?? meta.updated_at,
   };
   metas.set(chat_id, next);
   if (bodies.has(chat_id)) {
@@ -246,14 +248,15 @@ const delete_media = async (chat_id: string, ids: Iterable<string>) => {
   }
 };
 
-const delete_released = async (chat_id: string, ids: string[]) => {
+export const delete_released = async (chat_id: string, ids: string[]) => {
   await delete_media(chat_id, ids.filter((id) => !is_held(id)));
 };
 
 const remove_chat = async (chat_id: string): Promise<void> => {
   const meta = require_meta(chat_id);
-  const body = await ensure_body(chat_id);
+  const loaded = await ensure_body(chat_id);
   await forget_saves(chat_id);
+  const body = bodies.get(chat_id) ?? loaded;
   metas.delete(chat_id);
   bodies.delete(chat_id);
   const released = body ? change_refs(attachment_ids(body.messages), new Set()) : [];
@@ -311,6 +314,7 @@ export const fork_chat = async (chat_id: string, message_id: string): Promise<Ch
     streaming: false,
   };
   metas.set(fork.id, fork);
+  schedule_save(fork.id);
   cache_body(fork.id, { summary, messages, questions: stored_question_states(body.questions) });
   change_refs(new Set(), attachment_ids(messages));
   await save_now(fork.id);
@@ -319,7 +323,7 @@ export const fork_chat = async (chat_id: string, message_id: string): Promise<Ch
   return { ...fork };
 };
 
-export const append_message = async (chat_id: string, message: Message): Promise<void> => {
+export const append_message = async (chat_id: string, message: Message, touch = true): Promise<void> => {
   const body = await require_body(chat_id);
   if (body.messages.some((entry) => entry.id === message.id)) {
     throw new Error(`message ${message.id} already exists in chat ${chat_id}`);
@@ -328,7 +332,7 @@ export const append_message = async (chat_id: string, message: Message): Promise
   if (message.role === "user") {
     change_refs(attachment_ids(body.messages), attachment_ids(messages));
   }
-  await commit(chat_id, { ...body, messages }, { message_count: messages.length, updated_at: now_iso() });
+  await commit(chat_id, { ...body, messages }, { message_count: messages.length, ...(touch ? { updated_at: now_iso() } : {}) });
   chat_events().appended(chat_id, message);
 };
 

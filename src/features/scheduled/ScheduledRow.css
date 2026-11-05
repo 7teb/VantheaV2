@@ -1,0 +1,345 @@
+@layer components {
+  @keyframes ring-sweep {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+
+  .scheduled-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-areas: "dial head controls" "dial body body" "foot foot foot" "error error error" "note note note";
+    column-gap: 14px;
+    margin-bottom: 10px;
+    padding: 14px 14px 0 16px;
+    border-radius: var(--radius-xl);
+    corner-shape: superellipse(1.5);
+    background: var(--surface-card);
+    box-shadow: inset 0 0 0 1px var(--ring-card);
+    animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+    animation-delay: calc(min(var(--row, 0), 8) * 40ms);
+    transition:
+      box-shadow var(--duration-base) var(--ease-out),
+      background var(--duration-base) var(--ease-out);
+  }
+
+  .scheduled-card:hover {
+    box-shadow: inset 0 0 0 1px var(--ring-well-focus);
+  }
+
+  .scheduled-card:has(> .scheduled-open:active) {
+    background: var(--raised-fill-hover);
+  }
+
+  .scheduled-open {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    corner-shape: superellipse(1.5);
+  }
+
+  .scheduled-card > :not(.scheduled-open) {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .scheduled-card :is(button, .schedule-dial, .run-trail, .scheduled-error) {
+    pointer-events: auto;
+  }
+
+  .scheduled-card[data-state="running"]::before,
+  .scheduled-card[data-state="waiting"]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    padding: 1px;
+    border-radius: inherit;
+    corner-shape: superellipse(1.5);
+    background: linear-gradient(100deg, transparent 35%, var(--ring-strong) 50%, transparent 65%) 0 0 / 250% 100% no-repeat;
+    mask:
+      linear-gradient(var(--mask) 0 0) content-box,
+      linear-gradient(var(--mask) 0 0);
+    mask-composite: exclude;
+    animation: ring-sweep 2.4s var(--ease-linear) infinite;
+    pointer-events: none;
+  }
+
+  .scheduled-card[data-state="waiting"]::before {
+    animation-play-state: paused;
+  }
+
+  .scheduled-card-head {
+    grid-area: head;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    min-height: 26px;
+  }
+
+  .scheduled-name {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: var(--font-size-body);
+    font-weight: var(--weight-semibold);
+    line-height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .scheduled-controls {
+    grid-area: controls;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 26px;
+    margin: 0 -4px 0 12px;
+  }
+
+  .scheduled-controls .toggle {
+    margin: 0 6px;
+  }
+
+  .scheduled-run-now {
+    opacity: 0;
+    transition:
+      opacity var(--duration-fast) var(--ease-out),
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .scheduled-card:hover .scheduled-run-now,
+  .scheduled-card:focus-within .scheduled-run-now {
+    opacity: 1;
+  }
+
+  .scheduled-body {
+    grid-area: body;
+    min-width: 0;
+    padding-top: 2px;
+  }
+
+  .scheduled-prompt {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: var(--font-size-ui);
+    line-height: 19.5px;
+    overflow-wrap: anywhere;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .scheduled-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-caption);
+    line-height: 16px;
+  }
+
+  .scheduled-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .scheduled-meta-item + .scheduled-meta-item::before {
+    content: "";
+    width: 2px;
+    height: 2px;
+    margin: 0 8px;
+    border-radius: var(--radius-full);
+    background: var(--text-quaternary);
+  }
+
+  .scheduled-meta-model {
+    color: var(--text-secondary);
+  }
+
+  .scheduled-foot {
+    grid-area: foot;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    min-height: 44px;
+    margin: 12px -14px 0 -16px;
+    padding: 0 14px 0 16px;
+    box-shadow: inset 0 1px 0 var(--divider);
+    font-size: var(--font-size-ui);
+  }
+
+  .scheduled-every {
+    flex: none;
+    margin-left: auto;
+    color: var(--text-detail);
+    white-space: nowrap;
+  }
+
+  .scheduled-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    height: 26px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+
+  .scheduled-status-time {
+    color: var(--text-detail);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .scheduled-status-time::before {
+    content: "·";
+    margin-right: 6px;
+  }
+
+  .scheduled-status.is-new {
+    color: var(--text-primary);
+  }
+
+  .scheduled-status.is-new-read {
+    color: var(--text-secondary);
+  }
+
+  .scheduled-status.is-failed {
+    color: var(--text-danger);
+  }
+
+  .scheduled-status.is-waiting {
+    color: var(--text-waiting);
+  }
+
+  .scheduled-status.is-toggle {
+    margin-left: -6px;
+    padding: 0 6px;
+    border-radius: var(--radius-sm);
+    transition: background var(--duration-fast) var(--ease-out);
+  }
+
+  .scheduled-status.is-toggle:hover {
+    background: var(--fill-hover);
+  }
+
+  .scheduled-status.is-toggle:hover :is(.scheduled-status-time, .scheduled-status-chevron) {
+    color: var(--text-primary);
+  }
+
+  .scheduled-status-chevron {
+    color: var(--text-tertiary);
+    transition:
+      transform var(--duration-chevron) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .scheduled-status[aria-expanded="true"] .scheduled-status-chevron {
+    transform: rotate(90deg);
+  }
+
+  .scheduled-status-unread {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--accent);
+  }
+
+  .scheduled-error {
+    grid-area: error;
+  }
+
+  .scheduled-error-text {
+    margin: 0 0 14px;
+    padding: 8px 12px;
+    border-radius: var(--radius-lg);
+    background: var(--fill-danger);
+    color: var(--text-secondary);
+    font-size: var(--font-size-ui);
+    line-height: 19.5px;
+    overflow-wrap: anywhere;
+    user-select: text;
+  }
+
+  .scheduled-note {
+    grid-area: note;
+    margin: 0;
+    padding: 0 0 12px;
+    color: var(--text-danger);
+    font-size: var(--font-size-caption);
+    overflow-wrap: anywhere;
+  }
+
+  .scheduled-card :is(.schedule-dial, .scheduled-card-head, .scheduled-body, .scheduled-foot) {
+    transition: opacity var(--duration-base) var(--ease-out);
+  }
+
+  .scheduled-card[data-enabled="false"] :is(.schedule-dial, .scheduled-card-head, .scheduled-body, .scheduled-foot) {
+    opacity: 0.5;
+  }
+
+  .scheduled-confirm-note {
+    margin: 8px 0 0;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-ui);
+  }
+
+  .scheduled-card.is-skeleton {
+    animation: none;
+  }
+
+  .scheduled-skeleton-dial {
+    grid-area: dial;
+  }
+
+  .scheduled-card.is-skeleton .scheduled-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 8px;
+  }
+
+  .scheduled-card.is-skeleton .scheduled-skeleton-meta {
+    margin-top: 4px;
+  }
+
+  .scheduled-card.is-skeleton .scheduled-foot :last-child {
+    margin-left: auto;
+  }
+
+  @media (max-width: 600px) {
+    .scheduled-card {
+      column-gap: 12px;
+    }
+
+    .scheduled-foot {
+      flex-wrap: wrap;
+      row-gap: 4px;
+      padding-block: 8px;
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .scheduled-run-now {
+      opacity: 1;
+    }
+
+    .scheduled-foot {
+      min-height: 48px;
+    }
+  }
+}

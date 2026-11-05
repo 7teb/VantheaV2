@@ -31,6 +31,8 @@ export const composer = {
   "composer.plan": "Plan",
   "composer.drop": "Drop files to attach",
   "composer.context_usage": "{used} of {limit} tokens ({percent}%)",
+  "composer.todos_hide": "Hide task list ({n} open)",
+  "composer.todos_show": "Show task list ({n} open)",
   "composer.models_failed": "Models unavailable",
   "composer.queued_label": "Queued messages",
   "composer.queued_send": "Send",

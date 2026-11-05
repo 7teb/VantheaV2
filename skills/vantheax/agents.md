@@ -66,12 +66,11 @@ Questions never block. No agent ever waits for another:
 - When the asked agent ends without answering, the asker is told, or the main agent gets a short line when the asker has finished too.
 - When an agent ends with a question still open, its report ends with a section "Open questions of Name#xxxxxxxx" and one line per question, for example "Open question to Tokenizer#3f2a91c0 about src/parser/tokens.ts since 13:07 (msg_...), still without an answer."
 
-Noise is handled by structure, not by limits: topics, overlap notices, the required `about` field and the rule to send results and questions, not activity. When two agents send each other two messages in a row without any other tool call in between, both are told to continue their tasks, and the main agent gets an alert. Nothing is cut off; the messages are still delivered.
+Noise is handled by structure, not by limits: topics, overlap notices, the required `about` field and the rule to send results and questions, not activity. When two agents send each other two messages in a row without any other tool call in between, both are told to continue their tasks. Nothing is cut off; the messages are still delivered, and the main agent is not told.
 
 ## What the main agent sees
 
 - A short line (digest) per delivered message, per message that waits for an approval card, per kept answer and per question whose asked agent ended without an answer while the asker had already finished. A digest looks like `Parser#1a2b3c4d → Tokenizer#3f2a91c0: question, about src/parser/tokens.ts: 'Who changes TokenKind?'`. Digests are information, not tasks: they arrive with the main agent's next round and never start a turn by themselves.
-- A peer alert when two agents kept messaging without working. An alert arrives like a report: at once, and it starts a new turn when the main turn has ended. A later report of the same run does not replace it. The main agent can steer the agents with message_agent, stop one with cancel_agent, or let them continue.
 - The full text of any message, word for word, through get_agent_status.
 
 ## What you see
@@ -80,7 +79,7 @@ Noise is handled by structure, not by limits: topics, overlap notices, the requi
 - An instruction from the main agent (message_agent, or one kept for the next run) shows in the sub-agent's transcript as a row "Received a message from the parent agent" ("Nachricht vom übergeordneten Agenten erhalten") that does not open; inside a stretch of work it joins that tool group as one of its rows instead of splitting it, like agent rows do in the main chat. The main agent has one critter icon per chat, used on these rows and on the sub-agent's message_main_agent rows, so it looks the same wherever it appears in that chat.
 - The roster notices a sub-agent gets (the agent list at the start of a run, later changes and overlap introductions) are for the model only and are not shown in its transcript.
 - The Background Tasks panel shows each agent's topic next to its profile (with "without run_command, run_bash" ("ohne run_command, run_bash") when tools were removed) and model, and "1 open question" ("1 offene Frage") on a running run that waits for an answer. This is information, not a waiting state.
-- Allowed messages between agents do not appear in the main chat. A blocked message and a detected loop appear there as one row "Agent messages need attention: <name>" ("Agenten-Nachrichten brauchen Aufmerksamkeit: <name>") marked "Blocked" ("Blockiert") or "Loop" ("Schleife").
+- Messages between agents do not appear in the main chat. Older chats can still show a row "Agent messages need attention: <name>" ("Agenten-Nachrichten brauchen Aufmerksamkeit: <name>") marked "Blocked" ("Blockiert").
 - When the review cannot decide about a task, a card appears at the composer like other sub-agent approval cards: "May I start the agent <name> with this task?" or "May I continue <name> with this task?". The deploy_agent and continue_agent cards name the tools removed with without_tools in a line like "Without: run_command, run_bash" ("Ohne: run_command, run_bash"); an agent without removed tools shows no such line.
 
 ## Review of agent texts

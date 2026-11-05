@@ -47,14 +47,29 @@ const local_branches = async (tool: GitTool, top: string): Promise<string[]> =>
     .map((line) => line.trim())
     .filter(Boolean);
 
-const pick_branch = async (tool: GitTool, top: string, seed_text: string, folder_id: string): Promise<string> => {
-  const name = free_branch(`${branch_prefix}${branch_slug(seed_text, folder_id)}`, await local_branches(tool, top));
-  await run_git(tool, top, ["check-ref-format", "--branch", name]);
-  return name;
+const reserve_branch = async (tool: GitTool, top: string, seed_text: string, folder_id: string, base: string): Promise<string> => {
+  const wanted = `${branch_prefix}${branch_slug(seed_text, folder_id)}`;
+  const contended: string[] = [];
+  for (;;) {
+    const name = free_branch(wanted, [...await local_branches(tool, top), ...contended]);
+    await run_git(tool, top, ["check-ref-format", "--branch", name]);
+    const reserved = await exec_git(tool, { cwd: top, args: ["update-ref", `refs/heads/${name}`, base, "0".repeat(base.length)], flags: fsmonitor_off });
+    if (reserved.code === 0) {
+      return name;
+    }
+    if (free_branch(name, await local_branches(tool, top)) === name && !/already exists|file exists/i.test(reserved.stderr)) {
+      git_ok(reserved, `reserving the worktree branch ${name} in ${top}`);
+    }
+    contended.push(name);
+  }
 };
 
 const drop_new_branch = async (tool: GitTool, cwd: string, worktree: ChatWorktree) => {
   const ref = `refs/heads/${worktree.branch}`;
+  const registered = await run_git(tool, cwd, ["worktree", "list", "--porcelain"]);
+  if (registered.split(/\r?\n/).some((line) => line === `branch ${ref}`)) {
+    return;
+  }
   const output = await exec_git(tool, { cwd, args: ["rev-parse", "--verify", "--quiet", ref], flags: fsmonitor_off });
   if (output.code === 0 && output.stdout.toString("utf8").trim() === worktree.base) {
     await run_git(tool, cwd, ["update-ref", "-d", ref, worktree.base]);
@@ -78,13 +93,13 @@ export const create_worktree = async (project_path: string, project_dir: string,
   }
   const { tool, paths } = repo;
   const folder = await worktree_step("pick folder", () => pick_folder(storage_paths().worktrees, worktree_leaf(paths.top), folder_taken, new_folder_id));
-  const branch = await worktree_step("pick branch", () => pick_branch(tool, paths.top, seed_text, path.basename(path.dirname(folder))));
+  const branch = await worktree_step("reserve branch", () => reserve_branch(tool, paths.top, seed_text, path.basename(path.dirname(folder)), repo.base));
   const worktree: ChatWorktree = { path: folder, prefix: repo.prefix, branch, base: repo.base, created_at: new Date().toISOString() };
-  await worktree_step("record in the ledger", () => ledger_add({ path: folder, project_path, state: "creating", at: worktree.created_at }));
   try {
+    await worktree_step("record in the ledger", () => ledger_add({ path: folder, project_path, state: "creating", at: worktree.created_at, branch: { name: branch, base: repo.base, repo_dir: paths.top } }));
     await worktree_step("add worktree", async () => {
       await fs.mkdir(path.dirname(folder), { recursive: true });
-      await run_git(tool, paths.top, ["worktree", "add", "-b", branch, folder, repo.base]);
+      await run_git(tool, paths.top, ["worktree", "add", folder, branch]);
     });
     await worktree_step("link node_modules", () => link_node_modules(project_dir, worktree_dir(worktree)));
     await worktree_step("copy .worktreeinclude files", () => copy_included(tool, paths.top, folder));

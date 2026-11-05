@@ -1,0 +1,86 @@
+@layer components {
+  .computer-shot {
+    position: relative;
+    width: min(100%, 480px, calc(270px * var(--shot-ratio)));
+    margin: 0;
+  }
+
+  .computer-shot .media-image {
+    width: 100%;
+    box-shadow: var(--shadow-inset);
+  }
+
+  .computer-shot-mark {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--surface-solid);
+    border-radius: var(--radius-full);
+    outline: 1px solid var(--mask);
+    box-shadow: var(--shadow-thumb);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: fade-in var(--duration-base) var(--ease-out) backwards;
+  }
+
+  .computer-shot-mark::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: inherit;
+    background: var(--surface-solid);
+  }
+
+  .computer-shot-path {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .computer-shot-path line {
+    stroke: var(--surface-solid);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-dasharray: 4 4;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .computer-approval {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+    padding: 0 0 var(--space-2);
+    overflow: hidden;
+    border: 1px solid var(--rule-command);
+    border-radius: 12.5px;
+    corner-shape: superellipse(1.5);
+    background: var(--fill-command);
+  }
+
+  .computer-approval-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px var(--space-2);
+    font-size: var(--font-size-ui);
+    line-height: 18.5px;
+    color: var(--text-tertiary);
+    user-select: none;
+  }
+
+  .computer-approval-head svg {
+    flex: none;
+  }
+
+  .computer-approval-line {
+    margin: 0;
+    padding: 0 var(--space-2);
+    font-size: var(--font-size-ui);
+    line-height: 19.5px;
+    color: var(--text-secondary);
+  }
+}

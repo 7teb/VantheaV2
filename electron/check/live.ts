@@ -141,7 +141,10 @@ const press_stage = async (page: Page) => {
   if (!is_record(found)) {
     return;
   }
-  const box = read_box(await evaluate(page, stage_box), "the stage");
+  const current = await evaluate(page, stage_box);
+  if (current === null) return;
+  const box = read_box(current, "the stage");
+  if (box.w <= 0 || box.h <= 0) return;
   for (let step = 0; step <= 14; step += 1) {
     await send(page, "Input.dispatchMouseEvent", { type: "mouseMoved", x: box.x + box.w * (0.2 + (0.6 * step) / 14), y: box.y + box.h * (0.3 + 0.35 * Math.sin(step / 3)) });
     await pause(page, 40);
@@ -155,7 +158,10 @@ const press_stage = async (page: Page) => {
 const use_control = async (page: Page, control: Control) => {
   await evaluate(page, scroll_to_control(control.index));
   await pause(page, 120);
-  const box = read_box(await evaluate(page, control_box(control.index)), `control ${control.index} (${control.tag.toLowerCase()})`);
+  const current = await evaluate(page, control_box(control.index));
+  if (current === null) return;
+  const box = read_box(current, `control ${control.index} (${control.tag.toLowerCase()})`);
+  if (box.w <= 0 || box.h <= 0) return;
   if (control.type === "range") {
     for (const fraction of [0.1, 0.9, 0.5]) {
       await click_at(page, box.x + box.w * fraction, box.y + box.h / 2);

@@ -74,7 +74,7 @@ export const peer_alert_text = (alert: PeerAlert): string => `${alert_marker} ${
 const alert_note = (chunk: string): AgentNote | null => {
   const split = chunk.indexOf("\n\n");
   const head = alert_head.exec(split < 0 ? chunk : chunk.slice(0, split));
-  if (!head) {
+  if (!head || head[1] === "loop") {
     return null;
   }
   const body = split < 0 ? "" : chunk.slice(split + 2);
@@ -85,6 +85,8 @@ const next_alert = (text: string, from: number): number => {
   const at = text.indexOf(wrapped_marker, from);
   return at < 0 ? -1 : at + wrapped_marker.length - alert_marker.length;
 };
+
+export const holds_peer_alert = (text: string): boolean => text.startsWith(alert_marker) || text.includes(wrapped_marker);
 
 export const parse_peer_alerts = (text: string): AgentNote[] => {
   const notes: AgentNote[] = [];

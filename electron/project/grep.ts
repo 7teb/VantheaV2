@@ -19,7 +19,6 @@ export type GrepResult = {
   regex_error: string | null;
   matches: GrepMatch[];
   capped: boolean;
-  files_scanned: number | null;
   incomplete: string | null;
 };
 
@@ -29,7 +28,7 @@ export const max_grep_line_chars = 300;
 
 const rg_binary = rgPath.replace(`app.asar${path.sep}`, `app.asar.unpacked${path.sep}`);
 
-type RgRun = { matches: GrepMatch[]; capped: boolean; files_scanned: number | null; finished: boolean; error: string | null };
+type RgRun = { matches: GrepMatch[]; capped: boolean; finished: boolean; error: string | null };
 
 type RgMessage = {
   type?: string;
@@ -37,7 +36,6 @@ type RgMessage = {
     path?: { text?: string };
     line_number?: number;
     lines?: { text?: string; bytes?: string };
-    stats?: { searches?: number };
   };
 };
 
@@ -64,7 +62,7 @@ const run_rg = (root: string, args: string[], signal: AbortSignal, hidden: (rela
   new Promise((resolve, reject) => {
     signal.throwIfAborted();
     const child = spawn(rg_binary, args, { cwd: root, windowsHide: true });
-    const run: RgRun = { matches: [], capped: false, files_scanned: 0, finished: false, error: null };
+    const run: RgRun = { matches: [], capped: false, finished: false, error: null };
     let stderr = "";
     let settled = false;
     const finish = (error: unknown) => {
@@ -100,7 +98,6 @@ const run_rg = (root: string, args: string[], signal: AbortSignal, hidden: (rela
       }
       if (message.type === "summary") {
         run.finished = true;
-        run.files_scanned = message.data?.stats?.searches ?? run.files_scanned;
         return;
       }
       if (message.type !== "match" || !message.data?.path?.text || !message.data.line_number) {
@@ -149,12 +146,12 @@ const result_of = (run: RgRun, root: string, query: GrepQuery, mode: GrepResult[
   if (incomplete) {
     console.warn(`[project] ripgrep could not search everything for ${query.query.slice(0, 200)}: ${incomplete.slice(0, 2000)}`);
   }
-  return { mode, regex_error, matches: sorted(run.matches).slice(0, max_grep_matches), capped: run.capped, files_scanned: run.finished && !run.error && !run.capped ? run.files_scanned : null, incomplete };
+  return { mode, regex_error, matches: sorted(run.matches).slice(0, max_grep_matches), capped: run.capped, incomplete };
 };
 
 export const grep_project = async (scoped: GrepTarget, query: GrepQuery, signal: AbortSignal, on_match?: (count: number) => void): Promise<GrepResult> => {
   if (!query.query.trim()) {
-    return { mode: query.regex ? "regex" : "literal", regex_error: null, matches: [], capped: false, files_scanned: 0, incomplete: null };
+    return { mode: query.regex ? "regex" : "literal", regex_error: null, matches: [], capped: false, incomplete: null };
   }
   const hidden = is_secret_path(scoped.relative) ? () => false : is_secret_path;
   const search = async (literal: boolean): Promise<RgRun> => {
@@ -173,9 +170,6 @@ export const grep_project = async (scoped: GrepTarget, query: GrepQuery, signal:
     const excluded = new Set([...encoded.groups["utf-16le"], ...encoded.groups["utf-16be"]].map(file => posix(path.relative(scoped.root, file)).toLowerCase()));
     if (run.matches.some(match => excluded.has(match.path.toLowerCase()))) {
       run = await run_rg(scoped.root, rg_args(query, literal, [scoped.target]), signal, hidden, on_match, max_grep_matches, excluded);
-    }
-    if (excluded.size) {
-      run.files_scanned = scoped.file ? 1 : null;
     }
     const append_error = (error: string | null) => {
       if (error) {

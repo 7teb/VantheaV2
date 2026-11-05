@@ -2,9 +2,13 @@ export type CodeTracker = { feed(text: string): void; skip(text: string): void; 
 
 type Fence = { char: string; length: number };
 
-const fence_open = /^[ \t]*(`{3,}|~{3,})([\s\S]*)$/;
+type Container = { kind: "quote" } | { kind: "list"; width: number };
 
-const fence_close = /^[ \t]*(`{3,}|~{3,})[ \t\r]*$/;
+type BlockState = { containers: Container[]; fence: Fence | null; paragraph: boolean };
+
+const fence_open = /^ {0,3}(`{3,}|~{3,})([\s\S]*)$/;
+
+const fence_close = /^ {0,3}(`{3,}|~{3,})[ \t\r]*$/;
 
 const blank_line = /^[ \t\r]*$/;
 
@@ -37,27 +41,85 @@ const inline_after = (line: string, open: number): number => {
   return current;
 };
 
+const expand_tabs = (source: string): string => {
+  let line = "";
+  for (const char of source) {
+    line += char === "\t" ? " ".repeat(4 - line.length % 4) : char;
+  }
+  return line;
+};
+
+const code_line = (state: BlockState, source: string): boolean => {
+  let line = expand_tabs(source);
+  let matched = 0;
+  for (const container of state.containers) {
+    if (container.kind === "quote") {
+      const prefix = /^ {0,3}> ?/.exec(line);
+      if (!prefix) break;
+      line = line.slice(prefix[0].length);
+    } else {
+      const leading = /^ */.exec(line)?.[0].length ?? 0;
+      if (line.trim() && leading < container.width) break;
+      line = line.slice(container.width);
+    }
+    matched += 1;
+  }
+  if (matched < state.containers.length) {
+    state.containers.length = matched;
+    state.fence = null;
+  }
+  if (state.fence) {
+    const close = fence_close.exec(line);
+    const run = close?.[1] ?? "";
+    if (run.startsWith(state.fence.char) && run.length >= state.fence.length) {
+      state.fence = null;
+    }
+    return true;
+  }
+  for (;;) {
+    const quote = /^ {0,3}> ?/.exec(line);
+    if (quote) {
+      state.containers.push({ kind: "quote" });
+      state.paragraph = false;
+      line = line.slice(quote[0].length);
+      continue;
+    }
+    const marker = /^( {0,3})([-+*]|(\d{1,9})[.)])( +|$)/.exec(line);
+    if (!marker || (state.paragraph && (!line.slice(marker[0].length).trim() || (marker[3] !== undefined && marker[3] !== "1")))) break;
+    const gap = marker[4].length;
+    const width = marker[1].length + marker[2].length + (gap >= 1 && gap <= 4 ? gap : 1);
+    state.containers.push({ kind: "list", width });
+    state.paragraph = false;
+    line = line.slice(width);
+  }
+  const opened = opening_fence(line);
+  if (opened) {
+    state.fence = opened;
+    state.paragraph = false;
+    return true;
+  }
+  if (blank_line.test(line)) {
+    state.paragraph = false;
+    return false;
+  }
+  if (line.startsWith("    ") && !state.paragraph) return true;
+  const heading = state.paragraph && /^ {0,3}(?:=+|-+) *$/.test(line);
+  state.paragraph = !heading && !/^ {0,3}(?:#{1,6}(?: |$)|(?:\* *){3,}$|(?:_ *){3,}$|(?:- *){3,}$)/.test(line);
+  return false;
+};
+
 export const create_code_tracker = (): CodeTracker => {
-  let fence: Fence | null = null;
+  const block: BlockState = { containers: [], fence: null, paragraph: false };
   let inline = 0;
   let line = "";
 
   const end_line = (value: string) => {
-    if (fence) {
-      const close = fence_close.exec(value);
-      const run = close?.[1] ?? "";
-      if (run.startsWith(fence.char) && run.length >= fence.length) {
-        fence = null;
-      }
-      return;
-    }
-    const opened = opening_fence(value);
-    if (opened) {
-      fence = opened;
+    const code = code_line(block, value);
+    if (code || blank_line.test(value)) {
       inline = 0;
-      return;
+    } else {
+      inline = inline_after(value, inline);
     }
-    inline = blank_line.test(value) ? 0 : inline_after(value, inline);
   };
 
   const feed = (text: string) => {
@@ -77,7 +139,11 @@ export const create_code_tracker = (): CodeTracker => {
     line += text.replace(/[`\r\n]/g, "");
   };
 
-  const inside = () => fence !== null || opening_fence(line) !== null || inline_after(line, inline) !== 0;
+  const inside = () => {
+    const probe = { ...block, containers: [...block.containers] };
+    const code = code_line(probe, line + "x");
+    return code || inline_after(line, inline) !== 0;
+  };
 
   return { feed, skip, inside };
 };

@@ -1,5 +1,6 @@
 import type { HookAction, HookFields } from "./hooks.ts";
 import type { ReviewNote } from "./review.ts";
+import type { ScheduledAction, ScheduledCard } from "./scheduled.ts";
 import type { ShellKind } from "./shell.ts";
 import type { DiffLine } from "./tool-view.ts";
 
@@ -26,7 +27,9 @@ type ApprovalAsk =
   | { kind: "memory"; action: "remember" | "forget"; text: string; review?: ReviewNote }
   | { kind: "agent_message"; tool: AgentTextTool; to_name: string; to_id: string | null; about: string; text: string; without_tools?: string[]; review?: ReviewNote }
   | ({ kind: "secret_read"; review?: ReviewNote } & SecretRead)
-  | { kind: "hook"; action: HookAction; scope: HookCardScope; hook: HookFields; previous: HookFields | null; review?: ReviewNote };
+  | { kind: "hook"; action: HookAction; scope: HookCardScope; hook: HookFields; previous: HookFields | null; review?: ReviewNote }
+  | { kind: "scheduled_task"; action: ScheduledAction; task: ScheduledCard; previous: ScheduledCard | null; review?: ReviewNote }
+  | { kind: "computer_use"; display: string; real_width: number; real_height: number };
 
 export type HookCardScope = { kind: "global" } | { kind: "project"; path: string; name: string };
 
@@ -46,7 +49,8 @@ export const full_window_minutes = 10;
 
 export const approval_skip_ms = 15000;
 
-export const skips_unanswered = (request: ApprovalRequest): boolean => request.kind !== "write" && Boolean(request.review);
+export const skips_unanswered = (request: ApprovalRequest): boolean =>
+  request.kind !== "write" && request.kind !== "computer_use" && Boolean(request.review);
 
 export const full_mode_covers = (request: ApprovalRequest): boolean =>
   (request.kind === "command" && !request.plan) || request.kind === "write" || (request.kind === "mcp" && (request.tier === "readonly" || request.tier === "state_change"));

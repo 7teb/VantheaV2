@@ -1,0 +1,80 @@
+@layer components {
+  .scheduled-empty {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 10vh;
+    animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+  }
+
+  .empty-dial {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    place-items: center;
+    width: 120px;
+    height: 120px;
+    color: var(--text-tertiary);
+  }
+
+  .empty-dial::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: -1;
+    width: 320px;
+    height: 200px;
+    transform: translate(-50%, -50%);
+    background: var(--gradient-hero-halo);
+    pointer-events: none;
+  }
+
+  .empty-dial > svg:first-child {
+    position: absolute;
+    inset: 0;
+  }
+
+  .empty-ticks line {
+    stroke: var(--rule-strong);
+    stroke-width: 1;
+    stroke-linecap: round;
+  }
+
+  .empty-ticks line.is-major {
+    stroke: var(--ring-strong);
+  }
+
+  .empty-track {
+    fill: none;
+    stroke: var(--fill-track);
+    stroke-width: 2;
+  }
+
+  .empty-sweep {
+    fill: none;
+    stroke: var(--fill-track-active);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-dasharray: 20 243.89;
+  }
+
+  .empty-sweep-group {
+    transform-origin: 60px 60px;
+    animation: spin 12s var(--ease-linear) infinite;
+  }
+
+  .scheduled-empty-title {
+    margin: var(--space-5) 0 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-title);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+  }
+
+  .scheduled-empty > .button {
+    margin-top: var(--space-4);
+  }
+}

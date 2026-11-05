@@ -12,6 +12,19 @@
     display: grid;
     grid-template-rows: 1fr;
     padding: 4px;
+    transition:
+      grid-template-rows var(--duration-height-open) var(--ease-height),
+      margin-bottom var(--duration-height-open) var(--ease-height),
+      padding-block var(--duration-height-open) var(--ease-height),
+      opacity var(--duration-height-open) var(--ease-out);
+  }
+
+  .todos-panel[data-hidden="true"] {
+    grid-template-rows: 0fr;
+    margin-bottom: calc(-1 * var(--space-2));
+    padding-block: 0;
+    opacity: 0;
+    transition-duration: var(--duration-height-close);
   }
 
   .todos-panel[data-entering="true"]:not([data-leaving="true"]) {

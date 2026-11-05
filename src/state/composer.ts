@@ -4,6 +4,7 @@ import { api } from "../api/bridge.ts";
 import { random_id } from "../api/random-id.ts";
 import { t } from "../i18n/index.ts";
 import { chat_busy } from "./chat-busy.ts";
+import type { ActionResult } from "./chat-actions.ts";
 import { create_chat } from "./chat-create.ts";
 import {
   acknowledge_steer,
@@ -46,6 +47,8 @@ import { settings_store } from "./settings.ts";
 import { worktree_choice } from "./worktree.ts";
 
 export const composer_store = create_store<ComposerState>(empty_composer);
+
+const drain_after_send = new Set<string>();
 
 const error_text = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -144,14 +147,15 @@ export const attach_files = async (key: string, files: File[]) => {
   await Promise.all(files.slice(0, Math.max(0, room)).map((file) => upload_one(key, file)));
 };
 
-const send_now = async (chat_id: string, message: OutgoingMessage) => {
+const send_now = async (chat_id: string, message: OutgoingMessage, restore = true) => {
   const settings = settings_store.get();
   const choice = choice_for(chat_id);
   if (!settings || !choice) {
-    composer_store.update((state) => set_error(restore_draft(state, chat_id, message), chat_id, t("composer.settings_missing")));
-    return;
+    composer_store.update((state) => set_error(restore ? restore_draft(state, chat_id, message) : state, chat_id, t("composer.settings_missing")));
+    return false;
   }
   set_sending(chat_id, true);
+  let accepted = false;
   try {
     await api.invoke("turn:send", {
       chat_id,
@@ -165,25 +169,31 @@ const send_now = async (chat_id: string, message: OutgoingMessage) => {
       plan: message.plan,
       origin: "user",
     });
+    accepted = true;
+    return true;
   } catch (error) {
     console.error(`[composer] turn:send failed for chat ${chat_id}`, error);
-    composer_store.update((state) => set_error(restore_draft(state, chat_id, message), chat_id, error_text(error)));
+    composer_store.update((state) => set_error(restore ? restore_draft(state, chat_id, message) : state, chat_id, error_text(error)));
+    return false;
   } finally {
     set_sending(chat_id, false);
+    if (drain_after_send.delete(chat_id) && accepted) {
+      send_next(chat_id);
+    }
   }
 };
 
-const dispatch = async (chat_id: string, message: OutgoingMessage) => {
+const dispatch = async (chat_id: string, message: OutgoingMessage, restore = true) => {
   const current = composer_store.get();
   if (current.compacting[chat_id]) {
     composer_store.update((state) => enqueue(state, chat_id, { ...message, id: random_id(), steering: false, after_compaction: true }));
-    return;
+    return true;
   }
   if (chat_busy(chat_id) || current.sending[chat_id]) {
     composer_store.update((state) => enqueue(state, chat_id, { ...message, id: random_id(), steering: false }));
-    return;
+    return true;
   }
-  await send_now(chat_id, message);
+  return send_now(chat_id, message, restore);
 };
 
 const take_message = (key: string): OutgoingMessage | null => {
@@ -224,9 +234,10 @@ export const queue_draft = async (chat_id: string) => {
   }
 };
 
-export const send_plan_feedback = async (chat_id: string, text: string) => {
+export const send_plan_feedback = async (chat_id: string, text: string): Promise<ActionResult> => {
   composer_store.update((state) => set_error(state, chat_id, ""));
-  await dispatch(chat_id, { text, attachments: [], plan: true });
+  const accepted = await dispatch(chat_id, { text, attachments: [], plan: true }, false);
+  return accepted ? { ok: true } : { ok: false, error: composer_store.get().errors[chat_id] ?? t("composer.settings_missing") };
 };
 
 export const send_queued = async (chat_id: string, id: string) => {
@@ -340,7 +351,11 @@ export const init_composer = (): (() => void) => {
   const stop_ends = on_turn_end((chat_id, status, message_id) => {
     composer_store.update((state) => release_steers(state, chat_id, message_id));
     if (status === "done") {
-      send_next(chat_id);
+      if (composer_store.get().sending[chat_id]) {
+        drain_after_send.add(chat_id);
+      } else {
+        send_next(chat_id);
+      }
     }
   });
   return () => {

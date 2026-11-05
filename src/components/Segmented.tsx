@@ -3,7 +3,7 @@ import { class_names } from "./class-names.ts";
 import { Tooltip } from "./Tooltip.tsx";
 import "./Segmented.css";
 
-export type SegmentedOption<T extends string> = { id: T; label: string; icon?: ReactNode; count?: number; disabled?: boolean; tip?: string };
+export type SegmentedOption<T extends string> = { id: T; label: string; detail?: string; icon?: ReactNode; count?: number; disabled?: boolean; tip?: string };
 
 type SegmentedProps<T extends string> = {
   options: SegmentedOption<T>[];
@@ -12,7 +12,7 @@ type SegmentedProps<T extends string> = {
   label: string;
   className?: string;
   fit?: boolean;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
   tooltips?: boolean;
 };
 
@@ -92,6 +92,7 @@ export const Segmented = <T extends string>({ options, value, on_change, label, 
           >
             {option.icon && <span className="segment-icon">{option.icon}</span>}
             <span className="segment-label">{option.label}</span>
+            {option.detail && <span className="segment-detail">{option.detail}</span>}
             {option.count !== undefined && <span className="segment-count">{option.count}</span>}
           </button>
         );

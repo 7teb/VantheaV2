@@ -96,7 +96,52 @@
     font-size: var(--font-size-caption);
   }
 
+  .segmented[data-size="lg"] {
+    padding: 4px;
+    border-radius: var(--radius-xl);
+  }
+
+  .segmented[data-size="lg"]::before {
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc((100% - 8px) / var(--count));
+    border-radius: var(--radius-lg);
+  }
+
+  .segmented[data-size="lg"] .segment {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+  }
+
+  .segmented[data-size="lg"] .segment-label {
+    font-size: var(--font-size-title);
+    font-weight: var(--weight-semibold);
+    line-height: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .segment-detail {
+    font-size: var(--font-size-caption);
+    line-height: 16px;
+    color: var(--text-tertiary);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .segment[aria-checked="true"] .segment-detail {
+    color: var(--text-secondary);
+  }
+
   @media (hover: none) and (pointer: coarse) {
+    .segmented[data-size="lg"] .segment {
+      height: 60px;
+    }
+
     .segment {
       min-width: 42px;
       height: 34px;

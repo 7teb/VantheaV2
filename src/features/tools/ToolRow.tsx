@@ -3,7 +3,7 @@ import type { ToolStep } from "../../../shared/chat.ts";
 import { is_shell_run } from "../../../shared/shell.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon, CircleAlertIcon, ShieldTerminalIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon, ShieldTerminalIcon } from "../../components/icons.tsx";
 import { LabelMorph } from "../../components/LabelMorph.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { open_agent_run } from "../../state/agents.ts";
@@ -27,18 +27,13 @@ import "./tool-motion.css";
 const StatusMark = ({ step }: { step: ToolStep }) => {
   const t = use_t();
   switch (step.status) {
-    case "failed":
-      return (
-        <span className="tool-row-status is-failed" title={t("tools.status_failed")}>
-          <CircleAlertIcon />
-        </span>
-      );
     case "cancelled":
       return <span className="tool-row-status">{t("tools.status_cancelled")}</span>;
     case "queued":
       return <span className="tool-row-status">{t("tools.status_queued")}</span>;
     case "awaiting_approval":
       return <span className="tool-row-status">{t("tools.awaiting")}</span>;
+    case "failed":
     case "denied":
     case "drafting":
     case "running":

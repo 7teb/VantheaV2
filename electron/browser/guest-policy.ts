@@ -1,3 +1,5 @@
+import { is_local_page, is_local_target, local_page_url } from "../../shared/local-page.ts";
+
 export const chat_partition = (chat_id: string) => `vx-browser-chat-${chat_id}`;
 
 export const draft_partition = (seq: number) => `vx-browser-draft-${seq}`;
@@ -11,16 +13,20 @@ export const plain_user_agent = (user_agent: string, app_name: string): string =
     .trim();
 };
 
-export const is_guest_url_allowed = (value: string, allow_blank: boolean): boolean => {
-  if (allow_blank && value === "about:blank") {
-    return true;
-  }
+export const is_web_url = (value: string): boolean => {
   if (!URL.canParse(value)) {
     return false;
   }
   const protocol = new URL(value).protocol;
   return protocol === "http:" || protocol === "https:";
 };
+
+export const is_guest_url_allowed = (value: string, allow_blank: boolean): boolean =>
+  (allow_blank && value === "about:blank") || is_web_url(value) || is_local_page(value);
+
+export const crosses_into_files = (from: string, to: string): boolean => /^file:/i.test(to) && !/^file:/i.test(from);
+
+export const normalize_browser_page = (value: string): string | null => (is_local_target(value) ? local_page_url(value) : normalize_browser_target(value));
 
 const loopback = /^(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::\d+)?(?:[/?#].*)?$/i;
 

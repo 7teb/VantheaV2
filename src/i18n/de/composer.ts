@@ -33,6 +33,8 @@ export const composer: Record<keyof typeof en, string> = {
   "composer.plan": "Plan",
   "composer.drop": "Dateien zum Anhängen ablegen",
   "composer.context_usage": "{used} von {limit} Tokens ({percent} %)",
+  "composer.todos_hide": "Aufgabenliste ausblenden ({n} offen)",
+  "composer.todos_show": "Aufgabenliste einblenden ({n} offen)",
   "composer.models_failed": "Modelle nicht verfügbar",
   "composer.queued_label": "Eingereihte Nachrichten",
   "composer.queued_send": "Senden",

@@ -13,10 +13,11 @@ export const PlanCard = memo(({ chat_id, message_id, text, can_accept, accepted 
   const [dismissed, set_dismissed] = useState(false);
 
   const answer_other = async (feedback: string): Promise<ActionResult> => {
-    set_dismissed(true);
     if (feedback) {
-      await send_plan_feedback(chat_id, feedback);
+      const sent = await send_plan_feedback(chat_id, feedback);
+      if (!sent.ok) return sent;
     }
+    set_dismissed(true);
     return { ok: true };
   };
 

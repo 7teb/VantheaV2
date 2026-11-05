@@ -18,7 +18,7 @@ export const visualize_chip: DraftChip = { kind: "visualize", name: visual_tool_
 
 export type Draft = { text: string; uploads: DraftUpload[]; plan: boolean; chips: DraftChip[] };
 
-export type OutgoingMessage = { text: string; attachments: Attachment[]; plan: boolean };
+export type OutgoingMessage = { text: string; attachments: Attachment[]; plan: boolean; draft?: { text: string; chips: DraftChip[] } };
 
 export type QueuedMessage = OutgoingMessage & { id: string; steering: boolean; steer_id?: string; steer_turn_id?: string; steer_failed?: boolean; after_compaction?: boolean };
 
@@ -93,8 +93,21 @@ export const draft_sendable = (draft: Draft): boolean =>
 
 export const take_draft = (state: ComposerState, key: string): { state: ComposerState; message: OutgoingMessage } => {
   const draft = draft_of(state, key);
-  const message = { text: message_text(draft), attachments: ready_attachments(draft), plan: draft.plan };
+  const message: OutgoingMessage = {
+    text: message_text(draft), attachments: ready_attachments(draft), plan: draft.plan,
+    ...(draft.chips.length ? { draft: { text: draft.text, chips: [...draft.chips] } } : {}),
+  };
   return { state: patch_draft(state, key, { text: "", uploads: [], chips: [] }), message };
+};
+
+const restored_text = (typed: string, original: string) => {
+  if (!typed.trim()) {
+    return original;
+  }
+  if (!original) {
+    return typed;
+  }
+  return `${original}\n${typed}`;
 };
 
 export const restore_draft = (state: ComposerState, key: string, message: OutgoingMessage): ComposerState => {
@@ -108,8 +121,10 @@ export const restore_draft = (state: ComposerState, key: string, message: Outgoi
     attachment,
     preview: null,
   }));
-  const text = draft.text.trim() ? `${message.text}\n${draft.text}` : message.text;
-  return patch_draft(state, key, { text, uploads: [...restored, ...draft.uploads] });
+  const original = message.draft?.text ?? message.text;
+  const text = restored_text(draft.text, original);
+  const chips = [...(message.draft?.chips ?? []), ...draft.chips].filter((chip, index, all) => all.findIndex((entry) => same_chip(entry, chip)) === index);
+  return patch_draft(state, key, { text, chips, uploads: [...restored, ...draft.uploads] });
 };
 
 export const move_draft = (state: ComposerState, from: string, to: string): ComposerState => {

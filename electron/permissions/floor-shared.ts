@@ -38,5 +38,9 @@ export const strictly_within = (root: string, target: string) => path_key(target
 export const in_project = (target: string | null, scope: FloorScope) =>
   target !== null && Boolean(scope.project_root) && strictly_within(scope.project_root, target);
 
-export const hits_app = (target: string | null, scope: FloorScope) =>
-  target !== null && Boolean(scope.app_root) && within(scope.app_root, target) && !in_project(target, scope);
+export const hits_app = (target: string | null, scope: FloorScope, ancestors = false): boolean => {
+  if (target === null || !scope.app_root) return false;
+  if (!within(scope.app_root, target) && !(ancestors && within(target, scope.app_root))) return false;
+  const nested_project = Boolean(scope.project_root) && strictly_within(scope.app_root, scope.project_root);
+  return !nested_project || !in_project(target, scope);
+};

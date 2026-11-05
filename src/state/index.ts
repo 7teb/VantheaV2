@@ -9,6 +9,7 @@ import { init_chat_marks } from "./chat-marks.ts";
 import { init_chat_view } from "./chat-view.ts";
 import { init_chats } from "./chats.ts";
 import { init_composer } from "./composer.ts";
+import { init_computer } from "./computer.ts";
 import { init_event_hold } from "./event-hold.ts";
 import { init_extensions } from "./extensions.ts";
 import { init_files } from "./files.ts";
@@ -22,6 +23,7 @@ import { load_keep_awake } from "./keep-awake.ts";
 import { init_models } from "./models.ts";
 import { init_remote_connection } from "./remote-connection.ts";
 import { init_remote } from "./remote.ts";
+import { init_scheduled } from "./scheduled.ts";
 import { init_settings } from "./settings.ts";
 import { init_terminal } from "./terminal.ts";
 import { init_turn_diff_ui } from "./turn-diff-ui.ts";
@@ -43,6 +45,7 @@ export const init_state = (): (() => void) => {
     init_event_hold(),
     init_terminal(),
     init_browser(),
+    init_computer(),
     init_background(),
     init_agents(),
     init_workflows(),
@@ -60,6 +63,7 @@ export const init_state = (): (() => void) => {
     init_turn_diff_ui(),
     init_models(),
     init_worktree(),
+    init_scheduled(),
     remote_client ? init_remote_connection() : init_remote(),
   ];
   return () => {

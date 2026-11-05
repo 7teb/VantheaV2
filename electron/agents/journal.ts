@@ -19,15 +19,19 @@ const journal_for = (file: string): Journal => {
   return created;
 };
 
-const write_lines = async (file: string, journal: Journal, lines: string[]) => {
+const write_lines = (file: string, journal: Journal) => {
+  if (!journal.lines.length || journals.get(file) !== journal) {
+    return;
+  }
   try {
     if (!journal.ready) {
-      await fsp.mkdir(path.dirname(file), { recursive: true });
+      fs.mkdirSync(path.dirname(file), { recursive: true });
       journal.ready = true;
     }
-    await fsp.appendFile(file, `${lines.join("\n")}\n`, "utf8");
+    fs.appendFileSync(file, `${journal.lines.join("\n")}\n`, "utf8");
+    journal.lines = [];
   } catch (error) {
-    console.error(`[agents] appending ${lines.length} event(s) to ${file} failed: ${error_text(error)}`);
+    console.error(`[agents] appending ${journal.lines.length} event(s) to ${file} failed: ${error_text(error)}`);
   }
 };
 
@@ -41,9 +45,7 @@ export const flush_journal = (file: string): Promise<void> => {
     journal.timer = null;
   }
   if (journal.lines.length) {
-    const lines = journal.lines;
-    journal.lines = [];
-    journal.chain = journal.chain.then(() => write_lines(file, journal, lines));
+    journal.chain = journal.chain.then(() => write_lines(file, journal));
   }
   return journal.chain;
 };
@@ -83,16 +85,7 @@ export const flush_journals_sync = (): void => {
       clearTimeout(journal.timer);
       journal.timer = null;
     }
-    if (!journal.lines.length) {
-      continue;
-    }
-    try {
-      fs.mkdirSync(path.dirname(file), { recursive: true });
-      fs.appendFileSync(file, `${journal.lines.join("\n")}\n`, "utf8");
-    } catch (error) {
-      console.error(`[agents] appending ${journal.lines.length} event(s) to ${file} on quit failed: ${error_text(error)}`);
-    }
-    journal.lines = [];
+    write_lines(file, journal);
   }
 };
 

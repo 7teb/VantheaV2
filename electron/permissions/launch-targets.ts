@@ -68,7 +68,7 @@ export const path_dirs = (value: string): string[] => {
   const dirs = new Map<string, string>();
   for (const raw of value.split(";")) {
     const dir = raw.trim().replace(/^"(.*)"$/, "$1");
-    if (!dir || network_path(dir) || !path.win32.isAbsolute(dir)) continue;
+    if (!dir) continue;
     if (!dirs.has(dir.toLowerCase())) dirs.set(dir.toLowerCase(), dir);
   }
   return [...dirs.values()].slice(0, max_path_dirs);

@@ -35,6 +35,18 @@ export const set_language = (language: Language) => {
   }
 };
 
+export const follow_remembered_language = (): (() => void) => {
+  const changed = (event: StorageEvent) => {
+    if (event.key !== storage_key || !is_language(event.newValue) || event.newValue === language_store.get()) {
+      return;
+    }
+    language_store.set(event.newValue);
+    document.documentElement.lang = event.newValue;
+  };
+  window.addEventListener("storage", changed);
+  return () => window.removeEventListener("storage", changed);
+};
+
 export const t: Translate = (key, vars) => translate(language_store.get(), key, vars);
 
 const select_language = (language: Language) => language;

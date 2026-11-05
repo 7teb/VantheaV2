@@ -57,12 +57,35 @@ const read_tracked = async (run: Run, base: string, batch: Candidate[]): Promise
 
 const read_untracked = async (dir: string, candidate: Candidate): Promise<Read> => {
   try {
-    const text = decode_text(await fs.readFile(path.join(dir, candidate.path))).text;
-    return looks_binary(text) ? { note: `${candidate.path} (binary)` } : { block: new_file_block(candidate.path, text) };
+    const file = path.join(dir, candidate.path);
+    const expected = await fs.lstat(file, { bigint: true });
+    const excluded = await excluded_untracked(dir, candidate.path);
+    if (excluded) return { note: excluded };
+    const opened = await fs.open(file, "r");
+    try {
+      const actual = await opened.stat({ bigint: true });
+      if (!actual.isFile() || actual.dev !== expected.dev || actual.ino !== expected.ino) return { note: `${candidate.path} (changed while reading, content not shown)` };
+      const after = await excluded_untracked(dir, candidate.path);
+      if (after) return { note: after };
+      const text = decode_text(await opened.readFile()).text;
+      return looks_binary(text) ? { note: `${candidate.path} (binary)` } : { block: new_file_block(candidate.path, text) };
+    } finally {
+      await opened.close();
+    }
   } catch (error) {
     console.warn(`[git] reading the new file ${candidate.path} in ${dir} failed: ${error_text(error)}`);
     return { note: `${candidate.line} (not readable)` };
   }
+};
+
+const excluded_untracked = async (dir: string, name: string): Promise<string | null> => {
+  const file = path.join(dir, name);
+  const info = await fs.lstat(file);
+  if (info.isSymbolicLink()) return `${name} (symbolic link, content not shown)`;
+  const [root, target] = await Promise.all([fs.realpath(dir), fs.realpath(file)]);
+  const relative = path.relative(root, target);
+  if (path.isAbsolute(relative) || relative === ".." || relative.startsWith(".." + path.sep)) return `${name} (outside project, content not shown)`;
+  return info.isFile() ? null : `${name} (not a regular file, content not shown)`;
 };
 
 const read_batch = async (run: Run, dir: string, base: string, batch: Candidate[]): Promise<Map<Candidate, Read>> => {
@@ -96,6 +119,8 @@ const untracked_candidate = async (dir: string, name: string): Promise<Candidate
   if (name.endsWith("/")) return `${name} (own repository, not included)`;
   if (is_secret_path(name)) return `${name} (secret file, content not shown)`;
   try {
+    const excluded = await excluded_untracked(dir, name);
+    if (excluded) return excluded;
     const info = await fs.stat(path.join(dir, name));
     return { path: name, orig_path: null, line: `${name} (new file)`, floor: Math.ceil(info.size / 8), untracked: true };
   } catch (error) {

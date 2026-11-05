@@ -29,7 +29,7 @@ const link_or_copy = async (from: string, to: string): Promise<void> => {
 
 const link_objects = async (from: string, to: string): Promise<void> => {
   for (const folder of await names_in(from)) {
-    if (!object_folder.test(folder)) continue;
+    if (!object_folder.test(folder) && folder !== "pack") continue;
     await fs.mkdir(path.join(to, folder), { recursive: true });
     for (const name of await names_in(path.join(from, folder))) {
       await link_or_copy(path.join(from, folder, name), path.join(to, folder, name));
@@ -45,9 +45,8 @@ const copy_recorded = async (source: ChatPaths, target: ChatPaths, message_id: s
   }
 };
 
-const fork_job = async (source_id: string, fork_id: string, signal: AbortSignal): Promise<void> => {
-  await queue.tail(source_id);
-  signal.throwIfAborted();
+const fork_job = async (source_id: string, fork_id: string): Promise<void> => {
+  if (inactive(fork_id)) return;
   const messages = await current_deps().messages(fork_id);
   if (!messages) return;
   const ids = new Set(messages.map((message) => message.id));
@@ -68,5 +67,10 @@ const fork_job = async (source_id: string, fork_id: string, signal: AbortSignal)
 
 export const fork = (source_id: string, fork_id: string): void => {
   if (inactive(source_id) || inactive(fork_id)) return;
-  void queue.run(fork_id, "copy from the forked chat", (signal) => fork_job(source_id, fork_id, signal));
+  const pending = queue.tail(fork_id);
+  const copying = queue.run(source_id, "copy to the forked chat", async () => {
+    await pending;
+    await fork_job(source_id, fork_id);
+  });
+  void queue.run(fork_id, "copy from the forked chat", () => copying);
 };

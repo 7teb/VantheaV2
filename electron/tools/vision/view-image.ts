@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import { nativeImage } from "electron";
 import { message_attachments } from "../../../shared/chat.ts";
 import { attachment_limits } from "../../../shared/ipc/media.ts";
-import { fit_native, jpeg_quality } from "../../browser/model-image.ts";
+import { model_copy } from "../../browser/model-image.ts";
 import { get_chat } from "../../chats/store.ts";
 import { sniff_image } from "../../media/files.ts";
 import { require_string } from "../browser/common.ts";
@@ -51,14 +51,14 @@ export const view_image_tool = define_tool<{ path: string }>({
         return failed("The image could not be decoded.");
       }
       const size = image.getSize();
-      const fitted = fit_native(image, ctx.image_fit);
-      const shown = fitted.getSize();
+      const fitted = model_copy(image, ctx.image_fit);
+      const shown = fitted.size;
       const text = `Image ${target.display}, ${size.width}x${size.height} px, shown at ${shown.width}x${shown.height} px. It is attached in the user message after this tool result.`;
       return {
         status: "done",
         text,
         view: { kind: "text", text: target.display },
-        images: [{ bytes: fitted.toJPEG(jpeg_quality), mime: "image/jpeg", label: `[view_image ${target.display}, ${shown.width}x${shown.height} px]` }],
+        images: [{ bytes: fitted.bytes, mime: fitted.ext === "png" ? "image/png" : "image/jpeg", label: `[view_image ${target.display}, ${shown.width}x${shown.height} px]` }],
       };
     }),
 });

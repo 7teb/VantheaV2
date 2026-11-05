@@ -22,6 +22,8 @@ export type SteerSource = {
 
 export type TurnNote = { content: string } & ({ kind: "steer"; text: string } | { kind: "notice"; notice: NoticeKind; text: string });
 
+export type OpeningNotes = (tool_names: ReadonlySet<string>) => TurnNote[];
+
 export type CompactionRecord = { note: string; facts: string; through_round: number };
 
 export type CompactionHooks = {

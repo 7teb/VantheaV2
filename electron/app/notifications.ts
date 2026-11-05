@@ -1,7 +1,7 @@
 import { report_event_text, update_event_text } from "../../shared/agent-notes.ts";
 import type { UserOrigin } from "../../shared/chat.ts";
 import type { BackgroundTask } from "../../shared/ipc/work.ts";
-import { alert_note_content, alert_text, hold_update, report_seconds, type AgentNotice, type AgentReport, type AgentUpdate } from "../agents/reports.ts";
+import { hold_update, report_seconds, type AgentNotice, type AgentReport, type AgentUpdate } from "../agents/reports.ts";
 import { background_event_text } from "../background/event-text.ts";
 import { result_was_read } from "../background/manager.ts";
 import { client_connected, on_client_gone, on_client_presence, type ClientId } from "../ipc/clients.ts";
@@ -122,9 +122,6 @@ export const notify_agent = (notice: AgentNotice): void => {
     case "update":
       notify_agent_update(notice.update);
       return;
-    case "alert":
-      queue_event(notice.alert.chat_id, { origin: "agent_update", text: alert_note_content(alert_text(notice.alert)) });
-      return;
     case "workflow":
       queue_event(notice.workflow.chat_id, { origin: "workflow", text: notice.workflow.text });
   }
@@ -152,6 +149,8 @@ const apply_holds = () => {
     void deliver(chat_id);
   }
 };
+
+export const chat_held = (chat_id: string): boolean => held.has(chat_id);
 
 export const hold_events_for = (client: ClientId, chat_ids: string[]): void => {
   holds.set(client, chat_ids);

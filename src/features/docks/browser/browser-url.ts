@@ -1,9 +1,11 @@
+import { is_local_target, local_page_name, local_page_path, local_page_url } from "../../../../shared/local-page.ts";
+
 const explicit_scheme = /^[A-Za-z][A-Za-z0-9+.-]*:/;
 const loopback_host = /^(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])(?::\d+)?(?:[/?#].*)?$/i;
 const host_with_port = /^(?:\[[0-9A-Fa-f:]+\]|[^/\s:]+):\d+(?:[/?#].*)?$/;
 const dotted_host = /^[^\s.]+(?:\.[^\s.]+)+(?:[/?#].*)?$/;
 
-export const display_browser_url = (value: string) => (value === "about:blank" ? "" : value);
+export const display_browser_url = (value: string) => (value === "about:blank" ? "" : (local_page_path(value) ?? value));
 
 export const normalize_browser_url = (value: string): string | null => {
   const input = value.trim();
@@ -19,6 +21,9 @@ export const normalize_browser_url = (value: string): string | null => {
   }
   if (input === "about:blank") {
     return input;
+  }
+  if (is_local_target(input)) {
+    return local_page_url(input);
   }
   if (loopback_host.test(input)) {
     return `http://${input}`;
@@ -42,5 +47,5 @@ export const tab_label = (title: string, url: string, fallback: string) => {
   if (!URL.canParse(url) || url === "about:blank") {
     return fallback;
   }
-  return new URL(url).host || fallback;
+  return new URL(url).host || local_page_name(url) || fallback;
 };

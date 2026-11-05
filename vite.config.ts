@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { visual_frame_file, visual_shell } from "./shared/visual-doc.ts";
@@ -41,6 +42,12 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     target: ["chrome140", "safari16.4"],
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL("./index.html", import.meta.url)),
+        indicator: fileURLToPath(new URL("./indicator.html", import.meta.url)),
+      },
+    },
   },
   server: {
     host: "127.0.0.1",

@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
 import { changed_fields, type HookFields } from "../../../shared/hooks.ts";
 import { shell_labels } from "../../../shared/shell.ts";
 import { use_t } from "../../i18n/index.ts";
+import { ApprovalFacts, Fact } from "./ApprovalFacts.tsx";
 import { DiffView } from "./DiffView.tsx";
 import { command_change } from "./hook-preview.ts";
 import { event_label, matcher_label, matcher_text, seconds_text } from "./hook-text.ts";
@@ -9,26 +9,6 @@ import { PreviewText } from "./PreviewText.tsx";
 import "./approval.css";
 import "./bodies-files.css";
 import "./hooks.css";
-
-type FactProps = { label: string; value: ReactNode; before?: ReactNode; code?: boolean; title?: string };
-
-const Fact = ({ label, value, before = null, code = false, title }: FactProps) => {
-  const t = use_t();
-  return (
-    <div className="hook-fact">
-      <dt>{label}</dt>
-      <dd className={code ? "hook-fact-code" : undefined} title={title || undefined}>
-        {before !== null && (
-          <s className="hook-fact-before">
-            <span className="visually-hidden">{`${t("hooks.previous")}: `}</span>
-            {before}
-          </s>
-        )}
-        <span>{value}</span>
-      </dd>
-    </div>
-  );
-};
 
 type HookPreviewProps = { hook: HookFields; previous: HookFields | null; scope: string; scope_title: string };
 
@@ -42,7 +22,7 @@ export const HookPreview = ({ hook, previous, scope, scope_title }: HookPreviewP
   const shell = shell_labels[hook.shell];
   return (
     <div className="hook-preview">
-      <dl className="hook-facts">
+      <ApprovalFacts>
         <Fact label={t("hooks.scope_label")} value={scope} title={scope_title} />
         <Fact label={t("hooks.event_label")} value={event_label(t, hook.event)} before={previous && was("event") ? event_label(t, previous.event) : null} />
         {matcher && (
@@ -56,7 +36,7 @@ export const HookPreview = ({ hook, previous, scope, scope_title }: HookPreviewP
         {previous && was("shell") && <Fact label={t("hooks.shell_label")} value={shell} before={shell_labels[previous.shell]} />}
         <Fact label={t("hooks.timeout_fact")} value={seconds_text(t, hook.timeout_s)} before={previous && was("timeout_s") ? seconds_text(t, previous.timeout_s) : null} />
         {(!hook.enabled || was("enabled")) && <Fact label={t("hooks.state_label")} value={state(hook.enabled)} before={previous && was("enabled") ? state(previous.enabled) : null} />}
-      </dl>
+      </ApprovalFacts>
       {previous && was("command") ? (
         <div className="edit-card">
           <div className="edit-card-head">

@@ -11,7 +11,7 @@ import { end_full_window, full_window_store, open_full_window } from "../../stat
 import { settings_store, update_settings } from "../../state/settings.ts";
 import { use_store } from "../../state/use-store.ts";
 
-const modes: { id: PermissionMode; icon: IconComponent; label: MessageKey; hint: MessageKey }[] = [
+export const mode_options: { id: PermissionMode; icon: IconComponent; label: MessageKey; hint: MessageKey }[] = [
   { id: "ask", icon: HandIcon, label: "composer.permission_ask", hint: "composer.permission_ask_desc" },
   { id: "auto", icon: ShieldCheckIcon, label: "composer.permission_auto", hint: "composer.permission_auto_desc" },
   { id: "full", icon: ShieldAlertIcon, label: "composer.permission_full", hint: "composer.permission_full_desc" },
@@ -34,14 +34,14 @@ export const ModePicker = ({ chat_id }: { chat_id: string | null }) => {
     return <Skeleton width={72} height="var(--size-control)" radius={9} />;
   }
 
-  const current = modes.find((entry) => entry.id === mode) ?? modes[0];
+  const current = mode_options.find((entry) => entry.id === mode) ?? mode_options[0];
   const windowed = chat_id !== null && until !== null ? { chat_id, until } : null;
   const Icon = windowed ? ShieldAlertIcon : current.icon;
   const remaining = windowed ? remaining_text(windowed.until, now) : "";
   const label = windowed ? t("composer.full_window", { x: remaining }) : t(current.label);
   const hint = windowed ? t("composer.full_window_desc", { x: remaining }) : t(current.hint);
 
-  const mode_items: MenuItem[] = modes.map((entry) => {
+  const mode_items: MenuItem[] = mode_options.map((entry) => {
     const EntryIcon = entry.icon;
     return {
       id: entry.id,

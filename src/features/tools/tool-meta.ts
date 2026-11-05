@@ -6,7 +6,9 @@ import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
 import { hook_blocked } from "./hook-runs.ts";
 import { entry, fixed, with_x } from "./tool-meta-entry.ts";
+import { computer_kind_meta, computer_metas, computer_target_key } from "./tool-meta-computer.ts";
 import { hook_metas, hook_target_key } from "./tool-meta-hooks.ts";
+import { scheduled_metas, scheduled_target_key } from "./tool-meta-scheduled.ts";
 import type { Label, ToolCategory, ToolMeta } from "./tool-meta-types.ts";
 
 export const view_kinds = [
@@ -27,10 +29,12 @@ export const view_kinds = [
   "generated_images",
   "shown_images",
   "browser",
+  "computer",
   "mcp",
   "tool_load",
   "memory",
   "hooks",
+  "scheduled_tasks",
   "skill",
   "models",
   "questions",
@@ -242,6 +246,8 @@ const named: Record<string, ToolMeta> = {
   load_mcp_tools: entry("mcp", "tool_loads", fixed("tool_label.loading_tools"), fixed("tool_label.loaded_tools")),
   check_page: entry("page_check", "other", with_x("tool_label.check_page", (step) => base_name(text_arg(step, "path"))), with_x("tool_label.check_page_done", (step) => base_name(text_arg(step, "path")))),
   ...hook_metas,
+  ...scheduled_metas,
+  ...computer_metas,
 };
 
 const browser_target = (step: ToolStep) => text_arg(step, "ref") || text_arg(step, "target");
@@ -261,7 +267,8 @@ const page_name = (step: ToolStep) => {
 const acted_on = (pick: (step: ToolStep) => string) => (step: ToolStep) => page_detail(step) || pick(step);
 
 const by_action = (keys: Record<string, MessageKey>, fallback: MessageKey): Label => (t, step) => {
-  const key = keys[text_arg(step, "action")];
+  const action = text_arg(step, "action");
+  const key = Object.hasOwn(keys, action) ? keys[action] : undefined;
   const x = page_name(step);
   return key && x ? t(key, { x }) : t(fallback);
 };
@@ -328,10 +335,12 @@ const by_kind: Record<ToolViewKind, ToolMeta> = {
   generated_images: named.generate_image,
   shown_images: named.show_images,
   browser: entry("browser", "browser", with_x("tool_label.browser_action", (step) => view_of(step, "browser")?.action ?? "")),
+  computer: computer_kind_meta,
   mcp: mcp_meta,
   tool_load: named.load_mcp_tools,
   memory: named.list_memories,
   hooks: hook_metas.list_hooks,
+  scheduled_tasks: scheduled_metas.list_scheduled_tasks,
   skill: named.read_skill,
   models: named.list_models,
   questions: named.ask_user,
@@ -345,10 +354,12 @@ export const tool_meta = (step: ToolStep): ToolMeta => {
   if (step.name.startsWith("mcp__") || step.name === "call_mcp_tool") {
     return mcp_meta;
   }
-  return named[step.name] ?? browser[step.name] ?? (step.view ? by_kind[step.view.kind] : fallback);
+  const named_meta = Object.hasOwn(named, step.name) ? named[step.name] : null;
+  const browser_meta = Object.hasOwn(browser, step.name) ? browser[step.name] : null;
+  return named_meta ?? browser_meta ?? (step.view ? kind_meta(step.view.kind) : fallback);
 };
 
-export const kind_meta = (kind: ToolViewKind): ToolMeta => by_kind[kind];
+export const kind_meta = (kind: ToolViewKind): ToolMeta => Object.hasOwn(by_kind, kind) ? by_kind[kind] : fallback;
 
 const hidden_tools = new Set(["read_attachment"]);
 
@@ -363,9 +374,9 @@ const denied_target = (t: Translate, step: ToolStep): string => {
   if (tool_meta(step) === mcp_meta) {
     return t("tool_label.mcp", mcp_parts(step));
   }
-  const hook_key = hook_target_key(step.name);
-  if (hook_key) {
-    return t(hook_key);
+  const target_key = hook_target_key(step.name) ?? scheduled_target_key(step.name) ?? computer_target_key(step.name);
+  if (target_key) {
+    return t(target_key);
   }
   return command_of(step) || step_path(step) || query_of(step) || agent_name(step) || skill_name(step) || workflow_name(step) || step.name;
 };

@@ -127,8 +127,11 @@ export const CoinsIcon = (props: IconProps) => (
 );
 
 export const CalendarClockIcon = (props: IconProps) => (
-  <Icon {...lucide} {...props}>
-    <path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5M16 2v4M8 2v4M3 10h5M17.5 17.5L16 16.3V14M22 16a6 6 0 1 1-12 0 6 6 0 0 1 12 0z" />
+  <Icon {...props}>
+    <path d="M13.5 6.5V4A1.5 1.5 0 0 0 12 2.5H3A1.5 1.5 0 0 0 1.5 4v8A1.5 1.5 0 0 0 3 13.5h3.5" />
+    <path d="M4.5 1.5v2M10.5 1.5v2M1.5 6.5h4" />
+    <circle cx="10.5" cy="10.5" r="4" />
+    <path d="M10.5 8.5v2l1.5 1" />
   </Icon>
 );
 
@@ -136,5 +139,23 @@ export const ChartPieIcon = (props: IconProps) => (
   <Icon {...lucide} {...props}>
     <path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z" />
     <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+  </Icon>
+);
+
+export const MonitorIcon = (props: IconProps) => (
+  <Icon {...lucide} {...props}>
+    <path d="M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM12 17v4M8 21h8" />
+  </Icon>
+);
+
+export const MousePointerIcon = (props: IconProps) => (
+  <Icon {...lucide} {...props}>
+    <path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z" />
+  </Icon>
+);
+
+export const MoveIcon = (props: IconProps) => (
+  <Icon {...lucide} {...props}>
+    <path d="M12 2v20M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M5 9l-3 3 3 3M9 5l3-3 3 3" />
   </Icon>
 );

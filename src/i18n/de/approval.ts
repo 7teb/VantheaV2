@@ -37,4 +37,10 @@ export const approval: Record<keyof typeof en, string> = {
   "approval.agent_about": "Zu {x}",
   "approval.agent_without": "Ohne: {x}",
   "approval.question_secret_read": "Darf ich {x} lesen? Es kann Schlüssel oder Zugangsdaten enthalten.",
+  "approval.previous": "Vorher",
+  "approval.question_computer_use": "Darf ich deinen Computer steuern?",
+  "approval.allow_computer": "Ja, in diesem Chat erlauben, bis VantheaX beendet wird",
+  "approval.computer_display": "Bildschirm {x} · {w} × {h}",
+  "approval.computer_screens": "Während ich arbeite, werden Screenshots deines Bildschirms an den Modellanbieter gesendet.",
+  "approval.computer_confirm": "Bevor etwas gesendet, gekauft, gelöscht oder veröffentlicht wird, frage ich dich.",
 };

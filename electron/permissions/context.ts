@@ -1,5 +1,6 @@
 import { human_origin, type AssistantReference, type Attachment, type Message, type SteerMessage } from "../../shared/chat.ts";
 import { stored_attachment_path } from "../media/files.ts";
+import { scheduled_request_text } from "../scheduled/note.ts";
 import { decisions_in } from "./decisions.ts";
 
 export type HumanRequest = { id: string; at: number; text: string; assistant_reference?: AssistantReference };
@@ -30,8 +31,9 @@ const human_requests = (messages: Message[]): HumanRequest[] => {
   let prior: AssistantReference | undefined;
   for (const message of messages) {
     if (message.role === "user") {
-      if (human_origin(message.origin)) {
-        collected.push({ id: message.id, at: time_of(message.created_at), text: request_text(message.text, message.attachments), ...(prior ? { assistant_reference: prior } : {}) });
+      if (human_origin(message.origin) || message.origin === "scheduled") {
+        const text = message.origin === "scheduled" ? scheduled_request_text(message.text) : request_text(message.text, message.attachments);
+        collected.push({ id: message.id, at: time_of(message.created_at), text, ...(prior ? { assistant_reference: prior } : {}) });
         prior = undefined;
       }
       continue;

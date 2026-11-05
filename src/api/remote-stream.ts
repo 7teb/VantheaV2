@@ -60,9 +60,9 @@ export const create_remote_stream = (client_id: string): RemoteStream => {
   let last_frame_at = 0;
   let watchdog: number | undefined;
   let open_ready = () => {};
-  const ready = new Promise<void>((resolve) => {
-    open_ready = resolve;
-  });
+  let reject_ready: (error: Error) => void = () => {};
+  let ready: Promise<void> | null = null;
+  let ready_error: Error | null = null;
   set_connection("connecting");
 
   const dispatch = (frame: StreamFrame) => {
@@ -110,6 +110,10 @@ export const create_remote_stream = (client_id: string): RemoteStream => {
   };
 
   const open = () => {
+    if (ready_error) {
+      ready = null;
+      ready_error = null;
+    }
     const query = new URLSearchParams({ client: client_id });
     if (last_id) {
       query.set("last", last_id);
@@ -127,6 +131,8 @@ export const create_remote_stream = (client_id: string): RemoteStream => {
       }
       console.error(`[remote] ${events_path} refused the stream before its first hello`);
       set_connection("offline");
+      ready_error = new Error("PC event stream refused the connection before its first hello");
+      reject_ready(ready_error);
     };
     source = next;
     last_frame_at = Date.now();
@@ -169,6 +175,9 @@ export const create_remote_stream = (client_id: string): RemoteStream => {
   return {
     ready: () => {
       start();
+      if (boot !== null) return Promise.resolve();
+      if (ready_error) return Promise.reject(ready_error);
+      ready ??= new Promise<void>((resolve, reject) => { open_ready = resolve; reject_ready = reject; });
       return ready;
     },
     on: (name, listener) => {

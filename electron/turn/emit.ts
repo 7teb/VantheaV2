@@ -1,6 +1,6 @@
 import { apply_event } from "../../shared/apply-event.ts";
-import type { Message } from "../../shared/chat.ts";
-import type { StreamEventBody, TurnEvent } from "../../shared/events.ts";
+import type { AssistantMessage, Message } from "../../shared/chat.ts";
+import type { Sequenced, StreamEventBody, TurnEvent } from "../../shared/events.ts";
 import type { Emitter } from "./session.ts";
 
 export type EmitDeps = {
@@ -9,7 +9,9 @@ export type EmitDeps = {
   flush: (chat_id: string) => void;
 };
 
-export const create_emitter = (chat_id: string, message_id: string, deps: EmitDeps): Emitter => {
+export type QuietEnd = (message: AssistantMessage, end: Extract<StreamEventBody, { type: "end" }>) => boolean;
+
+export const create_emitter = (chat_id: string, message_id: string, deps: EmitDeps, quiet_end?: QuietEnd): Emitter => {
   let seq = 0;
   let ended = false;
   return (body: StreamEventBody) => {
@@ -18,8 +20,17 @@ export const create_emitter = (chat_id: string, message_id: string, deps: EmitDe
     }
     ended = body.type === "end";
     seq += 1;
-    const event = { ...body, seq, at: Date.now() };
-    deps.update_message(chat_id, message_id, (message) => (message.role === "assistant" ? apply_event(message, event) : message));
+    const at = Date.now();
+    let event: Sequenced & StreamEventBody = { ...body, seq, at };
+    deps.update_message(chat_id, message_id, (message) => {
+      if (message.role !== "assistant") {
+        return message;
+      }
+      if (body.type === "end" && quiet_end?.(message, body)) {
+        event = { ...body, seq, at, quiet: true };
+      }
+      return apply_event(message, event);
+    });
     deps.forward({ ...event, chat_id, message_id });
     if (body.type === "end") {
       deps.flush(chat_id);

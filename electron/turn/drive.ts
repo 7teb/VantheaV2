@@ -6,6 +6,7 @@ import { major_wait_ms, take_agent_notes, wait_for_input } from "../agents/repor
 import { roster_facts } from "../agents/roster.ts";
 import { flush_chat, get_chat, set_streaming, set_summary, update_message } from "../chats/store.ts";
 import { stored_context } from "../context/calibration.ts";
+import { release_computer } from "../computer/service.ts";
 import { harness_facts } from "../context/facts.ts";
 import type { HookIdentity } from "../hooks/input.ts";
 import { prompt_hooks, turn_hooks } from "../hooks/turn-hooks.ts";
@@ -38,7 +39,7 @@ import { carried_todos_note } from "./carried-todos.ts";
 import { model_switch_note } from "./model-switch.ts";
 import { build_api_messages } from "./history.ts";
 import { run_compaction_turn, run_turn_loop } from "./loop.ts";
-import type { CompactionHooks, TurnNote, TurnSession } from "./session.ts";
+import type { CompactionHooks, OpeningNotes, TurnNote, TurnSession } from "./session.ts";
 import { admit_steer } from "./steer-admission.ts";
 import { note_newest_user } from "./vision-notes.ts";
 
@@ -53,6 +54,7 @@ export type TurnPlan = {
   user_request: string;
   project_root: string;
   origin: UserOrigin;
+  notes?: OpeningNotes;
 };
 
 let turn_finished: ((chat_id: string, message_id: string) => void) | null = null;
@@ -161,7 +163,8 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     const api_messages = await build_api_messages({ system, summary: loaded.summary, messages: history, model: plan.model, agent_tools });
     const carried = offered.some((tool) => tool.spec.name === "update_todos") ? carried_todos_note(history) : null;
     const switched = model_switch_note(history, plan.model, await model_catalog());
-    let opening_notes: TurnNote[] = [...prompt_notes, ...[switched, carried].filter((note): note is TurnNote => note !== null)];
+    const plan_notes = plan.notes?.(new Set(offered.map((tool) => tool.spec.name))) ?? [];
+    let opening_notes: TurnNote[] = [...prompt_notes, ...plan_notes, ...[switched, carried].filter((note): note is TurnNote => note !== null)];
     const session: TurnSession = {
       chat_id: plan.chat_id,
       message_id: plan.message_id,
@@ -209,6 +212,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     console.error(`[turn] turn ${plan.message_id} in chat ${plan.chat_id} failed to run:`, error);
     turn.emit({ type: "end", status: "failed", error: { kind: "internal", message: error_text(error) } });
   } finally {
+    release_computer(plan.chat_id, plan.message_id);
     if (!plan.compact_only) turn_diffs.end(plan.chat_id, plan.message_id);
     drop_untaken_steers(plan.chat_id, turn);
     set_streaming(plan.chat_id, false);
