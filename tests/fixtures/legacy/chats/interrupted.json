@@ -1,0 +1,132 @@
+{
+  "id": "3f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a",
+  "projectPath": "D:\\Projects\\vanthea",
+  "workspaceName": "",
+  "pinned": false,
+  "title": "New chat",
+  "messages": [
+    {
+      "id": "c3000000-0000-4000-8000-000000000001",
+      "role": "user",
+      "content": "Run the full test suite and summarize failures.",
+      "attachments": [],
+      "createdAt": "2026-09-22T08:00:00.000Z"
+    },
+    {
+      "id": "c3000000-0000-4000-8000-000000000002",
+      "role": "assistant",
+      "content": "Starting the suite.",
+      "tools": [
+        {
+          "id": "call_bg_1",
+          "name": "start_background_task",
+          "args": { "name": "tests", "category": "test", "command": "npm test", "cwd": "." },
+          "result": { "backgroundTask": true, "started": true, "id": "bg-1a2b3c", "name": "tests", "status": "running", "cwd": "." }
+        },
+        {
+          "id": "call_cmd_live",
+          "name": "run_command",
+          "args": { "command": "npm run lint" },
+          "result": { "running": true, "command": "npm run lint", "stdout": "linting 200 files" }
+        }
+      ],
+      "segments": [
+        { "type": "text", "content": "Starting the suite." },
+        { "type": "tool", "tool": { "id": "call_bg_1", "name": "start_background_task", "args": { "command": "npm test" }, "result": { "running": true } } },
+        { "type": "tool", "tool": { "id": "call_cmd_live", "name": "run_command", "args": { "command": "npm run lint" }, "result": { "running": true } } }
+      ],
+      "done": false,
+      "createdAt": "2026-09-22T08:00:01.000Z",
+      "model": "openai/gpt-5.6-sol"
+    },
+    {
+      "id": "c3000000-0000-4000-8000-000000000003",
+      "role": "user",
+      "content": "Continue the previous turn from where it was interrupted. Its tool calls really ran, their results are valid and any files it wrote are on disk, so treat that work as done and do not repeat it. Pick up at the first step that was still open and finish the task.",
+      "attachments": [],
+      "createdAt": "2026-09-22T08:05:00.000Z"
+    },
+    {
+      "id": "c3000000-0000-4000-8000-000000000004",
+      "role": "assistant",
+      "content": "Partial answer before the stream died",
+      "tools": [
+        {
+          "id": "call_cmd_old",
+          "name": "run_command",
+          "args": { "command": "npm test -- --reporter dot" },
+          "result": { "running": false, "command": "npm test -- --reporter dot", "error": "(command interrupted, the app was closed before it finished)" }
+        }
+      ],
+      "segments": [
+        { "type": "tool", "tool": { "id": "call_cmd_old", "name": "run_command", "args": { "command": "npm test -- --reporter dot" }, "result": { "running": false } } },
+        { "type": "text", "content": "Partial answer before the stream died" }
+      ],
+      "done": true,
+      "interrupted": true,
+      "interruption": { "kind": "first_event_timeout", "message": "The provider sent nothing for 300 s.", "attempts": 3 },
+      "createdAt": "2026-09-22T08:05:01.000Z",
+      "model": "openai/gpt-5.6-sol",
+      "workMs": 301000
+    },
+    {
+      "id": "c3000000-0000-4000-8000-000000000005",
+      "role": "user",
+      "content": "Try again but stop if it takes long.",
+      "attachments": [],
+      "createdAt": "2026-09-22T08:12:00.000Z"
+    },
+    {
+      "id": "c3000000-0000-4000-8000-000000000006",
+      "role": "assistant",
+      "content": "",
+      "tools": [
+        {
+          "id": "call_cmd_stop",
+          "name": "run_command",
+          "args": { "command": "npm test" },
+          "result": { "command": "npm test", "cwd": ".", "exitCode": null, "durationMs": 9000, "stdout": "", "stderr": "", "userCancelled": true }
+        }
+      ],
+      "segments": [{ "type": "tool", "tool": { "id": "call_cmd_stop", "name": "run_command", "args": { "command": "npm test" }, "result": { "userCancelled": true } } }],
+      "done": true,
+      "cancelled": true,
+      "createdAt": "2026-09-22T08:12:01.000Z",
+      "model": "openai/gpt-5.6-sol",
+      "workMs": 9100
+    },
+    {
+      "id": "c3000000-0000-4000-8000-000000000007",
+      "role": "user",
+      "content": "Hello?",
+      "attachments": [],
+      "createdAt": "2026-09-22T08:20:00.000Z"
+    },
+    {
+      "id": "c3000000-0000-4000-8000-000000000008",
+      "role": "assistant",
+      "content": "OpenRouter returned HTTP 401: No auth credentials found",
+      "tools": [],
+      "segments": [],
+      "done": true,
+      "error": true,
+      "createdAt": "2026-09-22T08:20:01.000Z",
+      "model": "openai/gpt-5.6-sol"
+    },
+    {
+      "id": "c3000000-0000-4000-8000-000000000009",
+      "role": "assistant",
+      "content": "",
+      "tools": [],
+      "segments": [],
+      "done": true,
+      "policy": { "code": "cyber_policy", "message": "This request was flagged by the cybersecurity policy.", "model": "openai/gpt-5.6-sol" },
+      "createdAt": "2026-09-22T08:21:01.000Z",
+      "model": "openai/gpt-5.6-sol"
+    }
+  ],
+  "summary": "",
+  "summaryCount": 0,
+  "createdAt": "2026-09-22T08:00:00.000Z",
+  "updatedAt": "2026-09-22T08:21:05.000Z"
+}

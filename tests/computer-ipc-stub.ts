@@ -1,0 +1,12 @@
+export const invokes = new Map<string, (event: unknown, ...args: unknown[]) => unknown>();
+export const sends = new Map<string, (event: unknown, ...args: unknown[]) => void>();
+export const stopped: string[] = [];
+export const resized: number[][] = [];
+export const main = { isDestroyed: () => false, webContents: { mainFrame: {}, send: () => {} } };
+export const overlay = { isDestroyed: () => false, webContents: { mainFrame: {}, send: () => {} } };
+export const main_window = () => main;
+export const indicator_window = () => overlay;
+export const resize_indicator = (...size: number[]) => resized.push(size);
+export const computer_state = () => ({ chat_id: "computer-chat", shortcut: true });
+export const stop_turn = (chat: string) => stopped.push(chat);
+export const ipcMain = { handle: (name: string, fn: (event: unknown, ...args: unknown[]) => unknown) => invokes.set(name, fn), on: (name: string, fn: (event: unknown, ...args: unknown[]) => void) => sends.set(name, fn) };

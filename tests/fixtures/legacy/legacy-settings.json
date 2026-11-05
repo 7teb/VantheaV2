@@ -1,0 +1,38 @@
+{
+  "openRouterKey": "djEwAAAAOeXmP2u1q3l8YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo=",
+  "tavilyKey": "djEwAAAAk7mQ9kq2dGF2aWx5LWZpeHR1cmUta2V5LWNpcGhlcnRleHQ=",
+  "nvidiaKey": "djEwAAAAbnZpZGlhLWtleQ==",
+  "nvidia": { "enabled": true, "temperature": 0.2, "topP": 1, "maxTokens": 16384, "reasoningBudget": 16384 },
+  "model": "anthropic/claude-opus-5",
+  "effort": "major",
+  "mode": "ask",
+  "language": "de",
+  "projects": ["D:\\Projects\\native-tools", "D:\\Projects\\vanthea", "C:\\Users\\dev\\scratch"],
+  "projectMeta": {
+    "D:\\Projects\\vanthea": { "name": "Vanthea Web", "pinned": true },
+    "C:\\Users\\dev\\scratch": { "name": "", "pinned": true },
+    "D:\\Projects\\gone": { "name": "Removed", "pinned": false }
+  },
+  "mcpServers": {
+    "ida-pro": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["ida-pro-mcp"],
+      "env": { "IDA_PATH": "C:\\Program Files\\IDA Pro 9.1" },
+      "enabled": true,
+      "toolRisk": { "patch_address_assembles": "dangerous", "decompile_function": "readonly" },
+      "toolEnabled": { "patch_address_assembles": false }
+    },
+    "blender": { "type": "stdio", "command": "uvx", "args": ["blender-mcp"], "env": {}, "enabled": false },
+    "bad name!": { "type": "stdio", "command": "node", "args": [], "env": {} }
+  },
+  "personality": "cynical",
+  "customInstructions": "Answer in German. Keep it short.",
+  "memory": { "enabled": true, "excludeToolChats": true },
+  "narrator": { "enabled": true },
+  "skills": { "disabled": ["frontend-design", "pdf"] },
+  "theme": { "surfaceApp": "#101010", "surfaceSidebar": "#0c0c0c", "accent": "#7aa2ff" },
+  "webSearch": { "enabled": true, "maxResults": 42, "searchDepth": "advanced", "topic": "news" },
+  "imageGen": { "enabled": true, "model": "openai/gpt-image-2", "quality": "high" },
+  "videoGen": { "enabled": true, "model": "google/veo-3.1-lite" }
+}

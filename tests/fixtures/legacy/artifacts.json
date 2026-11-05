@@ -1,0 +1,36 @@
+[
+  {
+    "kind": "image",
+    "name": "img_mfq2k1a0_3fa9c1.png",
+    "mime": "image/png",
+    "title": "Logo draft",
+    "prompt": "A minimal hex logo for VantheaX, flat, two colors",
+    "model": "GPT Image 2",
+    "chatId": "5c0d7f2e-6a3b-4c1d-9e8f-0a1b2c3d4e5f",
+    "projectPath": "D:\\Projects\\vanthea",
+    "createdAt": "2026-09-14T10:22:31.000Z",
+    "pinned": true
+  },
+  {
+    "kind": "video",
+    "name": "vid_0123456789abcdef0123456789abcdef.mp4",
+    "mime": "video/mp4",
+    "title": "",
+    "prompt": "Rotating logo",
+    "model": "Veo 3.1 Lite",
+    "chatId": "5c0d7f2e-6a3b-4c1d-9e8f-0a1b2c3d4e5f",
+    "projectPath": "D:\\Projects\\vanthea",
+    "createdAt": "2026-09-14T10:40:00.000Z",
+    "pinned": false
+  },
+  {
+    "name": "img_mfq2k9zz_77aa01.webp",
+    "title": "",
+    "prompt": "Sidebar icon set",
+    "model": "Nano Banana 2",
+    "chatId": "",
+    "projectPath": "",
+    "createdAt": "2026-09-15T08:00:00.000Z",
+    "pinned": false
+  }
+]

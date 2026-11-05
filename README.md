@@ -103,7 +103,7 @@ The finished app lands in `outputs\electron\win-unpacked\`. Start `VantheaX.exe`
 
 If you prefer an installer, run `npm run dist` instead. It writes `VantheaX Setup <version>.exe` to `outputs\electron\`.
 
-This repository only holds what is needed to build the app. The dev server script and the test suite are not part of it, so `npm run dev` and `npm test` won't work here.
+`npm test` runs the test suite on Node's built-in test runner. It starts no app window and calls no model, so it needs no API key; some tests need Git and the Bash from Git for Windows. The dev server script is not part of this repository, so `npm run dev` won't work here.
 
 ## First start
 

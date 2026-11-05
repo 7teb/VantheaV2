@@ -1,0 +1,53 @@
+{
+  "id": "9a8b7c6d-5e4f-4031-a2b1-c0d9e8f7a6b5",
+  "projectPath": "",
+  "workspaceName": "2026-09-25 Crash log 9a8b",
+  "pinned": false,
+  "title": "Crash log and screenshot",
+  "messages": [
+    {
+      "id": "d4000000-0000-4000-8000-000000000001",
+      "role": "user",
+      "content": "Why does it crash? Screenshot and log attached.",
+      "attachments": [
+        {
+          "name": "img_mfz1abcd_0a1b2c.png",
+          "path": "C:\\Users\\dev\\AppData\\Roaming\\VantheaX\\images\\img_mfz1abcd_0a1b2c.png",
+          "type": "image/png",
+          "size": 48213,
+          "analysis": "A Windows error dialog: access violation reading 0x0000000000000010 in client.dll."
+        },
+        { "kind": "file", "name": "att_mfz1abce_9f8e7d.log", "displayName": "crash-2026-09-25.log", "size": 1824 }
+      ],
+      "createdAt": "2026-09-25T19:30:00.000Z"
+    },
+    {
+      "id": "d4000000-0000-4000-8000-000000000002",
+      "role": "assistant",
+      "content": "The log shows a null pawn dereference at offset 0x10.",
+      "tools": [],
+      "segments": [{ "type": "text", "content": "The log shows a null pawn dereference at offset 0x10." }],
+      "done": true,
+      "createdAt": "2026-09-25T19:30:02.000Z",
+      "model": "moonshotai/kimi-k3"
+    },
+    {
+      "id": "d4000000-0000-4000-8000-000000000003",
+      "role": "user",
+      "content": "Same crash again.",
+      "attachment": { "kind": "file", "name": "att_mfz1abce_9f8e7d.log", "displayName": "crash-2026-09-25.log", "size": 1824 },
+      "createdAt": "2026-09-25T19:40:00.000Z"
+    },
+    {
+      "id": "d4000000-0000-4000-8000-000000000004",
+      "role": "user",
+      "content": "Bogus attachment names are dropped.",
+      "attachments": [{ "name": "..\\..\\secrets.txt", "kind": "file" }],
+      "createdAt": "2026-09-25T19:41:00.000Z"
+    }
+  ],
+  "summary": "User shared a crash screenshot and log; cause is a null pawn.",
+  "summaryCount": 2,
+  "createdAt": "2026-09-25T19:30:00.000Z",
+  "updatedAt": "2026-09-25T19:41:00.000Z"
+}

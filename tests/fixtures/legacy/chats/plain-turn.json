@@ -1,0 +1,59 @@
+{
+  "id": "0b9e2f4c-1d2a-4e3b-8c5d-6f7a8b9c0d1e",
+  "projectPath": "",
+  "workspaceName": "2026-09-12 Explain RAII 0b9e",
+  "pinned": true,
+  "title": "Explain RAII",
+  "messages": [
+    {
+      "id": "a1f0c2d3-0000-4000-8000-000000000001",
+      "role": "user",
+      "content": "Explain RAII in two sentences.",
+      "attachments": [],
+      "createdAt": "2026-09-12T09:00:00.000Z",
+      "hidden": false
+    },
+    {
+      "id": "a1f0c2d3-0000-4000-8000-000000000002",
+      "role": "assistant",
+      "content": "RAII ties a resource to an object's lifetime. The constructor acquires it and the destructor releases it, so cleanup happens on every exit path.",
+      "tools": [],
+      "segments": [
+        { "type": "text", "content": "RAII ties a resource to an object's lifetime. " },
+        { "type": "text", "content": "The constructor acquires it and the destructor releases it, so cleanup happens on every exit path." }
+      ],
+      "startedAt": 1757667600500,
+      "done": true,
+      "createdAt": "2026-09-12T09:00:00.500Z",
+      "model": "deepseek/deepseek-v4-flash",
+      "modelLabel": "DeepSeek V4 Flash",
+      "backgroundTaskId": "",
+      "policy": null,
+      "liveTool": null,
+      "error": false,
+      "interrupted": false,
+      "interruption": null,
+      "workMs": 4200
+    },
+    {
+      "id": "a1f0c2d3-0000-4000-8000-000000000003",
+      "role": "user",
+      "content": "And without segments?",
+      "attachments": [],
+      "createdAt": "2026-09-12T09:01:00.000Z"
+    },
+    {
+      "id": "a1f0c2d3-0000-4000-8000-000000000004",
+      "role": "assistant",
+      "content": "Older turns stored only content and a flat tools list.",
+      "tools": [],
+      "done": true,
+      "createdAt": "2026-09-12T09:01:01.000Z",
+      "model": "z-ai/glm-5.2"
+    }
+  ],
+  "summary": "",
+  "summaryCount": 0,
+  "createdAt": "2026-09-12T09:00:00.000Z",
+  "updatedAt": "2026-09-12T09:01:05.000Z"
+}
