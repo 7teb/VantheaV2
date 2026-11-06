@@ -82,6 +82,6 @@ export const scheduled = {
   "scheduled.count_none": "No scheduled tasks",
   "scheduled.count_one": "{n} scheduled task",
   "scheduled.count_other": "{n} scheduled tasks",
-  "scheduled.combine_one": "changed {n} scheduled task",
-  "scheduled.combine_other": "changed {n} scheduled tasks",
+  "scheduled.combine_one": "changed a scheduled task",
+  "scheduled.combine_other": "changed scheduled tasks",
 };

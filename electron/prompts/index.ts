@@ -3,6 +3,7 @@ import type { ModelEntry } from "../../shared/models.ts";
 import type { Personality, Settings } from "../../shared/settings.ts";
 import { instruction_fallback } from "../chats/workspace.ts";
 import { major_effort } from "../model/catalog.ts";
+import { open_scratchpad } from "../scratchpad/index.ts";
 import type { Tool } from "../tools/types.ts";
 import { list_top_level, load_project_docs } from "./project.ts";
 import { compose_sections, major_review, render_sections, type PromptSection } from "./sections.ts";
@@ -46,12 +47,22 @@ const extra_sections = async (input: BuildPromptInput, tool_names: Set<string>):
   }
 };
 
+const chat_scratchpad = async (chat_id: string): Promise<string | null> => {
+  try {
+    return await open_scratchpad(chat_id);
+  } catch (error) {
+    console.error(`[prompts] creating the scratchpad folder of chat ${chat_id} failed, the prompt leaves it out:`, error);
+    return null;
+  }
+};
+
 export const build_system_prompt = async (input: BuildPromptInput): Promise<string> => {
   const tool_names = new Set(input.tools.map((tool) => tool.spec.name));
-  const [project_docs, listing, extra] = await Promise.all([
+  const [project_docs, listing, extra, scratchpad] = await Promise.all([
     instruction_fallback(input.chat_id).then((fallback) => load_project_docs(input.project_root, fallback)),
     list_top_level(input.project_root),
     extra_sections(input, tool_names),
+    chat_scratchpad(input.chat_id),
   ]);
   const sections = compose_sections({
     model: input.model,
@@ -59,6 +70,7 @@ export const build_system_prompt = async (input: BuildPromptInput): Promise<stri
     plan: input.plan,
     personality: input.personality,
     project_root: input.project_root,
+    scratchpad,
     project_docs,
     listing,
     custom_instructions: input.settings.custom_instructions,

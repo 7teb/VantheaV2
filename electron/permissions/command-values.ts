@@ -92,6 +92,23 @@ const item_cmdlets = /^(?:set-item|si|new-item|ni|remove-item|ri|rm|rmdir|rd|del
 
 const variable_parameter = /^-(?:outvariable|ov|errorvariable|ev|warningvariable|wv|informationvariable|iv|pipelinevariable|pv)(?::|$)/i;
 
+const binding_cmdlets = /^(?:(?:set|new|remove)-alias|sal|nal|ral|import-module|ipmo|remove-module|rmo)$/i;
+
+const provider_binding = /(?:^|[\\/])(?:function|alias):/i;
+
+export const module_prefix = /^Microsoft\.PowerShell\.(?:Management|Utility|Security)\\/i;
+
+export const unqualified = (name: string): string => name.replace(module_prefix, "");
+
+export const definite = (value: Value): value is Extract<Value, { values: string[] }> =>
+  "values" in value && !value.maybe_unset && !value.list && value.values.length === 1;
+
+export const binding_writes = (name: string, args: { value: Value }[]): boolean => {
+  if (binding_cmdlets.test(name)) return true;
+  if (!item_cmdlets.test(name)) return false;
+  return args.some((arg) => "unresolved" in arg.value || arg.value.values.some((value) => provider_binding.test(value)));
+};
+
 export const command_writes = (name: string, args: { word: Word; value: Value }[], text: string, state: ValueState): boolean => {
   const reason = "written by " + (name || "an expression");
   if (/\$executioncontext\b/i.test(text)) {

@@ -80,7 +80,7 @@ const not_sent_reason = (file: ScriptFile, placement: ScriptPlacement): string =
   return file.change ? `over the review budget, ${change_text(file.change)}` : "over the review budget, unchanged in this chat";
 };
 
-const pending_lines = (action: ActionView, tag: string): string[] => {
+const pending_lines = (action: ActionView, tag: string, parallel: string[]): string[] => {
   const { call } = action;
   const kind = call.kind === "command" ? "COMMAND" : "ARGUMENTS";
   const shell = call.kind === "command" && action.shell ? shell_lines[action.shell] : undefined;
@@ -90,6 +90,7 @@ const pending_lines = (action: ActionView, tag: string): string[] => {
     `runs in background: ${action.background ? "yes" : "no"}`,
     ...(shell ? [shell] : []),
     ...(call.kind === "mcp" ? [`risk tier: ${call.tier}, ${call.trusted ? "trusted" : "untrusted"} server`] : []),
+    ...(parallel.length ? ["Other calls requested in the same response, reviewed separately:", ...parallel] : []),
     call.kind === "command" ? "command:" : "arguments:",
     `----- BEGIN ${kind} [tag ${tag}] -----\n${action.subject}\n----- END ${kind} [tag ${tag}] -----`,
   ];
@@ -111,7 +112,7 @@ const gap_lines = (gaps: string[]): string[] => {
 
 export type CurrentPart = { text: string; gaps: string[] };
 
-export const current_part = (action: ActionView, placement: ScriptPlacement, history: RetainedScript[], tag: string, level: TrimLevel = 0): CurrentPart => {
+export const current_part = (action: ActionView, placement: ScriptPlacement, history: RetainedScript[], tag: string, level: TrimLevel = 0, parallel: string[] = []): CurrentPart => {
   const capped = trimmed(level, "scripts_run");
   const sent = action.files.filter((file) => placement.sent.has(file.id));
   const listed = action.files.filter((file) => !placement.sent.has(file.id) && file.role !== "payload");
@@ -133,7 +134,7 @@ export const current_part = (action: ActionView, placement: ScriptPlacement, his
   const all_facts = action.facts.join("\n");
   const facts = capped ? head_tail_bytes(all_facts, cap_bytes(section_caps.target_facts)) : all_facts;
   const text = [
-    section(review_headers.pending_action, pending_lines(action, tag)),
+    section(review_headers.pending_action, pending_lines(action, tag, parallel)),
     section(review_headers.scripts_run, script_text),
     section(review_headers.inspection_gaps, gap_lines(gaps)),
     section(review_headers.agent_edits, edits),

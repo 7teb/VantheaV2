@@ -2,15 +2,15 @@ import type { Search } from "./cmd-batch.ts";
 import { walk_cmd, type Nested } from "./command-cmd.ts";
 import { location_change, start_location, type Matcher } from "./command-location.ts";
 import {
-  assign_env, assign_joined, assign_variable, assignment_of, command_writes, concat, copy_values, create_values, expression_head, expression_value,
-  poison_environment, poison_variables, read_variable, unresolved, type Assignment, type Value, type ValueState,
+  assign_env, assign_joined, assign_variable, assignment_of, command_writes, concat, copy_values, create_values, definite, expression_head, expression_value,
+  poison_environment, poison_variables, read_variable, unqualified, unresolved, type Assignment, type Value, type ValueState,
 } from "./command-values.ts";
 import {
   block_at, child_state, context, copy_state, drain, follows, group_at, invoked_block, join_states, keyword_of, keywords, line_at, lost_location, make_step, merged, payload_of,
   plain, program_name, record, redirect_free, same, script_like, step_word, values_at, type BlockPiece, type Context, type Effect, type GroupPiece, type Step, type Walk,
   type WalkState, type Write,
 } from "./command-steps.ts";
-import { shell_words } from "./shell-words.ts";
+import { shell_words, type Word } from "./shell-words.ts";
 import { statement_parts, type Dialect, type StatementElement, type StatementPart } from "./statements.ts";
 
 export { child_state, join_states, powershell_switch, powershell_takes_value, source_depth, type Effect, type Payload, type Step, type StepWord, type WalkState } from "./command-steps.ts";
@@ -22,6 +22,20 @@ export type WalkStart = { location: string; dialect: Dialect; env: Record<string
 const block_reason = "script block";
 
 const unread_reason = "changed by a script the app did not read";
+
+const command_name = (value: Value, word: Word | undefined): string => {
+  const binding = definite(value) ? unqualified(value.values[0] ?? "") : "";
+  if (binding && /^[a-z_?][\w?-]*$/i.test(binding)) return binding.toLowerCase();
+  return plain(word);
+};
+
+const element_value = (text: string, command: boolean, dialect: Dialect, state: WalkState): Value | null => {
+  if (dialect !== "powershell") return null;
+  if (command) return unresolved("command output");
+  return expression_value(text, values_at(state));
+};
+
+const command_output = (value: Value): boolean => "unresolved" in value && value.unresolved === "command output";
 
 const later_writes = (ctx: Context, offset: number): Write[] => {
   if (ctx.logging) return [];
@@ -173,7 +187,7 @@ function* walk_element(text: string, offset: number, state: WalkState, ctx: Cont
     if (words[0]?.raw === ".") poison_variables(current.values, unread_reason);
     return [current, null];
   }
-  const name = command ? plain(words[at]) : "";
+  const name = command ? command_name(value, words[at]) : "";
   const exe = command ? program_name(value, name) : "";
   const found = command ? payload_of(exe, step_words, at, input, ctx) : null;
   const module = /^(?:import-module|ipmo)$/.test(name) || (name === "using" && /^module$/i.test(words[1]?.raw ?? ""));
@@ -211,7 +225,7 @@ function* walk_element(text: string, offset: number, state: WalkState, ctx: Cont
     }
     if (exits.length) current = exits.reduce(join_states);
   }
-  return [current, !command && ctx.dialect === "powershell" ? expression_value(text, values_at(current)) : null];
+  return [current, element_value(text, command, ctx.dialect, current)];
 }
 
 function* walk_command_child(text: string, dialect: Dialect, state: WalkState, ctx: Context, line: number): Walk {
@@ -294,7 +308,7 @@ function* walk_keyword(keyword: string, text: string, offset: number, state: Wal
       if (parts.length === 1 && parts[0]?.elements.length === 1) {
         let found: Value | null;
         [current, found] = yield* walk_element(source, source_offset, current, ctx, "head", null);
-        if (found) list = found;
+        if (found) list = command_output(found) ? unresolved("assigned from command output") : found;
       } else current = yield* walk_text(source, source_offset, current, ctx, null);
       const item: Value = "values" in list ? { values: list.values, maybe_unset: !list.values.length } : list;
       const name = (match[2] ?? "").replace(/^[^:]*:/, "");

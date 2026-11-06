@@ -17,7 +17,7 @@ import { overlaps, roster_delta, roster_entries, roster_facts } from "./roster.t
 import type { AgentDeps, RunContext } from "./runner.ts";
 import { result_reminder, wants_result, workflow_agent_tools, type WorkflowAgentLink } from "./workflow-agent.ts";
 
-export const reminder_interval = 15;
+export const reminder_interval = 10;
 
 export const agent_approval_key = (run_id: string) => `agent:${run_id}`;
 

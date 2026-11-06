@@ -27,6 +27,7 @@ export type AgentSummary = {
   description: string;
   topic: string;
   model: string;
+  effort: string;
   profile: AgentProfile;
   without_tools: string[];
   runs: AgentRunSummary[];

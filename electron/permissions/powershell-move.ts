@@ -2,6 +2,8 @@ import type { Word } from "./shell-words.ts";
 
 export const is_flag = (word: Word) => /^[-\u2013\u2014\u2015]/.test(word.raw) || /^\/[a-z?](?::\S*)?$/i.test(word.raw);
 
+export const flag_name = (word: Word): string => /^[-\u2013\u2014\u2015](\w+):?$/.exec(word.raw)?.[1]?.toLowerCase() ?? "";
+
 export const move_sources = (args: Word[]): Word[] => {
   const named: Word[] = [];
   const positional: Word[] = [];
@@ -9,7 +11,7 @@ export const move_sources = (args: Word[]): Word[] => {
   for (let index = 0; index < args.length; index += 1) {
     const word = args[index] as Word;
     if (word.op) continue;
-    const flag = /^[-\u2013\u2014\u2015](\w+):?$/.exec(word.raw)?.[1]?.toLowerCase() ?? "";
+    const flag = flag_name(word);
     if (flag && ("path".startsWith(flag) || "literalpath".startsWith(flag) || flag === "lp" || flag === "pspath")) {
       const value = args[++index];
       if (value) {

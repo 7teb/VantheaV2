@@ -80,7 +80,7 @@ test("the heading follows the queue: the read once the search is done, the summa
   assert.equal(tool_label(en, group_current(tools_of(reading)) as ToolStep), "Reading loop.ts");
   const finished = play([read_done], reading);
   assert.equal(group_current(tools_of(finished)), null);
-  assert.equal(group_label(en, tools_of(finished)), "Searched 1 string, read 1 file");
+  assert.equal(group_label(en, tools_of(finished)), "Read files");
 });
 
 test("a command awaiting approval or under review wins over a queued read", () => {

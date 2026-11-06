@@ -33,7 +33,7 @@ export const view_image_tool = define_tool<{ path: string }>({
   parse: (raw) => ({ path: require_string(raw, "path") }),
   run: (ctx, args) =>
     guarded(ctx, "view_image", async () => {
-      const target = await view_target(await chat_attachments(ctx.chat_id), ctx.project_root, args.path);
+      const target = await view_target(await chat_attachments(ctx.chat_id), ctx, args.path);
       const refused = target.relative === null ? null : await secret_read_refused(ctx, { tool: "view_image", path: target.relative, query: null });
       if (refused) {
         return refused;

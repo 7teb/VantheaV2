@@ -81,6 +81,7 @@ const sections = (names: string[], plan = false): SectionInput => ({
   plan,
   personality: "pragmatic",
   project_root: "C:/proj",
+  scratchpad: null,
   project_docs: [],
   listing: "",
   custom_instructions: "",

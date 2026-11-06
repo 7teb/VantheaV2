@@ -1,7 +1,6 @@
 import type { HumanDecision } from "../../shared/approval.ts";
-import type { ToolStep } from "../../shared/chat.ts";
 import type { ModelEntry } from "../../shared/models.ts";
-import type { ReviewActor, ReviewRecord } from "../../shared/review.ts";
+import type { ReviewActor, ReviewRecord, ReviewStep } from "../../shared/review.ts";
 import { bash_env } from "../shell/git-bash.ts";
 import { human_requests_of, last_human_id } from "./context.ts";
 import { agent_edits, instruction_snapshot } from "./instruction-files.ts";
@@ -26,7 +25,7 @@ export type InputRequest = {
   delegated_task: string | null;
   records: ReviewRecord[];
   decisions: HumanDecision[];
-  steps: ToolStep[];
+  steps: ReviewStep[];
   earlier_commands: number;
   call_id: string;
   action: {

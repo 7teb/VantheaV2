@@ -95,7 +95,7 @@ test("the tool row names the visualization while it is drafted and once the titl
   assert.equal(tool_label(de, visual("v1", "running", {})), "Erstellt Visualisierung");
   assert.equal(has_body(t, visual("v1", "done")), false);
   assert.equal(has_body(t, visual("v1", "failed")), true);
-  assert.equal(group_label(t, [visual("v1", "failed"), visual("v2", "failed")]), "Created 2 visualizations");
+  assert.equal(group_label(t, [visual("v1", "failed"), visual("v2", "failed")]), "Created visualizations");
 });
 
 test("every injected variable maps to an app token that exists", () => {

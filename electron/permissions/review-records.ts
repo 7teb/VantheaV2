@@ -1,6 +1,6 @@
 import type { Message, ToolStep } from "../../shared/chat.ts";
 import type { ModelEntry } from "../../shared/models.ts";
-import type { ReviewActor, ReviewRecord } from "../../shared/review.ts";
+import type { ReviewActor, ReviewRecord, ReviewStep } from "../../shared/review.ts";
 import { command_tools } from "../../shared/shell.ts";
 import { get_chat } from "../chats/store.ts";
 import type { ActorReview, ReviewModelCall } from "../tools/types.ts";
@@ -17,8 +17,12 @@ export type AgentScope = {
   live_steps: () => ToolStep[];
 };
 
-export const tool_steps_in = (messages: Message[]): ToolStep[] =>
-  messages.flatMap((message) => (message.role === "assistant" ? message.steps.filter((step): step is ToolStep => step.kind === "tool") : []));
+const response_steps = (message: Message): ReviewStep[] => {
+  if (message.role !== "assistant") return [];
+  return message.steps.filter((step): step is ToolStep => step.kind === "tool").map((step) => ({ ...step, response_id: message.id }));
+};
+
+export const tool_steps_in = (messages: Message[]): ReviewStep[] => messages.flatMap(response_steps);
 
 export const reviews_in = (steps: ToolStep[]): ReviewRecord[] => {
   const by_id = new Map<string, ReviewRecord>();
@@ -30,7 +34,7 @@ export const reviews_in = (steps: ToolStep[]): ReviewRecord[] => {
   return [...by_id.values()].sort((a, b) => a.at - b.at);
 };
 
-const chat_steps = async (chat_id: string): Promise<ToolStep[]> => {
+const chat_steps = async (chat_id: string): Promise<ReviewStep[]> => {
   const chat = await get_chat(chat_id);
   if (!chat) {
     console.warn(`[reviews] chat ${chat_id} is not available, reviewing without its earlier records`);

@@ -119,12 +119,12 @@ test("group labels count files once per path and keep category order", () => {
     step("grep_files", views.grep),
     step("run_command", views.command),
   ];
-  assert.equal(group_label(t, steps), "Read 1 file, ran 2 commands, searched 1 string");
+  assert.equal(group_label(t, steps), "Read files, ran commands");
 });
 
 test("messages to or from agents count as sent messages, not deployed agents", () => {
   const steps = [step("message_main_agent", null), step("read_file", views.read), step("message_agent", null, "done", { agent_id: "agent_x" })];
-  assert.equal(group_label(t, steps), "Sent 2 messages, read 1 file");
+  assert.equal(group_label(t, steps), "Sent messages, read a file");
 });
 
 test("agent, background task, skill and MCP management keep their own group labels", () => {
@@ -140,14 +140,14 @@ test("agent, background task, skill and MCP management keep their own group labe
   ];
   assert.equal(
     group_label(t, steps),
-    "Checked 1 agent, stopped 1 agent, continued 1 agent, checked 1 background task, stopped 1 background task, installed 1 skill, added 1 MCP server",
+    "Checked an agent, stopped an agent, continued an agent, checked a background task, stopped a background task, installed a skill, added an MCP server",
   );
   assert.equal(tool_label(t, step("cancel_background_task", null, "done", { id: "bg_1" })), "Stopped background task");
 });
 
 test("listing files counts folders, not searched strings", () => {
   const steps = [step("read_skill", null), step("list_files", null, "done", { path: "src" }), step("list_files", null, "done", { path: "src" })];
-  assert.equal(group_label(t, steps), "Read 1 skill, listed 1 folder");
+  assert.equal(group_label(t, steps), "Read a skill, read files");
 });
 
 test("approval grants match what each request kind supports", () => {
@@ -336,9 +336,9 @@ test("ask_user rows name the first question and work groups count the questions 
   assert.equal(tool_label(t, step("ask_user", view)), "Asked: Which runner?");
   assert.equal(tool_label(t, step("ask_user", null, "running", { questions: [{ title: "Which port?" }] })), "Asking: Which port?");
   assert.equal(tool_meta(step("ask_user", view)).icon, "question");
-  assert.equal(group_label(t, [step("ask_user", view), step("read_file", views.read)]), "Asked 1 question, read 1 file");
+  assert.equal(group_label(t, [step("ask_user", view), step("read_file", views.read)]), "Asked a question, read a file");
   const two = { kind: "questions", questions: [{ title: "A?", options: [] }, { title: "B?", options: [] }] } as ToolView;
-  assert.equal(group_label(t, [step("ask_user", two), step("ask_user", view)]), "Asked 3 questions");
+  assert.equal(group_label(t, [step("ask_user", two), step("ask_user", view)]), "Asked questions");
 });
 
 test("screenshot, click point and page check rows have their own labels", () => {

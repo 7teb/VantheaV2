@@ -41,7 +41,7 @@ test("cancelling an asked agent with one read and one unread question tells the 
     ]),
   );
   const asked = deploy_agent(request("pf2 asked", { chat_id: "pf2-cancel", name: "Asked" }));
-  await parked(asker);
+  await parked(asker, asked);
   try {
     const first = view_of(await send_peer(sender_of(asker), peer_request(label(asked), "question", "Who changes TokenKind?")));
     sent.resolve();

@@ -16,6 +16,7 @@ const agent = (without_tools: string[]): AgentSummary => ({
   description: "reads the parser",
   topic: "parser",
   model: "test/model",
+  effort: "high",
   profile: "worker",
   without_tools,
   runs: [{ run_id: "run_1", prompt: "read the parser", status: "completed", started_at: "2026-10-15T10:00:00.000Z", ended_at: "2026-10-15T10:01:00.000Z", report: "", open_questions: 0 }],
@@ -72,13 +73,13 @@ after(() => {
 
 test("the agent panel names the tools removed from the profile next to the profile", () => {
   show(agent(["run_command", "run_bash"]));
-  assert.equal(meta()?.textContent, "parser · Worker · without run_command, run_bash · test/model");
-  assert.equal(meta()?.getAttribute("title"), "parser · Worker · without run_command, run_bash · test/model");
+  assert.equal(meta()?.textContent, "parser · Worker · without run_command, run_bash · test/model · High");
+  assert.equal(meta()?.getAttribute("title"), "parser · Worker · without run_command, run_bash · test/model · High");
 });
 
 test("an agent without removed tools shows the meta line as before", () => {
   show(agent([]));
-  assert.equal(meta()?.textContent, "parser · Worker · test/model");
+  assert.equal(meta()?.textContent, "parser · Worker · test/model · High");
 });
 
 test("a deploy_agent or continue_agent approval card names the removed tools only when there are any", () => {

@@ -131,7 +131,7 @@ test("a group is live while a tool runs or its newest thought streams, so no ext
 test("the group head names the streaming thought, then the running tool, and counts only tools once finished", () => {
   const steps = [thought("r1", 0, 6_000), read("a1", 6_000, 7_000), thought("r2", 7_000, 9_000), tool("g1", "grep_files", 9_000, 10_000, { query: "trailer" })];
   const finished = group_head(en, steps, false);
-  assert.deepEqual(finished, { kind: "done", key: "done:Read 1 file, searched 1 string:0", label: "Read 1 file, searched 1 string", denied: 0 });
+  assert.deepEqual(finished, { kind: "done", key: "done:Read files:0", label: "Read files", denied: 0 });
   assert.equal(group_head(de, steps, false).kind, "done");
   assert.deepEqual(group_head(en, [...steps, thought("r3", 10_000, null)], true), { kind: "thinking", key: "thinking:Thinking", label: "Thinking" });
   assert.deepEqual(group_head(de, [...steps, thought("r3", 10_000, null)], true), { kind: "thinking", key: "thinking:Denkt nach", label: "Denkt nach" });
@@ -181,7 +181,7 @@ test("while several tools of a group run at once the head names the first and co
 
 test("a group whose tools were all cancelled by a stop still names them in its head", () => {
   const cancelled = (id: string): ToolStep => ({ ...read(id, 1_000, 2_000), status: "cancelled" });
-  assert.deepEqual(group_head(en, [cancelled("a1"), cancelled("a2")], false), { kind: "done", key: "done:Read 2 files:0", label: "Read 2 files", denied: 0 });
+  assert.deepEqual(group_head(en, [cancelled("a1"), cancelled("a2")], false), { kind: "done", key: "done:Read files:0", label: "Read files", denied: 0 });
   const failed_read = { ...read("a2", 1_000, 2_000), status: "failed" as const };
   const mixed = [cancelled("a1"), failed_read];
   const last = tool_label(en, failed_read);
@@ -196,5 +196,5 @@ test("a command that ran counts in the group head even when it failed, other fai
   });
   const failed_read = { ...read("a3", 1_000, 2_000), status: "failed" as const };
   const head = group_head(en, [command("c1", "done"), command("c2", "failed"), failed_read, read("a4", 2_000, 3_000)], false);
-  assert.deepEqual(head, { kind: "done", key: "done:Ran 2 commands, read 1 file:0", label: "Ran 2 commands, read 1 file", denied: 0 });
+  assert.deepEqual(head, { kind: "done", key: "done:Ran commands, read a file:0", label: "Ran commands, read a file", denied: 0 });
 });

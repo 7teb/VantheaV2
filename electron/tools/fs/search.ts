@@ -72,7 +72,7 @@ export const get_file_outline_tool = define_tool<{ path: string }>({
     description: "List the classes, functions, methods and types declared in a source file with their line numbers.",
     parameters: {
       type: "object",
-      properties: { path: { type: "string", description: "Project-relative file path." } },
+      properties: { path: { type: "string", description: "Project-relative file path, or an absolute path inside your scratchpad." } },
       required: ["path"],
       additionalProperties: false,
     },
@@ -82,7 +82,7 @@ export const get_file_outline_tool = define_tool<{ path: string }>({
   parse: (raw) => ({ path: require_string(raw, "path") }),
   run: (ctx, args) =>
     guarded(ctx, "get_file_outline", async () => {
-      const scoped = await readable_file(ctx.project_root, args.path);
+      const scoped = await readable_file(ctx, args.path);
       const refused = await secret_read_refused(ctx, { tool: "get_file_outline", path: scoped.relative, query: null });
       if (refused) {
         return refused;

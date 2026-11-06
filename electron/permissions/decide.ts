@@ -7,7 +7,7 @@ import { bash_env } from "../shell/git-bash.ts";
 import type { Reviewer, ToolProfile } from "../tools/types.ts";
 import { read_only_command } from "./allowlist.ts";
 import { approved_with_source, prefix_grants } from "./decisions.ts";
-import { floor_reason } from "./floor.ts";
+import { command_floor } from "./floor.ts";
 import { covering_prefixes, suggest_prefix } from "./grants.ts";
 import { review_verdict } from "./review-verdict.ts";
 import type { PinChange, ScriptPin } from "./source-read.ts";
@@ -48,6 +48,9 @@ export type CommandDecision = {
 };
 
 const nothing_seen: ReadonlySet<string> = new Set();
+
+const unresolved_gap =
+  "The app could not resolve every program this command starts or every target it deletes: a call or a delete goes through a value that is only known at run time, such as command output, a computed name or an alias.";
 
 export const review_note = (record: ReviewRecord, detail: Pick<ReviewNote, "script_floor"> = {}): ReviewNote => ({
   id: record.id,
@@ -118,9 +121,9 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
   if (!command) {
     return floor_block(input, reviewer, "The command is empty.");
   }
-  const floor = floor_reason(command, { app_root: input.app_root, project_root: input.project_root, cwd: input.cwd }, input.shell);
-  if (floor) {
-    return floor_block(input, reviewer, floor);
+  const floor = command_floor(command, { app_root: input.app_root, project_root: input.project_root, cwd: input.cwd }, input.shell);
+  if (floor.reason) {
+    return floor_block(input, reviewer, floor.reason);
   }
   const plan_change = input.plan && !read_only_command(command, input.shell);
   if (input.mode === "full") {
@@ -131,6 +134,7 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
   if (input.mode === "ask") {
     return without_model("ask", plan_change, sources);
   }
+  const gaps = floor.uncertain ? [...sources.gaps, unresolved_gap] : sources.gaps;
   const approved_sources = approved_with_source(input.decisions, command, sources.hash, shell_of(input.shell));
   const raised: ReviewRaise[] = [
     ...(plan_change ? (["plan"] as const) : []),
@@ -153,7 +157,7 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
       delegated_task: input.delegated_task ?? null,
       decisions: input.decisions,
       call_id: input.call_id,
-      action: { tool: tool_name(input), cwd: input.cwd, background: input.background, subject: command, call: { kind: "command" }, files: sources.files, gaps: sources.gaps, changed: input.changed, programs: sources.programs, notes: sources.notes, shell: input.shell },
+      action: { tool: tool_name(input), cwd: input.cwd, background: input.background, subject: command, call: { kind: "command" }, files: sources.files, gaps, changed: input.changed, programs: sources.programs, notes: sources.notes, shell: input.shell },
     },
   });
   const record = verdict.record.granted ? { ...verdict.record, grant_prefixes: prefixes } : verdict.record;

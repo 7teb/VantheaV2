@@ -58,6 +58,7 @@ export const review_system_prompt = [
   "- DELEGATED TASK: for a sub-agent, what the main agent asked it to do.",
   "- REVIEWED SCRIPTS: scripts read in earlier reviews: path, hash, verdict and a one-line summary.",
   "- PENDING ACTION: the tool, the working directory, whether it runs in the background, which shell runs a command, and the full command or tool arguments you judge. A Git Bash command runs under bash -c from Git for Windows: POSIX syntax, /c/... and C:/... are Windows drive paths, ~ is the user's home folder and / is the Git install folder.",
+  "Other calls requested in the same response are parts of the same requested batch, not earlier independent actions or additional requests. Each is reviewed separately. Their status describes the tool call, not a count of agents already running; completed or failed calls keep their actual status. Judge only the pending action.",
   "- SCRIPTS RUN BY THIS ACTION: the full content of every script the action starts and of the build and response files it names, read by the app just now.",
   "- INSPECTION GAPS: parts of what the action runs that the app could not read or resolve.",
   "- TARGET FACTS: which programs the action starts and what the files and folders it touches contain, collected by the app. A native executable is identified by path and size; its machine code is never read, and that is not an inspection gap.",

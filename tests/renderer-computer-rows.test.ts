@@ -148,8 +148,8 @@ test("German computer rows use the app's verb forms", () => {
 
 test("a group of computer actions counts them in one part of the group label", () => {
   const steps = [step("computer_screenshot", {}), step("computer_click", { x: 1, y: 2 }), step("computer_type", { text: "a" })];
-  assert.equal(group_label(t, steps), "3 computer actions");
-  assert.equal(group_label(de, [step("computer_key", { keys: "Return" })]), "1 Computeraktion");
+  assert.equal(group_label(t, steps), "Ran computer actions");
+  assert.equal(group_label(de, [step("computer_key", { keys: "Return" })]), "Eine Computeraktion ausgeführt");
 });
 
 test("a screenshot row opens only when it carries its stored screenshot", () => {

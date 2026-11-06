@@ -205,7 +205,7 @@ test("resume reuses the earlier script and args, refuses a running run and anoth
 test("only the main profile gets the workflow tools and the prompt section explains them", () => {
   assert.deepEqual(run_workflow_tool.profiles, ["main"]);
   assert.deepEqual(stop_workflow_tool.profiles, ["main"]);
-  const input: SectionInput = { model, mode: "auto", plan: false, personality: "pragmatic", project_root: project, project_docs: [], listing: "", custom_instructions: "", tool_names: new Set(["run_workflow"]), user_attachments: false, major: false, deferred_mcp: [] };
+  const input: SectionInput = { model, mode: "auto", plan: false, personality: "pragmatic", project_root: project, scratchpad: null, project_docs: [], listing: "", custom_instructions: "", tool_names: new Set(["run_workflow"]), user_attachments: false, major: false, deferred_mcp: [] };
   const body = (over: Partial<SectionInput>) => compose_sections({ ...input, ...over }).find((entry) => entry.title === "workflows")?.body ?? "";
   const normal = body({});
   assert.match(normal, /load the workflow-authoring skill with read_skill/);

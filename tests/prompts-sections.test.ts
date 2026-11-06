@@ -26,6 +26,7 @@ const base = (names: string[], over: Partial<SectionInput> = {}): SectionInput =
   plan: false,
   personality: "pragmatic",
   project_root: "C:/proj",
+  scratchpad: null,
   project_docs: [],
   listing: "src/\npackage.json",
   custom_instructions: "",
@@ -152,6 +153,8 @@ test("the code rules follow the editing rules for writers, and tests made to che
   assert.match(rules, /declare locals with auto \(const auto, auto\*\) and give functions trailing return types: auto name\(args\) -> type/);
   assert.match(rules, /early returns and early continues instead of nested if chains, and no else after a return/);
   assert.match(rules, /No nested ternaries or clever one-liners/);
+  assert.match(rules, /Split a condition that chains several \|\| or && into separate guard checks with return, continue or break, or into named boolean locals\./);
+  assert.match(rules, /Leave a blank line after a block that ends in return, continue or break before the code that follows, between functions, and between the logical steps of a longer function\./);
   assert.match(rules, /No forwarding function or macro whose only job is to rename another call/);
   assert.match(rules, /Source files default to ASCII/);
   assert.match(rules, /- Logging: add no logging the task does not need, and none for cases that cannot happen\./);
@@ -354,4 +357,11 @@ test("the browser section explains browser_console and browser_eval only when th
   assert.match(main, /browser_eval evaluates a side-effect-free JavaScript expression/);
   assert.match(body_of_browser(["browser_snapshot", "browser_console", "browser_eval"], true), /clicking, typing and navigation are not available here\. .*browser_console returns/);
   assert.doesNotMatch(body_of_browser(["browser_snapshot", "browser_click"], false), /browser_console|browser_eval/);
+});
+
+test("the environment section names the chat's scratchpad and says it is temporary, and leaves it out without one", () => {
+  const with_folder = body_of(base(main_tools, { scratchpad: "C:/Temp/VantheaX/scratchpad/0a1b" }), "environment");
+  assert.match(with_folder, /This chat has its own scratchpad folder, C:\/Temp\/VantheaX\/scratchpad\/0a1b, for test scripts, probes, intermediate results and other throwaway files that do not belong in the project\./);
+  assert.match(with_folder, /The app deletes it when the chat is deleted or the app closes, so never keep anything there that must last/);
+  assert.doesNotMatch(body_of(base(main_tools), "environment"), /scratchpad/);
 });

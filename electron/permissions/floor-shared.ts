@@ -1,6 +1,11 @@
 import path from "node:path";
+import { glob_pattern } from "./script-loads.ts";
 
 export type FloorScope = { app_root: string; project_root: string; cwd: string };
+
+export const delete_names = "remove-item|ri|rm|rmdir|rd|del|erase";
+
+export const dotnet_delete = /\[(?:system\.)?io\.(?:directory|file)\]::delete\s*\(/i;
 
 export const app_reason = "deleting or moving VantheaX's own chats, media or settings";
 
@@ -22,6 +27,14 @@ const system_path =
   /(%systemroot%|%windir%|\$\{?env:(?:systemroot|windir|programfiles(?:\(x86\))?|programw6432)\}?|\$\{?env:systemdrive\}?[\\/]?(?=["'*\s)]|$)|[a-z]:\\windows\b|\\system32\b|[a-z]:\\program files|[\\/]boot[\\/]|[a-z]:[\\/](?=["'*\s)]|$))/i;
 
 export const is_system_path = (text: string): boolean => system_path.test(text.replace(/\//g, "\\"));
+
+export const is_system_glob = (text: string): boolean => {
+  const normalized = text.replace(/\//g, "\\").replace(/^\\\\[?.]\\/, "");
+  const first = /^[a-z]:\\([^\\]+)/i.exec(normalized)?.[1] ?? "";
+  if (!/[*?[]/.test(first)) return false;
+  const pattern = glob_pattern(first);
+  return ["Windows", "Program Files", "Program Files (x86)", "Boot"].some((name) => pattern.test(name));
+};
 
 export const mentions_app_data = (text: string): boolean => /appdata[\\/]roaming[\\/]vantheax/i.test(text);
 

@@ -1,13 +1,14 @@
 import path from "node:path";
 import type { Attachment } from "../../../shared/chat.ts";
 import { stored_attachment_path } from "../../media/files.ts";
+import type { FileScope } from "../fs/file-scope.ts";
 import { readable_file } from "../fs/read.ts";
 
 export type ViewTarget = { file: string; display: string; relative: string | null };
 
 const path_key = (value: string) => path.win32.normalize(value).toLowerCase();
 
-export const view_target = async (attachments: Attachment[], project_root: string, raw: string): Promise<ViewTarget> => {
+export const view_target = async (attachments: Attachment[], scope: FileScope, raw: string): Promise<ViewTarget> => {
   const requested = raw.trim();
   if (path.win32.isAbsolute(requested)) {
     for (const attachment of attachments) {
@@ -17,6 +18,6 @@ export const view_target = async (attachments: Attachment[], project_root: strin
       }
     }
   }
-  const scoped = await readable_file(project_root, requested);
+  const scoped = await readable_file(scope, requested);
   return { file: scoped.target, display: scoped.relative, relative: scoped.relative };
 };

@@ -121,6 +121,7 @@ const agent = (chat_id: string, status: AgentRunStatus): AgentSummary => ({
   description: "",
   topic: "parser",
   model: "test/model",
+  effort: "high",
   profile: "worker",
   without_tools: [],
   runs: [agent_run(chat_id, status)],

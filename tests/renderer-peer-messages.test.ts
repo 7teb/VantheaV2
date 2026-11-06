@@ -56,7 +56,7 @@ test("a message_peer row names the recipient, shows only a failed delivery and n
   assert.equal(step_detail(de, step("message_peer", view("not_running"))), "Läuft nicht");
   assert.equal(has_body(t, step("message_peer", view("queued"))), false);
   assert.equal(has_body(t, step("message_main_agent", { kind: "text", text: "found it" })), false);
-  assert.equal(group_label(t, [step("message_peer", view("queued")), step("message_main_agent", null)]), "Sent 2 messages");
+  assert.equal(group_label(t, [step("message_peer", view("queued")), step("message_main_agent", null)]), "Sent messages");
   assert.equal(tool_label(t, step("list_agents", { kind: "text", text: "Agents in this chat" })), "Listed agents");
 });
 

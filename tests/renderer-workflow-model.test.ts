@@ -78,8 +78,8 @@ test("tool rows name the workflow from the view, the approval, the args or the s
 
 test("groups count started and stopped workflows in their own words", () => {
   const steps = [tool_step("run_workflow", workflow_tool_view(), "done", {}, "a"), tool_step("stop_workflow", workflow_tool_view("stopped"), "done", { run_id }, "b"), tool_step("run_workflow", workflow_tool_view(), "done", {}, "c")];
-  assert.equal(group_label(t, steps), "Ran 2 workflows, stopped 1 workflow");
-  assert.equal(group_label(de, [steps[0]!]), "1 Workflow ausgeführt");
+  assert.equal(group_label(t, steps), "Ran workflows, stopped a workflow");
+  assert.equal(group_label(de, [steps[0]!]), "Einen Workflow ausgeführt");
 });
 
 test("a group head shows a running workflow once nothing else streams, with the workflow start time", () => {
@@ -87,7 +87,7 @@ test("a group head shows a running workflow once nothing else streams, with the 
   const steps = [read, tool_step("run_workflow", workflow_tool_view(), "done", {}, "w")];
   const live = summary_of("running", []);
   assert.deepEqual(group_head(t, steps, false, false, live), { kind: "workflow", key: "workflow:Running workflow review-changes", label: "Running workflow review-changes", started_at: Date.parse(at(0)) });
-  assert.deepEqual(group_head(t, steps, false, false, null), { kind: "done", key: "done:Read 1 file, ran 1 workflow:0", label: "Read 1 file, ran 1 workflow", denied: 0 });
+  assert.deepEqual(group_head(t, steps, false, false, null), { kind: "done", key: "done:Read a file, ran a workflow:0", label: "Read a file, ran a workflow", denied: 0 });
   const streaming = [read, tool_step("run_command", null, "running", { command: "npm test" }, "c")];
   assert.deepEqual(group_head(t, streaming, true, false, live), { kind: "tool", key: "tool:Running npm test", label: "Running npm test" });
 });

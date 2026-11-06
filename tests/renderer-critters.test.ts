@@ -16,6 +16,7 @@ const agent = (name: string, status: AgentRunStatus): AgentSummary => ({
   description: "",
   topic: "parser",
   model: "test/model",
+  effort: "high",
   profile: "worker",
   without_tools: [],
   runs: [{ run_id: "run_1", prompt: "read the parser", status, started_at: "2026-10-15T10:00:00.000Z", ended_at: null, report: "", open_questions: 0 }],

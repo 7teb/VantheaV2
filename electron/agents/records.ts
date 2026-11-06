@@ -68,6 +68,7 @@ export const public_summary = (record: AgentRecord): AgentSummary => ({
   description: record.description,
   topic: record.topic,
   model: record.model,
+  effort: record.effort,
   profile: record.profile,
   without_tools: record.without_tools,
   runs: record.runs.map(public_run),

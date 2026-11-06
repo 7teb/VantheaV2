@@ -105,7 +105,7 @@ test("a finished group starts closed with the tool count and the span from the f
   render(finished(), false);
   assert.equal(group().getAttribute("data-open"), "false");
   assert.equal(head().getAttribute("aria-expanded"), "false");
-  assert.equal(head_label(), "Read 2 files, searched 1 string");
+  assert.equal(head_label(), "Read files");
   assert.equal(head_meta(), "58s");
   assert.equal(with_class("dot-spinner").length, 0);
   clear();
@@ -199,7 +199,7 @@ test("every head label stays at least 650 ms before the next one replaces it", (
     assert.equal(head_label(), "Reading build.py");
     client.flushSync(() => mock.timers.tick(1_000));
     render([...base, thought("r4", now, now + 100, "x"), tool("a3", "read_file", now + 100, now + 1_700, { path: "build.py" })], true);
-    assert.equal(head_label(), "Read 3 files, searched 1 string");
+    assert.equal(head_label(), "Read files");
     assert.equal(with_class("dot-spinner").filter((spinner) => !spinner.leaving).length, 0);
   } finally {
     clear();

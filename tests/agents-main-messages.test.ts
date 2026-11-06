@@ -52,8 +52,8 @@ test("message_main_agent has no per-run limit: twelve updates in one round all r
   tools.pop();
 });
 
-test("fifteen tool calls without an update bring one reminder, and an update resets the count", async () => {
-  assert.equal(reminder_interval, 15);
+test("ten tool calls without an update bring one reminder, and an update resets the count", async () => {
+  assert.equal(reminder_interval, 10);
   tools.push(probe, message_main_agent_tool);
   const reminded: boolean[] = [];
   let round = 0;

@@ -2,10 +2,13 @@ import path from "node:path";
 import {
   app_reason,
   cipher_reason,
+  delete_names,
+  dotnet_delete,
   format_reason,
   hits_app,
   hklm_reason,
   in_project,
+  is_system_glob,
   is_system_path,
   partition_reason,
   shadow_reason,
@@ -14,14 +17,13 @@ import {
   type FloorScope,
 } from "./floor-shared.ts";
 import { posix_floor_reason } from "./floor-posix.ts";
+import { resolved_floor, type FloorAnalysis } from "./resolved-floor.ts";
 import { literal_view } from "./floor-quotes.ts";
-import { is_flag, move_sources } from "./powershell-move.ts";
+import { flag_name, is_flag, move_sources } from "./powershell-move.ts";
 import { shell_words, type Piece, type Word } from "./shell-words.ts";
 import { quote_of, split_pipelines, split_statements, statement_parts, type Dialect, type StatementElement } from "./statements.ts";
 
 export type { FloorScope } from "./floor-shared.ts";
-
-const delete_names = "remove-item|ri|rm|rmdir|rd|del|erase";
 
 const delete_verb = new RegExp(String.raw`(?:^|[\s;(&{|])(?:${delete_names})(?=\s|$)`, "i");
 
@@ -42,8 +44,6 @@ const lone_variable = /^\$(?:\{[^}]+\}|[a-z_][\w:]*)$/i;
 const location_verb = /^(?:cd|chdir|set-location|sl|push-location|pushd)$/i;
 
 const app_path = /(?:%appdata%|\$env:appdata|\$\{env:appdata\}|\$\(\s*(?:\$env:appdata|\$\{env:appdata\})\s*\)|appdata[\\/]roaming)[\\/]vantheax/i;
-
-const dotnet_delete = /\[(?:system\.)?io\.(?:directory|file)\]::delete\s*\(/i;
 
 const assignment = /^\s*\$([a-z_][\w:]*)\s*=\s*([\s\S]+)$/i;
 
@@ -112,6 +112,7 @@ const env_value = (name: string): string | null => process.env[name] || null;
 
 const expansions: [RegExp, string][] = [
   [/%appdata%|\$\{env:appdata\}|\$env:appdata\b/gi, "APPDATA"],
+  [/%systemdrive%|\$\{env:systemdrive\}|\$env:systemdrive\b/gi, "SYSTEMDRIVE"],
   [/%userprofile%|\$\{env:userprofile\}|\$env:userprofile\b|\$\{home\}|\$home\b/gi, "USERPROFILE"],
 ];
 
@@ -119,7 +120,7 @@ const expand = (token: string, variables: Map<string, string>): string | null =>
   const home = env_value("USERPROFILE");
   let value = home ? token.replace(/^~(?=$|[\\/])/, home) : token;
   for (const [pattern, name] of expansions) {
-    const real = env_value(name);
+    const real = variables.get("env:" + name.toLowerCase()) ?? env_value(name);
     value = real ? value.replace(pattern, real) : value;
   }
   value = value.replace(/\$\{?([a-z_]\w*)\}?/gi, (match, name: string) => variables.get(name.toLowerCase()) ?? match);
@@ -192,7 +193,16 @@ const literal_hits = (word: Word, walk: Walk, ancestors: boolean): boolean => {
 const app_arguments = (text: string, args: Word[], walk: Walk, ancestors = false): boolean =>
   args.some((word) => literal_hits(word, walk, ancestors)) || uses_app_variable(text, walk) || unexplained(text, walk);
 
-const system_arguments = (args: Word[], walk: Walk): boolean => args.filter((word) => !is_flag(word)).map(literal).some((text) => text !== null && is_system_path(resolve_target(text, walk) ?? ""));
+const system_arguments = (args: Word[], walk: Walk, wildcards = true): boolean => {
+  const exact = args.some((word) => {
+    const name = flag_name(word);
+    return Boolean(name) && ("literalpath".startsWith(name) || name === "lp" || name === "pspath");
+  });
+  return args.filter((word) => !is_flag(word)).map(literal).some((text) => {
+    const target = text === null ? "" : resolve_target(text, walk) ?? "";
+    return is_system_path(target) || (wildcards && !exact && is_system_glob(target));
+  });
+};
 
 const command_of = (statement: string): Command => {
   let text = statement.trim();
@@ -286,7 +296,7 @@ const walk_floor_reason = (command: string, statements: string[], scope: FloorSc
           const moving_parent = /^(?:move-item|mi|mv|move|rename-item|rni|ren)$/i.test(current.verb) && move_sources(current.args).some((word) => literal_hits(word, walk, true));
           const method = current.text.search(dotnet_delete) === 0 ? current.args[0]?.pieces[0] : undefined;
           const targets = method?.kind === "group" ? shell_words(method.text, "powershell").slice(0, 1) : current.args;
-          const system_target = system_arguments(targets, walk);
+          const system_target = system_arguments(targets, walk, !method);
           if ((delete_verb.test(current.verb) || dotnet_delete.test(current.text)) && system_target) return system_delete_reason;
           if (removes(current) && (moving_parent || app_arguments(current.text, targets, walk, delete_verb.test(current.verb) || dotnet_delete.test(current.text)))) return app_reason;
           const assigned = assignment.exec(element.text);
@@ -375,7 +385,11 @@ const powershell_floor_reason = (command: string, scope: FloorScope): string => 
   return walk_floor_reason(String(command || ""), statements, scope);
 };
 
-export const floor_reason = (command: string, scope: FloorScope, dialect: Dialect = "powershell"): string =>
-  dialect === "posix"
+export const command_floor = (command: string, scope: FloorScope, dialect: Dialect = "powershell"): FloorAnalysis => {
+  const reason = dialect === "posix"
     ? posix_floor_reason(String(command || ""), scope, powershell_floor_reason)
     : powershell_floor_reason(command, scope);
+  return reason ? { reason, uncertain: false } : resolved_floor(command, scope, dialect, powershell_floor_reason);
+};
+
+export const floor_reason = (command: string, scope: FloorScope, dialect: Dialect = "powershell"): string => command_floor(command, scope, dialect).reason;

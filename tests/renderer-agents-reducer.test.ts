@@ -118,6 +118,7 @@ const summary = (runs: AgentRunSummary[], chat_id = "c1", agent_id = "ag1"): Age
   description: "",
   topic: "",
   model: "m",
+  effort: "high",
   profile: "explore",
   without_tools: [],
   runs,

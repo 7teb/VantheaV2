@@ -140,11 +140,19 @@ const bucket_count = (category: ToolCategory, bucket: ToolStep[]): number => {
   return counted_categories.has(category) ? new Set(bucket.map(step_target)).size : bucket.length;
 };
 
-const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
+type PhraseCategory = Exclude<ToolCategory, "listings" | "searches">;
+
+const phrase_category = (category: ToolCategory): PhraseCategory => {
+  if (category === "listings" || category === "searches") {
+    return "reads";
+  }
+
+  return category;
+};
+
+const combine_keys: Record<PhraseCategory, [MessageKey, MessageKey]> = {
   commands: ["tools.combine_commands_one", "tools.combine_commands_other"],
   reads: ["tools.combine_reads_one", "tools.combine_reads_other"],
-  listings: ["tools.combine_listings_one", "tools.combine_listings_other"],
-  searches: ["tools.combine_searches_one", "tools.combine_searches_other"],
   edits: ["tools.combine_edits_one", "tools.combine_edits_other"],
   browser: ["tools.combine_browser_one", "tools.combine_browser_other"],
   computer: ["computer.combine_one", "computer.combine_other"],
@@ -173,26 +181,34 @@ const combine_keys: Record<ToolCategory, [MessageKey, MessageKey]> = {
   other: ["tools.combine_other_one", "tools.combine_other_other"],
 };
 
+const single = (category: PhraseCategory, bucket: ToolStep[]): boolean => {
+  if (category === "reads" && bucket.some((step) => tool_meta(step).category !== "reads")) {
+    return false;
+  }
+
+  return bucket_count(category, bucket) === 1;
+};
+
 export const group_label = (t: Translate, steps: ToolStep[]): string => {
-  const order: ToolCategory[] = [];
-  const buckets = new Map<ToolCategory, ToolStep[]>();
+  const order: PhraseCategory[] = [];
+  const buckets = new Map<PhraseCategory, ToolStep[]>();
   for (const step of steps) {
-    const category = tool_meta(step).category;
+    const category = phrase_category(tool_meta(step).category);
     const bucket = buckets.get(category);
     if (bucket) {
       bucket.push(step);
       continue;
     }
+
     order.push(category);
     buckets.set(category, [step]);
   }
-  const parts = order.map((category) => {
-    const bucket = buckets.get(category) ?? [];
-    const n = bucket_count(category, bucket);
+
+  const phrases = order.map((category) => {
     const [one, other] = combine_keys[category];
-    return t(n === 1 ? one : other, { n });
+    return t(single(category, buckets.get(category) ?? []) ? one : other);
   });
-  const joined = parts.join(", ");
+  const joined = phrases.join(", ");
   return joined.charAt(0).toUpperCase() + joined.slice(1);
 };
 

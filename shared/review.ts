@@ -1,3 +1,7 @@
+import type { ToolStep } from "./chat.ts";
+
+export type ReviewStep = ToolStep & { response_id?: string };
+
 export const review_verdicts = ["allow", "review", "deny"] as const;
 
 export type ReviewVerdict = (typeof review_verdicts)[number];

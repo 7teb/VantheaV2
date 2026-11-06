@@ -21,6 +21,7 @@ const agent = (agent_id: string, runs: AgentRunSummary[]): AgentSummary => ({
   description: "",
   topic: "",
   model: "model",
+  effort: "high",
   profile: "explore",
   without_tools: [],
   runs,

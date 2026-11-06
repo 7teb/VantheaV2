@@ -1,12 +1,11 @@
 import type { HumanDecision } from "../../shared/approval.ts";
-import type { ToolStep } from "../../shared/chat.ts";
-import type { ReviewActor, ReviewRecord } from "../../shared/review.ts";
+import type { ReviewActor, ReviewRecord, ReviewStep } from "../../shared/review.ts";
 import { call_shell, command_tools } from "../../shared/shell.ts";
 import { head_tail } from "./review-budget.ts";
 import { blocking_statuses, review_statuses, type ReviewStatus } from "./review-prompt.ts";
 import { actor_label, visible_to } from "./script-retention.ts";
 
-export type FeedSource = { records: ReviewRecord[]; decisions: HumanDecision[]; steps: ToolStep[] };
+export type FeedSource = { records: ReviewRecord[]; decisions: HumanDecision[]; steps: ReviewStep[] };
 
 export type FeedLine = {
   id: string;
@@ -43,7 +42,7 @@ const answer_status = (answer: HumanDecision): ReviewStatus => {
   return answer.expired ? review_statuses.unanswered : review_statuses.user_denied;
 };
 
-const record_status = (record: ReviewRecord, answer: HumanDecision | undefined, steps: ToolStep[]): ReviewStatus => {
+const record_status = (record: ReviewRecord, answer: HumanDecision | undefined, steps: ReviewStep[]): ReviewStatus => {
   if (record.verdict === "allow") {
     return record.granted ? review_statuses.granted : review_statuses.allowed;
   }
@@ -132,12 +131,29 @@ const string_arg = (args: Record<string, unknown>): string => {
   return typeof first === "string" ? first : JSON.stringify(args);
 };
 
-export const action_lines = (steps: ToolStep[], feed: FeedLine[], current_call: string): ActionLine[] => {
+const in_flight = new Set(["running", "awaiting_approval", "queued"]);
+
+const identity_args = new Map([
+  ["deploy_agent", "name"],
+  ["continue_agent", "agent_id"],
+]);
+
+const response_calls = (steps: ReviewStep[], current_call: string): ReviewStep[] => {
+  if (!current_call) return [];
+  const current = steps.findLast((step) => step.call_id === current_call && in_flight.has(step.status));
+  if (!current) return [];
+  if (current.response_id === undefined) {
+    const calls = steps.filter((step) => step.response_id === undefined && step.call_id).map((step) => step.call_id);
+    if (new Set(calls).size !== calls.length) return [current];
+  }
+  return steps.filter((step) => step.response_id === current.response_id && step.round === current.round && step.status !== "drafting");
+};
+
+const render_actions = (steps: ReviewStep[], feed: FeedLine[]): ActionLine[] => {
   const by_record = new Map(feed.flatMap((line) => (line.record ? [[line.record.id, line.id] as const] : [])));
-  const pending = (step: ToolStep) => step.call_id === current_call && (step.status === "running" || step.status === "awaiting_approval");
-  const visible = steps.filter((step) => !pending(step) && step.status !== "drafting" && step.status !== "queued");
-  const writes = visible.filter((step) => step.name === "write_file" || step.name === "replace_in_file").slice(-10);
-  return visible.map((step) => {
+  const writes = steps.filter((step) => step.name === "write_file" || step.name === "replace_in_file").slice(-10);
+  return steps.map((step) => {
+    const key = step.response_id === undefined ? step.id : `${step.response_id}:${step.id}`;
     if (command_tools.includes(step.name)) {
       const command = typeof step.args.command === "string" ? step.args.command : "";
       const last = step.reviews?.at(-1);
@@ -152,7 +168,7 @@ export const action_lines = (steps: ToolStep[], feed: FeedLine[], current_call: 
           ...(exit === null ? {} : { exit }),
         });
       const text = line(command.length > command_chars ? `${command.slice(0, command_chars)}…` : command);
-      return { key: step.id, kind: "command", full: line(command), text, path_only: text };
+      return { key, kind: "command", full: line(command), text, path_only: text };
     }
     if (step.name === "write_file" || step.name === "replace_in_file") {
       const target = typeof step.args.path === "string" ? step.args.path : "";
@@ -162,10 +178,26 @@ export const action_lines = (steps: ToolStep[], feed: FeedLine[], current_call: 
       const path_only = JSON.stringify(base);
       const text = writes.includes(step) && content ? JSON.stringify({ ...base, text: head_tail(content, write_chars) }) : path_only;
       const full = content ? JSON.stringify({ ...base, text: content }) : path_only;
-      return { key: step.id, kind: "write", full, text, path_only };
+      return { key, kind: "write", full, text, path_only };
     }
     const arg = string_arg(step.args);
     const text = JSON.stringify({ tool: step.name, arg: arg.length > arg_chars ? `${arg.slice(0, arg_chars)}…` : arg, status: step.status });
-    return { key: step.id, kind: "other", full: JSON.stringify({ tool: step.name, arg, status: step.status }), text, path_only: text };
+    return { key, kind: "other", full: JSON.stringify({ tool: step.name, arg, status: step.status }), text, path_only: text };
   });
+};
+
+export const action_lines = (steps: ReviewStep[], feed: FeedLine[], current_call: string): ActionLine[] => {
+  const batch = new Set(response_calls(steps, current_call));
+  return render_actions(steps.filter((step) => !batch.has(step) && step.status !== "drafting" && step.status !== "queued"), feed);
+};
+
+const identity_first = (step: ReviewStep): ReviewStep => {
+  const identity = identity_args.get(step.name);
+  if (!identity || typeof step.args[identity] !== "string") return step;
+  return { ...step, args: { [identity]: step.args[identity], ...step.args } };
+};
+
+export const parallel_actions = (steps: ReviewStep[], feed: FeedLine[], current_call: string): string[] => {
+  const siblings = response_calls(steps, current_call).filter((step) => step.call_id !== current_call);
+  return render_actions(siblings.map(identity_first), feed).map((line) => line.path_only);
 };

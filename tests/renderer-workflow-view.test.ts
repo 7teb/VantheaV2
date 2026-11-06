@@ -270,7 +270,7 @@ test("a tool group with a running workflow names it in its head but stays closed
     store_with([summary_of("completed", [agent_entry(0, "completed")])]);
     client.flushSync(() => mock.timers.tick(700));
     assert.equal(one("work-group").hasAttribute("data-running"), false);
-    assert.equal(one("tool-row-label", head).textContent, "Read 1 file, ran 1 workflow");
+    assert.equal(one("tool-row-label", head).textContent, "Read a file, ran a workflow");
     press(one("work-group-head"));
     assert.equal(one("work-group").getAttribute("data-open"), "true");
   } finally {

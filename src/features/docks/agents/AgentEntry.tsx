@@ -8,6 +8,7 @@ import { agent_approvals_store, is_waiting } from "../../../state/agent-approval
 import { cancel_agent, select_agent_run } from "../../../state/agents.ts";
 import { find_model } from "../../../../shared/models.ts";
 import { models_store } from "../../../state/models.ts";
+import { effort_label } from "../../composer/composer-hooks.ts";
 import { use_store } from "../../../state/use-store.ts";
 import { first_line, profile_labels, run_duration, status_icons } from "./agent-meta.ts";
 import "./agents.css";
@@ -54,9 +55,10 @@ export const AgentEntry = ({ agent, now }: { agent: AgentSummary; now: number })
   const [stopping, set_stopping] = useState(false);
   const [error, set_error] = useState("");
   const model = find_model(catalog, agent.model)?.label ?? agent.model;
+  const effort = agent.effort ? effort_label(t, agent.effort) : "";
   const running = agent.runs.some((run) => run.status === "running");
   const without = agent.without_tools.length ? t("agent.without_tools", { x: agent.without_tools.join(", ") }) : "";
-  const meta = [agent.topic, t(profile_labels[agent.profile]), without, model].filter(Boolean).join(" · ");
+  const meta = [agent.topic, t(profile_labels[agent.profile]), without, model, effort].filter(Boolean).join(" · ");
 
   const stop = async () => {
     set_stopping(true);

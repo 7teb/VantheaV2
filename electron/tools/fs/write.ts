@@ -5,12 +5,13 @@ import { actor_label } from "../../permissions/script-retention.ts";
 import { stat_optional } from "../../permissions/source-read.ts";
 import { tool_gate } from "../../permissions/tool-gate.ts";
 import { record_write } from "../../permissions/written-files.ts";
-import { commit_edit, prepare_replace, prepare_write, type PreparedEdit } from "../../project/edit.ts";
+import { commit_edit, prepare_replace, prepare_write, type PreparedEdit, type PreparedReplace } from "../../project/edit.ts";
 import { read_refusal, record_read } from "../../project/read-ledger.ts";
 import { turn_diffs } from "../../turn-diff/index.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool, ToolArgumentError, type ToolContext, type ToolProfile, type ToolResult } from "../types.ts";
 import { denied, failed, guarded, read_int_arg, read_text_arg } from "./common.ts";
+import { shown_path, tool_root } from "./file-scope.ts";
 import { style_check } from "./style-check.ts";
 
 const write_profiles: ToolProfile[] = ["main", "worker"];
@@ -23,6 +24,18 @@ const edit_view = (prepared: PreparedEdit): ToolView => ({
   removed: prepared.diff.removed,
   diff: prepared.diff.lines,
 });
+
+const prepared_write = async (ctx: ToolContext, requested: string, content: string): Promise<PreparedEdit> => {
+  const root = await tool_root(ctx, requested);
+  const prepared = await prepare_write(root.root, root.relative, content);
+  return { ...prepared, target: shown_path(prepared.target, root) };
+};
+
+const prepared_replace = async (ctx: ToolContext, args: ReplaceArgs): Promise<PreparedReplace> => {
+  const root = await tool_root(ctx, args.path);
+  const prepared = await prepare_replace(root.root, root.relative, args.old_string, args.new_string, args.expected);
+  return { ...prepared, target: shown_path(prepared.target, root) };
+};
 
 const instruction_subject = (prepared: PreparedEdit): string =>
   [`${prepared.previous === null ? "create" : "edit"} ${prepared.target.relative} (+${prepared.diff.added} -${prepared.diff.removed})`, diff_lines_text(prepared.diff.lines)].join("\n");
@@ -65,11 +78,11 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
 export const write_file_tool = define_tool<{ path: string; content: string }>({
   spec: {
     name: "write_file",
-    description: "Create a file or overwrite it with the given text. A new file is written as UTF-8; an existing file keeps its encoding (UTF-8, UTF-16 or Windows-1252). path is project-relative; missing folders are created. To overwrite an existing file you must have read it with read_file, and it must not have changed on disk since your last read or write of it; otherwise the call fails and nothing is written. Prefer replace_in_file for small changes to an existing file.",
+    description: "Create a file or overwrite it with the given text. A new file is written as UTF-8; an existing file keeps its encoding (UTF-8, UTF-16 or Windows-1252). path is project-relative or an absolute path inside your scratchpad; missing folders are created. To overwrite an existing file you must have read it with read_file, and it must not have changed on disk since your last read or write of it; otherwise the call fails and nothing is written. Prefer replace_in_file for small changes to an existing file.",
     parameters: {
       type: "object",
       properties: {
-        path: { type: "string" },
+        path: { type: "string", description: "Project-relative file path, or an absolute path inside your scratchpad." },
         content: { type: "string", description: "The complete file text." },
       },
       required: ["path", "content"],
@@ -80,7 +93,7 @@ export const write_file_tool = define_tool<{ path: string; content: string }>({
   parse: (raw) => ({ path: require_string(raw, "path"), content: read_text_arg(raw, "content") }),
   run: (ctx, args) =>
     guarded(ctx, "write_file", async () => {
-      const prepared = await prepare_write(ctx.project_root, args.path, args.content);
+      const prepared = await prepared_write(ctx, args.path, args.content);
       if (prepared.previous === args.content && prepared.previous_sha256 !== null) {
         await record_read(ctx.chat_id, ctx.review.actor.id, prepared.target.target, prepared.previous_sha256);
         return { status: "done", text: `${prepared.target.relative} already has exactly this content; nothing was written.`, view: edit_view(prepared) };
@@ -117,7 +130,7 @@ export const replace_in_file_tool = define_tool<ReplaceArgs>({
     parameters: {
       type: "object",
       properties: {
-        path: { type: "string" },
+        path: { type: "string", description: "Project-relative file path, or an absolute path inside your scratchpad." },
         old_string: { type: "string", description: "Text copied from the file, with enough surrounding lines to be unique." },
         new_string: { type: "string" },
         expected_replacements: { type: "number", description: "How many occurrences to replace. Default 1." },
@@ -130,7 +143,7 @@ export const replace_in_file_tool = define_tool<ReplaceArgs>({
   parse: parse_replace,
   run: (ctx, args) =>
     guarded(ctx, "replace_in_file", async () => {
-      const prepared = await prepare_replace(ctx.project_root, args.path, args.old_string, args.new_string, args.expected);
+      const prepared = await prepared_replace(ctx, args);
       const flexible = prepared.flexible ? ", matched with flexible whitespace" : "";
       const count = prepared.replaced === 1 ? "1 occurrence" : `${prepared.replaced} occurrences`;
       return apply_edit(ctx, "replace_in_file", prepared, `Replaced ${count} in ${prepared.target.relative}${flexible}`);

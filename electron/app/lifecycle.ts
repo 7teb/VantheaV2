@@ -30,6 +30,7 @@ import { check_project_folders } from "../project/follow.ts";
 import { forget_chat_reads } from "../project/read-ledger.ts";
 import { set_prompt_sections } from "../prompts/index.ts";
 import { shutdown_remote } from "../remote/server.ts";
+import { close_scratchpads, remove_scratchpad } from "../scratchpad/index.ts";
 import { forget_answers, settle_answers } from "../questions/answers.ts";
 import { get_secret, get_settings, update_settings } from "../settings/store.ts";
 import { side_model } from "../side/model.ts";
@@ -150,6 +151,7 @@ const wire_hooks = () => {
     close_chat_terminals(chat_id);
     stop_chat_files_watch(chat_id);
     turn_diffs.remove_chat(chat_id).catch((error) => console.error(`[turn-diff] removing the turn snapshots of the deleted chat ${chat_id} failed:`, error));
+    remove_scratchpad(chat_id).catch((error) => console.error(`[scratchpad] removing the scratchpad of the deleted chat ${chat_id} failed:`, error));
     const { worktree } = meta;
     if (worktree) {
       release_worktree({ chat_id, project_path: meta.project_path, worktree, settled: Promise.all([turn_settled(chat_id), agents_cleared, workflows_cleared]) }).catch((error) =>
@@ -226,6 +228,7 @@ export const shutdown_services = (): void => {
   shutdown_github();
   shutdown_git();
   shutdown_background_sync();
+  close_scratchpads();
   flush_all_sync();
   flush_pending_sync();
   shutdown_mcp();

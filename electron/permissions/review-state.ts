@@ -103,7 +103,14 @@ export const review_parts = (input: StateInput, level: TrimLevel, dropped_humans
   const decisions = new Map(input.feed.map((line) => [line.key, feed_text(line)]));
   const actions = new Map(input.actions.map((line) => [line.key, line.full]));
   const scripts = new Map(input.retained.map((entry) => [entry.key, retained_line(entry)]));
-  if (previous && level === 0 && previous.level === 0 && previous.generation === chat.generation && previous.task === task) {
+  if (
+    previous &&
+    level === 0 &&
+    previous.level === 0 &&
+    previous.generation === chat.generation &&
+    previous.task === task &&
+    [...previous.actions.keys()].every((key) => actions.has(key))
+  ) {
     const block = later_block({
       decisions: fresh_lines(decisions, previous.decisions),
       actions: fresh_lines(actions, previous.actions),

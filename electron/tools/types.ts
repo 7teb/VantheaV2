@@ -1,9 +1,9 @@
 import type { ApprovalDecision, ApprovalRequest, HumanDecision } from "../../shared/approval.ts";
-import type { PermissionMode, ToolProgress, ToolStep } from "../../shared/chat.ts";
+import type { PermissionMode, ToolProgress } from "../../shared/chat.ts";
 import type { NativeSize } from "../../shared/image-fit.ts";
 import type { PeerType } from "../../shared/peer-notes.ts";
 import type { ModelEntry, SideModelRole } from "../../shared/models.ts";
-import type { ReviewActor, ReviewRecord, ReviewUsage } from "../../shared/review.ts";
+import type { ReviewActor, ReviewRecord, ReviewStep, ReviewUsage } from "../../shared/review.ts";
 import type { Settings } from "../../shared/settings.ts";
 import type { ToolFailure } from "../../shared/tool-failure.ts";
 import type { ToolView } from "../../shared/tool-view.ts";
@@ -29,7 +29,7 @@ export type ReviewReply = { text: string; finish_reason: string | null; usage: R
 
 export type ReviewModelCall = ((call: ReviewCall, signal: AbortSignal) => Promise<ReviewReply>) & { prompt_room?: () => Promise<number | null> };
 
-export type ReviewHistory = { records: ReviewRecord[]; steps: ToolStep[]; earlier_commands: number };
+export type ReviewHistory = { records: ReviewRecord[]; steps: ReviewStep[]; earlier_commands: number };
 
 export type ActorReview = {
   actor: ReviewActor;

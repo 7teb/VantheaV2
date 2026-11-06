@@ -7,6 +7,7 @@ import { read_text_window } from "../../project/text-window.ts";
 import { read_string, require_string } from "../browser/common.ts";
 import { define_tool, type ToolProfile } from "../types.ts";
 import { failed, format_size, guarded, read_int_arg } from "./common.ts";
+import { resolve_tool_path, type FileScope } from "./file-scope.ts";
 import { secret_read_refused } from "./secret-read.ts";
 
 const max_listed_files = 1000;
@@ -17,8 +18,8 @@ const read_max_tokens = 25_000;
 
 export const read_profiles: ToolProfile[] = ["main", "plan", "explore", "worker"];
 
-export const readable_file = async (project_root: string, relative: string) => {
-  const scoped = await resolve_inside(project_root, relative);
+export const readable_file = async (scope: FileScope, requested: string) => {
+  const scoped = await resolve_tool_path(scope, requested);
   if (!(await fs.stat(scoped.target)).isFile()) {
     throw new Error(`${scoped.relative} is not a file`);
   }
@@ -104,7 +105,7 @@ export const read_file_tool = define_tool<ReadArgs>({
     parameters: {
       type: "object",
       properties: {
-        path: { type: "string", description: "Project-relative file path." },
+        path: { type: "string", description: "Project-relative file path, or an absolute path inside your scratchpad." },
         start_line: { type: "number", description: "First line to return, 1-based. Default 1." },
         limit: { type: "number", description: "Number of lines to return." },
       },
@@ -121,7 +122,7 @@ export const read_file_tool = define_tool<ReadArgs>({
   }),
   run: (ctx, args) =>
     guarded(ctx, "read_file", async () => {
-      const scoped = await readable_file(ctx.project_root, args.path);
+      const scoped = await readable_file(ctx, args.path);
       const refused = await secret_read_refused(ctx, { tool: "read_file", path: scoped.relative, query: null });
       if (refused) {
         return refused;

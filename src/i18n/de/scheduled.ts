@@ -84,6 +84,6 @@ export const scheduled: Record<keyof typeof en, string> = {
   "scheduled.count_none": "Keine geplanten Aufgaben",
   "scheduled.count_one": "{n} geplante Aufgabe",
   "scheduled.count_other": "{n} geplante Aufgaben",
-  "scheduled.combine_one": "{n} geplante Aufgabe geändert",
-  "scheduled.combine_other": "{n} geplante Aufgaben geändert",
+  "scheduled.combine_one": "eine geplante Aufgabe geändert",
+  "scheduled.combine_other": "geplante Aufgaben geändert",
 };

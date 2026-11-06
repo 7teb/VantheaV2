@@ -33,7 +33,7 @@ test("letters are split by grapheme, so a combined character or emoji stays whol
 });
 
 test("an inactive label renders its plain text without letter spans", () => {
-  assert.equal(client.WorkingLetters.type({ text: "Read 2 files", active: false }).props.children, "Read 2 files");
+  assert.equal(client.WorkingLetters.type({ text: "Read files", active: false }).props.children, "Read files");
 });
 
 test("the working label is a readable dim base and each letter peaks to white in turn", () => {

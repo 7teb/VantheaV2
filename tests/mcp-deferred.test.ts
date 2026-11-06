@@ -109,6 +109,7 @@ const section_input: SectionInput = {
   plan: false,
   personality: "pragmatic",
   project_root: "C:/proj",
+  scratchpad: null,
   project_docs: [],
   listing: "",
   custom_instructions: "",
@@ -154,5 +155,5 @@ test("a load shows as a closed Loaded tools row and a proxied call shows as the 
   assert.equal(tool_meta(running).category, "mcp");
   const done = step("call_mcp_tool", { kind: "mcp", server: "ce", tool: "aob_scan", text: "found", is_error: false }, { name: "mcp__ce__aob_scan", arguments: {} }, "found");
   assert.equal(tool_label(t, done), "ce · aob_scan");
-  assert.equal(group_label(t, [loaded, done]), "Loaded tools, 1 MCP call");
+  assert.equal(group_label(t, [loaded, done]), "Loaded tools, called an MCP tool");
 });
