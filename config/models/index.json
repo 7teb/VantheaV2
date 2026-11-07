@@ -9,10 +9,8 @@
     "google.json",
     "x-ai.json",
     "z-ai.json",
-    "inclusionai.json",
     "anthropic.json",
-    "meta.json",
-    "unbiased.json"
+    "stealth.json"
   ],
   "side": {
     "title": "google/gemini-3.1-flash-lite",

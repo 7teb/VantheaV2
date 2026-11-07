@@ -97,7 +97,8 @@ test("the shell section explains run_bash only when it is offered and keeps Powe
   assert.doesNotMatch(shell_body(sections(["run_command", "write_file"])), /run_bash/);
   const main = shell_body(sections(["run_command", "run_bash", "write_file", "replace_in_file", "start_background_task"]));
   assert.match(main, /run_bash runs its string with Git Bash/);
-  assert.match(main, /PowerShell through run_command stays the default shell/);
+  assert.match(main, /PowerShell through run_command is the default shell/);
+  assert.match(main, /ask for Git Bash or bash, that replaces the default: run every command that bash can run through run_bash/);
   assert.match(main, /double the slash of such switches \(cmd \/\/c, taskkill \/\/F\)/);
   assert.match(main, /start_background_task with shell bash/);
   const worker = shell_body(sections(["run_command", "run_bash", "write_file", "replace_in_file"]));

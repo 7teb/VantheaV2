@@ -4,6 +4,7 @@
     "label": "DeepSeek V4.1 Flash",
     "provider": "DeepSeek",
     "provider_order": ["deepseek", "relace/fast"],
+    "tiers": { "fast": { "provider_order": ["baseten/fast"], "max_output": 262144 } },
     "efforts": ["low", "high", "max"],
     "default_effort": "high",
     "vision": true,

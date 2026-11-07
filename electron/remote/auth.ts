@@ -21,3 +21,5 @@ export const current_token = (): string => token;
 export const pair = (query_token: string): string | null => (token_matches(token, query_token) ? session_cookie(token, new_session_id()) : null);
 
 export const session_of = (request: IncomingMessage): string | null => verify_session(token, request.headers.cookie ?? "");
+
+export const still_paired = (request: IncomingMessage, session_id: string): boolean => session_of(request) === session_id;

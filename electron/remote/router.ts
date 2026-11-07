@@ -105,7 +105,7 @@ const handle_request = async (request: IncomingMessage, response: ServerResponse
     if (!session_id) {
       return send_empty(response, 401);
     }
-    return target ? send_media(target, method, response, security_headers) : send_empty(response, 404);
+    return target ? send_media(request, session_id, target, response, security_headers) : send_empty(response, 404);
   }
   if (!session_id) {
     return send_page(response, method, 401, unpaired_page());

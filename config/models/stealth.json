@@ -1,0 +1,14 @@
+[
+  {
+    "id": "stealth/crouton-alpha",
+    "label": "Crouton Alpha",
+    "provider": "Stealth",
+    "provider_order": ["stealth"],
+    "efforts": ["low", "medium", "high"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1048576,
+    "max_output": 943718,
+    "note": "Free stealth model on OpenRouter (provider Stealth, listed since 2026-11-03), described there as a lightweight model for coding, agent sub-tasks, tool use and document analysis. Reads images, 1M window. In the VantheaX agent bench on 2026-11-07 it solved 8 of 9 tasks at high effort, about the level of DeepSeek V4.1 Flash and somewhat faster. A stealth model can change or disappear without notice."
+  }
+]

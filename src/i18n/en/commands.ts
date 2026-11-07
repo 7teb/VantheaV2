@@ -36,7 +36,7 @@ export const commands = {
   "commands.review": "Review",
   "commands.review_hint": "Current changes, or /review 123 for a pull request",
   "commands.pro_hint": "Run the GPT model in Pro mode",
-  "commands.fast_hint": "Faster OpenAI serving at about twice the price",
+  "commands.fast_hint": "Faster serving at a higher price",
   "commands.ultrafast_hint": "Fastest OpenAI serving at about six times the price",
   "commands.flex_hint": "Half price, slower, standard serving when Flex is busy",
   "commands.fork": "Fork chat",

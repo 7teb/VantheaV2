@@ -7,7 +7,7 @@ type SettingsGroupProps = { label?: string; children: ReactNode };
 export const SettingsGroup = ({ label, children }: SettingsGroupProps) => (
   <section className="settings-group">
     {label && <div className="settings-group-label section-label">{label}</div>}
-    <div className="settings-group-body inset-surface">{children}</div>
+    <div className="settings-group-body">{children}</div>
   </section>
 );
 

@@ -26,7 +26,7 @@ export const model: ModelEntry = {
   reasoning_passback: false,
 };
 
-export const flex_model: ModelEntry = { ...model, id: "test/flex-model", provider_order: ["test/default"], tiers: { flex: ["test/flex"] } };
+export const flex_model: ModelEntry = { ...model, id: "test/flex-model", provider_order: ["test/default"], tiers: { flex: { provider_order: ["test/flex"] } } };
 
 export const settings ={ custom_instructions: "", web_search: { topic: "general" } } as Settings;
 

@@ -9,6 +9,8 @@ export const speed_tiers = ["fast", "ultrafast", "flex"] as const;
 
 export type SpeedTier = (typeof speed_tiers)[number];
 
+export type SpeedRoute = { provider_order: string[]; id?: string; max_output?: number };
+
 export type ModelChoice = { model: string; effort: string; pro: boolean; tier?: SpeedTier };
 
 export const verbosity_levels = ["low", "medium", "high", "xhigh", "max"] as const;
@@ -31,7 +33,7 @@ export type ModelEntry = {
   note?: string;
   fallback?: ModelRoute;
   pro?: ProVariant;
-  tiers?: Partial<Record<SpeedTier, string[]>>;
+  tiers?: Partial<Record<SpeedTier, SpeedRoute>>;
   default_context?: ModelContext;
 };
 
@@ -75,7 +77,17 @@ const tier_names: Record<SpeedTier, string> = { fast: "Fast", ultrafast: "Ultraf
 
 export const with_tier = (model: ModelEntry, tier: SpeedTier | undefined): ModelEntry => {
   const route = tier ? model.tiers?.[tier] : undefined;
-  return tier && route ? { ...model, label: `${model.label} ${tier_names[tier]}`, provider_order: route } : model;
+  if (!tier || !route) {
+    return model;
+  }
+
+  return {
+    ...model,
+    id: route.id ?? model.id,
+    label: `${model.label} ${tier_names[tier]}`,
+    provider_order: route.provider_order,
+    max_output: route.max_output ?? model.max_output,
+  };
 };
 
 const flex_suffix = ":floor";
@@ -88,13 +100,29 @@ export const with_choice = (model: ModelEntry, choice: Pick<ModelChoice, "pro" |
 
 export type ModelListing = { entry: ModelEntry; pro: boolean; tier?: SpeedTier };
 
+const tier_listing = (models: readonly ModelEntry[], id: string): ModelListing | null => {
+  for (const entry of models) {
+    const tier = speed_tiers.find((name) => entry.tiers?.[name]?.id === id);
+    if (tier) {
+      return { entry, pro: false, tier };
+    }
+  }
+
+  return null;
+};
+
 export const model_listing = (models: readonly ModelEntry[], id: string): ModelListing | null => {
   const base = flex_base(id);
   const wanted = base ?? id;
   const entry = models.find((model) => model.id === wanted || model.pro?.id === wanted);
-  if (!entry || (base && !entry.tiers?.flex)) {
+  if (!entry) {
+    return base ? null : tier_listing(models, id);
+  }
+
+  if (base && !entry.tiers?.flex) {
     return null;
   }
+
   return { entry, pro: entry.id !== wanted, ...(base ? { tier: "flex" as const } : {}) };
 };
 

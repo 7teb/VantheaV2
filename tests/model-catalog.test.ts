@@ -48,7 +48,7 @@ test("the shipped catalog parses and holds no NVIDIA entry", () => {
     assert.equal(model.efforts.at(-1), major_effort, model.id);
     assert.ok(model.efforts.includes(model.default_effort), model.id);
   }
-  assert.deepEqual(catalog.models.filter((model) => !model.efforts.length).map((model) => model.id), ["unbiased/pareto-26.9"]);
+  assert.deepEqual(catalog.models.filter((model) => !model.efforts.length).map((model) => model.id), []);
   assert.deepEqual(Object.keys(catalog.side).sort(), ["git_text", "memory", "overseer", "reasoning_status", "title", "transcription", "vision"]);
   assert.equal(catalog.side.title, "google/gemini-3.1-flash-lite");
   assert.equal(catalog.side.reasoning_status, "google/gemini-3.5-flash-lite");
@@ -145,25 +145,21 @@ test("exactly the shipped vision models take images, so a flag flip or a new mod
   const vision = parse_catalog(shipped()).models.filter((model) => model.vision).map((model) => model.id);
   assert.deepEqual(vision, [
     "deepseek/deepseek-v4.1-flash-1017",
-    "moonshotai/kimi-k3",
     "moonshotai/kimi-k3.1-pro",
     "xiaomi/mimo-v2.6-pro",
-    "xiaomi/mimo-v2.6-pro-ultraspeed",
     "minimax/minimax-m3.1-flash",
     "qwen/qwen3.8-max-0902",
     "openai/gpt-6.1-sol",
     "openai/gpt-6.1-terra",
     "openai/gpt-6-luna",
     "openai/gpt-6-astra",
-    "google/gemini-3.8-flash",
     "google/gemini-4-argon",
     "x-ai/grok-4.7",
     "z-ai/glm-5.3-flash",
     "anthropic/claude-haiku-5.5",
     "anthropic/claude-sonnet-5.5",
     "anthropic/claude-opus-5.5",
-    "meta/muse-wonder",
-    "unbiased/pareto-26.9",
+    "stealth/crouton-alpha",
   ]);
 });
 
@@ -187,7 +183,7 @@ test("the catalog folder lists every model file once and each model sits in the 
   }
   const catalog = parse_catalog(shipped());
   assert.equal(catalog.models[0]?.id, "deepseek/deepseek-v4.1-flash-1017");
-  assert.equal(catalog.models.at(-1)?.id, "unbiased/pareto-26.9");
+  assert.equal(catalog.models.at(-1)?.id, "stealth/crouton-alpha");
 });
 
 test("the catalog reader joins the model files in index order and names the file that failed", async () => {

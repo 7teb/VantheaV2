@@ -83,11 +83,12 @@ test("Fast, Ultrafast and Flex route the same model to the provider's other endp
   assert.deepEqual(
     catalog.models.filter((model) => model.tiers).map((model) => [model.id, Object.keys(model.tiers ?? {}).join(",")]),
     [
+      ["deepseek/deepseek-v4.1-flash-1017", "fast"],
+      ["xiaomi/mimo-v2.6-pro", "fast"],
       ["openai/gpt-6.1-sol", "fast,ultrafast,flex"],
       ["openai/gpt-6.1-terra", "fast,flex"],
       ["openai/gpt-6-luna", "fast"],
       ["openai/gpt-6-astra", "fast,ultrafast,flex"],
-      ["google/gemini-3.8-flash", "flex"],
       ["google/gemini-4-argon", "flex"],
     ],
   );
@@ -97,6 +98,19 @@ test("Fast, Ultrafast and Flex route the same model to the provider's other endp
   assert.deepEqual([fast_pro.id, fast_pro.label, fast_pro.provider_order], ["openai/gpt-6.1-sol-pro", "GPT 6.1 Sol Pro Fast", ["openai/fast"]]);
   const ultrafast = with_choice(sol, { pro: false, tier: "ultrafast" });
   assert.deepEqual([ultrafast.id, ultrafast.label, ultrafast.provider_order], ["openai/gpt-6.1-sol", "GPT 6.1 Sol Ultrafast", ["openai/ultrafast"]]);
+  assert.equal(ultrafast.max_output, sol.max_output);
+  const deepseek = catalog.models.find((model) => model.id === "deepseek/deepseek-v4.1-flash-1017");
+  assert.ok(deepseek);
+  const deepseek_fast = with_choice(deepseek, { pro: false, tier: "fast" });
+  assert.deepEqual(
+    [deepseek_fast.label, deepseek_fast.provider_order, deepseek_fast.max_output],
+    ["DeepSeek V4.1 Flash Fast", ["baseten/fast"], 262144],
+  );
+  const mimo = catalog.models.find((model) => model.id === "xiaomi/mimo-v2.6-pro");
+  assert.ok(mimo);
+  const mimo_fast = with_choice(mimo, { pro: false, tier: "fast" });
+  assert.deepEqual([mimo_fast.id, mimo_fast.label, mimo_fast.provider_order], ["xiaomi/mimo-v2.6-pro-ultraspeed", "MiMo V2.6 Pro Fast", ["xiaomi"]]);
+  assert.deepEqual(model_listing(catalog.models, "xiaomi/mimo-v2.6-pro-ultraspeed"), { entry: mimo, pro: false, tier: "fast" });
   const terra = catalog.models.find((model) => model.id === "openai/gpt-6.1-terra");
   assert.ok(terra);
   assert.equal(with_choice(terra, { pro: false, tier: "ultrafast" }), terra);
@@ -109,5 +123,7 @@ test("Fast, Ultrafast and Flex route the same model to the provider's other endp
   luna.tiers = { warp: ["openai/warp"] };
   assert.throws(() => parse_catalog(wrong), /tiers\.warp: must be one of fast, ultrafast, flex/);
   luna.tiers = { fast: "openai/fast" };
-  assert.throws(() => parse_catalog(wrong), /tiers\.fast: must be an array of strings/);
+  assert.throws(() => parse_catalog(wrong), /tiers\.fast: must be an array of strings or an object with provider_order/);
+  luna.tiers = { fast: { id: "openai/gpt-6-luna-fast" } };
+  assert.throws(() => parse_catalog(wrong), /tiers\.fast\.provider_order: must be an array of strings/);
 });

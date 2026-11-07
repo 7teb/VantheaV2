@@ -1,4 +1,4 @@
-import { find_model, verbosity_levels, type ImageModelEntry, type ModelCatalog, type ModelEntry, type ProVariant, type SideModelEntry, speed_tiers, type SpeedTier, type SideModelRole, type Verbosity } from "../../shared/models.ts";
+import { find_model, verbosity_levels, type ImageModelEntry, type ModelCatalog, type ModelEntry, type ProVariant, type SideModelEntry, speed_tiers, type SpeedRoute, type SpeedTier, type SideModelRole, type Verbosity } from "../../shared/models.ts";
 import { compact_percent_range, min_context_limit, type ModelContext } from "../../shared/settings.ts";
 
 export const major_effort = "major";
@@ -56,14 +56,32 @@ const parse_pro = (value: unknown, where: string): ProVariant => {
   return { id: as_text(raw.id, `${where}.id`), label: as_text(raw.label, `${where}.label`) };
 };
 
-const parse_tiers = (value: unknown, where: string): Partial<Record<SpeedTier, string[]>> => {
-  const tiers: Partial<Record<SpeedTier, string[]>> = {};
+const parse_speed_route = (value: unknown, where: string): SpeedRoute => {
+  if (Array.isArray(value)) {
+    return { provider_order: as_texts(value, where) };
+  }
+
+  if (!value || typeof value !== "object") {
+    return fail(where, "must be an array of strings or an object with provider_order");
+  }
+
+  const raw = value as Raw;
+  return {
+    provider_order: as_texts(raw.provider_order, `${where}.provider_order`),
+    ...(raw.id === undefined ? {} : { id: as_text(raw.id, `${where}.id`) }),
+    ...(raw.max_output === undefined ? {} : { max_output: as_count(raw.max_output, `${where}.max_output`) }),
+  };
+};
+
+const parse_tiers = (value: unknown, where: string): Partial<Record<SpeedTier, SpeedRoute>> => {
+  const tiers: Partial<Record<SpeedTier, SpeedRoute>> = {};
   for (const [key, route] of Object.entries(as_record(value, where))) {
     const tier = speed_tiers.find((entry) => entry === key);
     if (!tier) {
       return fail(`${where}.${key}`, `must be one of ${speed_tiers.join(", ")}`);
     }
-    tiers[tier] = as_texts(route, `${where}.${key}`);
+
+    tiers[tier] = parse_speed_route(route, `${where}.${key}`);
   }
   return tiers;
 };

@@ -5,6 +5,7 @@ import { client_header, client_id_pattern, decode_wire, encode_wire, rpc_body_li
 import { note_client, remote_client_id } from "../ipc/clients.ts";
 import { dispatch_invoke, dispatch_send } from "../ipc/handle.ts";
 import { error_text, is_record } from "../storage/coerce.ts";
+import { still_paired } from "./auth.ts";
 
 const max_args = 16;
 
@@ -98,10 +99,20 @@ export const handle_rpc = async (request: IncomingMessage, response: ServerRespo
     console.warn(`[remote] refused ${channel} from ${client}`);
     return fail(403, `${channel} is not available on a remote client`);
   }
+  if (!still_paired(request, session_id)) {
+    console.warn(`[remote] dropped ${channel} from ${client}: the pairing link was renewed while the request was read`);
+    return fail(401, "not paired");
+  }
+
   note_client(client);
   try {
     if (kind === "invoke") {
       const result = await dispatch_invoke(client, channel as InvokeName, args);
+      if (!still_paired(request, session_id)) {
+        console.warn(`[remote] withheld the result of ${channel} from ${client}: the pairing link was renewed while it ran`);
+        return fail(401, "not paired");
+      }
+
       return send_json(response, 200, { ok: true, result }, headers);
     }
     dispatch_send(client, channel as SendName, args);

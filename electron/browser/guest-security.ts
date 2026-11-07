@@ -1,10 +1,30 @@
-import { app, type Session, type WebContents, type WebPreferences } from "electron";
-import { is_local_page } from "../../shared/local-page.ts";
+import { app, type OnBeforeRequestListenerDetails, type Session, type WebContents, type WebPreferences } from "electron";
+import { is_local_page, is_page_asset } from "../../shared/local-page.ts";
 import { crosses_into_files, is_guest_url_allowed, plain_user_agent } from "./guest-policy.ts";
 
 type NavigationEvent = { url: string; isMainFrame: boolean; preventDefault: () => void };
 
 const unsafe_file_frame = (url: string) => /^file:/i.test(url) && !is_local_page(url);
+
+const refused_request = (details: OnBeforeRequestListenerDetails): boolean => {
+  if (details.resourceType === "mainFrame") {
+    return !is_guest_url_allowed(details.url, true);
+  }
+
+  if (!/^file:/i.test(details.url)) {
+    return false;
+  }
+
+  if (details.resourceType === "xhr") {
+    return true;
+  }
+
+  if ((details.resourceType === "subFrame" || details.resourceType === "object") && !is_local_page(details.url)) {
+    return true;
+  }
+
+  return !is_page_asset(details.webContents?.getURL() ?? "", details.url);
+};
 
 const block_unsafe_navigation = (contents: WebContents, redirect: boolean) => (event: NavigationEvent) => {
   const refused = event.isMainFrame ? !is_guest_url_allowed(event.url, true) : unsafe_file_frame(event.url);
@@ -48,12 +68,12 @@ export const secure_session = (guest_session: Session) => {
   guest_session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   guest_session.setPermissionCheckHandler(() => false);
   guest_session.webRequest.onBeforeRequest((details, callback) => {
-    const main_refused = details.resourceType === "mainFrame" && !is_guest_url_allowed(details.url, true);
-    const frame_refused = (details.resourceType === "subFrame" || details.resourceType === "object") && unsafe_file_frame(details.url);
-    if (main_refused || frame_refused) {
+    if (refused_request(details)) {
+      console.warn(`[browser] blocked ${details.resourceType} request to ${details.url.slice(0, 200)} from ${(details.webContents?.getURL() ?? "").slice(0, 200)}`);
       callback({ cancel: true });
       return;
     }
+
     callback({});
   });
   guest_session.on("will-download", (_event, item) => {

@@ -11,13 +11,15 @@ const file_url_of = (path: string): string => {
 
 export const is_local_target = (value: string): boolean => drive_path.test(value.trim()) || /^file:/i.test(value.trim());
 
+const has_unsafe_segment = (path: string): boolean => path.includes("\\") || path.split("/").some((part) => part === "." || part === "..");
+
 const local_path = (url: URL): string | null => {
   if (url.protocol !== "file:" || url.host !== "") {
     return null;
   }
   try {
     const path = decodeURIComponent(url.pathname).slice(1);
-    return drive_path.test(path) ? path : null;
+    return drive_path.test(path) && !has_unsafe_segment(path) ? path : null;
   } catch (error) {
     console.warn(`[browser] ${url.href.slice(0, 200)} has an invalid escape in its path: ${String(error)}`);
     return null;
@@ -42,5 +44,16 @@ export const local_page_url = (value: string): string | null => {
 };
 
 export const local_page_path = (value: string): string | null => (URL.canParse(value) ? local_path(new URL(value)) : null);
+
+export const is_page_asset = (page_url: string, asset_url: string): boolean => {
+  const page = local_page_path(page_url);
+  const asset = local_page_path(asset_url);
+  if (page === null || asset === null || is_secret_path(asset)) {
+    return false;
+  }
+
+  const folder = page.slice(0, page.lastIndexOf("/") + 1).toLowerCase();
+  return asset.toLowerCase().startsWith(folder);
+};
 
 export const local_page_name = (value: string): string | null => local_page_path(value)?.split("/").pop() ?? null;

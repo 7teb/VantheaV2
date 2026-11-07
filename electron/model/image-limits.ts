@@ -61,7 +61,6 @@ const rows: LimitRow[] = [
     max_encoded_bytes: 50_000_000,
     sources: ["https://platform.xiaomimimo.com/#/docs/usage-guide/multimodal-understanding/image-understanding"],
   },
-  { ...no_limit, family: "meta", provider: "meta", max_images: 50, max_encoded_bytes: 50_000_000, sources: ["https://dev.meta.ai/docs/image-understanding"] },
 ];
 
 const first_segment = (value: string) => value.split("/")[0] ?? value;

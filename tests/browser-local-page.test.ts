@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { crosses_into_files, is_guest_url_allowed, normalize_browser_page, normalize_browser_target } from "../electron/browser/guest-policy.ts";
-import { is_local_page, local_page_name, local_page_path, local_page_url } from "../shared/local-page.ts";
+import { is_local_page, is_page_asset, local_page_name, local_page_path, local_page_url } from "../shared/local-page.ts";
 import { display_browser_url, normalize_browser_url, tab_label } from "../src/features/docks/browser/browser-url.ts";
 
 test("an absolute Windows path or a file URL of an html page becomes a file URL", () => {
@@ -20,6 +20,20 @@ test("only html, xhtml and svg files on a local drive open, never secret files o
   assert.equal(local_page_url("file://server/share/page.html"), null);
   assert.equal(local_page_url("file:///C:/a/page.html.:x"), null);
   assert.equal(is_local_page("file:///C:/a/%zz.html"), false);
+});
+
+test("a local page reaches only files in its own folder tree, never secrets or escaped paths", () => {
+  const page = "file:///C:/Users/max/site/index.html";
+  assert.equal(is_page_asset(page, "file:///C:/Users/max/site/pixel.png"), true);
+  assert.equal(is_page_asset(page, "file:///c:/users/MAX/site/css/app.css"), true);
+  assert.equal(is_page_asset(page, "file:///C:/Users/max/other/pixel.png"), false);
+  assert.equal(is_page_asset(page, "file:///C:/Users/max/site-copy/pixel.png"), false);
+  assert.equal(is_page_asset(page, "file:///C:/Users/max/site/.env"), false);
+  assert.equal(is_page_asset(page, "file:///C:/Users/max/site/..%2Fsecret.txt"), false);
+  assert.equal(is_page_asset(page, "file:///C:/Users/max/site/..%5Csecret.txt"), false);
+  assert.equal(is_page_asset("https://example.com/", "file:///C:/Users/max/site/pixel.png"), false);
+  assert.equal(is_page_asset("file:///C:/Users/max/site/..%5C..%5Cx.html", "file:///C:/Users/max/site/pixel.png"), false);
+  assert.equal(is_local_page("file:///C:/a/%2E%2E%5Cb.html"), false);
 });
 
 test("the guest policy lets local pages load and refuses a web page that tries to reach one", () => {
