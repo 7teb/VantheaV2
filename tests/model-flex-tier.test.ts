@@ -26,7 +26,7 @@ test("the picker lists no Flex entries, the Flex route is a tier of the base mod
   );
   assert.deepEqual(
     catalog.models.filter((model) => model.tiers?.flex).map((model) => model.id),
-    ["openai/gpt-6.1-sol", "openai/gpt-6.1-terra", "openai/gpt-6-astra", "google/gemini-4-argon"],
+    ["openai/gpt-6.1-sol", "openai/gpt-6.1-terra", "openai/gpt-6-astra", "google/gemini-4-argon", "google/gemini-4-carbon"],
   );
 });
 

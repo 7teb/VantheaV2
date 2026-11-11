@@ -28,6 +28,7 @@ test("the shipped catalog sets context defaults for exactly the agreed models", 
       ["anthropic/claude-haiku-5.5", 100_000, 95],
       ["anthropic/claude-sonnet-5.5", null, 95],
       ["anthropic/claude-opus-5.5", null, 95],
+      ["anthropic/claude-fable-5.2", null, 95],
     ],
   );
 });

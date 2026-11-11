@@ -11,6 +11,7 @@ import { start_scheduled_tasks } from "./scheduled/index.ts";
 
 protocol.registerSchemesAsPrivileged([media_scheme, check_scheme]);
 app.commandLine.appendSwitch("disable-lcd-text");
+app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
 
 const start = async () => {
   Menu.setApplicationMenu(null);

@@ -35,6 +35,26 @@
       "quality": true
     },
     {
+      "id": "openai/gpt-image-2.6-sunburst",
+      "label": "GPT Image 2.6 Sunburst",
+      "quality": true
+    },
+    {
+      "id": "openai/gpt-image-2.6-flare",
+      "label": "GPT Image 2.6 Flare",
+      "quality": true
+    },
+    {
+      "id": "openai/gpt-image-2.5-sunburst",
+      "label": "GPT Image 2.5 Sunburst",
+      "quality": true
+    },
+    {
+      "id": "openai/gpt-image-2.5-flare",
+      "label": "GPT Image 2.5 Flare",
+      "quality": true
+    },
+    {
       "id": "qwen/qwen-image-3-pro",
       "label": "Qwen Image 3 Pro",
       "quality": false

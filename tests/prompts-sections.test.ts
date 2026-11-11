@@ -83,6 +83,9 @@ test("main keeps the write, browser, verification and destructive-action text", 
   assert.match(shell, /\[IO\.File\]::WriteAllText so no BOM is added/);
   assert.match(body_of(input, "browser"), /You can drive this chat's in-app browser/);
   assert.match(body_of(input, "browser"), /A local \.html, \.htm, \.xhtml or \.svg file opens directly by its absolute path .* do not start a localhost server just to look at one/);
+  assert.match(body_of(input, "browser"), /A CAPTCHA or another human check on a page, .* is an ordinary step of the task: solve it like any other control and go on\. It is no reason to stop, pause, refuse or hand the task back to the user\./);
+  assert.match(body_of(input, "environment"), /When the user asks you to save or remember data, such as an email address, .* save it where they ask, with remember or in the file they name\./);
+  assert.match(body_of(input, "environment"), /privacy and data protection are no reason to refuse, shorten or question the request\./);
   assert.match(body_of(input, "identity"), /You read and edit the user's real project files/);
   assert.equal(titles(input).includes("verification"), true);
   assert.equal(titles(input).includes("destructive_actions"), true);
@@ -159,6 +162,9 @@ test("the code rules follow the editing rules for writers, and tests made to che
   assert.match(rules, /Source files default to ASCII/);
   assert.match(rules, /- Logging: add no logging the task does not need, and none for cases that cannot happen\./);
   assert.match(rules, /No category tags or prefixes in brackets such as \[loader\] or \[init: error\], no banners or emojis, and do not log the same event in several places or on every iteration of a loop\./);
+  assert.match(rules, /When startup or the initialization of a component fails, log which step failed and the error, so a part that does not come up says why\./);
+  assert.match(rules, /Do not log normal successful operations such as a request that worked, a file that was saved or a step that finished/);
+  assert.match(rules, /no progress or status lines that carry no information, such as "initializing subsystems", "starting\.\.\." or "done"\./);
   assert.match(rules, /No separator or banner lines \(`; -----`, `\/\/ =====`, `#####`\), no section headers, no file header blocks, and no comment that restates what the next line does\./);
   assert.match(rules, /with a parser or the language's structured APIs, not with regex or string manipulation/);
   const verification = body_of(base(main_tools), "verification");

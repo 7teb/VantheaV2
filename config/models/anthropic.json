@@ -34,5 +34,17 @@
     "context_length": 1000000,
     "default_context": { "limit": null, "compact_percent": 95 },
     "max_output": 128000
+  },
+  {
+    "id": "anthropic/claude-fable-5.2",
+    "label": "Claude Fable 5.2",
+    "provider": "Anthropic",
+    "provider_order": ["anthropic"],
+    "efforts": ["low", "medium", "high", "xhigh", "max"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1000000,
+    "default_context": { "limit": null, "compact_percent": 95 },
+    "max_output": 128000
   }
 ]

@@ -171,7 +171,7 @@ const eval_tab = (answer: (method: string, params: Record<string, unknown>) => u
 
 test("browser_eval sends a side-effect-free, silent, time-limited evaluate and always releases its objects", async () => {
   const ok = eval_tab((method) => (method === "Runtime.evaluate" ? { result: { type: "number", value: 2, description: "2" } } : {}));
-  assert.deepEqual(await evaluate_safely(ok.tab, "document.links.length", new AbortController().signal), { thrown: false, kind: "number", text: "2" });
+  assert.deepEqual(await evaluate_safely(ok.tab, "document.links.length", new AbortController().signal), { thrown: false, kind: "number", text: "2", isolated: false });
   assert.deepEqual(ok.sent, [
     { method: "Runtime.evaluate", params: { expression: "document.links.length", objectGroup: "vx-eval", generatePreview: true, throwOnSideEffect: true, timeout: 10000, silent: true } },
     { method: "Runtime.releaseObjectGroup", params: { objectGroup: "vx-eval" } },
@@ -182,7 +182,7 @@ test("browser_eval sends a side-effect-free, silent, time-limited evaluate and a
     }
     return {};
   });
-  assert.deepEqual(await evaluate_safely(slow.tab, "while(true){}", new AbortController().signal), { thrown: true, kind: "timed out", text: "The expression ran longer than 10 s and was stopped." });
+  assert.deepEqual(await evaluate_safely(slow.tab, "while(true){}", new AbortController().signal), { thrown: true, kind: "timed out", text: "The expression ran longer than 10 s and was stopped.", isolated: false });
   assert.equal(slow.sent.at(-1)?.method, "Runtime.releaseObjectGroup");
   const broken = eval_tab((method) => {
     if (method === "Runtime.evaluate") {

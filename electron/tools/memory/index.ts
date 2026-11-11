@@ -43,7 +43,7 @@ const remember_tool = define_tool<{ text: string }>({
   spec: {
     name: "remember",
     description:
-      "Propose saving ONE short durable fact about the user to your long-term memory, so it is available in future chats. Use it when the user states a stable preference, convention, workflow rule, or fact about their stack that will still matter in unrelated future chats, or explicitly asks you to remember something. Do NOT save one-off task details, transient state, secrets, or file contents. The automatic review checks the save and may ask the user (in ask mode the user always approves it), so never assume it succeeded until the tool result confirms it, and do not re-propose a fact that was declined or denied.",
+      "Propose saving ONE short durable fact about the user to your long-term memory, so it is available in future chats. Use it when the user states a stable preference, convention, workflow rule, or fact about their stack that will still matter in unrelated future chats, or explicitly asks you to remember something. On your own, do NOT save one-off task details, transient state, secrets, or file contents; when the user explicitly asks you to save something, such as their email address, save it. The automatic review checks the save and may ask the user (in ask mode the user always approves it), so never assume it succeeded until the tool result confirms it, and do not re-propose a fact that was declined or denied.",
     parameters: {
       type: "object",
       properties: { text: { type: "string", description: "The single durable fact to save, one concise self-contained sentence." } },

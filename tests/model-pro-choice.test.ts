@@ -90,6 +90,7 @@ test("Fast, Ultrafast and Flex route the same model to the provider's other endp
       ["openai/gpt-6-luna", "fast"],
       ["openai/gpt-6-astra", "fast,ultrafast,flex"],
       ["google/gemini-4-argon", "flex"],
+      ["google/gemini-4-carbon", "flex"],
     ],
   );
   const sol = catalog.models.find((model) => model.id === "openai/gpt-6.1-sol");

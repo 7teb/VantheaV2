@@ -11,5 +11,18 @@
     "context_length": 1048576,
     "max_output": 65536,
     "note": "Google's flagship reasoning model for software engineering and long multi-step agent work. Reads images, 1M window. 2 USD per million input tokens and 10 USD per million output tokens while the launch discount lasts (list price 4 and 20). Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
+  },
+  {
+    "id": "google/gemini-4-carbon",
+    "label": "Gemini 4 Carbon",
+    "tiers": { "flex": ["google-ai-studio/flex", "google-vertex/global", "google-ai-studio"] },
+    "provider": "Google",
+    "provider_order": ["google-vertex/global", "google-ai-studio"],
+    "efforts": ["low", "medium", "high"],
+    "default_effort": "medium",
+    "vision": true,
+    "context_length": 1048576,
+    "max_output": 65536,
+    "note": "Frontier Gemini 4 model from Google for coding, agent work and complex reasoning. Reads images, 1M window. 2 USD per million input tokens and 10 USD per million output tokens. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
   }
 ]
