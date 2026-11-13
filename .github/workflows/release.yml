@@ -30,6 +30,9 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Install the Electron binary
+        run: node node_modules/electron/install.js
+
       - name: Set the version
         run: npm version $env:TAG.TrimStart('v') --no-git-tag-version --allow-same-version
 
