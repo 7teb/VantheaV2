@@ -1,48 +1,84 @@
 import assert from "node:assert/strict";
-import { before, test } from "node:test";
+import { after, before, test } from "node:test";
+import { wave_frames, wave_timing } from "../src/components/letter-wave.ts";
 import { css_block, declarations, read } from "./css-kit.ts";
-import { bundle } from "./dom-kit.ts";
+import { bundle, FakeElement, install_dom, quiet_vx, stub_components } from "./dom-kit.ts";
 
 let client: any;
+let container: FakeElement;
+let root: any;
+let restore = () => {};
 
 before(async () => {
+  const dom = install_dom(quiet_vx);
+  restore = dom.restore;
   client = await bundle(
     [
+      'export { createElement } from "react";',
+      'export { flushSync } from "react-dom";',
+      'export { createRoot } from "react-dom/client";',
       'export { WorkingLetters } from "./src/components/WorkingLetters.tsx";',
     ],
-    [],
+    [stub_components("WorkingLetters.tsx", {})],
   );
+  container = dom.document.createElement("div");
+  dom.document.body.appendChild(container);
+  root = client.createRoot(container);
 });
 
-type Letter = { props: { className: string; style: Record<string, number>; children: string } };
-
-const letters = (props: Record<string, unknown>): Letter[] => {
-  const children = client.WorkingLetters.type(props).props.children;
-  return Array.isArray(children) ? children : [];
-};
-
-test("an active label becomes one span per letter, each with its place in the wave", () => {
-  const spans = letters({ text: "Hi you" });
-  assert.deepEqual(spans.map((span) => span.props.children), ["H", "i", " ", "y", "o", "u"]);
-  assert.deepEqual(spans.map((span) => span.props.style["--letter"]), [0, 1, 2, 3, 4, 5]);
-  assert.ok(spans.every((span) => span.props.className === "working-letter"));
+after(() => {
+  client.flushSync(() => root.render(null));
+  restore();
 });
 
-test("letters are split by grapheme, so a combined character or emoji stays whole", () => {
-  assert.deepEqual(letters({ text: "é👍🏽" }).map((span) => span.props.children), ["é", "👍🏽"]);
+const show = (props: Record<string, unknown>) => client.flushSync(() => root.render(client.createElement(client.WorkingLetters, props)));
+
+const letters = () => container.matching((element) => element.className === "working-letter");
+
+test("an active label becomes one span per grapheme inside one wave span", () => {
+  show({ text: "Hi you" });
+  assert.equal(container.matching((element) => element.className === "working-wave").length, 1);
+  assert.deepEqual(letters().map((letter) => letter.textContent), ["H", "i", " ", "y", "o", "u"]);
+  show({ text: "é👍🏽" });
+  assert.deepEqual(letters().map((letter) => letter.textContent), ["é", "👍🏽"]);
 });
 
 test("an inactive label renders its plain text without letter spans", () => {
-  assert.equal(client.WorkingLetters.type({ text: "Read files", active: false }).props.children, "Read files");
+  show({ text: "Read files", active: false });
+  assert.equal(letters().length, 0);
+  assert.equal(container.textContent, "Read files");
 });
 
-test("the working label is a readable dim base and each letter peaks to white in turn", () => {
-  const motion = read("styles/motion.css");
-  assert.deepEqual(declarations(css_block(motion, ".is-working {")), { color: "var(--working-dim)" });
-  const letter = declarations(css_block(motion, ".working-letter {"));
-  assert.equal(letter.animation, "letter-wave 2.4s var(--ease-in-out) infinite");
-  assert.equal(letter["animation-delay"], "calc(var(--letter) * 55ms)");
+test("every letter runs its own opacity animation, offset by 55 ms per letter, and a new text cancels the old ones", () => {
+  show({ text: "Run" });
+  const first = letters();
+  assert.deepEqual(
+    first.map((letter) => letter.animations.at(-1)?.options),
+    [0, 1, 2].map((index) => wave_timing(3, index)),
+  );
+  assert.ok(first.every((letter) => letter.animations.at(-1)?.frames !== undefined));
+  show({ text: "Ran" });
+  assert.ok(first.every((letter) => letter.animations.slice(0, -1).every((animation) => animation.cancelled)));
+  assert.ok(letters().every((letter) => letter.animations.at(-1)?.cancelled === false));
+});
+
+test("one wave per label runs at 55 ms per letter and rests about 4 s after the last letter before it starts again", () => {
+  assert.deepEqual(wave_timing(20, 3), { duration: 104 * 55, delay: 165, iterations: Number.POSITIVE_INFINITY, easing: "linear" });
+  assert.deepEqual(wave_frames(20), [
+    { opacity: "var(--working-dim-opacity)", offset: 0 },
+    { opacity: 1, offset: 6 / 104 },
+    { opacity: "var(--working-dim-opacity)", offset: 12 / 104 },
+    { opacity: "var(--working-dim-opacity)", offset: 1 },
+  ]);
+});
+
+test("letters animate only opacity, so the wave runs on the compositor without restyling every frame", () => {
+  const motion = read("components/WorkingLetters.css");
+  assert.doesNotMatch(motion, /@property|@keyframes|--wave/);
+  assert.deepEqual(declarations(css_block(motion, ".working-letter {")), { color: "var(--working-peak)", opacity: "var(--working-dim-opacity)" });
+  assert.deepEqual(declarations(css_block(read("styles/motion.css"), ".is-working {")), { color: "var(--working-dim)" });
   const tokens = read("styles/tokens.css");
   assert.match(tokens, /--working-dim: rgba\(252, 252, 252, 0\.46\);/);
+  assert.match(tokens, /--working-dim-opacity: 0\.46;/);
   assert.match(tokens, /--working-peak: #ffffff;/);
 });

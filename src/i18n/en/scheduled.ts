@@ -80,8 +80,6 @@ export const scheduled = {
   "scheduled.list_target": "scheduled task list",
   "scheduled.denied_target": "scheduled task change",
   "scheduled.count_none": "No scheduled tasks",
-  "scheduled.count_one": "{n} scheduled task",
-  "scheduled.count_other": "{n} scheduled tasks",
   "scheduled.combine_one": "changed a scheduled task",
   "scheduled.combine_other": "changed scheduled tasks",
 };

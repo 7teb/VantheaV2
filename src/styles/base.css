@@ -81,6 +81,10 @@
     flex: none;
   }
 
+  .icon {
+    color: var(--icon-ink);
+  }
+
   .chevron-icon {
     margin-inline: -2px;
   }
@@ -192,6 +196,31 @@
     white-space: nowrap;
   }
 
+  button,
+  label,
+  [role="button"],
+  [role="menu"],
+  [role="menuitem"],
+  [role="menuitemradio"],
+  [role="option"],
+  [role="tab"],
+  [role="switch"],
+  [role="slider"],
+  .titlebar,
+  .sidebar,
+  .composer-bar,
+  .dock-header,
+  .tooltip,
+  .code-block-head {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  :is(input, textarea) {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
   @media (hover: none) and (pointer: coarse) {
     html {
       touch-action: manipulation;
@@ -211,20 +240,6 @@
     a,
     [role="button"] {
       -webkit-tap-highlight-color: transparent;
-    }
-
-    .titlebar,
-    .sidebar-row,
-    .composer-bar,
-    .menu,
-    .composer-popover-row {
-      -webkit-user-select: none;
-      user-select: none;
-    }
-
-    .sidebar-row :is(input, textarea) {
-      -webkit-user-select: text;
-      user-select: text;
     }
   }
 }

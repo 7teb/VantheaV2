@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import type { GeneratedImage } from "../../../shared/tool-view.ts";
 import { chat_meta } from "../../chats/store.ts";
 import { save_generated_image } from "../../media/artifacts.ts";
-import { is_media_id, media_exists, resolve_media_file, sniff_image } from "../../media/files.ts";
+import { is_media_id, media_exists, media_path, resolve_media_file, sniff_image } from "../../media/files.ts";
 import { model_catalog } from "../../model/catalog-file.ts";
 import { error_text } from "../../storage/coerce.ts";
 import { chat_attachment } from "../attachments/index.ts";
@@ -39,13 +39,13 @@ export const generate_image_tool = define_tool<ImageArgs>({
   spec: {
     name: "generate_image",
     description:
-      "Generate or edit an image with a dedicated image model. The result is saved and listed in the Generated images panel, but not shown in the chat: the user sees it once you pass its id to present_images. WHEN to call: ONLY when the user explicitly asked for an image (a logo, artwork, mockup, photo edit, 'generate/draw/make me a picture of ...'), or when you offered it and the user said yes. If an image would merely be nice but was NOT requested, ASK the user in plain text first and do NOT call this tool. Never generate images unprompted and never as decoration. To EDIT or transform an image, pass its id in source_images: an image the user attached (the id attribute of its <image> tag) or one you generated earlier in this chat (the id this tool returned). Write prompt as one complete, self-contained visual description in English (subject, style, composition, colors, any text to render); the image model sees nothing of this chat except the prompt and the source images. You get back the saved image id.",
+      "Generate or edit an image with a dedicated image model. The result is saved and listed in the Generated images panel, but not shown in the chat: the user sees it once you pass its id to present_images. WHEN to call: when the user asked for an image (a logo, artwork, mockup, photo edit, 'generate/draw/make me a picture of ...'), when you offered it and the user said yes, or when the work the user asked for needs an image asset (a realistic or high-resolution background, a texture, a sprite, a photo) and the user did not say not to generate images. If an image would merely be nice but is neither requested nor needed by the work, ASK the user in plain text first and do NOT call this tool. Never generate images as decoration. To EDIT or transform an image, pass its id in source_images: an image the user attached (the id attribute of its <image> tag) or one you generated earlier in this chat (the id this tool returned). Write prompt as one complete, self-contained visual description in English (subject, style, composition, colors, any text to render); the image model sees nothing of this chat except the prompt and the source images. You get back the saved image id and the path of its file.",
     parameters: {
       type: "object",
       properties: {
         prompt: {
           type: "string",
-          description: "Complete visual description of the image to generate, or the edit to apply to the source images. English, specific, self-contained.",
+          description: "Complete visual description of the image to generate, or the edit to apply to the source images.",
         },
         source_images: {
           type: "array",
@@ -94,8 +94,8 @@ export const generate_image_tool = define_tool<ImageArgs>({
         const saved = await save_generated_image(image.bytes, image.mime, { prompt: args.prompt, chat_id: ctx.chat_id, project_path });
         images.push({ id: saved.id, ...image_size(image.bytes) });
       }
-      const ids = images.map((image) => image.id).join(", ");
-      const text = `Generated ${images.length} image${images.length === 1 ? "" : "s"} with ${model.label}: ${ids}. The user does not see it yet: pass the id to present_images where the image belongs in your answer. To edit it, pass the id in source_images.`;
+      const ids = images.map((image) => `${image.id} (file: ${media_path("image", image.id)})`).join(", ");
+      const text = `Generated ${images.length} image${images.length === 1 ? "" : "s"} with ${model.label}: ${ids}. The user does not see it yet: pass the id to present_images where the image belongs in your answer. To edit it, pass the id in source_images. To use it as an asset, copy the file into the project; never write, move or delete the file at that path.`;
       return { status: "done", text, view: { kind: "generated_images", images } };
     } catch (error) {
       if (ctx.signal.aborted) {

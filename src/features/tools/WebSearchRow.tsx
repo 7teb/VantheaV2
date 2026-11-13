@@ -25,7 +25,7 @@ export const WebSearchRow = ({ chat_id, step }: WebSearchRowProps) => {
     <div className="tool-row web-row" data-status={step.status}>
       <div className="web-row-head" title={query || undefined}>
         <span className="tool-row-icon">
-          <Icon />
+          <Icon plain />
         </span>
         <span className={class_names("tool-row-label", working && "is-working")}>
           <LabelMorph morph_key={`${working}:${label}`}>

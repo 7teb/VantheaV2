@@ -259,7 +259,7 @@ const section_input = (names: string[]): SectionInput => ({
 
 test("the main agent learns when to use without_tools and the parameter stays optional", () => {
   const body = compose_sections(section_input(["deploy_agent"])).find((section) => section.title === "sub_agents")?.body ?? "";
-  assert.match(body, /without_tools takes tools away from the chosen profile for that agent, for example run_command and run_bash for a worker that may only read and edit files; use it only when the user asks for it or the task clearly requires that the agent must not use a tool\./);
+  assert.doesNotMatch(body, /without_tools/);
   const parameters = deploy_agent_tool.spec.parameters;
   assert.deepEqual(parameters.properties.without_tools, {
     type: "array",

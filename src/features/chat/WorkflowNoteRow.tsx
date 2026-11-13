@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { WorkflowNote } from "../../../shared/workflow-notes.ts";
 import { class_names } from "../../components/class-names.ts";
-import { WorkflowIcon } from "../../components/icons.tsx";
+import { WorkflowToolIcon } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
 import "../tools/tools.css";
@@ -21,7 +21,7 @@ export const WorkflowNoteRow = memo(({ note }: { note: WorkflowNote }) => {
     <div className="agent-note tool-row enter-fade-up" data-status={failed ? "failed" : note.status}>
       <button type="button" className="tool-row-head" disabled>
         <span className="tool-row-icon">
-          <WorkflowIcon />
+          <WorkflowToolIcon plain />
         </span>
         <span className="tool-row-label">{t("workflow.note_result", { x: note.name })}</span>
         {status && <span className={class_names("tool-row-status", failed && "is-failed")}>{t(status)}</span>}

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { create_accumulator, type Accumulator } from "./accumulator.ts";
+import { create_accumulator, type Accumulator, type Assembly } from "./accumulator.ts";
 import { reasoning_fields } from "./catalog.ts";
 import type { DraftTake } from "./draft-decoder.ts";
 import { affordable_tokens, classify_provider_error, is_retryable, min_affordable_tokens, ModelError } from "./errors.ts";
@@ -20,6 +20,11 @@ type DraftReporter = { note(indices: number[]): void; flush(force: boolean): voi
 export const draft_interval_ms = 80;
 
 const fallback_after_attempts = 3;
+
+const broken_reasons = /^(malformed|unexpected_tool_call)/i;
+
+const broken_answer = (assembly: Assembly): boolean =>
+  !assembly.content.trim() && !assembly.tool_calls.length && (assembly.finish_reason === "error" || broken_reasons.test(assembly.native_finish_reason));
 
 export const make_call_id = () => `call_${randomUUID().replaceAll("-", "").slice(0, 24)}`;
 
@@ -203,6 +208,12 @@ const run_attempt = async (
   }
   drafts.flush(true);
   const assembly = accumulator.finish(known_tools, make_call_id);
+  if (broken_answer(assembly)) {
+    throw new ModelError(
+      "empty_answer",
+      `The model returned an empty answer (finish reason ${assembly.finish_reason || "none"}, provider reason ${assembly.native_finish_reason || "none"}).`,
+    );
+  }
   if (assembly.flushed_reasoning) {
     callbacks.on_reasoning(assembly.flushed_reasoning);
   }
@@ -249,15 +260,18 @@ export const stream_round = async (
     });
   };
   const attempt_route = async (model: RoundRequest["model"], offset: number, route: Transport) => {
-    try {
-      return await attempt_once(model, offset, route, request.max_tokens);
-    } catch (error) {
-      const affordable = error instanceof ModelError ? affordable_tokens(error) : null;
-      if (signal.aborted || affordable === null || !request.max_tokens || affordable >= request.max_tokens || affordable < min_affordable_tokens) {
-        throw error;
+    let max_tokens = request.max_tokens;
+    for (;;) {
+      try {
+        return await attempt_once(model, offset, route, max_tokens);
+      } catch (error) {
+        const affordable = error instanceof ModelError ? affordable_tokens(error) : null;
+        if (signal.aborted || affordable === null || !max_tokens || affordable >= max_tokens || affordable < min_affordable_tokens) {
+          throw error;
+        }
+        console.warn(`[model] ${model.id}: the credit check allows ${affordable} of ${max_tokens} output tokens, sending the round again with ${affordable}`);
+        max_tokens = affordable;
       }
-      console.warn(`[model] ${model.id}: the credit check allows ${affordable} of ${request.max_tokens} output tokens, sending the round again with ${affordable}`);
-      return attempt_once(model, offset, route, affordable);
     }
   };
   if (!fallback) {

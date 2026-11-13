@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { class_names } from "./class-names.ts";
 import { place, type Align, type Placed, type Placement, type Side, type Size } from "./placement.ts";
 import { use_layer, use_presence } from "./use-layer.ts";
@@ -86,7 +86,7 @@ export const Floating = ({
       set_placed(place_visible(anchor.getBoundingClientRect(), size, placement));
     };
     update();
-    const observer = new ResizeObserver(update);
+    const observer = new ResizeObserver(() => flushSync(update));
     observer.observe(node);
     window.addEventListener("resize", update);
     window.visualViewport?.addEventListener("resize", update);

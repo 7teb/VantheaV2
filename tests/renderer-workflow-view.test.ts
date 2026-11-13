@@ -122,8 +122,8 @@ test("a workflow is one compact row in the chat, and a click opens its run in Ba
     assert.equal(head.getAttribute("title"), "Review changed files and verify each finding\nShow in Background Tasks");
     assert.equal(one("tool-row-label", head).textContent, "Running workflow review-changes");
     assert.ok(one("tool-row-label", head).className.includes("is-working"));
-    assert.equal(one("tool-row-detail", head).textContent, "2/4 agents");
-    assert.equal(one("tool-row-elapsed", head).textContent, "1m 15s");
+    assert.equal(with_class("tool-row-detail", head).length, 0);
+    assert.equal(with_class("tool-row-elapsed", head).length, 0);
     assert.equal(with_class("workflow-view").length, 0);
     assert.equal(with_class("tool-row-chevron").length, 0);
     press(head);
@@ -194,8 +194,8 @@ test("a finished workflow names its end in the row and shows the return value in
   const head = one("tool-row-head");
   assert.equal(one("tool-row-label", head).textContent, "Ran workflow review-changes");
   assert.equal(one("tool-row-label", head).className.includes("is-working"), false);
-  assert.equal(one("tool-row-detail", head).textContent, "2 agents");
-  assert.equal(one("tool-row-duration", head).textContent, "5m 12s");
+  assert.equal(with_class("tool-row-detail", head).length, 0);
+  assert.equal(with_class("tool-row-duration", head).length, 0);
   clear();
   show(panel(done));
   assert.equal(one("workflow-result-head").textContent, "Return value");
@@ -264,7 +264,7 @@ test("a tool group with a running workflow names it in its head but stays closed
     assert.equal(one("work-group").getAttribute("data-open"), "false");
     assert.equal(one("work-group").getAttribute("data-running"), "true");
     assert.equal(one("tool-row-label", head).textContent, "Running workflow review-changes");
-    assert.equal(one("tool-row-elapsed", head).textContent, "1m 15s");
+    assert.equal(with_class("tool-row-elapsed", head).length, 0);
     assert.equal(with_class("dot-spinner", head).length, 1);
     client.flushSync(() => mock.timers.tick(700));
     store_with([summary_of("completed", [agent_entry(0, "completed")])]);

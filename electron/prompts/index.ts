@@ -33,6 +33,18 @@ export type BuildPromptInput = {
   user_attachments: boolean;
   effort: string;
   deferred_mcp: string[];
+  role: PromptSection | null;
+};
+
+const user_titles = new Set(["personality", "user_instructions", "project_instructions"]);
+
+export const arrange_sections = (sections: PromptSection[], major: PromptSection[], extra: PromptSection[], role: PromptSection | null): PromptSection[] => {
+  const built_in = sections.filter((section) => section.title !== "project_listing" && !user_titles.has(section.title));
+  const listing = sections.filter((section) => section.title === "project_listing");
+  const user_rules = sections.filter((section) => user_titles.has(section.title));
+  const memories = extra.filter((section) => section.title === "memories");
+  const other_extra = extra.filter((section) => section.title !== "memories");
+  return [...built_in, ...major, ...other_extra, ...listing, ...(role ? [role] : []), ...user_rules, ...memories];
 };
 
 const extra_sections = async (input: BuildPromptInput, tool_names: Set<string>): Promise<PromptSection[]> => {
@@ -80,5 +92,5 @@ export const build_system_prompt = async (input: BuildPromptInput): Promise<stri
     deferred_mcp: input.deferred_mcp,
   });
   const major = input.effort === major_effort && tool_names.has("deploy_agent") ? [major_review()] : [];
-  return render_sections([...sections, ...major, ...extra]);
+  return render_sections(arrange_sections(sections, major, extra, input.role));
 };

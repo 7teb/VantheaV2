@@ -1,5 +1,5 @@
 import { permission_modes } from "../../shared/chat.ts";
-import type { ModelCatalog } from "../../shared/models.ts";
+import { catalog_choice, type ModelCatalog } from "../../shared/models.ts";
 import { schedule_intervals, type ScheduledInput } from "../../shared/scheduled.ts";
 import { parse_choice } from "../chats/files.ts";
 import { find_project } from "../settings/store.ts";
@@ -46,10 +46,11 @@ export const parse_scheduled_input = (value: unknown, catalog: ModelCatalog): Sc
   if (!mode) {
     throw new Error(`task permission mode must be one of ${permission_modes.join(", ")}`);
   }
-  const choice = parse_choice(raw.choice);
-  if (!choice) {
+  const parsed = parse_choice(raw.choice);
+  if (!parsed) {
     throw new Error("task model choice needs a model id");
   }
+  const choice = catalog_choice(catalog.models, parsed);
   if (!catalog.models.some((model) => model.id === choice.model)) {
     throw new Error(`model ${choice.model} is not in the catalog`);
   }

@@ -159,6 +159,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       user_attachments: true,
       effort: plan.effort,
       deferred_mcp: all_tools.filter(is_mcp_tool).map((tool) => tool.spec.name),
+      role: null,
     });
     const api_messages = await build_api_messages({ system, summary: loaded.summary, messages: history, model: plan.model, agent_tools });
     const carried = offered.some((tool) => tool.spec.name === "update_todos") ? carried_todos_note(history) : null;

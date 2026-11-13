@@ -67,7 +67,7 @@ const worktree_text = (link: WorkflowAgentLink): string[] =>
 
 const result_text = (link: WorkflowAgentLink): string =>
   link.schema
-    ? `Return your result by calling ${result_tool_name} with an object that matches its parameters. The app validates it and tells you exactly what to fix on a mismatch. Your run cannot end before a valid result is recorded. After the successful call, end with a one-line final message.`
+    ? `Return your result by calling ${result_tool_name} with an object that matches its parameters. Your run cannot end before a valid result is recorded.`
     : "Your final message is the return value: it is handed to the script as a string. Make it the complete result in the form the task asks for, and nothing else.";
 
 export const workflow_role_section = (agent: AgentRecord, link: WorkflowAgentLink): PromptSection => ({

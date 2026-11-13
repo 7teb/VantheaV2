@@ -1,12 +1,10 @@
 import type { ToolStep } from "../../../shared/chat.ts";
-import { use_clock } from "../../components/use-clock.ts";
 import { use_t } from "../../i18n/index.ts";
 import { find_run, type RunRef } from "../../state/agents-reduce.ts";
 import { agents_store } from "../../state/agents.ts";
 import { background_store } from "../../state/background.ts";
 import { use_store } from "../../state/use-store.ts";
-import { is_reviewing } from "./review-phase.ts";
-import { format_duration, format_elapsed, step_detail, step_duration } from "./tool-summary.ts";
+import { step_detail } from "./tool-summary.ts";
 
 const Detail = ({ text }: { text: string }) => (text ? <span className="tool-row-detail">{text}</span> : null);
 
@@ -40,29 +38,4 @@ export const RowDetail = ({ chat_id, step }: LiveDetailProps) => {
     return <RunDetail chat_id={chat_id} step={step} run={{ agent_id: view.agent_id, run_id: view.run_id }} />;
   }
   return <StaticDetail step={step} />;
-};
-
-export const Elapsed = ({ started_at }: { started_at: number }) => {
-  const now = use_clock(true);
-  const elapsed = Math.max(0, now - started_at);
-  const text = format_elapsed(elapsed);
-  if (text === null) {
-    return null;
-  }
-  return (
-    <span className="tool-row-duration tool-row-elapsed" data-tick={Math.floor(elapsed / 1000) % 2}>
-      {text}
-    </span>
-  );
-};
-
-export const CommandTime = ({ step }: { step: ToolStep }) => {
-  if (step.status === "running") {
-    return step.started_at === null || is_reviewing(step) ? null : <Elapsed started_at={step.started_at} />;
-  }
-  const duration = step_duration(step);
-  if (duration === null || step.status === "denied" || step.view?.kind === "background") {
-    return null;
-  }
-  return <span className="tool-row-duration">{format_duration(duration)}</span>;
 };

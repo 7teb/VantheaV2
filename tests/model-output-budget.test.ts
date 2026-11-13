@@ -59,18 +59,29 @@ test("the affordable token count is read only from a credits error", () => {
 });
 
 test("a 402 that names an affordable output size sends the same round again with that size", async () => {
-  const outcome = await run([afford(5000), { frames: done }], { max_tokens: 8000 });
+  const outcome = await run([afford(100_000), { frames: done }], { max_tokens: 128_000 });
   assert.equal(outcome.error, null);
   assert.equal(outcome.posts, 2);
-  assert.deepEqual(outcome.bodies.map((body) => JSON.parse(body).max_tokens), [8000, 5000]);
+  assert.deepEqual(outcome.bodies.map((body) => JSON.parse(body).max_tokens), [128_000, 100_000]);
   assert.equal(outcome.result?.content, "ok");
 });
 
-test("a 402 below the minimum useful size, or without a size, still fails as a credits error", async () => {
-  const tiny = await run([afford(min_affordable_tokens - 1), { frames: done }], { max_tokens: 8000 });
+test("a size that shrinks again between attempts is followed until the round fits", async () => {
+  const outcome = await run([afford(72_377), afford(72_293), { frames: done }], { max_tokens: 128_000 });
+  assert.equal(outcome.error, null);
+  assert.equal(outcome.posts, 3);
+  assert.deepEqual(outcome.bodies.map((body) => JSON.parse(body).max_tokens), [128_000, 72_377, 72_293]);
+});
+
+test("a 402 below 64k output tokens, or without a size, still fails as a credits error", async () => {
+  assert.equal(min_affordable_tokens, 64_000);
+  const tiny = await run([afford(min_affordable_tokens - 1), { frames: done }], { max_tokens: 128_000 });
   assert.equal(tiny.error?.kind, "credits");
   assert.equal(tiny.posts, 1);
-  const plain = await run([{ status: 402, text: JSON.stringify({ error: { code: 402, message: "Insufficient credits" } }) }, { frames: done }], { max_tokens: 8000 });
+  const shrinking = await run([afford(70_000), afford(min_affordable_tokens - 1), { frames: done }], { max_tokens: 128_000 });
+  assert.equal(shrinking.error?.kind, "credits");
+  assert.equal(shrinking.posts, 2);
+  const plain = await run([{ status: 402, text: JSON.stringify({ error: { code: 402, message: "Insufficient credits" } }) }, { frames: done }], { max_tokens: 128_000 });
   assert.equal(plain.error?.kind, "credits");
   assert.equal(plain.posts, 1);
 });

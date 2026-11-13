@@ -24,7 +24,7 @@ export const analyze_image_tool: Tool = define_tool<Args>({
     parameters: {
       type: "object",
       properties: {
-        attachment_id: { type: "string", description: "The id of the attached image to analyze." },
+        attachment_id: { type: "string" },
         question: { type: "string", description: "What to look for in the image. Leave empty for a full description." },
       },
       required: ["attachment_id"],

@@ -48,7 +48,7 @@ const load_tool = (mcp: Tool[]): Tool => {
     spec: {
       name: "load_mcp_tools",
       description:
-        "Load the full definitions (description and argument schema) of MCP tools, by their full names from the mcp section of your instructions or by a query searched in their names and descriptions (at most 10 matches). Call a loaded tool with call_mcp_tool. A definition stays in this conversation once loaded, so load each tool once.",
+        "Load the full definitions (description and argument schema) of MCP tools, by their full names from the mcp section of your instructions or by a query searched in their names and descriptions (at most 10 matches).",
       parameters: {
         type: "object",
         properties: {
@@ -109,7 +109,7 @@ const call_tool = (mcp: Tool[]): Tool => {
         type: "object",
         properties: {
           name: { type: "string", description: "Full tool name, for example mcp__server__tool." },
-          arguments: { type: "object", description: "The tool's arguments." },
+          arguments: { type: "object" },
         },
         required: ["name", "arguments"],
         additionalProperties: false,

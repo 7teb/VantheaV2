@@ -162,7 +162,7 @@ export const run_command_tool = define_tool<RunArgs>({
   spec: {
     name: shell_run_tools.powershell,
     description:
-      `Run a PowerShell command in the project folder and return its combined output and exit code. The string runs directly under powershell.exe -Command, so write PowerShell (';' to chain, $null instead of >nul) and do not wrap it in powershell, pwsh, cmd /c or bash. stderr is already captured with stdout, so do not add 2>&1: Windows PowerShell turns redirected stderr of native programs into error records and reports a successful program as failed. It runs headless and must exit on its own: open programs the user should operate in their own window with Start-Process. The default timeout is ${default_timeout_ms / 1000} s; for builds, tests or installs set timeout_ms up front. In the main chat a command still running after ${auto_background_ms / 1000} s moves to the background on its own unless auto_background is false.`,
+      `Run a PowerShell command in the project folder and return its combined output and exit code. The string runs directly under powershell.exe -Command, so write PowerShell (';' to chain, $null instead of >nul) and do not wrap it in powershell, pwsh, cmd /c or bash. stderr is already captured with stdout, so do not add 2>&1: Windows PowerShell turns redirected stderr of native programs into error records and reports a successful program as failed. It runs headless and must exit on its own: open programs the user should operate in their own window with Start-Process. The default timeout is ${default_timeout_ms / 1000} s; for builds, tests or installs set timeout_ms up front.`,
     parameters: run_parameters,
   },
   profiles: ["main", "plan", "worker"],

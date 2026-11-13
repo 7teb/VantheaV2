@@ -68,8 +68,6 @@ export const hooks = {
   "hooks.blocked_label": "Blocked {x}",
   "hooks.combine_one": "changed a hook",
   "hooks.combine_other": "changed hooks",
-  "hooks.count_one": "{n} hook",
-  "hooks.count_other": "{n} hooks",
   "hooks.count_none": "No hooks",
   "hooks.card_head": "Hook · {x}",
   "hooks.run_blocked_call": "Blocked the call",

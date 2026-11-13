@@ -1,8 +1,7 @@
 import type { ReasoningStep } from "../../../shared/chat.ts";
 import type { Translate } from "../../i18n/translate.ts";
-import { format_duration } from "../tools/tool-summary.ts";
 
-export type ReasoningHead = { label: string; meta: string | null; status: string | undefined; expandable: boolean; working: boolean };
+export type ReasoningHead = { label: string; status: string | undefined; expandable: boolean; working: boolean };
 
 const description_cap = 120;
 
@@ -55,12 +54,7 @@ export const reasoning_head = (t: Translate, step: ReasoningStep, live: boolean)
   const status = working ? step.status_line : undefined;
   const expandable = step.text.trim().length > 0;
   if (working) {
-    return { label: status || t("chat.thinking"), meta: null, status, expandable, working };
+    return { label: status || t("chat.thinking"), status, expandable, working };
   }
-  const description = thought_description(step);
-  const duration = step.ended_at === null ? null : format_duration(step.ended_at - step.started_at);
-  if (description) {
-    return { label: description, meta: duration, status, expandable, working };
-  }
-  return { label: duration === null ? t("chat.thought") : t("chat.thought_for", { time: duration }), meta: null, status, expandable, working };
+  return { label: thought_description(step) ?? t("chat.thought"), status, expandable, working };
 };

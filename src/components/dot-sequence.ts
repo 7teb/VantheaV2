@@ -1,12 +1,10 @@
 import { heartbeat_keyframes, heartbeat_period_ms, type HeartbeatFrame } from "./dot-heartbeat.ts";
 import { juggle_keyframes, juggle_period_ms, type JuggleFrame } from "./dot-juggle.ts";
-import { knot_keyframes, knot_period_ms, type KnotFrame } from "./dot-knot.ts";
 import { orbit_keyframes, orbit_period_ms, type OrbitFrame } from "./dot-orbit.ts";
 import { shuffle_keyframes, shuffle_period_ms, type ShuffleFrame } from "./dot-shuffle.ts";
-import { slingshot_keyframes, slingshot_period_ms, type SlingshotFrame } from "./dot-slingshot.ts";
 import { weave_keyframes, weave_period_ms, type WeaveFrame } from "./dot-weave.ts";
 
-export type DotFrame = OrbitFrame | WeaveFrame | ShuffleFrame | JuggleFrame | SlingshotFrame | HeartbeatFrame | KnotFrame;
+export type DotFrame = OrbitFrame | WeaveFrame | ShuffleFrame | JuggleFrame | HeartbeatFrame;
 
 export type DotMotion = { frames: DotFrame[][]; duration: number };
 
@@ -25,9 +23,7 @@ export const dot_motions: DotMotion[] = [
   { frames: weave_keyframes, duration: weave_period_ms },
   { frames: shuffle_keyframes, duration: shuffle_period_ms },
   { frames: juggle_keyframes, duration: juggle_period_ms },
-  { frames: slingshot_keyframes, duration: slingshot_period_ms },
   { frames: heartbeat_keyframes, duration: heartbeat_period_ms },
-  { frames: knot_keyframes, duration: knot_period_ms },
 ];
 
 export const first_motion = (random: () => number = Math.random): number => Math.floor(random() * dot_motions.length);

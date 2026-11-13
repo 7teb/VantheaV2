@@ -30,7 +30,7 @@ test("menu rows follow the item metrics and keep a fixed icon slot", () => {
   assert.equal(px(icon.width), 16);
   assert.equal(px(icon.height), 16);
   assert.match(read("features/composer/MenuRow.tsx"), /\{Icon && <Icon \/>\}/);
-  assert.match(read("components/icons-base.tsx"), /export const Icon = \(\{ size = 16, children, \.\.\.rest \}/);
+  assert.match(read("components/icons-base.tsx"), /export const Icon = \(\{\s*size = 16,/);
 });
 
 test("cards above the composer slide up by the measured menu height only while a menu is open", () => {

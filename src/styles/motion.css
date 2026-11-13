@@ -85,26 +85,6 @@
     color: var(--working-dim);
   }
 
-  .working-letter {
-    animation: letter-wave 2.4s var(--ease-in-out) infinite;
-    animation-delay: calc(var(--letter) * 55ms);
-  }
-
-  @keyframes letter-wave {
-    0% {
-      color: var(--working-dim);
-    }
-
-    12% {
-      color: var(--working-peak);
-    }
-
-    28%,
-    100% {
-      color: var(--working-dim);
-    }
-  }
-
   .spin {
     animation: spin 0.9s var(--ease-linear) infinite;
   }

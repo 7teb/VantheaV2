@@ -101,12 +101,12 @@ after(() => {
   restore();
 });
 
-test("a finished group starts closed with the tool count and the span from the first start to the last end", () => {
+test("a finished group starts closed with the tool count and shows no time", () => {
   render(finished(), false);
   assert.equal(group().getAttribute("data-open"), "false");
   assert.equal(head().getAttribute("aria-expanded"), "false");
   assert.equal(head_label(), "Read files");
-  assert.equal(head_meta(), "58s");
+  assert.equal(head_meta(), null);
   assert.equal(with_class("dot-spinner").length, 0);
   clear();
 });
@@ -133,7 +133,7 @@ test("an open group lists tools and described thoughts in order, blank thoughts 
   assert.ok(with_class("work-group-scroll").some((scroll) => scroll.contains(body)));
   assert.deepEqual(
     body.children.map((row) => (row.className === "tool-row" ? `tool:${row.getAttribute("data-id")}` : `thought:${with_class("tool-row-label", row)[0]?.textContent}|${with_class("tool-row-duration", row)[0]?.textContent ?? ""}`)),
-    ["tool:a1", "thought:Checking how start_watcher.py builds the package|6s", "tool:a2", "thought:Thought for 2s|", "tool:g1"],
+    ["tool:a1", "thought:Checking how start_watcher.py builds the package|", "tool:a2", "thought:Thought|", "tool:g1"],
   );
   assert.equal(with_class("thought-mark").length, 2);
   press(head());
@@ -141,7 +141,7 @@ test("an open group lists tools and described thoughts in order, blank thoughts 
   clear();
 });
 
-test("a streaming group stays closed, names its streaming thought and shows the elapsed time, approvals stay outside the closed body", () => {
+test("a streaming group stays closed, names its streaming thought without a time, approvals stay outside the closed body", () => {
   mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now });
   Object.assign(Reflect.get(globalThis, "window") as object, { setTimeout, clearTimeout, setInterval, clearInterval });
   try {
@@ -150,7 +150,8 @@ test("a streaming group stays closed, names its streaming thought and shows the 
     assert.equal(group().getAttribute("data-open"), "false");
     assert.equal(group().getAttribute("data-running"), "true");
     assert.equal(head_label(), "Planning where the length gets written");
-    assert.equal(head_meta(), "1m 4s");
+    assert.equal(head_meta(), null);
+    assert.equal(with_class("tool-row-elapsed", head()).length, 0);
     assert.equal(with_class("dot-spinner").length, 1);
     const asking: ToolStep = { ...tool("c1", "run_command", now, null, { command: "npm test" }), status: "awaiting_approval", approval: { kind: "command", command: "npm test" } as ApprovalRequest };
     client.flushSync(() => mock.timers.tick(700));

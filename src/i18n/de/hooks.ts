@@ -70,8 +70,6 @@ export const hooks: Record<keyof typeof en, string> = {
   "hooks.blocked_label": "{x} blockiert",
   "hooks.combine_one": "einen Hook geändert",
   "hooks.combine_other": "Hooks geändert",
-  "hooks.count_one": "{n} Hook",
-  "hooks.count_other": "{n} Hooks",
   "hooks.count_none": "Keine Hooks",
   "hooks.card_head": "Hook · {x}",
   "hooks.run_blocked_call": "Hat den Aufruf blockiert",

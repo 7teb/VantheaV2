@@ -57,7 +57,7 @@ export const deploy_agent_tool = define_tool<DeployArgs>({
   spec: {
     name: "deploy_agent",
     description:
-      "Start a focused sub-agent in the background and return at once. Use it when delegation has a real benefit: independent parts that can run in parallel, a large read-heavy exploration that would flood your context, a bounded implementation it can own, or an independent review of your work. Not for a quick lookup or a small edit. The agent has its own context, works under this chat's permission mode, cannot talk to the user and cannot deploy agents. Give every agent a topic: agents with the same topic are a team, see each other as such and coordinate directly with message_peer, so give related work the same topic word and unrelated work different ones. Name the files or folders it owns in scope, and say in the prompt what other agents own, so work is not done twice. The automatic review checks the task before the agent starts. While it runs it sends you short updates with confirmed results, which arrive at the start of your next round; do not redo work an update says it covers. If you need one result early, ask for it in the prompt, for example to message you the file that defines X as soon as it finds it. Its final report arrives automatically when it finishes.",
+      "Start a focused sub-agent in the background and return at once. The agent has its own context, works under this chat's permission mode, cannot talk to the user and cannot deploy agents. While it runs it sends you short updates with confirmed results, which arrive at the start of your next round; do not redo work an update says it covers. If you need one result early, ask for it in the prompt, for example to message you the file that defines X as soon as it finds it.",
     parameters: {
       type: "object",
       properties: {
@@ -121,7 +121,7 @@ export const continue_agent_tool = define_tool<{ agent_id: string; prompt: strin
   spec: {
     name: "continue_agent",
     description:
-      "Start another background run of an existing agent on its kept context and return at once. Use it when the same agent benefits from what it already found, or to deliver answers other agents sent it after it finished and message_agent instructions it had not read when the app closed: they are kept, list_agents and get_agent_status show them, and they arrive at the start of the new run. It keeps its name, topic, scope, profile and model. The automatic review checks the task before the run starts. Its report arrives automatically when it finishes. Tools removed with without_tools stay removed.",
+      "Start another background run of an existing agent on its kept context and return at once. Use it when the same agent benefits from what it already found. It keeps its name, topic, scope, profile and model. Tools removed with without_tools stay removed.",
     parameters: {
       type: "object",
       properties: {

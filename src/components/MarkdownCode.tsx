@@ -15,7 +15,7 @@ export const CodeBlock = memo(({ language, code }: CodeBlockProps) => {
         <span className="code-block-language">{name || "text"}</span>
         <CopyButton text={code} labelled />
       </div>
-      <pre className="code-block-pre">{html === null ? <code>{code}</code> : <code className="hljs" dangerouslySetInnerHTML={{ __html: html }} />}</pre>
+      <pre className="code-block-pre" data-select-all>{html === null ? <code>{code}</code> : <code className="hljs" dangerouslySetInnerHTML={{ __html: html }} />}</pre>
     </div>
   );
 });

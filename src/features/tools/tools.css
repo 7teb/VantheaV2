@@ -95,7 +95,6 @@
   }
 
   .tool-row-detail,
-  .tool-row-duration,
   .tool-row-status {
     flex: none;
     font-size: var(--font-size-body);
@@ -149,7 +148,6 @@
     transition: transform var(--duration-chevron) var(--ease-out);
   }
 
-  .work-group-head .tool-row-chevron,
   .tool-row-meta + .tool-row-chevron {
     margin-left: 0;
   }

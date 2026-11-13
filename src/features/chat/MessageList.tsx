@@ -32,7 +32,7 @@ export const MessageList = ({ chat_id, chat }: MessageListProps) => {
   return (
     <div className="chat-slot">
       <div className="chat-scroll" ref={scroller}>
-        <div className="chat-column" ref={content}>
+        <div className="chat-column" ref={content} data-select-all>
           {rows.map((row) => {
             if (row.kind === "quiet") {
               return <QuietRun key={`quiet:${row.id}`} chat_id={chat_id} runs={row.runs} />;

@@ -219,7 +219,7 @@ test("only the main profile gets the workflow tools and the prompt section expla
   assert.doesNotMatch(major, /only when the user explicitly asks/);
   assert.match(major, /load the workflow-authoring skill with read_skill/);
   assert.equal(compose_sections({ ...input, tool_names: new Set() }).some((entry) => entry.title === "workflows"), false);
-  assert.match(run_workflow_tool.spec.description, /workflow-authoring skill/);
+  assert.doesNotMatch(run_workflow_tool.spec.description, /workflow-authoring/);
   assert.match(run_workflow_tool.spec.description, /When to run one is set by the workflows section of your instructions/);
   assert.doesNotMatch(run_workflow_tool.spec.description, /own judgment/);
 });

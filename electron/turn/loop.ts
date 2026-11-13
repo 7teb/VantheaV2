@@ -13,7 +13,7 @@ import { round_profile, run_round } from "./round.ts";
 import type { TurnNote, TurnSession } from "./session.ts";
 import { continuation_text, steer_message } from "./user-input.ts";
 
-const interrupted_kinds = new Set<TurnError["kind"]>(["stream_interrupted", "timeout", "provider_unavailable"]);
+const interrupted_kinds = new Set<TurnError["kind"]>(["stream_interrupted", "timeout", "provider_unavailable", "empty_answer"]);
 
 const end_status = (error: unknown): FinalStatus => {
   if (error instanceof ModelError) {

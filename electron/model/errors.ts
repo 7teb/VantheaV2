@@ -29,7 +29,7 @@ export type ProviderError = {
   raw: string;
 };
 
-const retryable_kinds = new Set<ModelErrorKind>(["rate_limited", "provider_unavailable", "stream_interrupted", "timeout"]);
+const retryable_kinds = new Set<ModelErrorKind>(["rate_limited", "provider_unavailable", "stream_interrupted", "timeout", "empty_answer"]);
 
 const policy_types = new Set(["content_policy_violation", "refusal", "permission_denied"]);
 
@@ -47,7 +47,7 @@ export const is_retryable = (error: ModelError) => retryable_kinds.has(error.kin
 
 const affordable_pattern = /can only afford (\d+)/i;
 
-export const min_affordable_tokens = 2048;
+export const min_affordable_tokens = 64_000;
 
 export const affordable_tokens = (error: ModelError): number | null => {
   if (error.kind !== "credits") {

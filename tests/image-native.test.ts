@@ -34,10 +34,10 @@ test("documented families get their native size and the rest keep the default", 
 });
 
 test("a model with a fallback route fits images for both models", () => {
-  const glm = find_model(catalog, "z-ai/glm-5.3:nitro");
-  assert.ok(glm?.fallback);
-  assert.equal(native_rules(glm).length, 2);
-  const mixed = { ...glm, id: "anthropic/claude-opus-5.5", fallback: { ...glm.fallback, id: "qwen/qwen3.8-max" } };
+  const glm = find_model(catalog, "z-ai/glm-5.3");
+  assert.ok(glm);
+  assert.equal(native_rules(glm).length, 1);
+  const mixed = { ...glm, id: "anthropic/claude-opus-5.5", fallback: { id: "qwen/qwen3.8-max", label: "Qwen 3.8 Max", provider_order: [] } };
   assert.deepEqual(native_rules(mixed), [native_size("anthropic/claude-opus-5.5"), native_size("qwen/qwen3.8-max")]);
 });
 

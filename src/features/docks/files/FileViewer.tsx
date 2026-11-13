@@ -40,7 +40,7 @@ const CodeView = memo(({ path, text, lines, diff, conflict }: CodeViewProps) => 
         {numbers}
         <ChangeBars load={diff} lines={lines} />
       </pre>
-      <pre className="files-text">{code()}</pre>
+      <pre className="files-text" data-select-all>{code()}</pre>
     </div>
   );
 });

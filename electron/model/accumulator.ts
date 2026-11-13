@@ -21,6 +21,7 @@ export type Assembly = {
   reasoning_details: unknown[];
   tool_calls: RoundToolCall[];
   finish_reason: string;
+  native_finish_reason: string;
   usage: RoundUsage | null;
 };
 
@@ -84,6 +85,7 @@ export const create_accumulator = (): Accumulator => {
   let content = "";
   let reasoning = "";
   let finish_reason = "";
+  let native_finish_reason = "";
   let usage: RoundUsage | null = null;
 
   const feed_draft = (call: RoundToolCall, piece: string) => {
@@ -149,8 +151,10 @@ export const create_accumulator = (): Accumulator => {
         out.drafted.push(index);
       }
     }
-    out.finish_reason = as_string(choice.native_finish_reason) === "refusal" ? "content_filter" : as_string(choice.finish_reason);
+    const native = as_string(choice.native_finish_reason);
+    out.finish_reason = native === "refusal" ? "content_filter" : as_string(choice.finish_reason);
     finish_reason = out.finish_reason || finish_reason;
+    native_finish_reason = native || native_finish_reason;
     return out;
   };
 
@@ -179,6 +183,7 @@ export const create_accumulator = (): Accumulator => {
       reasoning_details: details,
       tool_calls: calls.map((call) => ({ ...call, id: call.id || make_id() })),
       finish_reason,
+      native_finish_reason,
       usage,
     };
   };

@@ -1,8 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { bridge_frames, bridge_ms, dot_motions, emerge_frames, emerge_ms, first_motion, next_motion } from "./dot-sequence.ts";
+import { reduced_motion } from "./reduced-motion.ts";
 import "./DotSpinner.css";
-
-const reduced_motion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export const DotSpinner = () => {
   const root = useRef<HTMLSpanElement>(null);

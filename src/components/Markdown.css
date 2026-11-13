@@ -179,8 +179,15 @@
   }
 
   .md-file-link {
+    padding-inline: 2px;
+    color: var(--accent);
     font-weight: var(--weight-semibold);
     text-decoration: none;
+  }
+
+  .md-file-link:hover {
+    text-decoration: underline dashed currentColor 0.5px;
+    text-underline-offset: 2px;
   }
 
   .md-file-link svg {

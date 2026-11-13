@@ -27,8 +27,7 @@ test("the sub-agent role section explains peers, message_peer, non-blocking ques
   const body = agent_role_section(agent).body;
   assert.match(body, /At your first round you get a roster of them, and later a notice whenever an agent starts or ends\./);
   assert.match(body, /Peers with your topic work on the same thing: treat them as your team, split files, share findings and ask them directly\. Message a peer with another topic only when an overlap notice names it or when you need a concrete artifact it owns\./);
-  assert.match(body, /summary \(your own one-line summary in 5 to 10 words, not the first sentence of the text\)/);
-  assert.match(body, /Point to paths, lines and report sections instead of pasting content\. Send results and questions, not activity: do not acknowledge, thank or summarize, and do not send status reports\./);
+  assert.match(body, /Send results and questions, not activity: do not acknowledge, thank or summarize, and do not send status reports\./);
   assert.match(body, /A question never blocks you: keep working/);
   assert.match(body, /Never stop, idle or end your work to wait for a peer\./);
   assert.match(body, /answer with type answer and its in_reply_to id as soon as you have the answer, even if the asker has finished\./);

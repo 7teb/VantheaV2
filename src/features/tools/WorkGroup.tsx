@@ -1,9 +1,9 @@
-import { memo, useState } from "react";
+import { memo, useRef, useState } from "react";
 import type { ToolStep } from "../../../shared/chat.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { DotSpinner } from "../../components/DotSpinner.tsx";
-import { ChevronRightIcon, SquareTerminalIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon, SquareTerminalToolIcon } from "../../components/icons.tsx";
 import { LabelMorph } from "../../components/LabelMorph.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { RunRef } from "../../state/agents-reduce.ts";
@@ -11,18 +11,17 @@ import { MainMessageRow } from "../chat/MainMessageRow.tsx";
 import { NoticeRow } from "../chat/StepRows.tsx";
 import { AgentCritter } from "./AgentCritter.tsx";
 import { ApprovalCard } from "./ApprovalCard.tsx";
+import { use_fitted_phrases } from "./fitted-phrases.ts";
 import { group_head, open_head } from "./group-head.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
-import { Elapsed } from "./RowMeta.tsx";
 import { ThoughtRow } from "./ThoughtRow.tsx";
 import { tool_icons } from "./registry.tsx";
 import { is_active_status, tool_meta } from "./tool-meta.ts";
 import { ToolRow } from "./ToolRow.tsx";
-import { format_duration } from "./tool-summary.ts";
 import { use_held_label } from "./use-held-label.ts";
 import { use_live_workflow } from "./use-live-workflow.ts";
 import { use_pinned_bottom } from "./use-pinned-bottom.ts";
-import { group_span, group_start, shown_step, work_tools, type WorkStep } from "./work-steps.ts";
+import { shown_step, work_tools, type WorkStep } from "./work-steps.ts";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./tools.css";
 import "./tools-touch.css";
@@ -54,15 +53,6 @@ const SingleStep = ({ chat_id, step, streaming, tail, run }: SingleStepProps) =>
   </div>
 );
 
-const GroupMeta = ({ steps, running, live_start }: { steps: WorkStep[]; running: boolean; live_start: number | null }) => {
-  const start = live_start ?? group_start(steps);
-  if (running) {
-    return start === null ? null : <Elapsed started_at={start} />;
-  }
-  const span = group_span(steps);
-  return span === null ? null : <span className="tool-row-duration">{format_duration(span)}</span>;
-};
-
 const DeniedCount = ({ denied }: { denied: number }) => {
   const t = use_t();
   return denied > 0 ? <span className="tool-row-status is-denied">{t(denied === 1 ? "tools.group_denied_one" : "tools.group_denied_other", { n: denied })}</span> : null;
@@ -71,14 +61,14 @@ const DeniedCount = ({ denied }: { denied: number }) => {
 const GroupIcon = ({ chat_id, steps }: { chat_id: string; steps: WorkStep[] }) => {
   const first = work_tools(steps)[0];
   if (!first) {
-    return <SquareTerminalIcon />;
+    return <SquareTerminalToolIcon plain />;
   }
   const icon = tool_meta(first).icon;
   if (icon === "agent" && first.status !== "denied") {
     return <AgentCritter chat_id={chat_id} step={first} />;
   }
   const Icon = tool_icons[icon];
-  return <Icon />;
+  return <Icon plain />;
 };
 
 type GroupRowProps = { chat_id: string; step: WorkStep; streaming: boolean; main_chat: boolean };
@@ -117,6 +107,8 @@ const StepGroup = ({ chat_id, steps, streaming, pending, run }: StepGroupProps) 
   const progress = open && running ? open_head(t, steps) : null;
   const shown = progress ?? head;
   const working = shown.kind !== "done";
+  const label_ref = useRef<HTMLSpanElement>(null);
+  const fitted = use_fitted_phrases(label_ref, shown.kind === "done" ? shown.phrases : [], t("tools.combine_more"));
   return (
     <div className="work-group" data-open={open} data-web={web || undefined} data-live={streaming || undefined} data-running={running || undefined} data-review={reviewing || undefined}>
       <button type="button" className="work-group-head" aria-expanded={open} onClick={() => set_chosen(!open)}>
@@ -124,16 +116,13 @@ const StepGroup = ({ chat_id, steps, streaming, pending, run }: StepGroupProps) 
           <LabelMorph morph_key={running ? "spinner" : "icon"}>{running ? <DotSpinner /> : <GroupIcon chat_id={chat_id} steps={steps} />}</LabelMorph>
         </span>
         {(shown.kind === "review" || shown.label !== "") && (
-          <span className={class_names("tool-row-label", working && shown.kind !== "review" && "is-working")}>
+          <span ref={label_ref} className={class_names("tool-row-label", working && shown.kind !== "review" && "is-working")}>
             <LabelMorph morph_key={shown.kind === "review" ? shown.key : `${working}:${shown.label}`}>
-              {shown.kind === "review" ? <ReviewingLabel step={shown.step} /> : <WorkingLetters text={shown.label} active={working} />}
+              {shown.kind === "review" ? <ReviewingLabel step={shown.step} /> : <WorkingLetters text={shown.kind === "done" && shown.phrases.length > 1 ? fitted : shown.label} active={working} />}
             </LabelMorph>
           </span>
         )}
         {shown.kind === "done" && <DeniedCount denied={shown.denied} />}
-        <LabelMorph morph_key={running ? "elapsed" : "duration"}>
-          <GroupMeta steps={steps} running={running} live_start={head.kind === "workflow" ? head.started_at : null} />
-        </LabelMorph>
         <ChevronRightIcon className="tool-row-chevron" />
       </button>
       <CollapsibleBody open={open}>

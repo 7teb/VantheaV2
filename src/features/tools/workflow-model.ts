@@ -68,12 +68,6 @@ const count_keys: [keyof WorkflowCounts, MessageKey][] = [
 export const counts_line = (t: Translate, counts: WorkflowCounts): string =>
   count_keys.flatMap(([field, key]) => (counts[field] > 0 ? [t(key, { n: counts[field] })] : [])).join(", ");
 
-export const run_span = (summary: Pick<WorkflowSummary, "started_at" | "ended_at">): number | null => {
-  const start = Date.parse(summary.started_at);
-  const end = summary.ended_at === null ? Number.NaN : Date.parse(summary.ended_at);
-  return Number.isFinite(start) && Number.isFinite(end) ? Math.max(0, end - start) : null;
-};
-
 export type PhaseGroup = { key: string; title: string | null; detail: string; agents: WorkflowAgentEntry[]; done: number };
 
 export const phase_groups = (summary: WorkflowSummary): PhaseGroup[] => {

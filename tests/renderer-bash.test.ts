@@ -5,6 +5,7 @@ import type { ModelEntry } from "../shared/models.ts";
 import { call_shell, command_tools, is_shell_run } from "../shared/shell.ts";
 import type { ToolView } from "../shared/tool-view.ts";
 import { compose_sections, type SectionInput } from "../electron/prompts/sections.ts";
+import { run_bash_tool } from "../electron/tools/shell/run-bash.ts";
 import { live_command } from "../src/features/tools/tool-body.ts";
 import { tool_label, tool_meta } from "../src/features/tools/tool-meta.ts";
 import { translate, type Translate } from "../src/i18n/translate.ts";
@@ -96,10 +97,10 @@ const shell_body = (input: SectionInput) => compose_sections(input).find((sectio
 test("the shell section explains run_bash only when it is offered and keeps PowerShell the default", () => {
   assert.doesNotMatch(shell_body(sections(["run_command", "write_file"])), /run_bash/);
   const main = shell_body(sections(["run_command", "run_bash", "write_file", "replace_in_file", "start_background_task"]));
-  assert.match(main, /run_bash runs its string with Git Bash/);
+  assert.match(run_bash_tool.spec.description, /with Git Bash \(bash -c from Git for Windows\)/);
   assert.match(main, /PowerShell through run_command is the default shell/);
   assert.match(main, /ask for Git Bash or bash, that replaces the default: run every command that bash can run through run_bash/);
-  assert.match(main, /double the slash of such switches \(cmd \/\/c, taskkill \/\/F\)/);
+  assert.match(run_bash_tool.spec.description, /double the slash of such switches \(cmd \/\/c, taskkill \/\/F/);
   assert.match(main, /start_background_task with shell bash/);
   const worker = shell_body(sections(["run_command", "run_bash", "write_file", "replace_in_file"]));
   assert.match(worker, /instead of sed -i or heredoc rewrites\./);

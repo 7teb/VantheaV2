@@ -1,6 +1,5 @@
 import { memo, useState } from "react";
 import type { ToolStep } from "../../../shared/chat.ts";
-import { is_shell_run } from "../../../shared/shell.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon, ShieldTerminalIcon } from "../../components/icons.tsx";
@@ -13,7 +12,7 @@ import { DraftLines } from "./DraftLines.tsx";
 import { tool_icon, ToolBody } from "./registry.tsx";
 import { is_reviewing } from "./review-phase.ts";
 import { ReviewingLabel } from "./ReviewPending.tsx";
-import { CommandTime, RowDetail } from "./RowMeta.tsx";
+import { RowDetail } from "./RowMeta.tsx";
 import { has_body, is_agent_message, opens_by_itself } from "./tool-body.ts";
 import { is_active_status, started_run, tool_label, tool_meta } from "./tool-meta.ts";
 import { step_hint } from "./tool-summary.ts";
@@ -73,14 +72,14 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
         onClick={() => (run ? open_agent_run({ agent_id: run.agent_id, run_id: run.run_id }) : set_chosen(!open))}
       >
         <span className="tool-row-icon">
-          {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter chat_id={chat_id} step={step} /> : <Icon />}
+          {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter chat_id={chat_id} step={step} /> : <Icon plain />}
         </span>
         <span className={class_names("tool-row-label", working && !reviewing && "is-working")}>
           <LabelMorph morph_key={reviewing ? "review" : `${working}:${label}`}>
             {reviewing ? <ReviewingLabel step={step} /> : <WorkingLetters text={label} active={working} />}
           </LabelMorph>
         </span>
-        {reviewing && <ShieldTerminalIcon className="tool-row-shield" />}
+        {reviewing && <ShieldTerminalIcon plain className="tool-row-shield" />}
         {edit && <span className="tool-stat-add">+{edit.added}</span>}
         {edit && <span className="tool-stat-remove">-{edit.removed}</span>}
         {drafted > 0 && <DraftLines count={drafted} />}
@@ -88,11 +87,6 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
         <StatusMark step={step} />
         <span className="tool-row-meta">
           {!edit && !drafted && <RowDetail chat_id={chat_id} step={step} />}
-          {is_shell_run(step.name) && (
-            <LabelMorph morph_key={step.status === "running" ? "elapsed" : "duration"}>
-              <CommandTime step={step} />
-            </LabelMorph>
-          )}
         </span>
         {expandable && <ChevronRightIcon className="tool-row-chevron" />}
       </button>

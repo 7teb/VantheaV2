@@ -148,6 +148,7 @@ export type TurnErrorKind =
   | "provider_unavailable"
   | "stream_interrupted"
   | "timeout"
+  | "empty_answer"
   | "context_limit"
   | "policy"
   | "auth"

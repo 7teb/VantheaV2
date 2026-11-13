@@ -12,11 +12,13 @@
     display: grid;
     grid-template-rows: 1fr;
     padding: 4px;
+    transform-origin: bottom center;
     transition:
-      grid-template-rows var(--duration-height-open) var(--ease-height),
-      margin-bottom var(--duration-height-open) var(--ease-height),
-      padding-block var(--duration-height-open) var(--ease-height),
-      opacity var(--duration-height-open) var(--ease-out);
+      grid-template-rows var(--duration-slower) var(--ease-in-out),
+      margin-bottom var(--duration-slower) var(--ease-in-out),
+      padding-block var(--duration-slower) var(--ease-in-out),
+      transform var(--duration-slower) var(--ease-out),
+      opacity var(--duration-slow) var(--ease-out) 80ms;
   }
 
   .todos-panel[data-hidden="true"] {
@@ -24,7 +26,25 @@
     margin-bottom: calc(-1 * var(--space-2));
     padding-block: 0;
     opacity: 0;
-    transition-duration: var(--duration-height-close);
+    transform: translateY(6px) scale(0.98);
+    transition:
+      grid-template-rows var(--duration-slow) var(--ease-in-out),
+      margin-bottom var(--duration-slow) var(--ease-in-out),
+      padding-block var(--duration-slow) var(--ease-in-out),
+      transform var(--duration-slow) var(--ease-in-out),
+      opacity var(--duration-base) var(--ease-in);
+  }
+
+  .todos-panel .collapsible-body {
+    transition:
+      grid-template-rows var(--duration-slow) var(--ease-in-out),
+      opacity var(--duration-base) var(--ease-in);
+  }
+
+  .todos-panel .collapsible-body[data-open="true"] {
+    transition:
+      grid-template-rows var(--duration-slower) var(--ease-in-out),
+      opacity var(--duration-slow) var(--ease-out) 80ms;
   }
 
   .todos-panel[data-entering="true"]:not([data-leaving="true"]) {
@@ -108,6 +128,7 @@
 
   .todos-panel .is-working {
     --working-dim: var(--text-secondary);
+    --working-dim-opacity: 0.65;
   }
 
   .todos-panel-ring .progress-ring-track {

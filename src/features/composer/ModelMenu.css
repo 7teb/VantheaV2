@@ -1,0 +1,119 @@
+@layer components {
+  .model-menu-views {
+    position: relative;
+    overflow: clip;
+    transition: height var(--duration-height-open) var(--ease-height);
+  }
+
+  .model-menu-views[data-view="effort"] {
+    transition-duration: var(--duration-height-close);
+  }
+
+  .model-menu-view {
+    display: flex;
+    flex-direction: column;
+    transition: opacity var(--duration-base) var(--ease-out);
+  }
+
+  .model-menu-view[data-active="false"] {
+    opacity: 0;
+    pointer-events: none;
+    transition-duration: var(--duration-fast);
+  }
+
+  .model-menu-models {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    max-height: calc(var(--composer-menu-cap) - 8px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .model-menu-head {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 36px;
+    padding-inline: 8px;
+  }
+
+  .model-menu-head::before {
+    content: "";
+    flex: none;
+    width: 16px;
+  }
+
+  .model-menu-toggle {
+    display: flex;
+    min-width: 0;
+    min-height: 32px;
+    margin: 0;
+    padding: 4px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .model-menu-current {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    padding: 2px 4px;
+    border-radius: 6px;
+    transition: background var(--duration-fast) var(--ease-out);
+  }
+
+  .model-menu-toggle:hover .model-menu-current,
+  .model-menu-toggle:focus-visible .model-menu-current {
+    background: var(--raised-fill-hover);
+  }
+
+  .model-menu-current-model {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .model-menu-current-effort {
+    flex: none;
+    margin-left: 2px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .model-menu-current-effort[data-effort="major"] {
+    color: var(--accent);
+  }
+
+  .model-menu-chevron {
+    display: flex;
+    flex: none;
+    color: var(--text-tertiary);
+  }
+
+  .model-menu-back {
+    gap: 2px;
+    width: 100%;
+    border-radius: var(--radius-item);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .model-menu-back:hover {
+    color: var(--text-primary);
+  }
+
+  .model-menu-back svg {
+    margin-left: -5px;
+  }
+}

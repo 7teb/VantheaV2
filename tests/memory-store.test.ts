@@ -190,7 +190,7 @@ test("memory_prompt_section is null while memory is off and lists handles when o
   assert.ok(section && record);
   assert.match(section.body, /REMEMBERED CONTEXT/);
   assert.ok(section.body.includes(`- (${memory_handle(record.id)}) [global/global_preference] The user wants answers in German.`));
-  assert.match(section.body, /remember\(text\) proposes saving/);
+  assert.doesNotMatch(section.body, /remember\(text\)|forget\(id\)/);
   const sub_agent = await memory_prompt_section("D:/Work/Alpha", "hello", new Set(["read_file"]));
   assert.ok(sub_agent);
   assert.match(sub_agent.body, /^REMEMBERED CONTEXT \(/);

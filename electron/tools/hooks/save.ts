@@ -95,7 +95,7 @@ export const save_hook_tool = define_tool<SaveArgs>({
         scope: { type: "string", enum: ["global", "project"], description: "global runs in every project, project only in this chat's project. Required on create; an existing hook keeps its scope." },
         event: { type: "string", enum: [...hook_events] },
         matcher: { type: "string", description: "Tool name, agent type or error kind the hook applies to. Empty or * for all." },
-        shell: { type: "string", enum: [...shell_kinds], description: "powershell or bash (Git Bash)." },
+        shell: { type: "string", enum: [...shell_kinds] },
         command: { type: "string", description: "The exact command. It reads the event JSON from stdin." },
         timeout_s: { type: "integer", description: `Seconds before the hook is stopped, 1 to ${max_hook_timeout_s}. Default 60.` },
         enabled: { type: "boolean", description: "Default true." },

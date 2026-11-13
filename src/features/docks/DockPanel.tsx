@@ -26,7 +26,7 @@ export const DockPanel = ({ title, actions, toolbar, close_label, className, chi
       </div>
     </header>
     {toolbar}
-    <div className="dock-body">{children}</div>
+    <div className="dock-body" data-select-all>{children}</div>
   </section>
 );
 

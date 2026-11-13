@@ -16,7 +16,7 @@ export const search_header = (query: GrepQuery, matches: GrepMatch[], capped: bo
 export const grep_files_tool = define_tool<GrepQuery>({
   spec: {
     name: "grep_files",
-    description: `Search the project's text files line by line with ripgrep. Files listed in .gitignore, binary files and generated folders (node_modules, dist, build, bin, obj and similar) are skipped, and so are secret files (.env files, keys, credential files) unless path names one; searching a secret file needs the user's explicit permission: in auto and full mode a user message must allow it, so ask in chat first. Default: literal, case-insensitive substring. regex: true uses a ripgrep regular expression (Rust syntax; lookaround and backreferences work through PCRE2); case_sensitive: true matches exact case; path limits the search to one folder or file. Returns at most ${max_grep_matches} matching lines and says when the result is capped.`,
+    description: `Search the project's text files line by line with ripgrep. Files listed in .gitignore, binary files and generated folders (node_modules, dist, build, bin, obj and similar) are skipped, and so are secret files (.env files, keys, credential files) unless path names one; searching a secret file needs the user's explicit permission: in auto and full mode a user message must allow it, so ask in chat first. Default: literal, case-insensitive substring. regex: true uses a ripgrep regular expression (Rust syntax; lookaround and backreferences work through PCRE2); case_sensitive: true matches exact case. Returns at most ${max_grep_matches} matching lines and says when the result is capped.`,
     parameters: {
       type: "object",
       properties: {

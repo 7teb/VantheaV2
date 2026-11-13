@@ -5,7 +5,6 @@ import type { ToolView } from "../shared/tool-view.ts";
 import { build_blocks, is_live_block, shows_thinking, thinks_in_group, type Block } from "../src/features/chat/assistant-blocks.ts";
 import { group_head } from "../src/features/tools/group-head.ts";
 import { tool_label } from "../src/features/tools/tool-meta.ts";
-import { group_span, group_start } from "../src/features/tools/work-steps.ts";
 import { translate, type Translate } from "../src/i18n/translate.ts";
 
 const en: Translate = (key, vars) => translate("en", key, vars);
@@ -73,14 +72,11 @@ test("a stretch ends at a steer, a visible notice, a compaction, a plan, an imag
   assert.deepEqual(shape(quiet), ["work:r1,a1,r2,a2"]);
 });
 
-test("agent reports, agent updates and agent messages join the stretch as rows and do not count for its time", () => {
+test("agent reports, agent updates and agent messages join the stretch as rows", () => {
   const notice = (id: string, kind: "agent_report" | "agent_update" | "peer_message" | "peer_status"): Step => ({ id, round: 2, kind: "notice", notice: kind, text: "" });
   for (const kind of ["agent_report", "agent_update", "peer_message", "peer_status"] as const) {
     const blocks = build_blocks([read("a1", 0, 1_000), notice("n1", kind), thought("r2", 3_000, 4_000), text("t1", "Fixing them.")]);
     assert.deepEqual(shape(blocks), ["work:a1,n1,r2", "text:t1"], kind);
-    const group = blocks[0];
-    assert.ok(group?.kind === "work");
-    assert.equal(group_span(group.steps), 4_000);
   }
   assert.deepEqual(shape(build_blocks([notice("n1", "agent_update"), thought("r1", 0, 1_000), text("t1", "Hi")])), ["notice:n1", "reasoning:r1", "text:t1"]);
 });
@@ -90,9 +86,6 @@ test("in an agent transcript a message from the parent joins the work group, in 
   const steps: Step[] = [read("a1", 0, 1_000), steer, thought("r2", 3_000, 4_000), read("a2", 4_000, 5_000)];
   const transcript = build_blocks(steps, true);
   assert.deepEqual(shape(transcript), ["work:a1,s1,r2,a2"]);
-  const group = transcript[0];
-  assert.ok(group?.kind === "work");
-  assert.equal(group_span(group.steps), 5_000);
   assert.deepEqual(shape(build_blocks(steps)), ["work:a1", "steer:s1", "work:r2,a2"]);
   assert.deepEqual(shape(build_blocks([steer, thought("r1", 0, 1_000)], true)), ["steer:s1", "reasoning:r1"]);
 });
@@ -104,14 +97,11 @@ test("a stretch with one visible step stays a plain row, a stretch of thoughts k
   assert.deepEqual(shape(build_blocks(rounds)), ["reasoning:r1", "reasoning:r2", "text:t1"]);
 });
 
-test("blank thoughts never count as a visible step but ride along in a group for its time span", () => {
+test("blank thoughts never count as a visible step but ride along in a group", () => {
   const blank = (id: string, started: number, ended: number | null) => thought(id, started, ended, " \n");
   assert.deepEqual(shape(build_blocks([blank("r1", 0, 1_000), read("a1", 1_000, 2_000), blank("r2", 2_000, 3_000), text("t1", "Done.")])), ["reasoning:r1", "work:a1", "reasoning:r2", "text:t1"]);
   const blocks = build_blocks([blank("r1", 0, 1_000), read("a1", 1_000, 2_000), blank("r2", 2_000, 3_000), read("a2", 3_000, 4_000), blank("r3", 4_000, 9_000)]);
   assert.deepEqual(shape(blocks), ["work:r1,a1,r2,a2,r3"]);
-  const group = blocks[0];
-  assert.ok(group?.kind === "work");
-  assert.equal(group_span(group.steps), 9_000);
   const described = thought("r4", 0, 1_000, "", "Reading the packer");
   assert.deepEqual(shape(build_blocks([described, read("a1", 1_000, 2_000)])), ["work:r4,a1"]);
 });
@@ -131,7 +121,7 @@ test("a group is live while a tool runs or its newest thought streams, so no ext
 test("the group head names the streaming thought, then the running tool, and counts only tools once finished", () => {
   const steps = [thought("r1", 0, 6_000), read("a1", 6_000, 7_000), thought("r2", 7_000, 9_000), tool("g1", "grep_files", 9_000, 10_000, { query: "trailer" })];
   const finished = group_head(en, steps, false);
-  assert.deepEqual(finished, { kind: "done", key: "done:Read files:0", label: "Read files", denied: 0 });
+  assert.deepEqual(finished, { kind: "done", key: "done:Read files:0", label: "Read files", phrases: ["read files"], denied: 0 });
   assert.equal(group_head(de, steps, false).kind, "done");
   assert.deepEqual(group_head(en, [...steps, thought("r3", 10_000, null)], true), { kind: "thinking", key: "thinking:Thinking", label: "Thinking" });
   assert.deepEqual(group_head(de, [...steps, thought("r3", 10_000, null)], true), { kind: "thinking", key: "thinking:Denkt nach", label: "Denkt nach" });
@@ -143,13 +133,6 @@ test("the group head names the streaming thought, then the running tool, and cou
   assert.equal(review.kind, "review");
   assert.equal(review.key, "review:c1");
   assert.equal(group_head(en, [...steps, thought("r3", 10_000, null)], false).kind, "done");
-});
-
-test("the group time runs from the first step that started to the last end", () => {
-  const steps = [tool("d1", "read_file", null, null), thought("r1", 2_000, 8_000), read("a1", 8_000, 60_000)];
-  assert.equal(group_start(steps), 2_000);
-  assert.equal(group_span(steps), 58_000);
-  assert.equal(group_span([tool("d1", "read_file", null, null), tool("d2", "read_file", null, null)]), null);
 });
 
 test("between rounds a waiting group keeps its live head and says Thinking, a single row or a text tail keeps the separate Thinking line", () => {
@@ -181,11 +164,11 @@ test("while several tools of a group run at once the head names the first and co
 
 test("a group whose tools were all cancelled by a stop still names them in its head", () => {
   const cancelled = (id: string): ToolStep => ({ ...read(id, 1_000, 2_000), status: "cancelled" });
-  assert.deepEqual(group_head(en, [cancelled("a1"), cancelled("a2")], false), { kind: "done", key: "done:Read files:0", label: "Read files", denied: 0 });
+  assert.deepEqual(group_head(en, [cancelled("a1"), cancelled("a2")], false), { kind: "done", key: "done:Read files:0", label: "Read files", phrases: ["read files"], denied: 0 });
   const failed_read = { ...read("a2", 1_000, 2_000), status: "failed" as const };
   const mixed = [cancelled("a1"), failed_read];
   const last = tool_label(en, failed_read);
-  assert.deepEqual(group_head(en, mixed, false), { kind: "done", key: `done:${last}:0`, label: last, denied: 0 });
+  assert.deepEqual(group_head(en, mixed, false), { kind: "done", key: `done:${last}:0`, label: last, phrases: [], denied: 0 });
 });
 
 test("a command that ran counts in the group head even when it failed, other failed steps do not", () => {
@@ -196,5 +179,5 @@ test("a command that ran counts in the group head even when it failed, other fai
   });
   const failed_read = { ...read("a3", 1_000, 2_000), status: "failed" as const };
   const head = group_head(en, [command("c1", "done"), command("c2", "failed"), failed_read, read("a4", 2_000, 3_000)], false);
-  assert.deepEqual(head, { kind: "done", key: "done:Ran commands, read a file:0", label: "Ran commands, read a file", denied: 0 });
+  assert.deepEqual(head, { kind: "done", key: "done:Ran commands, read a file:0", label: "Ran commands, read a file", phrases: ["ran commands", "read a file"], denied: 0 });
 });

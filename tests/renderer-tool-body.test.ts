@@ -92,7 +92,7 @@ test("the date row shows only its label, a viewed image shows no folder", () => 
   assert.deepEqual(row(step("list_agents", { kind: "text", text: "Agents of this chat: Reviewer (explore, done)" })), { label: "Listed agents", detail: "", expandable: false });
 });
 
-test("memory and skill rows show no detail, finished listings and web searches show their count", () => {
+test("memory and skill rows show no detail, listings show no count, an empty web search says No results", () => {
   assert.deepEqual(row(step("list_memories", { kind: "memory", action: "list", text: "" })), { label: "Read memories", detail: "", expandable: false });
   assert.deepEqual(row(step("read_skill", { kind: "skill", action: "read", name: "docs" }, "done", { name: "docs", file: "ref/api.md" })), {
     label: "Read skill docs",
@@ -103,19 +103,19 @@ test("memory and skill rows show no detail, finished listings and web searches s
   assert.equal(has_body(t, failed_memory), true);
   assert.deepEqual(row(step("list_files", { kind: "files", root: "src", files: [], directories: 2, truncated: false })), {
     label: "Listed files in src",
-    detail: "0 files",
+    detail: "",
     expandable: false,
   });
   assert.deepEqual(row(step("list_files", { kind: "files", root: ".", files: ["a.ts"], directories: 0, truncated: false })), {
     label: "Listed files",
-    detail: "1 file",
+    detail: "",
     expandable: true,
   });
-  assert.equal(step_detail(t, step("list_files", { kind: "files", root: ".", files: ["a.ts", "b.ts"], directories: 0, truncated: true })), "2+ files");
+  assert.equal(step_detail(t, step("list_files", { kind: "files", root: ".", files: ["a.ts", "b.ts"], directories: 0, truncated: true })), "");
   const empty_search = step("web_search", { kind: "web_search", query: "q", depth: "basic", answer: "", sources: [] });
   assert.deepEqual(row(empty_search), { label: "Searched the web for q", detail: "No results", expandable: false });
   const source = { title: "T", url: "https://e.com", snippet: "", published_date: "" };
-  assert.equal(step_detail(t, step("web_search", { kind: "web_search", query: "q", depth: "basic", answer: "", sources: [source, source] })), "2 results");
+  assert.equal(step_detail(t, step("web_search", { kind: "web_search", query: "q", depth: "basic", answer: "", sources: [source, source] })), "");
   assert.equal(has_body(t, { ...empty_search, view: { kind: "web_search", query: "q", depth: "basic", answer: "a", sources: [] } }), true);
 });
 

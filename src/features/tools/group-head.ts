@@ -3,12 +3,12 @@ import type { WorkflowSummary } from "../../../shared/workflow.ts";
 import type { Translate } from "../../i18n/translate.ts";
 import { is_reviewing } from "./review-phase.ts";
 import { tool_label } from "./tool-meta.ts";
-import { group_current, group_label } from "./tool-summary.ts";
+import { group_current, group_phrases, joined_phrases } from "./tool-summary.ts";
 import { live_thought, work_tools, type WorkStep } from "./work-steps.ts";
 import { workflow_label } from "./workflow-model.ts";
 
 export type GroupHead =
-  | { kind: "done"; key: string; label: string; denied: number }
+  | { kind: "done"; key: string; label: string; phrases: string[]; denied: number }
   | { kind: "thinking"; key: string; label: string }
   | { kind: "tool"; key: string; label: string }
   | { kind: "workflow"; key: string; label: string; started_at: number }
@@ -18,21 +18,28 @@ const count_status = (tools: ToolStep[], status: ToolStep["status"]) => tools.fi
 
 const counted = (step: ToolStep) => step.status === "done" || (step.status === "failed" && step.view?.kind === "command");
 
-const settled_label = (t: Translate, tools: ToolStep[]): string => {
+type SettledText = { label: string; phrases: string[] };
+
+const grouped = (t: Translate, tools: ToolStep[]): SettledText => {
+  const phrases = group_phrases(t, tools);
+  return { label: joined_phrases(phrases), phrases };
+};
+
+const settled_text = (t: Translate, tools: ToolStep[]): SettledText => {
   if (tools.length === 1 && tools[0].status !== "done") {
-    return tool_label(t, tools[0]);
+    return { label: tool_label(t, tools[0]), phrases: [] };
   }
   if (!tools.some((step) => step.status === "done" || step.status === "failed" || step.status === "denied")) {
-    return group_label(t, tools);
+    return grouped(t, tools);
   }
   const shown = tools.filter(counted);
-  return shown.length > 0 ? group_label(t, shown) : tool_label(t, tools[tools.length - 1]);
+  return shown.length > 0 ? grouped(t, shown) : { label: tool_label(t, tools[tools.length - 1]), phrases: [] };
 };
 
 const settled_head = (t: Translate, tools: ToolStep[]): GroupHead => {
-  const label = settled_label(t, tools);
+  const { label, phrases } = settled_text(t, tools);
   const denied = tools.length === 1 && tools[0].status === "denied" ? 0 : count_status(tools, "denied");
-  return { kind: "done", key: `done:${label}:${denied}`, label, denied };
+  return { kind: "done", key: `done:${label}:${denied}`, label, phrases, denied };
 };
 
 export const open_head = (t: Translate, steps: WorkStep[]): GroupHead | null => {

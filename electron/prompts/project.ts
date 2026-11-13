@@ -5,8 +5,6 @@ export type ProjectDoc = { name: string; content: string };
 
 const doc_candidates = ["AGENTS.md", "CLAUDE.md"];
 
-const max_doc_chars = 24000;
-
 const ignored_dirs = new Set([".git", "node_modules", "dist", "build", ".vs", ".idea", ".vscode", "bin", "obj", "target", ".cache"]);
 
 const max_listing_entries = 200;
@@ -20,8 +18,7 @@ const read_doc = async (root: string, name: string): Promise<ProjectDoc | null |
     if (!text) {
       return null;
     }
-    const content = text.length > max_doc_chars ? `${text.slice(0, max_doc_chars)}\n...[${name} truncated to fit context]` : text;
-    return { name, content };
+    return { name, content: text };
   } catch (error) {
     if ((error as { code?: string }).code === "ENOENT") {
       return "missing";

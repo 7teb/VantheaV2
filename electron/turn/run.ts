@@ -5,7 +5,7 @@ import { passed_prompts } from "../../shared/hook-notes.ts";
 import type { StreamEventBody } from "../../shared/events.ts";
 import type { CompactResult, SendRequest, TurnStarted } from "../../shared/ipc/chats.ts";
 import type { CommandOrigin, UserOrigin } from "../../shared/chat.ts";
-import { chat_choice, with_choice, type ModelChoice, type ModelEntry } from "../../shared/models.ts";
+import { catalog_choice, chat_choice, with_choice, type ModelChoice, type ModelEntry } from "../../shared/models.ts";
 import { wake_idle } from "../agents/reports.ts";
 import { replace_tail } from "../chats/edit.ts";
 import { append_message, flush_chat, get_chat, set_streaming, unarchive_chat, update_message, update_meta } from "../chats/store.ts";
@@ -86,8 +86,10 @@ export type InternalTurn = Pick<BeginInput, "notes" | "quiet_end" | "keep_order"
 
 const last_request = (messages: Message[]): string => passed_prompts(messages).findLast((message) => message.origin === "user")?.text ?? "";
 
-const turn_model = async (choice: ModelChoice): Promise<ModelEntry> => {
-  const listed = (await model_catalog()).models.find((model) => model.id === choice.model);
+const turn_model = async (stored: ModelChoice): Promise<ModelEntry> => {
+  const models = (await model_catalog()).models;
+  const choice = catalog_choice(models, stored);
+  const listed = models.find((model) => model.id === choice.model);
   if (!listed) {
     throw new Error(`model ${choice.model} is not in the catalog`);
   }

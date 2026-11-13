@@ -7,7 +7,6 @@ import type { ApiMessage } from "../model/types.ts";
 import { cancel_chat } from "../permissions/approvals.ts";
 import { clear_review_instance } from "../permissions/review-state.ts";
 import { build_system_prompt } from "../prompts/index.ts";
-import { render_section } from "../prompts/sections.ts";
 import { error_text } from "../storage/coerce.ts";
 import type { ReviewModelCall, SideModelCall, Tool, ToolProfile } from "../tools/types.ts";
 import { without_images } from "../turn/carriers.ts";
@@ -258,6 +257,7 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
   try {
     const offered = allowed_tools(current_deps().resolve_tools(agent.profile, request.settings, model), agent);
     const tools = request.workflow ? workflow_agent_tools(offered, request.workflow) : offered;
+    const role = request.workflow ? workflow_role_section(agent, request.workflow) : agent_role_section(agent);
     const system = await build_system_prompt({
       model,
       settings: request.settings,
@@ -271,10 +271,10 @@ const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request:
       user_attachments: false,
       effort: agent.effort,
       deferred_mcp: [],
+      role,
     });
     const held = take_held(agent.agent_id).map((entry) => (entry.from === "main" ? kept_instruction_note(entry.text) : peer_note(entry)));
-    const role = request.workflow ? workflow_role_section(agent, request.workflow) : agent_role_section(agent);
-    api_messages.push({ role: "system", content: `${system}\n\n${render_section(role)}` }, ...context);
+    api_messages.push({ role: "system", content: system }, ...context);
     push_notes(live.emit, held, 0, api_messages);
     api_messages.push({ role: "user", instruction: true, content: request.prompt });
     await run_turn_loop(agent_session(current_deps(), agent, run, live, request, model, stored), api_messages);

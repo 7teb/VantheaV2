@@ -1,0 +1,6 @@
+@layer components {
+  .working-letter {
+    color: var(--working-peak);
+    opacity: var(--working-dim-opacity);
+  }
+}

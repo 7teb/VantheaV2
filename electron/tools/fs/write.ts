@@ -78,7 +78,7 @@ const apply_edit = async (ctx: ToolContext, tool: string, prepared: PreparedEdit
 export const write_file_tool = define_tool<{ path: string; content: string }>({
   spec: {
     name: "write_file",
-    description: "Create a file or overwrite it with the given text. A new file is written as UTF-8; an existing file keeps its encoding (UTF-8, UTF-16 or Windows-1252). path is project-relative or an absolute path inside your scratchpad; missing folders are created. To overwrite an existing file you must have read it with read_file, and it must not have changed on disk since your last read or write of it; otherwise the call fails and nothing is written. Prefer replace_in_file for small changes to an existing file.",
+    description: "Create a file or overwrite it with the given text. A new file is written as UTF-8; an existing file keeps its encoding (UTF-8, UTF-16 or Windows-1252). Missing folders are created. To overwrite an existing file you must have read it with read_file, and it must not have changed on disk since your last read or write of it; otherwise the call fails and nothing is written. Prefer replace_in_file for small changes to an existing file. Before you write code, read the writing_code and code_comments sections of your instructions again and follow their rules carefully.",
     parameters: {
       type: "object",
       properties: {
@@ -126,7 +126,7 @@ export const replace_in_file_tool = define_tool<ReplaceArgs>({
   spec: {
     name: "replace_in_file",
     description:
-      "Replace text in an existing file. old_string must reproduce the file's text: an exact match is tried first, then a match that ignores differences in whitespace, indentation and line endings, but every other character must match. The match must occur exactly expected_replacements times (default 1). You must have read the file with read_file, and it must not have changed on disk since your last read or write of it; otherwise the call fails and nothing is written.",
+      "Replace text in an existing file. old_string must reproduce the file's text: an exact match is tried first, then a match that ignores differences in whitespace, indentation and line endings, but every other character must match. The match must occur exactly expected_replacements times (default 1). You must have read the file with read_file, and it must not have changed on disk since your last read or write of it; otherwise the call fails and nothing is written. Before you write code, read the writing_code and code_comments sections of your instructions again and follow their rules carefully.",
     parameters: {
       type: "object",
       properties: {

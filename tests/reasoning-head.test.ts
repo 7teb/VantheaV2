@@ -43,24 +43,24 @@ test("a route that streams reasoning text shows the status line while it streams
   ]);
   const step = reasoning_of(streaming);
   assert.ok(step);
-  assert.deepEqual(reasoning_head(en, step, true), { label: "Reading the chat store and its save queue.", meta: null, status: "Reading the chat store and its save queue.", expandable: true, working: true });
+  assert.deepEqual(reasoning_head(en, step, true), { label: "Reading the chat store and its save queue.", status: "Reading the chat store and its save queue.", expandable: true, working: true });
   const before_status = reasoning_of(play([{ type: "reasoning", round: 0, delta: "Reading store.ts" }]));
   assert.ok(before_status);
-  assert.deepEqual(reasoning_head(de, before_status, true), { label: "Denkt nach", meta: null, status: undefined, expandable: true, working: true });
+  assert.deepEqual(reasoning_head(de, before_status, true), { label: "Denkt nach", status: undefined, expandable: true, working: true });
   const finished = reasoning_of(play([{ type: "text", round: 0, delta: "Answer" }], streaming));
   assert.ok(finished);
   const bare = { ...finished, status_line: undefined };
-  assert.deepEqual(reasoning_head(en, bare, true), { label: "Thought for 2s", meta: null, status: undefined, expandable: true, working: false });
-  assert.equal(reasoning_head(de, bare, false).label, "2s nachgedacht");
+  assert.deepEqual(reasoning_head(en, bare, true), { label: "Thought", status: undefined, expandable: true, working: false });
+  assert.equal(reasoning_head(de, bare, false).label, "Nachgedacht");
   const described = { ...finished, status_line: "Reading the chat store and its save queue." };
-  assert.deepEqual(reasoning_head(en, described, true), { label: "Reading the chat store and its save queue.", meta: "2s", status: undefined, expandable: true, working: false });
+  assert.deepEqual(reasoning_head(en, described, true), { label: "Reading the chat store and its save queue.", status: undefined, expandable: true, working: false });
 });
 
 test("a route that sends only blank or hidden reasoning shows plain Thinking without a chevron, never a status line", () => {
   const blank = play([{ type: "reasoning", round: 0, delta: "\n\n" }]);
   const step = reasoning_of(blank);
   assert.ok(step);
-  assert.deepEqual(reasoning_head(en, step, true), { label: "Thinking", meta: null, status: undefined, expandable: false, working: true });
+  assert.deepEqual(reasoning_head(en, step, true), { label: "Thinking", status: undefined, expandable: false, working: true });
   assert.equal(reasoning_head(de, step, true).label, "Denkt nach");
   assert.equal(reasoning_of(play([{ type: "text", round: 0, delta: "Answer" }], blank)), undefined);
   assert.equal(reasoning_of(play([{ type: "reasoning_status", round: 0, text: "Reading config.json." }])), undefined);
@@ -68,9 +68,9 @@ test("a route that sends only blank or hidden reasoning shows plain Thinking wit
 
 test("a finished step stored without reasoning text keeps its finished wording and stays closed", () => {
   const stored: ReasoningStep = { id: "reasoning:1", round: 0, kind: "reasoning", text: "", started_at: 1000, ended_at: 4000 };
-  assert.deepEqual(reasoning_head(en, stored, false), { label: "Thought for 3s", meta: null, status: undefined, expandable: false, working: false });
+  assert.deepEqual(reasoning_head(en, stored, false), { label: "Thought", status: undefined, expandable: false, working: false });
   const cut_short: ReasoningStep = { ...stored, ended_at: null, text: "Partial" };
-  assert.deepEqual(reasoning_head(en, cut_short, false), { label: "Thought", meta: null, status: undefined, expandable: true, working: false });
+  assert.deepEqual(reasoning_head(en, cut_short, false), { label: "Thought", status: undefined, expandable: true, working: false });
 });
 
 const thought = (text: string, status_line?: string): ReasoningStep => ({ id: "reasoning:9", round: 0, kind: "reasoning", text, started_at: 1000, ended_at: 7000, ...(status_line ? { status_line } : {}) });
@@ -89,10 +89,10 @@ test("a finished thought is described by its status line, else its last heading 
   assert.ok(long?.endsWith("…"));
 });
 
-test("a described thought shows its duration as meta, an undescribed one keeps Thought for, and a live one keeps Thinking", () => {
-  assert.deepEqual(reasoning_head(en, thought("**Checking the trailer**\n\nThe packer writes it first."), false), { label: "Checking the trailer", meta: "6s", status: undefined, expandable: true, working: false });
-  assert.deepEqual(reasoning_head(de, thought("Nothing to name here."), false), { label: "6s nachgedacht", meta: null, status: undefined, expandable: true, working: false });
-  assert.deepEqual(reasoning_head(en, { ...thought("**Checking the trailer**"), ended_at: null }, false), { label: "Checking the trailer", meta: null, status: undefined, expandable: true, working: false });
-  assert.deepEqual(reasoning_head(en, { ...thought("**Checking the trailer**"), ended_at: null }, true), { label: "Thinking", meta: null, status: undefined, expandable: true, working: true });
-  assert.deepEqual(reasoning_head(en, { ...thought("", "Reading the packer"), ended_at: null }, true), { label: "Reading the packer", meta: null, status: "Reading the packer", expandable: false, working: true });
+test("a described thought shows its description without a time, an undescribed one says Thought, and a live one keeps Thinking", () => {
+  assert.deepEqual(reasoning_head(en, thought("**Checking the trailer**\n\nThe packer writes it first."), false), { label: "Checking the trailer", status: undefined, expandable: true, working: false });
+  assert.deepEqual(reasoning_head(de, thought("Nothing to name here."), false), { label: "Nachgedacht", status: undefined, expandable: true, working: false });
+  assert.deepEqual(reasoning_head(en, { ...thought("**Checking the trailer**"), ended_at: null }, false), { label: "Checking the trailer", status: undefined, expandable: true, working: false });
+  assert.deepEqual(reasoning_head(en, { ...thought("**Checking the trailer**"), ended_at: null }, true), { label: "Thinking", status: undefined, expandable: true, working: true });
+  assert.deepEqual(reasoning_head(en, { ...thought("", "Reading the packer"), ended_at: null }, true), { label: "Reading the packer", status: "Reading the packer", expandable: false, working: true });
 });

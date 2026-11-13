@@ -2,12 +2,12 @@ import { hook_fields } from "../../../shared/hooks.ts";
 import { chat_project, remove_hook } from "../../hooks/store.ts";
 import { require_string } from "../browser/common.ts";
 import { define_tool } from "../types.ts";
-import { approval_rule, approve_change, card_scope, chat_hook, hook_line, hooks_result, unknown_hook } from "./common.ts";
+import { approve_change, card_scope, chat_hook, hook_line, hooks_result, unknown_hook } from "./common.ts";
 
 export const delete_hook_tool = define_tool<{ id: string }>({
   spec: {
     name: "delete_hook",
-    description: `Delete one hook by its id from list_hooks. ${approval_rule}`,
+    description: "Delete one hook by its id from list_hooks.",
     parameters: {
       type: "object",
       properties: { id: { type: "string", description: "Id of the hook, from list_hooks." } },

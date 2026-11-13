@@ -25,7 +25,7 @@ const action_row = (tsx: string): string => {
 const icon_tags = (markup: string) => [...markup.matchAll(/<(\w+Icon)\b([^>]*)\/>/g)].map((match) => ({ name: match[1], props: match[2] }));
 
 const default_icon_size = () => {
-  const match = icons_base.match(/export const Icon = \(\{ size = (\d+), children, \.\.\.rest \}/);
+  const match = icons_base.match(/export const Icon = \(\{\s*size = (\d+),/);
   assert.ok(match, "default icon size");
   return Number(match[1]);
 };
@@ -38,7 +38,7 @@ const copy_icon_size = () => {
 const assert_codicon = (name: string) => {
   assert.match(icons_tsx, new RegExp(`export const ${name} = \\(props: IconProps\\) => \\(\\s*<Icon \\{\\.\\.\\.codicon\\} \\{\\.\\.\\.props\\}>`), name);
   assert.match(icons_base, /export const codicon = \{ fill: "currentColor", stroke: "none" \} as const;/);
-  assert.match(icons_base, /viewBox="0 0 16 16"/);
+  assert.match(icons_base, /viewBox = "0 0 16 16"/);
 };
 
 const rules = (css: string) =>

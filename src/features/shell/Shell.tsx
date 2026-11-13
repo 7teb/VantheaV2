@@ -9,6 +9,7 @@ import { DockHost } from "./DockHost.tsx";
 import { MainArea } from "./MainArea.tsx";
 import { SearchOverlay } from "./SearchOverlay.tsx";
 import { Titlebar } from "./Titlebar.tsx";
+import { use_select_all } from "./use-select-all.ts";
 import { use_shortcuts } from "./use-shortcuts.ts";
 import { use_visual_viewport } from "./use-visual-viewport.ts";
 import "./Shell.css";
@@ -28,6 +29,7 @@ const use_drawer_sidebar = () => {
 
 export const Shell = () => {
   use_shortcuts();
+  use_select_all();
   use_drawer_sidebar();
   use_visual_viewport();
   const sidebar_open = use_store(ui_store, (state) => !state.sidebar_collapsed);

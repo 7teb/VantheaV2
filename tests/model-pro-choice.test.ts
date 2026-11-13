@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import type { Message } from "../shared/chat.ts";
-import { chat_choice, find_model, message_choice, model_listing, with_choice, with_pro } from "../shared/models.ts";
+import { catalog_choice, chat_choice, find_model, message_choice, model_listing, with_choice, with_pro } from "../shared/models.ts";
 import { parse_choice, parse_meta } from "../electron/chats/files.ts";
 import { parse_catalog } from "../electron/model/catalog.ts";
 import { read_catalog_source } from "../electron/model/catalog-source.ts";
@@ -69,6 +69,19 @@ test("a chat without a stored choice takes the model of its last answer, Pro inc
   assert.deepEqual(chat_choice(undefined, undefined, catalog, fallback), fallback);
 });
 
+test("a stored choice on a tier's own model id comes back as the base model with that tier", () => {
+  const legacy = { model: "z-ai/glm-5.3:nitro", effort: "max", pro: false };
+  const resolved = { model: "z-ai/glm-5.3", effort: "max", pro: false, tier: "fast" };
+  assert.deepEqual(catalog_choice(catalog.models, legacy), resolved);
+  assert.deepEqual(chat_choice(legacy, undefined, catalog, { model: "openai/gpt-6-luna", effort: "low", pro: false }), resolved);
+  assert.deepEqual(chat_choice(undefined, undefined, catalog, legacy), resolved);
+  assert.deepEqual(message_choice(catalog, [assistant("z-ai/glm-5.3:nitro", "high")]), { model: "z-ai/glm-5.3", effort: "high", pro: false, tier: "fast" });
+  const plain = { model: "z-ai/glm-5.3", effort: "high", pro: false };
+  assert.equal(catalog_choice(catalog.models, plain), plain);
+  const gone = { model: "gone/model", effort: "high", pro: false };
+  assert.equal(catalog_choice(catalog.models, gone), gone);
+});
+
 test("a stored chat keeps a valid model choice and drops one without a model", () => {
   const base = { id: "c1", title: "Chat", project_path: "D:/p", workspace: "", pinned: false, created_at: "2026-10-28T10:00:00.000Z", message_count: 1 };
   const kept = parse_meta({ ...base, choice: { model: "openai/gpt-6.1-sol", effort: "high", pro: true } }, "2026-10-28T10:00:00.000Z");
@@ -91,6 +104,7 @@ test("Fast, Ultrafast and Flex route the same model to the provider's other endp
       ["openai/gpt-6-astra", "fast,ultrafast,flex"],
       ["google/gemini-4-argon", "flex"],
       ["google/gemini-4-carbon", "flex"],
+      ["z-ai/glm-5.3", "fast"],
     ],
   );
   const sol = catalog.models.find((model) => model.id === "openai/gpt-6.1-sol");
@@ -112,6 +126,11 @@ test("Fast, Ultrafast and Flex route the same model to the provider's other endp
   const mimo_fast = with_choice(mimo, { pro: false, tier: "fast" });
   assert.deepEqual([mimo_fast.id, mimo_fast.label, mimo_fast.provider_order], ["xiaomi/mimo-v2.6-pro-ultraspeed", "MiMo V2.6 Pro Fast", ["xiaomi"]]);
   assert.deepEqual(model_listing(catalog.models, "xiaomi/mimo-v2.6-pro-ultraspeed"), { entry: mimo, pro: false, tier: "fast" });
+  const glm = catalog.models.find((model) => model.id === "z-ai/glm-5.3");
+  assert.ok(glm);
+  const glm_fast = with_choice(glm, { pro: false, tier: "fast" });
+  assert.deepEqual([glm_fast.id, glm_fast.label, glm_fast.provider_order], ["z-ai/glm-5.3:nitro", "GLM 5.3 Fast", ["baseten/fast", "gmicloud/fp8", "baidu/fp8"]]);
+  assert.equal(catalog.models.some((model) => model.id === "z-ai/glm-5.3:nitro"), false);
   const terra = catalog.models.find((model) => model.id === "openai/gpt-6.1-terra");
   assert.ok(terra);
   assert.equal(with_choice(terra, { pro: false, tier: "ultrafast" }), terra);

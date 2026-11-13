@@ -2,30 +2,28 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { heartbeat_keyframes, heartbeat_period_ms } from "../src/components/dot-heartbeat.ts";
 import { juggle_keyframes, juggle_period_ms } from "../src/components/dot-juggle.ts";
-import { knot_keyframes, knot_period_ms } from "../src/components/dot-knot.ts";
 import { orbit_keyframes, orbit_period_ms } from "../src/components/dot-orbit.ts";
 import { bridge_frames, bridge_ms, dot_motions, emerge_frames, emerge_ms, first_motion, next_motion } from "../src/components/dot-sequence.ts";
 import { shuffle_keyframes, shuffle_period_ms } from "../src/components/dot-shuffle.ts";
-import { slingshot_keyframes, slingshot_period_ms } from "../src/components/dot-slingshot.ts";
 import { weave_keyframes, weave_period_ms } from "../src/components/dot-weave.ts";
 
 const numbers = (transform: string | undefined) => (transform ?? "").match(/-?[\d.]+/g)?.map(Number) ?? [];
 
 const indexes = dot_motions.map((_, index) => index);
 
-test("the spinner knows seven motions with their own durations", () => {
+test("the spinner knows five motions with their own durations", () => {
   assert.deepEqual(
     dot_motions.map((motion) => motion.duration),
-    [orbit_period_ms, weave_period_ms, shuffle_period_ms, juggle_period_ms, slingshot_period_ms, heartbeat_period_ms, knot_period_ms],
+    [orbit_period_ms, weave_period_ms, shuffle_period_ms, juggle_period_ms, heartbeat_period_ms],
   );
   assert.deepEqual(
     dot_motions.map((motion) => motion.frames),
-    [orbit_keyframes, weave_keyframes, shuffle_keyframes, juggle_keyframes, slingshot_keyframes, heartbeat_keyframes, knot_keyframes],
+    [orbit_keyframes, weave_keyframes, shuffle_keyframes, juggle_keyframes, heartbeat_keyframes],
   );
   assert.ok(bridge_ms > 0 && bridge_ms < 1000);
 });
 
-test("the first motion is random over all seven and the next one is random but never the same motion again", () => {
+test("the first motion is random over all five and the next one is random but never the same motion again", () => {
   assert.equal(first_motion(() => 0), 0);
   assert.equal(first_motion(() => 0.9999), dot_motions.length - 1);
   assert.deepEqual(new Set(indexes.map((index) => first_motion(() => index / dot_motions.length))), new Set(indexes));
@@ -75,9 +73,7 @@ for (const [name, keyframes] of [
   ["weave", weave_keyframes],
   ["shuffle", shuffle_keyframes],
   ["juggle", juggle_keyframes],
-  ["slingshot", slingshot_keyframes],
   ["heartbeat", heartbeat_keyframes],
-  ["knot", knot_keyframes],
 ] as const) {
   test(`the ${name} loops seamlessly, stacks the three dots in a valid order and stays inside the slot`, () => {
     assert.equal(keyframes.length, 3);

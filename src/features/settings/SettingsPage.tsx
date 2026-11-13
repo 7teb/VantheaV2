@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeftIcon, SearchIcon } from "../../components/icons.tsx";
+import { reduced_motion } from "../../components/reduced-motion.ts";
 import { TextField } from "../../components/TextField.tsx";
 import { trap_tab, use_focus_return, use_layer, use_presence } from "../../components/use-layer.ts";
 import { use_t } from "../../i18n/index.ts";
@@ -8,8 +9,6 @@ import { use_store } from "../../state/use-store.ts";
 import { settings_groups, settings_sections } from "./registry.ts";
 import { filter_sections } from "./settings-search.ts";
 import "./SettingsPage.css";
-
-const reduced_motion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export const SettingsPage = () => {
   const t = use_t();

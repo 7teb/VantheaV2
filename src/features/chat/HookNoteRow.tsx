@@ -42,7 +42,7 @@ export const HookNoteRow = memo(({ note }: { note: HookNote }) => {
   return (
     <div className="agent-note tool-row enter-fade-up" data-status={blocked_message ? "denied" : "done"} data-open={open}>
       <button type="button" className="tool-row-head" aria-expanded={open} onClick={() => set_open(!open)}>
-        <span className="tool-row-icon">{blocked_message ? <ShieldTerminalIcon /> : <HookIcon />}</span>
+        <span className="tool-row-icon">{blocked_message ? <ShieldTerminalIcon plain /> : <HookIcon plain />}</span>
         <span className="tool-row-label">{t(labels[note.event][outcome])}</span>
         {failed && (
           <span className="tool-row-status is-failed" title={t("tools.status_failed")}>

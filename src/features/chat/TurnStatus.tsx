@@ -28,6 +28,7 @@ const error_keys: Record<TurnErrorKind, MessageKey> = {
   provider_unavailable: "chat.error_provider_unavailable",
   stream_interrupted: "chat.error_stream_interrupted",
   timeout: "chat.error_timeout",
+  empty_answer: "chat.error_empty_answer",
   context_limit: "chat.error_context_limit",
   policy: "chat.error_policy",
   auth: "chat.error_auth",

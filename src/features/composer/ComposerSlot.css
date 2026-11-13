@@ -270,7 +270,8 @@
   }
 
   .composer-menu {
-    max-height: min(520px, calc(100vh - var(--space-12)));
+    --composer-menu-cap: min(520px, calc(100vh - var(--space-12)));
+    max-height: var(--composer-menu-cap);
   }
 
   .composer-drop {
@@ -339,7 +340,7 @@
 
   @media (hover: none) and (pointer: coarse) {
     .composer-menu {
-      max-height: min(520px, calc(var(--viewport-height, 100vh) - var(--space-12) - var(--safe-top)));
+      --composer-menu-cap: min(520px, calc(var(--viewport-height, 100vh) - var(--space-12) - var(--safe-top)));
     }
 
     :root[data-keyboard="open"] .composer-dock-card {

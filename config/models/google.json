@@ -24,5 +24,17 @@
     "context_length": 1048576,
     "max_output": 65536,
     "note": "Frontier Gemini 4 model from Google for coding, agent work and complex reasoning. Reads images, 1M window. 2 USD per million input tokens and 10 USD per million output tokens. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
+  },
+  {
+    "id": "google/gemini-4-hydrogen",
+    "label": "Gemini 4 Hydrogen",
+    "provider": "Google",
+    "provider_order": ["google-vertex/global", "google-ai-studio"],
+    "efforts": ["low", "medium", "high", "xhigh"],
+    "default_effort": "medium",
+    "vision": true,
+    "context_length": 1048576,
+    "max_output": 65536,
+    "note": "High-efficiency Gemini 4 model from Google for high-throughput agent work and coding at lower cost and latency. Reads images, 1M window. 1.5 USD per million input tokens and 7.5 USD per million output tokens. Not yet measured in VantheaX: check its work on multi-step or tricky tasks."
   }
 ]

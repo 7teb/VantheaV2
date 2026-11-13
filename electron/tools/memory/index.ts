@@ -98,7 +98,7 @@ const forget_tool = define_tool<{ id: string }>({
   spec: {
     name: "forget",
     description:
-      "Propose deleting ONE saved memory. Pass id = the memory's short handle, the characters shown in parentheses at the start of each remembered line (for example a1b2c3); the memory's exact full text also works if you do not have the handle. Call list_memories first if you are unsure which id to use. The automatic review checks the deletion and may ask the user (in ask mode the user always approves it), so never assume it succeeded until the tool result confirms it.",
+      "Propose deleting ONE saved memory. Call list_memories first if you are unsure which id to use. The automatic review checks the deletion and may ask the user (in ask mode the user always approves it), so never assume it succeeded until the tool result confirms it.",
     parameters: {
       type: "object",
       properties: { id: { type: "string", description: "The memory's handle from the parentheses (for example a1b2c3), or its exact text." } },

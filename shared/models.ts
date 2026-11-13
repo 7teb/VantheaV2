@@ -128,6 +128,19 @@ export const model_listing = (models: readonly ModelEntry[], id: string): ModelL
 
 export const listed_model = (listed: ModelListing): ModelEntry => with_choice(listed.entry, listed);
 
+export const catalog_choice = (models: readonly ModelEntry[], choice: ModelChoice): ModelChoice => {
+  if (models.some((entry) => entry.id === choice.model)) {
+    return choice;
+  }
+
+  const listed = model_listing(models, choice.model);
+  if (!listed) {
+    return choice;
+  }
+
+  return { ...choice, model: listed.entry.id, pro: choice.pro || listed.pro, ...(listed.tier ? { tier: listed.tier } : {}) };
+};
+
 export const find_model = (catalog: ModelCatalog | null, id: string): ModelEntry | null => {
   const listed = model_listing(catalog?.models ?? [], id);
   return listed ? listed_model(listed) : null;
@@ -140,4 +153,4 @@ export const message_choice = (catalog: ModelCatalog | null, messages: readonly 
 };
 
 export const chat_choice = (stored: ModelChoice | undefined, messages: readonly Message[] | undefined, catalog: ModelCatalog | null, fallback: ModelChoice): ModelChoice =>
-  stored ?? (messages ? message_choice(catalog, messages) : null) ?? fallback;
+  catalog_choice(catalog?.models ?? [], stored ?? (messages ? message_choice(catalog, messages) : null) ?? fallback);

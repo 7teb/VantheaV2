@@ -4,23 +4,12 @@
     "label": "GLM 5.3",
     "provider": "Z.ai",
     "provider_order": ["gmicloud/fp8", "baidu/fp8"],
+    "tiers": { "fast": { "id": "z-ai/glm-5.3:nitro", "provider_order": ["baseten/fast", "gmicloud/fp8", "baidu/fp8"] } },
     "efforts": ["low", "high", "max"],
     "default_effort": "high",
     "vision": false,
     "context_length": 1048576,
     "max_output": 131072
-  },
-  {
-    "id": "z-ai/glm-5.3:nitro",
-    "label": "GLM 5.3 Fast",
-    "provider": "Z.ai",
-    "provider_order": ["baseten/fast"],
-    "efforts": ["low", "high", "max"],
-    "default_effort": "high",
-    "vision": false,
-    "context_length": 1048576,
-    "max_output": 131072,
-    "fallback": "z-ai/glm-5.3"
   },
   {
     "id": "z-ai/glm-5.3-flash",

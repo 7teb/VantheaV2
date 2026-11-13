@@ -34,7 +34,7 @@ The owner ran 60 tasks in three categories of 20 tasks each, 200 points in total
 | GPT OSS 120B | medium | 63% | 126/200 | 0.49 |
 | Claude Opus 5.5 | max | 59% | 118/200 | 4.38 |
 
-Not in this run: Kimi K3.1 Pro, Qwen 3.8 Max, MiniMax M3.1 Flash, Grok 4.7, GPT 6.1 Terra and its Flex entry, GLM 5.3 Fast, Crouton Alpha, Gemini 4 Carbon, Claude Fable 5.2. GPT 6.1 Sol, GPT 6 Astra and Gemini 4 Argon without "Flex" are the same models on the standard route: the score is the same, they answer faster and cost twice as much per token.
+Not in this run: Kimi K3.1 Pro, Qwen 3.8 Max, MiniMax M3.1 Flash, Grok 4.7, GPT 6.1 Terra and its Flex entry, Crouton Alpha, Gemini 4 Carbon, Gemini 4 Hydrogen, Claude Fable 5.2. GPT 6.1 Sol, GPT 6 Astra and Gemini 4 Argon without "Flex" are the same models on the standard route: the score is the same, they answer faster and cost twice as much per token.
 
 ## Public benchmarks
 
@@ -76,8 +76,9 @@ A model whose label ends in "Flex" is the same model as the one without "Flex", 
 - Price: half the standard price per token.
 - Speed: slower. Requests run on spare capacity and can wait in a queue; Google states a latency target of 1 to 15 minutes per request on its Flex tier, OpenAI gives no number.
 - Availability: when the Flex tier has no capacity, the provider refuses the request (OpenAI: 429 Resource Unavailable, Google: 503). VantheaX lists the standard route of the same provider second, so OpenRouter then sends the request there and it costs the standard price.
+- Rate limit: OpenAI limits tokens per minute per organization and per model, and the limit depends on that organization's usage tier: for GPT Astra, Sol and Terra 1,000,000 on the Build tier, 4,000,000 on Launch and 40,000,000 on Grow; for GPT Luna 2,000,000, 10,000,000 and 180,000,000 (OpenAI rate limit guide). It is not a property of Flex. Requests through OpenRouter run in the OpenAI organization OpenRouter uses for that endpoint, so the limit is whatever that organization has. On 2026-11-12 the organization behind OpenRouter's Flex endpoint answered GPT 6.1 Sol with "Rate limit reached for gpt-6.1-sol ... on tokens per min (TPM): Limit 1000000", the Build value. The standard route was not measured. Cached input tokens count in full, and every round of an agent sends its whole context again, so a round with 40,000 tokens of context uses 4% of that minute. Four agents of the same model with large contexts reach the limit within seconds; from then on almost every round fails with a rate limit and waits for the retry, so each tool result costs a pause. The standard route listed second did not prevent this: the owner saw the pauses after every result with four Flex agents. The limit counts per model, so agents on different models do not share it.
 
-Use Flex for sub-agents and background work where minutes of waiting do not matter: reviews, explorations, long implementations. Use the entry without "Flex" when the user waits for a quick answer in the chat.
+Use Flex for sub-agents and background work where minutes of waiting do not matter: reviews, explorations, long implementations. Run at most one or two agents of the same GPT model with large contexts at the same time, on Flex above all; for more agents in parallel, spread them over different models. Use the entry without "Flex" when the user waits for a quick answer in the chat.
 
 ## Which model for which job
 
@@ -91,10 +92,11 @@ Based on the owner's benchmark, the public numbers above and what the catalog no
 - Claude Opus 5.5: the most expensive model and the weakest in the owner's run. Use it only when the user asks for it.
 - Claude Fable 5.2: Anthropic's strongest model, at 8 USD per million input and 40 USD per million output tokens twice as expensive as Claude Opus 5.5. Not measured in VantheaX yet. Use it for the hardest work when that cost is worth it.
 - Gemini 4 Carbon: a second frontier Gemini 4 model next to Gemini 4 Argon, at the same price and with the same Flex tier. Not measured in VantheaX yet.
+- Gemini 4 Hydrogen: Google's high-efficiency Gemini 4 model for high-throughput agent work, at 1.5 USD per million input and 7.5 USD per million output tokens, below Gemini 4 Argon and Carbon. No Flex tier on OpenRouter yet. Not measured in VantheaX yet.
 - Claude Haiku 5.5: below MiMo V2.6 Pro and DeepSeek V4.1 Flash in the owner's run at a similar price.
 - GPT OSS 120B: only for very small tasks. Every response is capped at 8192 output tokens including reasoning, so larger files get cut off, and in tests it reported results inaccurately.
 
 Limits that rule a model out:
 
-- Images: GLM 5.3, GLM 5.3 Fast and GPT OSS 120B cannot read images. Give work that involves screenshots, the browser or pictures to a model with vision.
+- Images: GLM 5.3 and GPT OSS 120B cannot read images. Give work that involves screenshots, the browser or pictures to a model with vision.
 - Context window: GPT OSS 120B has 131k tokens. Work that needs a lot of context goes to a model with a 1M window.

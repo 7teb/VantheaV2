@@ -17,13 +17,3 @@ export const live_thought = (steps: WorkStep[]): ReasoningStep | null => {
   return last?.kind === "reasoning" && last.ended_at === null ? last : null;
 };
 
-export const group_start = (steps: WorkStep[]): number | null => {
-  const starts = timed_steps(steps).flatMap((step) => (step.started_at === null ? [] : [step.started_at]));
-  return starts.length > 0 ? Math.min(...starts) : null;
-};
-
-export const group_span = (steps: WorkStep[]): number | null => {
-  const start = group_start(steps);
-  const ends = timed_steps(steps).flatMap((step) => (step.ended_at === null ? [] : [step.ended_at]));
-  return start === null || ends.length === 0 ? null : Math.max(0, Math.max(...ends) - start);
-};

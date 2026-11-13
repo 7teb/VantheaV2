@@ -11,6 +11,7 @@ export const context = {
   "context.reason_provider_unavailable": "provider not reachable",
   "context.reason_stream_interrupted": "stream interrupted",
   "context.reason_timeout": "no response in time",
+  "context.reason_empty_answer": "empty answer",
   "context.reason_context_limit": "context window exceeded",
   "context.reason_policy": "refused by the provider's policy",
   "context.reason_auth": "API key rejected",

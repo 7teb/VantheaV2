@@ -122,6 +122,8 @@ export class FakeText extends FakeNode {
   }
 }
 
+export type FakeAnimation = { frames: unknown; options: unknown; cancelled: boolean; cancel: () => void };
+
 export class FakeElement extends FakeNode {
   namespaceURI: string;
   tagName: string;
@@ -197,6 +199,14 @@ export class FakeElement extends FakeNode {
     return { x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 };
   }
 
+  animations: FakeAnimation[] = [];
+
+  animate(frames: unknown, options: unknown): FakeAnimation {
+    const animation: FakeAnimation = { frames, options, cancelled: false, cancel: () => void (animation.cancelled = true) };
+    this.animations.push(animation);
+    return animation;
+  }
+
   closest(selector: string): FakeElement | null {
     const attribute = /^\[([\w-]+)\]$/.exec(selector)?.[1];
     if (!attribute) {
@@ -223,6 +233,10 @@ export class FakeElement extends FakeNode {
       }
     }
     return false;
+  }
+
+  getContext(): null {
+    return null;
   }
 
   matching(test: (element: FakeElement) => boolean): FakeElement[] {

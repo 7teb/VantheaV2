@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { ChevronDownIcon } from "../../components/icons.tsx";
-import { Menu } from "../../components/Menu.tsx";
 import { Skeleton } from "../../components/Skeleton.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { set_choice } from "../../state/model-choice.ts";
 import { models_store } from "../../state/models.ts";
 import { use_store } from "../../state/use-store.ts";
 import { effort_label, use_model_choice } from "./composer-hooks.ts";
-import { choice_view, model_menu_sections } from "./model-menu.ts";
+import { choice_view } from "./model-menu.ts";
+import { ModelMenu, type ModelMenuView } from "./ModelMenu.tsx";
 
 export const ModelPicker = ({ chat_id }: { chat_id: string | null }) => {
   const t = use_t();
   const [anchor, set_anchor] = useState<HTMLButtonElement | null>(null);
   const [open, set_open] = useState(false);
+  const [view, set_view] = useState<ModelMenuView>("effort");
   const models = use_store(models_store, (state) => state);
   const choice = use_model_choice(chat_id);
 
@@ -24,7 +25,13 @@ export const ModelPicker = ({ chat_id }: { chat_id: string | null }) => {
   }
 
   const { model, effort } = choice_view(models.catalog, choice);
-  const sections = model_menu_sections(t, models.catalog, choice, (next) => void set_choice(chat_id, next));
+
+  const toggle = () => {
+    if (!open) {
+      set_view("effort");
+    }
+    set_open(!open);
+  };
 
   return (
     <>
@@ -36,7 +43,7 @@ export const ModelPicker = ({ chat_id }: { chat_id: string | null }) => {
         aria-expanded={open}
         aria-label={t("composer.model_select")}
         data-open={open}
-        onClick={() => set_open(!open)}
+        onClick={toggle}
       >
         <span className="composer-chip-label composer-chip-model">{model?.label ?? t("composer.model_fallback")}</span>
         {model && model.efforts.length > 0 && (
@@ -46,15 +53,15 @@ export const ModelPicker = ({ chat_id }: { chat_id: string | null }) => {
         )}
         <ChevronDownIcon className="composer-chip-chevron" />
       </button>
-      <Menu
+      <ModelMenu
         open={open}
         anchor={anchor}
-        label={t("composer.model_select")}
-        sections={sections}
+        catalog={models.catalog}
+        choice={choice}
+        view={view}
+        on_view={set_view}
+        on_choice={(next) => void set_choice(chat_id, next)}
         on_close={() => set_open(false)}
-        placement="top-start"
-        min_width={260}
-        className="composer-menu"
       />
     </>
   );

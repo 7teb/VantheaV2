@@ -6,6 +6,7 @@ export * from "./icons-files.tsx";
 export * from "./icons-git.tsx";
 export * from "./icons-panels.tsx";
 export * from "./icons-status.tsx";
+export * from "./icons-tool-calls.tsx";
 export * from "./icons-tools.tsx";
 export * from "./icons-ui.tsx";
 export * from "./icons-window.tsx";

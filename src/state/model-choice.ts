@@ -1,5 +1,5 @@
 import type { Message } from "../../shared/chat.ts";
-import { chat_choice, type ModelCatalog, type ModelChoice, type SpeedTier } from "../../shared/models.ts";
+import { catalog_choice, chat_choice, type ModelCatalog, type ModelChoice, type SpeedTier } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
 import { chat_view_store } from "./chat-view.ts";
 import { chats_store, set_chat_choice } from "./chats.ts";
@@ -20,7 +20,7 @@ export const resolve_choice = (
     return null;
   }
   if (chat_id === null) {
-    return { model: settings.model, effort: settings.effort, pro: new_chat_pro, ...(new_chat_tier ? { tier: new_chat_tier } : {}) };
+    return catalog_choice(catalog?.models ?? [], { model: settings.model, effort: settings.effort, pro: new_chat_pro, ...(new_chat_tier ? { tier: new_chat_tier } : {}) });
   }
   return chat_choice(stored, messages, catalog, { model: settings.model, effort: settings.effort, pro: false });
 };

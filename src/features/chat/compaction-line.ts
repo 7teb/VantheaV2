@@ -8,6 +8,7 @@ const reason_keys: Record<CompactionErrorKind, MessageKey> = {
   provider_unavailable: "context.reason_provider_unavailable",
   stream_interrupted: "context.reason_stream_interrupted",
   timeout: "context.reason_timeout",
+  empty_answer: "context.reason_empty_answer",
   context_limit: "context.reason_context_limit",
   policy: "context.reason_policy",
   auth: "context.reason_auth",

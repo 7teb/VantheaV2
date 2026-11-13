@@ -20,7 +20,6 @@ import {
   phase_groups,
   role_label,
   row_tone,
-  run_span,
   shown_error,
   split_workflow_approval,
   started_workflow,
@@ -87,7 +86,7 @@ test("a group head shows a running workflow once nothing else streams, with the 
   const steps = [read, tool_step("run_workflow", workflow_tool_view(), "done", {}, "w")];
   const live = summary_of("running", []);
   assert.deepEqual(group_head(t, steps, false, false, live), { kind: "workflow", key: "workflow:Running workflow review-changes", label: "Running workflow review-changes", started_at: Date.parse(at(0)) });
-  assert.deepEqual(group_head(t, steps, false, false, null), { kind: "done", key: "done:Read a file, ran a workflow:0", label: "Read a file, ran a workflow", denied: 0 });
+  assert.deepEqual(group_head(t, steps, false, false, null), { kind: "done", key: "done:Read a file, ran a workflow:0", label: "Read a file, ran a workflow", phrases: ["read a file", "ran a workflow"], denied: 0 });
   const streaming = [read, tool_step("run_command", null, "running", { command: "npm test" }, "c")];
   assert.deepEqual(group_head(t, streaming, true, false, live), { kind: "tool", key: "tool:Running npm test", label: "Running npm test" });
 });
@@ -120,8 +119,6 @@ test("row and footer counts say how far the run is and what happened", () => {
   assert.equal(counts_line(t, running.counts), "2 running, 1 completed, 1 cached, 1 skipped, 1 failed");
   assert.equal(counts_line(de, running.counts), "2 laufend, 1 abgeschlossen, 1 aus dem Cache, 1 übersprungen, 1 fehlgeschlagen");
   assert.equal(counts_line(t, summary_of("running", []).counts), "");
-  assert.equal(run_span(summary_of("completed", [])), 312_000);
-  assert.equal(run_span(summary_of("running", [])), null);
 });
 
 test("agent rows show role, the status word only where the icon is not enough, and their time", () => {

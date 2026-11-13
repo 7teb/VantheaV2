@@ -3,6 +3,7 @@ import type { ToolView } from "../../../shared/tool-view.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
 import { ChevronRightIcon, CircleAlertIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
+import { reduced_motion } from "../../components/reduced-motion.ts";
 import { use_t } from "../../i18n/index.ts";
 import { follow, host_of, SourceIcon } from "./bodies-web.tsx";
 import { page_address } from "./tool-meta.ts";
@@ -15,8 +16,6 @@ const reveal_ms = 100;
 type Flight = { index: number; from: DOMRect; into: "row" | "stack" };
 
 type AvatarRefs = Map<number, HTMLSpanElement>;
-
-const reduced_motion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const fly = (target: HTMLElement, from: DOMRect) => {
   const to = target.getBoundingClientRect();

@@ -43,12 +43,13 @@ const background = (status: string): ToolView => ({ kind: "background", shell: "
 
 const agent = (status: string): ToolView => ({ kind: "agent", agent_id: "agent_1", run_id: "run_1", name: "Scout", status, report: "" });
 
-test("finished grep rows count their matches, a cap or an incomplete search reads as n+ matches", () => {
-  assert.equal(step_detail(t, step("grep_files", grep(3))), "3 matches");
-  assert.equal(step_detail(t, step("grep_files", grep(1))), "1 match");
+test("finished grep rows show no match count, only an empty search says No matches", () => {
+  assert.equal(step_detail(t, step("grep_files", grep(3))), "");
+  assert.equal(step_detail(t, step("grep_files", grep(1))), "");
   assert.equal(step_detail(t, step("grep_files", grep(0))), "No matches");
-  assert.equal(step_detail(t, step("grep_files", grep(200, { truncated: true }))), "200+ matches");
-  assert.equal(step_detail(de, step("grep_files", grep(4, { incomplete: true, truncated: true }))), "4+ Treffer");
+  assert.equal(step_detail(de, step("grep_files", grep(0))), "Keine Treffer");
+  assert.equal(step_detail(t, step("grep_files", grep(200, { truncated: true }))), "");
+  assert.equal(step_detail(de, step("grep_files", grep(0, { incomplete: true }))), "");
   assert.equal(step_detail(t, step("grep_files", grep(3), "failed")), "");
 });
 
@@ -82,8 +83,8 @@ test("a background task the ready task list no longer has shows its final status
   assert.equal(step_detail(de, step("cancel_background_task", background("cancelled")), listed(null)), translate("de", "background.canceled"));
 });
 
-test("agent rows show the run status translated and follow the live run", () => {
-  assert.equal(step_detail(t, step("deploy_agent", agent("running")), listed("running")), "Running");
+test("agent rows show the run status translated and follow the live run, but stay silent while it runs", () => {
+  assert.equal(step_detail(t, step("deploy_agent", agent("running")), listed("running")), "");
   assert.equal(step_detail(t, step("deploy_agent", agent("running")), listed("completed")), "Completed");
   assert.equal(step_detail(t, step("deploy_agent", agent("running")), loading), "");
   assert.equal(step_detail(t, step("deploy_agent", agent("running")), listed(null)), "Ended");

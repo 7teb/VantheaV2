@@ -13,6 +13,7 @@ export const context: Record<keyof typeof en, string> = {
   "context.reason_provider_unavailable": "Anbieter nicht erreichbar",
   "context.reason_stream_interrupted": "Stream abgebrochen",
   "context.reason_timeout": "keine Antwort in der Zeit",
+  "context.reason_empty_answer": "leere Antwort",
   "context.reason_context_limit": "Kontextfenster überschritten",
   "context.reason_policy": "von der Richtlinie des Anbieters abgelehnt",
   "context.reason_auth": "API-Schlüssel abgelehnt",

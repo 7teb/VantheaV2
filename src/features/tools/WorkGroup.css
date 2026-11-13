@@ -31,8 +31,8 @@
     }
   }
 
-  .work-group-head .tool-row-duration {
-    margin-left: 2px;
+  .work-group-head > .tool-row-label {
+    flex: 1;
   }
 
   .work-group-body > :is(.agent-note, .notice-row) {

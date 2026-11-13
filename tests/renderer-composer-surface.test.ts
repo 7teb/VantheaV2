@@ -111,7 +111,7 @@ test("every control in the composer bar takes its height from the scoped 28px si
     assert.match(read(`features/composer/${picker}`), /<Skeleton width=\{\d+\} height="var\(--size-control\)" radius=\{9\} \/>/, picker);
   }
   const composer_tsx = read("features/composer/Composer.tsx");
-  assert.match(read("components/icons-base.tsx"), /export const Icon = \(\{ size = 16, children, \.\.\.rest \}/);
+  assert.match(read("components/icons-base.tsx"), /export const Icon = \(\{\s*size = 16,/);
   for (const icon_name of ["PlusIcon", "ArrowUpIcon", "StopIcon", "CircleSpinnerIcon"]) {
     assert.match(composer_tsx, new RegExp(`<${icon_name}( className="[^"]*")? />`), icon_name);
     assert.doesNotMatch(composer_tsx, new RegExp(`<${icon_name} size=`), icon_name);

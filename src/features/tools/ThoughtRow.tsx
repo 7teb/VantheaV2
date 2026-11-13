@@ -16,7 +16,7 @@ export const ThoughtRow = memo(({ step, live }: ThoughtRowProps) => {
   const t = use_t();
   const [open, set_open] = useState(false);
   const [seen, set_seen] = useState(false);
-  const { label, meta, expandable, working } = reasoning_head(t, step, live);
+  const { label, expandable, working } = reasoning_head(t, step, live);
   return (
     <div className="thought-row" data-open={expandable && open}>
       <button
@@ -37,7 +37,6 @@ export const ThoughtRow = memo(({ step, live }: ThoughtRowProps) => {
             <WorkingLetters text={label} active={working} />
           </LabelMorph>
         </span>
-        <span className="tool-row-meta">{meta && <span className="tool-row-duration">{meta}</span>}</span>
         {expandable && <ChevronRightIcon className="tool-row-chevron" />}
       </button>
       {expandable && (

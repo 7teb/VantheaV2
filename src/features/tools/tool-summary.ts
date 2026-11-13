@@ -1,6 +1,6 @@
 import type { ToolStep } from "../../../shared/chat.ts";
 import { is_shell_run } from "../../../shared/shell.ts";
-import type { PeerOutcome, ToolView } from "../../../shared/tool-view.ts";
+import type { PeerOutcome } from "../../../shared/tool-view.ts";
 import type { MessageKey, Translate } from "../../i18n/translate.ts";
 import { agent_status_label, background_status_label, row_status_label, unknown_status, type LiveStatus } from "./background-status.ts";
 import { tool_meta } from "./tool-meta.ts";
@@ -45,62 +45,24 @@ export const format_elapsed = (ms: number): string | null => {
   return `${minutes}m ${seconds}s`;
 };
 
-export const step_duration = (step: ToolStep): number | null =>
-  step.started_at !== null && step.ended_at !== null ? Math.max(0, step.ended_at - step.started_at) : null;
-
 const kept_peer_outcomes: Partial<Record<PeerOutcome, MessageKey>> = {
   not_running: "tools.peer_outcome_not_running",
   duplicate: "tools.peer_outcome_duplicate",
 };
 
-const grep_detail = (t: Translate, view: Extract<ToolView, { kind: "grep" }>): string => {
-  if (view.incomplete || view.truncated) {
-    return t("tools.grep_capped", { n: view.total });
-  }
-  if (view.total === 0) {
-    return t("tools.grep_no_matches");
-  }
-  return t(view.total === 1 ? "tools.grep_count_one" : "tools.grep_count_other", { n: view.total });
-};
-
-const web_detail = (t: Translate, view: Extract<ToolView, { kind: "web_search" }>): string => {
-  if (view.urls && view.urls.length > 0) {
-    return "";
-  }
-  if (view.sources.length === 0) {
-    return t("tools.web_no_results");
-  }
-  return t(view.sources.length === 1 ? "tools.web_results_one" : "tools.web_results_other", { n: view.sources.length });
-};
-
-const files_detail = (t: Translate, view: Extract<ToolView, { kind: "files" }>): string => {
-  const n = view.files.length;
-  if (view.truncated) {
-    return t("tools.files_capped", { n });
-  }
-  return t(n === 1 ? "tools.files_count_one" : "tools.files_count_other", { n });
-};
-
-const count_detail = (t: Translate, count: number, [none, one, other]: [MessageKey, MessageKey, MessageKey]): string => {
-  if (count === 0) {
-    return t(none);
-  }
-  return t(count === 1 ? one : other, { n: count });
-};
+const done_and_empty = (step: ToolStep, count: number): boolean => step.status === "done" && count === 0;
 
 export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unknown_status): string => {
   const view = step.view;
   switch (view?.kind) {
     case "grep":
-      return step.status === "done" ? grep_detail(t, view) : "";
+      return done_and_empty(step, view.total) && !view.incomplete ? t("tools.grep_no_matches") : "";
     case "web_search":
-      return step.status === "done" ? web_detail(t, view) : "";
-    case "files":
-      return step.status === "done" ? files_detail(t, view) : "";
+      return done_and_empty(step, view.sources.length) && !view.urls?.length ? t("tools.web_no_results") : "";
     case "hooks":
-      return step.status === "done" && view.action === "list" ? count_detail(t, view.hooks.length, ["hooks.count_none", "hooks.count_one", "hooks.count_other"]) : "";
+      return done_and_empty(step, view.hooks.length) && view.action === "list" ? t("hooks.count_none") : "";
     case "scheduled_tasks":
-      return step.status === "done" && view.action === "list" ? count_detail(t, view.tasks.length, ["scheduled.count_none", "scheduled.count_one", "scheduled.count_other"]) : "";
+      return done_and_empty(step, view.tasks.length) && view.action === "list" ? t("scheduled.count_none") : "";
     case "peer_message": {
       const key = kept_peer_outcomes[view.outcome];
       return key ? t(key) : "";
@@ -108,7 +70,7 @@ export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unk
     case "background":
       return is_shell_run(step.name) ? "" : row_status_label(t, background_status_label, view.status, live);
     case "agent":
-      return row_status_label(t, agent_status_label, view.status, live);
+      return live.status === "running" ? "" : row_status_label(t, agent_status_label, view.status, live);
     default:
       return "";
   }
@@ -189,7 +151,12 @@ const single = (category: PhraseCategory, bucket: ToolStep[]): boolean => {
   return bucket_count(category, bucket) === 1;
 };
 
-export const group_label = (t: Translate, steps: ToolStep[]): string => {
+export const joined_phrases = (phrases: string[]): string => {
+  const joined = phrases.join(", ");
+  return joined.charAt(0).toUpperCase() + joined.slice(1);
+};
+
+export const group_phrases = (t: Translate, steps: ToolStep[]): string[] => {
   const order: PhraseCategory[] = [];
   const buckets = new Map<PhraseCategory, ToolStep[]>();
   for (const step of steps) {
@@ -204,12 +171,27 @@ export const group_label = (t: Translate, steps: ToolStep[]): string => {
     buckets.set(category, [step]);
   }
 
-  const phrases = order.map((category) => {
+  return order.map((category) => {
     const [one, other] = combine_keys[category];
     return t(single(category, buckets.get(category) ?? []) ? one : other);
   });
-  const joined = phrases.join(", ");
-  return joined.charAt(0).toUpperCase() + joined.slice(1);
+};
+
+export const group_label = (t: Translate, steps: ToolStep[]): string => joined_phrases(group_phrases(t, steps));
+
+export const fit_phrases = (phrases: string[], more: string, width: number, measure: (text: string) => number): string => {
+  const full = joined_phrases(phrases);
+  if (phrases.length < 2 || measure(full) <= width) {
+    return full;
+  }
+  for (let count = phrases.length - 1; count >= 1; count -= 1) {
+    const text = joined_phrases([...phrases.slice(0, count), more]);
+    if (measure(text) <= width) {
+      return text;
+    }
+  }
+  const shortest = joined_phrases([phrases[0], more]);
+  return measure(shortest) < measure(full) ? shortest : full;
 };
 
 export const group_current = (steps: ToolStep[]): ToolStep | null =>

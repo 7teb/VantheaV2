@@ -57,7 +57,7 @@ export const list_files_tool = define_tool<{ path: string | null }>({
   spec: {
     name: "list_files",
     description:
-      "List the project's files with sizes. Dependency, build output and VCS folders are skipped, and files inside secret folders such as .ssh are left out unless path names that folder. path limits the listing to one folder. Listing a secret folder needs the user's explicit permission: in auto and full mode a user message must allow it, so ask in chat first.",
+      "List the project's files with sizes. Dependency, build output and VCS folders are skipped, and files inside secret folders such as .ssh are left out unless path names that folder. Listing a secret folder needs the user's explicit permission: in auto and full mode a user message must allow it, so ask in chat first.",
     parameters: {
       type: "object",
       properties: { path: { type: "string", description: "Project-relative folder. Defaults to the whole project." } },
@@ -101,7 +101,7 @@ export const read_file_tool = define_tool<ReadArgs>({
   spec: {
     name: "read_file",
     description:
-      "Read a project file as numbered lines. start_line (1-based) and limit select a window; one read returns at most about 25000 tokens and says where it stopped. Reading a secret file (.env files, keys, credential files) needs the user's explicit permission: in auto and full mode a user message must allow it, so ask in chat first.",
+      "Read a project file as numbered lines. One read returns at most about 25000 tokens and says where it stopped. Reading a secret file (.env files, keys, credential files) needs the user's explicit permission: in auto and full mode a user message must allow it, so ask in chat first.",
     parameters: {
       type: "object",
       properties: {

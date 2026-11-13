@@ -37,7 +37,7 @@ const first_item = (node: HTMLElement) => node.querySelector<HTMLElement>(".menu
 
 type Step = 1 | -1 | "first" | "last";
 
-const menu_keys: Record<string, Step> = { ArrowDown: 1, ArrowUp: -1, Home: "first", End: "last" };
+export const menu_keys: Record<string, Step> = { ArrowDown: 1, ArrowUp: -1, Home: "first", End: "last" };
 
 const target_index = (current: number, count: number, step: Step) => {
   if (step === "first") {
@@ -52,8 +52,8 @@ const target_index = (current: number, count: number, step: Step) => {
   return (current + step + count) % count;
 };
 
-const move_focus = (container: HTMLElement, step: Step) => {
-  const items = [...container.querySelectorAll<HTMLButtonElement>(".menu-item:not(:disabled)")];
+export const move_focus = (container: HTMLElement, step: Step, selector = ".menu-item:not(:disabled)") => {
+  const items = [...container.querySelectorAll<HTMLElement>(selector)];
   if (items.length === 0) {
     return;
   }

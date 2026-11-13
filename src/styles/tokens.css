@@ -41,6 +41,9 @@
     --fill-danger: rgba(240, 101, 106, 0.1);
     --fill-track: rgba(255, 255, 255, 0.08);
     --fill-track-active: rgba(255, 255, 255, 0.62);
+    --effort-tick: rgba(252, 252, 252, 0.24);
+    --effort-tick-filled: rgba(255, 255, 255, 0.3);
+    --effort-major-sheen: rgba(255, 255, 255, 0.22);
     --fill-code: rgba(252, 252, 252, 0.103);
     --fill-command: rgba(252, 252, 252, 0.048);
     --raised-fill-hover: rgba(252, 252, 252, 0.071);
@@ -48,6 +51,7 @@
 
     --text-primary: #fcfcfc;
     --text-secondary: rgba(252, 252, 252, 0.65);
+    --icon-ink: rgb(from currentColor r g b / min(1, calc(alpha * 1.32)));
     --text-summary: rgba(252, 252, 252, 0.6);
     --text-detail: rgba(252, 252, 252, 0.56);
     --text-tertiary: rgba(252, 252, 252, 0.473);
@@ -231,6 +235,7 @@
     --gradient-hero-halo: radial-gradient(closest-side, rgba(255, 255, 255, 0.045), transparent);
     --gradient-working: linear-gradient(90deg, #4a4a4a 0%, #4a4a4a 32%, #f2f2f2 50%, #4a4a4a 68%, #4a4a4a 100%);
     --working-dim: rgba(252, 252, 252, 0.46);
+    --working-dim-opacity: 0.46;
     --working-peak: #ffffff;
     --gradient-skeleton: linear-gradient(
       90deg,

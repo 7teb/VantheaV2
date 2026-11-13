@@ -33,7 +33,7 @@ export const CommandText = ({ command, prompt = true }: { command: string; promp
   const label = expanded ? t("tools.command_collapse") : t("tools.command_expand");
   return (
     <div className="command-card-command" data-expanded={expanded} data-clamped={clamped}>
-      <pre ref={text} className="command-card-text" onClick={expand_from_text}>
+      <pre ref={text} className="command-card-text" data-select-all onClick={expand_from_text}>
         {prompt && <span className="command-card-prompt">{"$ "}</span>}
         {command}
       </pre>
