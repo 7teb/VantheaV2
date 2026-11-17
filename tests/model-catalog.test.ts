@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { api_effort, major_effort, parse_catalog, resolve_effort, side_window } from "../electron/model/catalog.ts";
 import { read_catalog_source } from "../electron/model/catalog-source.ts";
-import { find_model } from "../shared/models.ts";
+import { fallback_model, find_model } from "../shared/models.ts";
 
 const config_dir = fileURLToPath(new URL("../config/models", import.meta.url));
 
@@ -29,7 +29,7 @@ const minimal = (patch: Record<string, unknown> = {}) => ({
       ...patch,
     },
   ],
-  side: { title: "s/t", overseer: "s/o", vision: "s/v", memory: "s/m", reasoning_status: "s/r", transcription: "s/x", git_text: "s/g" },
+  side: { title: "s/t", overseer: "s/o", vision: "s/v", reasoning_status: "s/r", transcription: "s/x", git_text: "s/g" },
   image_models: [],
 });
 
@@ -49,7 +49,7 @@ test("the shipped catalog parses and holds no NVIDIA entry", () => {
     assert.ok(model.efforts.includes(model.default_effort), model.id);
   }
   assert.deepEqual(catalog.models.filter((model) => !model.efforts.length).map((model) => model.id), []);
-  assert.deepEqual(Object.keys(catalog.side).sort(), ["git_text", "memory", "overseer", "reasoning_status", "title", "transcription", "vision"]);
+  assert.deepEqual(Object.keys(catalog.side).sort(), ["git_text", "overseer", "reasoning_status", "title", "transcription", "vision"]);
   assert.equal(catalog.side.title, "google/gemini-3.1-flash-lite");
   assert.equal(catalog.side.reasoning_status, "google/gemini-3.5-flash-lite");
   assert.equal(catalog.image_models.find((entry) => entry.quality)?.id, "openai/gpt-image-2");
@@ -87,7 +87,7 @@ test("reasoning passback defaults to off and is on for the shipped DeepSeek, Kim
   assert.equal(parse_catalog(minimal()).models[0]?.reasoning_passback, false);
   const catalog = parse_catalog(shipped());
   const passback = catalog.models.filter((model) => model.reasoning_passback).map((model) => model.id);
-  assert.deepEqual(passback, ["deepseek/deepseek-v4.1-flash-1017", "moonshotai/kimi-k3.1-pro", "minimax/minimax-m3.1-flash"]);
+  assert.deepEqual(passback, ["moonshotai/kimi-k3.1-pro", "deepseek/deepseek-v4.1-flash-1017", "minimax/minimax-m3.1-flash"]);
 });
 
 test("verbosity is optional and set to low only on the shipped GPT-6 models", () => {
@@ -96,6 +96,8 @@ test("verbosity is optional and set to low only on the shipped GPT-6 models", ()
   assert.throws(() => parse_catalog(minimal({ verbosity: "short" })), /a\/one\)\.verbosity: must be one of low, medium, high, xhigh, max/);
   const low = parse_catalog(shipped()).models.filter((model) => model.verbosity === "low").map((model) => model.id);
   assert.deepEqual(low, [
+    "openai/gpt-6.2-sol",
+    "openai/gpt-6.2-astra",
     "openai/gpt-6.1-sol",
     "openai/gpt-6.1-terra",
     "openai/gpt-6-luna",
@@ -132,7 +134,7 @@ test("invalid entries throw an error naming the entry", () => {
 
 test("a fallback names another catalog model and resolves to its route", () => {
   const entry = (id: string, extra: Record<string, unknown> = {}) => ({ id, label: id.toUpperCase(), provider: "Z.ai", provider_order: [`${id}-provider`], efforts: [], vision: false, context_length: 1000, max_output: 100, ...extra });
-  const catalog = (models: unknown[]) => ({ models, side: { title: "a", overseer: "a", vision: "a", memory: "a", reasoning_status: "a", transcription: "a", git_text: "a" }, image_models: [] });
+  const catalog = (models: unknown[]) => ({ models, side: { title: "a", overseer: "a", vision: "a", reasoning_status: "a", transcription: "a", git_text: "a" }, image_models: [] });
   const parsed = parse_catalog(catalog([entry("glm"), entry("glm-fast", { fallback: "glm" })]));
   assert.deepEqual(parsed.models[1]?.fallback, { id: "glm", label: "GLM", provider_order: ["glm-provider"] });
   assert.equal(parsed.models[0]?.fallback, undefined);
@@ -144,11 +146,12 @@ test("a fallback names another catalog model and resolves to its route", () => {
 test("exactly the shipped vision models take images, so a flag flip or a new model fails here", () => {
   const vision = parse_catalog(shipped()).models.filter((model) => model.vision).map((model) => model.id);
   assert.deepEqual(vision, [
-    "deepseek/deepseek-v4.1-flash-1017",
-    "moonshotai/kimi-k3.1-pro",
-    "xiaomi/mimo-v2.6-pro",
-    "minimax/minimax-m3.1-flash",
-    "qwen/qwen3.8-max-0902",
+    "anthropic/claude-haiku-5.5",
+    "anthropic/claude-sonnet-5.5",
+    "anthropic/claude-opus-5.5",
+    "anthropic/claude-fable-5.2",
+    "openai/gpt-6.2-sol",
+    "openai/gpt-6.2-astra",
     "openai/gpt-6.1-sol",
     "openai/gpt-6.1-terra",
     "openai/gpt-6-luna",
@@ -157,18 +160,20 @@ test("exactly the shipped vision models take images, so a flag flip or a new mod
     "google/gemini-4-carbon",
     "google/gemini-4-hydrogen",
     "x-ai/grok-4.7",
+    "moonshotai/kimi-k3.1-pro",
+    "qwen/qwen4-max",
+    "qwen/qwen3.8-max-0902",
+    "deepseek/deepseek-v4.1-flash-1017",
     "z-ai/glm-5.3-flash",
-    "anthropic/claude-haiku-5.5",
-    "anthropic/claude-sonnet-5.5",
-    "anthropic/claude-opus-5.5",
-    "anthropic/claude-fable-5.2",
+    "xiaomi/mimo-v2.6-pro",
+    "minimax/minimax-m3.1-flash",
     "stealth/crouton-alpha",
   ]);
 });
 
 test("a vision model may not fall back to a model without vision", () => {
   const entry = (id: string, vision: boolean, extra: Record<string, unknown> = {}) => ({ id, label: id, provider: "P", provider_order: [], efforts: [], vision, context_length: 1000, max_output: 100, ...extra });
-  const catalog = (models: unknown[]) => ({ models, side: { title: "a", overseer: "a", vision: "a", memory: "a", reasoning_status: "a", transcription: "a", git_text: "a" }, image_models: [] });
+  const catalog = (models: unknown[]) => ({ models, side: { title: "a", overseer: "a", vision: "a", reasoning_status: "a", transcription: "a", git_text: "a" }, image_models: [] });
   assert.throws(() => parse_catalog(catalog([entry("blind", false), entry("seer", true, { fallback: "blind" })])), /seer\)\.fallback: must name a model that takes images/);
   assert.equal(parse_catalog(catalog([entry("seer-b", true), entry("seer", true, { fallback: "seer-b" })])).models[1]?.fallback?.id, "seer-b");
   assert.equal(parse_catalog(catalog([entry("seer", true), entry("blind", false, { fallback: "seer" })])).models[1]?.fallback?.id, "seer");
@@ -185,8 +190,9 @@ test("the catalog folder lists every model file once and each model sits in the 
     }
   }
   const catalog = parse_catalog(shipped());
-  assert.equal(catalog.models[0]?.id, "deepseek/deepseek-v4.1-flash-1017");
+  assert.equal(catalog.models[0]?.id, "anthropic/claude-haiku-5.5");
   assert.equal(catalog.models.at(-1)?.id, "stealth/crouton-alpha");
+  assert.equal(fallback_model(catalog.models).id, "deepseek/deepseek-v4.1-flash-1017");
 });
 
 test("the catalog reader joins the model files in index order and names the file that failed", async () => {

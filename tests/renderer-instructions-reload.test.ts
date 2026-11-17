@@ -13,7 +13,7 @@ let accept: ((value: unknown) => void) | null = null;
 let get_chat: () => Promise<Chat>;
 const listeners = new Map<string, Set<(payload: any) => void>>();
 const calls: { name: string; args: unknown[] }[] = [];
-const view = () => ({ custom_instructions: stored, personality: "pragmatic", memory: { enabled: true, exclude_tool_chats: false }, model_context: {} });
+const view = () => ({ custom_instructions: stored, personality: "pragmatic", memory: { enabled: true }, model_context: {} });
 const chat: Chat = { id: "c", title: "c", project_path: "D:/project", workspace: "", created_at: "2026-11-05T00:00:00Z", updated_at: "2026-11-05T00:00:00Z", pinned: false, message_count: 1, streaming: true, summary: null, questions: {}, messages: [{ id: "a", role: "assistant", model: "m", effort: "", mode: "auto", plan: false, status: "streaming", created_at: "2026-11-05T00:00:00Z", ended_at: null, steps: [], reasoning_details: [], retry: null, error: null, context: null, last_seq: 0 }] };
 const emit = (name: string, payload: any) => { for (const listener of listeners.get(name) ?? []) listener(payload); };
 const event = (seq: number, delta: string) => ({ type: "text", chat_id: "c", message_id: "a", seq, at: seq, round: 1, delta });

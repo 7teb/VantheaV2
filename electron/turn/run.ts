@@ -11,7 +11,6 @@ import { replace_tail } from "../chats/edit.ts";
 import { append_message, flush_chat, get_chat, set_streaming, unarchive_chat, update_message, update_meta } from "../chats/store.ts";
 import { chat_root } from "../chats/workspace.ts";
 import { emit } from "../ipc/handle.ts";
-import { forget_scan } from "../memory/store.ts";
 import { resolve_effort } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { cancel_chat } from "../permissions/approvals.ts";
@@ -270,7 +269,6 @@ export const edit_turn = (chat_id: string, message_id: string, text: string): Pr
     const prepared = await prepare_turn({ chat_id, choice });
     const user: UserMessage = at === 0 ? { ...target, text } : { ...target, id: randomUUID(), text, origin: "user", created_at: iso() };
     const launched = await launch({ chat_id, choice, mode, plan: false, origin: "user", trigger: { kind: "edit", message_id, user } }, prepared);
-    forget_scan(message_id).catch((error) => console.error(`[memory] forgetting the memory scan of edited message ${message_id} in chat ${chat_id} failed:`, error));
     return launched.started;
   });
 

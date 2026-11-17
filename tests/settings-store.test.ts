@@ -123,7 +123,7 @@ test("convert_legacy_settings maps camelCase fields and drops removed features",
   assert.equal(settings.mode, "ask");
   assert.equal(settings.personality, "cynical");
   assert.equal(settings.custom_instructions, "Answer in German. Keep it short.");
-  assert.deepEqual(settings.memory, { enabled: true, exclude_tool_chats: true });
+  assert.deepEqual(settings.memory, { enabled: true });
   assert.deepEqual(settings.web_search, { enabled: true, max_results: 20, topic: "news" });
   assert.deepEqual(settings.image_gen, { enabled: true, model: "openai/gpt-image-2", quality: "high" });
   assert.deepEqual(settings.skills, { disabled: ["frontend-design", "pdf"] });

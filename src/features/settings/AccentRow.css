@@ -1,0 +1,57 @@
+@layer components {
+  .accent-swatches {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .accent-swatch {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    box-shadow: inset 0 0 0 1px var(--ring-strong);
+    cursor: pointer;
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .accent-swatch:hover {
+    transform: scale(1.08);
+  }
+
+  .accent-swatch[data-default] {
+    background: var(--accent-default);
+  }
+
+  .accent-swatch[aria-checked="true"],
+  .accent-custom[data-custom="true"] {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 2px;
+  }
+
+  .accent-custom {
+    background: var(--surface-well);
+    box-shadow: inset 0 0 0 1px var(--ring-well);
+    color: var(--text-secondary);
+  }
+
+  .accent-custom:focus-within {
+    outline: 2px solid var(--ring-strong);
+    outline-offset: 2px;
+  }
+
+  .accent-custom input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+}

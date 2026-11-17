@@ -51,7 +51,6 @@ export const TitlebarMenu = () => {
     <>
       <IconButton
         ref={set_anchor}
-        tooltip={false}
         label={t("shell.more")}
         aria-haspopup="menu"
         aria-expanded={open}

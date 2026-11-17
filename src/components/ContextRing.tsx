@@ -6,6 +6,7 @@ import type { Placement } from "./placement.ts";
 import { Popover } from "./Popover.tsx";
 import { ProgressRing } from "./ProgressRing.tsx";
 import { compact_tokens } from "./token-count.ts";
+import { Tooltip } from "./Tooltip.tsx";
 import { use_t, type MessageKey } from "../i18n/index.ts";
 import { WorkingLetters } from "./WorkingLetters.tsx";
 import "./ContextRing.css";
@@ -40,20 +41,22 @@ export const ContextRing = ({ usage, compact, mark, placement = "top-end" }: Con
 
   return (
     <>
-      <button
-        ref={set_anchor}
-        type="button"
-        className="context-ring"
-        aria-label={label}
-        aria-expanded={open}
-        data-level={ratio >= 0.9 ? "high" : "normal"}
-        onClick={() => {
-          set_result(null);
-          set_open((value) => !value);
-        }}
-      >
-        <ProgressRing ratio={ratio} size={16} />
-      </button>
+      <Tooltip label={label} placement={placement}>
+        <button
+          ref={set_anchor}
+          type="button"
+          className="context-ring"
+          aria-label={label}
+          aria-expanded={open}
+          data-level={ratio >= 0.9 ? "high" : "normal"}
+          onClick={() => {
+            set_result(null);
+            set_open((value) => !value);
+          }}
+        >
+          <ProgressRing ratio={ratio} size={16} />
+        </button>
+      </Tooltip>
       <Popover open={open} anchor={anchor} label={t("context.title")} on_close={() => set_open(false)} placement={placement} className="context-popover">
         <div className="context-popover-title">{t("context.title")}</div>
         <div className="context-popover-usage">{label}</div>

@@ -94,8 +94,13 @@ test("the date row shows only its label, a viewed image shows no folder", () => 
 
 test("memory and skill rows show no detail, listings show no count, an empty web search says No results", () => {
   assert.deepEqual(row(step("list_memories", { kind: "memory", action: "list", text: "" })), { label: "Read memories", detail: "", expandable: false });
-  assert.deepEqual(row(step("read_skill", { kind: "skill", action: "read", name: "docs" }, "done", { name: "docs", file: "ref/api.md" })), {
+  assert.deepEqual(row(step("read_skill", { kind: "skill", action: "read", name: "docs" }, "done", { name: "docs" })), {
     label: "Read skill docs",
+    detail: "",
+    expandable: false,
+  });
+  assert.deepEqual(row(step("read_skill", { kind: "skill", action: "read", name: "docs" }, "done", { name: "docs", file: "ref/api.md" })), {
+    label: "Read skill docs/ref/api.md",
     detail: "",
     expandable: false,
   });

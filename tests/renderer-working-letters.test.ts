@@ -49,7 +49,7 @@ test("an inactive label renders its plain text without letter spans", () => {
   assert.equal(container.textContent, "Read files");
 });
 
-test("every letter runs its own opacity animation, offset by 55 ms per letter, and a new text cancels the old ones", () => {
+test("every letter runs its own opacity animation, offset along the label, and a new text cancels the old ones", () => {
   show({ text: "Run" });
   const first = letters();
   assert.deepEqual(
@@ -62,14 +62,22 @@ test("every letter runs its own opacity animation, offset by 55 ms per letter, a
   assert.ok(letters().every((letter) => letter.animations.at(-1)?.cancelled === false));
 });
 
-test("one wave per label runs at 55 ms per letter and rests about 4 s after the last letter before it starts again", () => {
-  assert.deepEqual(wave_timing(20, 3), { duration: 104 * 55, delay: 165, iterations: Number.POSITIVE_INFINITY, easing: "linear" });
-  assert.deepEqual(wave_frames(20), [
-    { opacity: "var(--working-dim-opacity)", offset: 0 },
-    { opacity: 1, offset: 6 / 104 },
-    { opacity: "var(--working-dim-opacity)", offset: 12 / 104 },
-    { opacity: "var(--working-dim-opacity)", offset: 1 },
-  ]);
+const near = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 1e-6, `${actual} is not ${expected}`);
+
+test("one sweep crosses a label of any length within a second and starts again every 4 s", () => {
+  const frames = wave_frames();
+  assert.deepEqual(
+    frames.map((frame) => frame.opacity),
+    ["var(--working-dim-opacity)", 1, 1, "var(--working-dim-opacity)", "var(--working-dim-opacity)"],
+  );
+  [0, 114.2857142857, 171.4285714286, 285.7142857143, 4000].forEach((ms, index) => near((frames[index]?.offset ?? -1) * 4000, ms));
+  for (const letters of [3, 8, 26]) {
+    const timings = Array.from({ length: letters }, (_, index) => wave_timing(letters, index));
+    assert.ok(timings.every((timing) => timing.duration === 4000 && timing.iterations === Number.POSITIVE_INFINITY && timing.easing === "linear"));
+    near(timings[0]?.delay ?? -1, (0.5 / letters) * (1000 / 1.75));
+    near(timings.at(-1)?.delay ?? -1, ((letters - 0.5) / letters) * (1000 / 1.75));
+    assert.ok((timings.at(-1)?.delay ?? 0) + 285.7142857143 < 1000);
+  }
 });
 
 test("letters animate only opacity, so the wave runs on the compositor without restyling every frame", () => {

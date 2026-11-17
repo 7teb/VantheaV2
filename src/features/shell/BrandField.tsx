@@ -4,9 +4,9 @@ import "./BrandField.css";
 
 const blobs = (
   <>
-    <i className="brand-blob is-violet" />
-    <i className="brand-blob is-indigo" />
-    <i className="brand-blob is-lilac" />
+    <i className="brand-blob is-accent" />
+    <i className="brand-blob is-deep" />
+    <i className="brand-blob is-light" />
   </>
 );
 

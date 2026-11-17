@@ -63,18 +63,21 @@ const ContextButton = ({ usage, draft_key }: ContextButtonProps) => {
   const open = use_store(composer_panel_store, (panel) => panel?.key === draft_key && panel.panel === "context");
   const ratio = Math.min(1, usage.used / usage.limit);
   const percent = Math.round(ratio * 100);
+  const label = t("composer.context_usage", { used: compact_tokens(usage.used), limit: compact_tokens(usage.limit), percent });
   return (
-    <button
-      type="button"
-      className="composer-strip-context"
-      aria-expanded={open}
-      aria-label={t("composer.context_usage", { used: compact_tokens(usage.used), limit: compact_tokens(usage.limit), percent })}
-      data-level={percent >= 90 ? "high" : undefined}
-      onClick={() => (open ? close_panel(draft_key, "context") : open_panel(draft_key, "context"))}
-    >
-      <ProgressRing ratio={ratio} size={16} />
-      <span>{percent}%</span>
-    </button>
+    <Tooltip label={label}>
+      <button
+        type="button"
+        className="composer-strip-context"
+        aria-expanded={open}
+        aria-label={label}
+        data-level={percent >= 90 ? "high" : undefined}
+        onClick={() => (open ? close_panel(draft_key, "context") : open_panel(draft_key, "context"))}
+      >
+        <ProgressRing ratio={ratio} size={16} />
+        <span>{percent}%</span>
+      </button>
+    </Tooltip>
   );
 };
 
@@ -109,10 +112,12 @@ export const ComposerStrip = ({ chat_id, project_path, draft_key }: ComposerStri
     <div className="composer-strip">
       {branch && <BranchItem branch={branch} />}
       {folder && (
-        <span className="composer-strip-item" title={project_path}>
-          <FolderIcon />
-          <span className="composer-strip-name">{folder}</span>
-        </span>
+        <Tooltip label={project_path}>
+          <span className="composer-strip-item">
+            <FolderIcon />
+            <span className="composer-strip-name">{folder}</span>
+          </span>
+        </Tooltip>
       )}
       {chat_id !== null && open_todos > 0 && <TodosButton chat_id={chat_id} count={open_todos} />}
       {measured && <ContextButton usage={measured} draft_key={draft_key} />}

@@ -19,7 +19,7 @@ test("every GPT 6 entry names its Pro slug and label, and no other model has one
   const with_pro_slugs = catalog.models.filter((model) => model.pro);
   assert.deepEqual(
     with_pro_slugs.map((model) => model.id),
-    ["openai/gpt-6.1-sol", "openai/gpt-6.1-terra", "openai/gpt-6-luna", "openai/gpt-6-astra"],
+    ["openai/gpt-6.2-sol", "openai/gpt-6.2-astra", "openai/gpt-6.1-sol", "openai/gpt-6.1-terra", "openai/gpt-6-luna", "openai/gpt-6-astra"],
   );
   for (const model of with_pro_slugs) {
     assert.equal(model.pro?.id, `${model.id}-pro`, model.id);
@@ -96,15 +96,17 @@ test("Fast, Ultrafast and Flex route the same model to the provider's other endp
   assert.deepEqual(
     catalog.models.filter((model) => model.tiers).map((model) => [model.id, Object.keys(model.tiers ?? {}).join(",")]),
     [
-      ["deepseek/deepseek-v4.1-flash-1017", "fast"],
-      ["xiaomi/mimo-v2.6-pro", "fast"],
+      ["openai/gpt-6.2-sol", "fast,ultrafast"],
+      ["openai/gpt-6.2-astra", "fast,ultrafast"],
       ["openai/gpt-6.1-sol", "fast,ultrafast,flex"],
       ["openai/gpt-6.1-terra", "fast,flex"],
       ["openai/gpt-6-luna", "fast"],
       ["openai/gpt-6-astra", "fast,ultrafast,flex"],
       ["google/gemini-4-argon", "flex"],
       ["google/gemini-4-carbon", "flex"],
+      ["deepseek/deepseek-v4.1-flash-1017", "fast"],
       ["z-ai/glm-5.3", "fast"],
+      ["xiaomi/mimo-v2.6-pro", "fast"],
     ],
   );
   const sol = catalog.models.find((model) => model.id === "openai/gpt-6.1-sol");

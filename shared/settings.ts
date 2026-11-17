@@ -35,7 +35,8 @@ export type Settings = {
   personality: Personality;
   custom_instructions: string;
   notification_sound: boolean;
-  memory: { enabled: boolean; exclude_tool_chats: boolean };
+  accent_color: string;
+  memory: { enabled: boolean };
   web_search: { enabled: boolean; max_results: number; topic: "general" | "news" };
   image_gen: { enabled: boolean; model: string; quality: "auto" | "low" | "medium" | "high" };
   mcp_servers: Record<string, McpServerConfig>;
@@ -44,6 +45,8 @@ export type Settings = {
   model_context: Record<string, ModelContext>;
   hooks: HooksConfig;
 };
+
+export const is_accent_color = (value: string): boolean => /^#[0-9a-f]{6}$/.test(value);
 
 export type SecretName = "openrouter" | "tavily";
 

@@ -20,7 +20,6 @@ import { stop_chat_files_watch, stop_files_watch } from "../ipc/files.ts";
 import { close_chat_terminals, kill_all_terminals } from "../ipc/terminal.ts";
 import { init_mcp, set_settings_access, shutdown_mcp } from "../mcp/servers.ts";
 import { sweep_attachments } from "../media/sweep.ts";
-import { extract_memories_after_turn } from "../memory/extract.ts";
 import { memory_prompt_section } from "../memory/prompt.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { set_key_source } from "../model/key.ts";
@@ -75,13 +74,6 @@ const run_step = async (step: string, action: () => unknown) => {
   }
 };
 
-const extract_memories = async (chat_id: string, message_id: string) => {
-  const chat = await get_chat(chat_id);
-  if (chat) {
-    await extract_memories_after_turn(chat, message_id, side_model);
-  }
-};
-
 const turn_root = async (chat_id: string): Promise<string | null> => {
   const chat = chat_meta(chat_id);
   if (!chat) return null;
@@ -113,7 +105,6 @@ const wire_hooks = () => {
     settle_answers(chat_id, message_id).catch((error) => console.error(`[questions] settling the answers of chat ${chat_id} failed:`, error));
     flush_reports(chat_id);
     deliver_pending_events(chat_id);
-    extract_memories(chat_id, message_id).catch((error) => console.error(`[memory] extraction for message ${message_id} in chat ${chat_id} failed:`, error));
   });
   on_background_finished((task) => {
     if (task.ended_at) turn_diffs.work_ended(task.chat_id, task.id, task.started_at, task.ended_at);

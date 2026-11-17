@@ -23,8 +23,6 @@ export const clean_text = (value: unknown, limit = 500): string =>
 export const redact_secrets = (value: unknown, limit = 800): string =>
   clean_text(value, limit).replace(key_pattern, "[redacted]").replace(assignment_pattern, "$1=[redacted]");
 
-export const contains_secret = (value: string): boolean => value.search(key_pattern) !== -1 || value.search(assignment_pattern) !== -1;
-
 export const words_for = (value: string): Set<string> =>
   new Set((clean_text(value, 1000).toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((word) => word.length > 2 && !ignored_words.has(word)));
 

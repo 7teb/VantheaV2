@@ -15,7 +15,6 @@ export const pane_search: Record<PaneId, PaneSearch> = {
       "personalization.instructions",
       "personalization.memory",
       "personalization.mem_enable",
-      "personalization.mem_exclude",
       "personalization.mem_reset",
       "personalization.mem_review",
       "personalization.mem_saved",

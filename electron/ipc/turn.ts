@@ -1,7 +1,7 @@
 import type { ApprovalDecision, GrantScope } from "../../shared/approval.ts";
 import { command_origins, type AssistantMessage, type CommandOrigin, type ContextUsage, type PermissionMode, type UserOrigin } from "../../shared/chat.ts";
 import type { SendRequest } from "../../shared/ipc/chats.ts";
-import { model_listing, speed_tiers, with_choice } from "../../shared/models.ts";
+import { fallback_model, model_listing, speed_tiers, with_choice } from "../../shared/models.ts";
 import { get_chat } from "../chats/store.ts";
 import { estimate_messages } from "../context/usage.ts";
 import { uploaded } from "../media/uploads.ts";
@@ -70,7 +70,7 @@ export const parse_decision = (value: unknown): ApprovalDecision => {
 
 const resolve_model = async (model_id: string) => {
   const catalog = await model_catalog();
-  const listed = model_listing(catalog.models, model_id) ?? { entry: catalog.models[0], pro: false };
+  const listed = model_listing(catalog.models, model_id) ?? { entry: fallback_model(catalog.models), pro: false };
   return with_choice(context_model(listed.entry), listed);
 };
 

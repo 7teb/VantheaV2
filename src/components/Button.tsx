@@ -23,14 +23,17 @@ export const Button = ({ variant = "secondary", size = "md", icon, icon_end, cla
 
 type PrimaryButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
   label: string;
+  hint?: string;
   icon: ReactNode;
   ref?: Ref<HTMLButtonElement>;
 };
 
-export const PrimaryButton = ({ label, icon, className, type = "button", ...rest }: PrimaryButtonProps) => (
-  <button type={type} aria-label={label} className={class_names("button-primary", className)} {...rest}>
-    {icon}
-  </button>
+export const PrimaryButton = ({ label, hint, icon, className, type = "button", ...rest }: PrimaryButtonProps) => (
+  <Tooltip label={label} hint={hint}>
+    <button type={type} aria-label={label} className={class_names("button-primary", className)} {...rest}>
+      {icon}
+    </button>
+  </Tooltip>
 );
 
 type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {

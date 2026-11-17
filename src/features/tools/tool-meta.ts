@@ -85,6 +85,8 @@ const peer_name = (step: ToolStep) => view_of(step, "peer_message")?.to_name || 
 
 const skill_name = (step: ToolStep) => view_of(step, "skill")?.name || text_arg(step, "name");
 
+const skill_file = (step: ToolStep) => [skill_name(step), text_arg(step, "file")].filter(Boolean).join("/");
+
 const query_of = (step: ToolStep) => view_of(step, "grep")?.query ?? text_arg(step, "query");
 
 const server_name = (step: ToolStep) => text_arg(step, "name");
@@ -237,7 +239,7 @@ const named: Record<string, ToolMeta> = {
   remember: entry("memory", "memory", fixed("tool_label.remember"), fixed("tool_label.remembered"), fixed("tool_label.remember_attempt")),
   forget: entry("memory", "memory", fixed("tool_label.forget"), fixed("tool_label.forgot"), fixed("tool_label.forget_attempt")),
   list_memories: entry("memory", "memory", fixed("tool_label.list_memories"), fixed("tool_label.listed_memories")),
-  read_skill: entry("skill", "skills", with_x("tool_label.read_skill", skill_name), with_x("tool_label.read_skill_done", skill_name)),
+  read_skill: entry("skill", "skills", with_x("tool_label.read_skill", skill_file), with_x("tool_label.read_skill_done", skill_file)),
   install_skill: entry("skill", "skill_installs", with_x("tool_label.install_skill", skill_name), with_x("tool_label.installed_skill", skill_name), with_x("tool_label.install_skill_attempt", skill_name)),
   datetime: entry("clock", "other", fixed("tool_label.datetime"), fixed("tool_label.checked_datetime")),
   context_status: entry("gauge", "other", fixed("tool_label.context_status"), fixed("tool_label.checked_context")),

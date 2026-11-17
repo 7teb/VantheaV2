@@ -27,7 +27,7 @@ export const settings_sections: SettingsSection[] = [
     group: "app",
     label: "settings.tab_general",
     icon: SlidersIcon,
-    keywords: ["settings.language", "settings.language_sub", "settings.api_key", "settings.api_key_sub", "settings.balance"],
+    keywords: ["settings.language", "settings.language_sub", "settings.api_key", "settings.api_key_sub", "settings.balance", "settings.appearance", "settings.accent"],
     Pane: GeneralPane,
   },
   { id: "personalization", group: "app", icon: SmileIcon, Pane: PersonalizationPane, ...pane_search.personalization },

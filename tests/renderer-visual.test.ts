@@ -110,7 +110,7 @@ test("every injected variable maps to an app token that exists", () => {
 
 test("the variables text carries the values read for each mapped token", () => {
   const css = visual_vars_css((token) => tokens[token] ?? "");
-  assert.ok(css.includes("--vx-accent: #a67df2;"));
+  assert.ok(css.includes(`--vx-accent: ${tokens["--accent"]};`));
   assert.ok(css.includes(`--vx-font: ${tokens["--font-ui"]};`));
   assert.equal(css.split(";").filter((part) => part.trim()).length, visual_vars.length);
 });

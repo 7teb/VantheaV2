@@ -146,7 +146,7 @@
 
   .composer-bar .button-primary:not(:disabled) {
     background: var(--surface-accent);
-    color: var(--text-on-accent);
+    color: var(--text-on-surface-accent);
   }
 
   .composer-bar .button-primary:hover:not(:disabled) {

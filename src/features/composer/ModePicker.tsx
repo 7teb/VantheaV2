@@ -4,6 +4,7 @@ import type { PermissionMode } from "../../../shared/chat.ts";
 import { ChevronDownIcon, CircleStopIcon, ClockIcon, HandIcon, ShieldAlertIcon, ShieldCheckIcon, type IconComponent } from "../../components/icons.tsx";
 import { Menu, type MenuItem, type MenuSection } from "../../components/Menu.tsx";
 import { Skeleton } from "../../components/Skeleton.tsx";
+import { Tooltip } from "../../components/Tooltip.tsx";
 import { use_clock } from "../../components/use-clock.ts";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
@@ -75,22 +76,23 @@ export const ModePicker = ({ chat_id }: { chat_id: string | null }) => {
 
   return (
     <>
-      <button
-        ref={set_anchor}
-        type="button"
-        className="composer-chip"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={t("composer.permission_title")}
-        title={hint}
-        data-open={open}
-        data-mode={windowed ? "full" : mode}
-        onClick={() => set_open(!open)}
-      >
-        <Icon />
-        <span className="composer-chip-label">{label}</span>
-        <ChevronDownIcon className="composer-chip-chevron" />
-      </button>
+      <Tooltip label={hint} placement="top-center">
+        <button
+          ref={set_anchor}
+          type="button"
+          className="composer-chip"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={t("composer.permission_title")}
+          data-open={open}
+          data-mode={windowed ? "full" : mode}
+          onClick={() => set_open(!open)}
+        >
+          <Icon />
+          <span className="composer-chip-label">{label}</span>
+          <ChevronDownIcon className="composer-chip-chevron" />
+        </button>
+      </Tooltip>
       <Menu
         open={open}
         anchor={anchor}

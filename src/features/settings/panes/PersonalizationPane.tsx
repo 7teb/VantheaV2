@@ -150,14 +150,6 @@ export const PersonalizationPane = () => {
         <SettingsRow label={t("personalization.mem_enable")} hint={t("personalization.mem_enable_sub")}>
           <Toggle checked={memory.enabled} label={t("personalization.mem_enable")} on_change={(enabled) => void update_settings({ memory: { enabled } })} />
         </SettingsRow>
-        <SettingsRow label={t("personalization.mem_exclude")} hint={t("personalization.mem_exclude_sub")}>
-          <Toggle
-            checked={memory.exclude_tool_chats}
-            disabled={!memory.enabled}
-            label={t("personalization.mem_exclude")}
-            on_change={(exclude_tool_chats) => void update_settings({ memory: { exclude_tool_chats } })}
-          />
-        </SettingsRow>
         <ResetRow />
       </SettingsGroup>
       <MemoryLists />

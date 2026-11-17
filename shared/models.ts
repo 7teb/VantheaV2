@@ -53,7 +53,7 @@ export const with_context_limit = (model: ModelEntry, setting: ModelContext | un
   compact_percent: compact_percent_of(setting),
 });
 
-export type SideModelRole = "title" | "overseer" | "vision" | "memory" | "reasoning_status" | "transcription" | "git_text";
+export type SideModelRole = "title" | "overseer" | "vision" | "reasoning_status" | "transcription" | "git_text";
 
 export type SideModelEntry = { id: string; context_length: number; max_output: number };
 
@@ -145,6 +145,10 @@ export const find_model = (catalog: ModelCatalog | null, id: string): ModelEntry
   const listed = model_listing(catalog?.models ?? [], id);
   return listed ? listed_model(listed) : null;
 };
+
+export const default_model_id = "deepseek/deepseek-v4.1-flash-1017";
+
+export const fallback_model = (models: readonly ModelEntry[]): ModelEntry => models.find((model) => model.id === default_model_id) ?? models[0];
 
 export const message_choice = (catalog: ModelCatalog | null, messages: readonly Message[]): ModelChoice | null => {
   const last = messages.findLast((message): message is AssistantMessage => message.role === "assistant");

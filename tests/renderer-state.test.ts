@@ -45,7 +45,8 @@ const settings = (): Settings => ({
   personality: "pragmatic",
   custom_instructions: "",
   notification_sound: true,
-  memory: { enabled: true, exclude_tool_chats: false },
+  accent_color: "",
+  memory: { enabled: true },
   web_search: { enabled: false, max_results: 5, topic: "general" },
   image_gen: { enabled: false, model: "i", quality: "auto" },
   mcp_servers: {},
@@ -64,7 +65,7 @@ test("settings patches merge objects one level and replace arrays and scalars", 
     skills: { disabled: ["x"] },
   });
   assert.equal(next.language, "de");
-  assert.deepEqual(next.memory, { enabled: false, exclude_tool_chats: false });
+  assert.deepEqual(next.memory, { enabled: false });
   assert.deepEqual(next.projects, []);
   assert.deepEqual(next.skills, { disabled: ["x"] });
   assert.equal(next.web_search, current.web_search);

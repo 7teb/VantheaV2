@@ -34,7 +34,7 @@ The owner ran 60 tasks in three categories of 20 tasks each, 200 points in total
 | GPT OSS 120B | medium | 63% | 126/200 | 0.49 |
 | Claude Opus 5.5 | max | 59% | 118/200 | 4.38 |
 
-Not in this run: Kimi K3.1 Pro, Qwen 3.8 Max, MiniMax M3.1 Flash, Grok 4.7, GPT 6.1 Terra and its Flex entry, Crouton Alpha, Gemini 4 Carbon, Gemini 4 Hydrogen, Claude Fable 5.2. GPT 6.1 Sol, GPT 6 Astra and Gemini 4 Argon without "Flex" are the same models on the standard route: the score is the same, they answer faster and cost twice as much per token.
+Not in this run: GPT 6.2 Sol, GPT 6.2 Astra, Kimi K3.1 Pro, Qwen 4 Max, Qwen 3.8 Max, MiniMax M3.1 Flash, Grok 4.7, GPT 6.1 Terra and its Flex entry, Crouton Alpha, Gemini 4 Carbon, Gemini 4 Hydrogen, Claude Fable 5.2. GPT 6.1 Sol, GPT 6 Astra and Gemini 4 Argon without "Flex" are the same models on the standard route: the score is the same, they answer faster and cost twice as much per token.
 
 ## Public benchmarks
 

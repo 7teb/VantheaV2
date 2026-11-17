@@ -6,6 +6,7 @@ import { Toggle } from "../../components/Toggle.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { settings_store, update_settings } from "../../state/settings.ts";
 import { use_store } from "../../state/use-store.ts";
+import { AccentRow } from "./AccentRow.tsx";
 import { BalanceLine } from "./BalanceLine.tsx";
 import { SecretRow } from "./panes/SecretRow.tsx";
 import { SettingsGroup, SettingsRow } from "./SettingsLayout.tsx";
@@ -58,6 +59,9 @@ export const GeneralPane = () => {
         <SettingsRow label={t("settings.balance")}>
           <BalanceLine has_key={has_key} revision={revision} />
         </SettingsRow>
+      </SettingsGroup>
+      <SettingsGroup label={t("settings.appearance")}>
+        <AccentRow />
       </SettingsGroup>
       <SettingsGroup label={t("settings.notifications")}>
         <SettingsRow label={t("settings.notify_sound")} hint={t("settings.notify_sound_sub")}>

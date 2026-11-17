@@ -12,7 +12,7 @@ let resolve_save: ((value: unknown) => void) | null = null;
 let finish_restore: (() => void) | null = null;
 let fail_reload = false;
 const calls: { name: string; args: any[] }[] = [];
-const view = () => ({ custom_instructions: saved, personality: "pragmatic", memory: { enabled: true, exclude_tool_chats: false }, model_context: {} });
+const view = () => ({ custom_instructions: saved, personality: "pragmatic", memory: { enabled: true }, model_context: {} });
 const invoke = async (name: string, ...args: any[]) => {
   calls.push({ name, args });
   if (name === "settings:get") {

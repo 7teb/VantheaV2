@@ -11,29 +11,17 @@ import {
   relevance,
   same_scope,
   new_memory_id,
-  sanitize_candidate,
   type MemoryEntry,
-  type MemorySource,
   type MemoryState,
-  type ScanCounts,
 } from "./records.ts";
 import { clean_text, manual_memory_key, memory_handle, memory_text_chars, similarity, words_for } from "./text.ts";
 
 export type MemoryFiles = { file: string; legacy_file: string };
 
-export type KnownMemory = { key: string; scope: MemoryEntry["scope"]; text: string };
-
-export type ScanEpoch = { forgotten: number; resets: number };
-
-const max_candidates = 3;
-
 const similar_threshold = 0.76;
 
 let files: MemoryFiles | null = null;
 let state: MemoryState = empty_state();
-
-const forgotten = new Map<string, number>();
-let resets = 0;
 
 const memory_file = (): string => {
   if (!files) {
@@ -44,7 +32,7 @@ const memory_file = (): string => {
 
 const write_state = (file: string) => {
   state = compact_state(state);
-  return write_json(file, { version: 1, records: state.records, scans: state.scans });
+  return write_json(file, { version: 1, records: state.records });
 };
 
 const persist = () => write_state(memory_file());
@@ -109,81 +97,8 @@ export const init_memory = async (options: MemoryFiles) => {
 
 export const memory_loaded = (): boolean => files !== null;
 
-export const known_memories = (): KnownMemory[] =>
-  state.records
-    .filter((entry) => entry.status !== "rejected")
-    .slice(0, 200)
-    .map((entry) => ({ key: entry.key, scope: entry.scope, text: entry.text }));
-
-export const is_scanned = (message_id: string): boolean => Object.hasOwn(state.scans, clean_text(message_id, 160));
-
-export const scan_epoch = (message_id: string): ScanEpoch => ({ forgotten: forgotten.get(clean_text(message_id, 160)) ?? 0, resets });
-
-const epoch_changed = (message_id: string, epoch: ScanEpoch): boolean => (forgotten.get(message_id) ?? 0) !== epoch.forgotten || resets !== epoch.resets;
-
-export const forget_scan = async (message_id: string): Promise<void> => {
-  const id = clean_text(message_id, 160);
-  forgotten.set(id, (forgotten.get(id) ?? 0) + 1);
-  if (!Object.hasOwn(state.scans, id)) {
-    return;
-  }
-  state.scans = Object.fromEntries(Object.entries(state.scans).filter(([key]) => key !== id));
-  await persist();
-};
-
-const matching_key = (active: MemoryEntry[], candidate: MemoryEntry): string => {
-  if (active.some((entry) => entry.key === candidate.key)) {
-    return candidate.key;
-  }
-  const similar = active
-    .map((entry) => ({ entry, score: similarity(entry.text, candidate.text) }))
-    .sort((a, b) => b.score - a.score)[0];
-  return similar && similar.score >= similar_threshold ? similar.entry.key : candidate.key;
-};
-
 const rejected_before = (candidate: MemoryEntry): boolean =>
   state.records.some((entry) => entry.status === "rejected" && same_scope(entry, candidate) && similarity(entry.text, candidate.text) >= similar_threshold);
-
-const hold_for_review = (candidate: MemoryEntry) => {
-  const pending = state.records.find((entry) => entry.status === "pending" && same_scope(entry, candidate) && entry.key === candidate.key);
-  state.records = pending
-    ? state.records.map((entry) => (entry === pending ? { ...candidate, id: pending.id, created_at: pending.created_at } : entry))
-    : [...state.records, candidate];
-};
-
-const keep_candidate = (candidate: MemoryEntry): "saved" | "pending" => {
-  const active = state.records.filter((entry) => entry.status !== "rejected" && same_scope(entry, candidate));
-  const next = { ...candidate, key: matching_key(active, candidate) };
-  if (rejected_before(next)) {
-    hold_for_review(next);
-    return "pending";
-  }
-  const pending = active.find((entry) => entry.status === "pending" && entry.key === next.key);
-  const saved: MemoryEntry = pending ? { ...next, id: pending.id, created_at: pending.created_at, status: "confirmed" } : { ...next, status: "confirmed" };
-  confirm_into(saved, pending?.id ?? null);
-  return "saved";
-};
-
-export const store_scan_result = async (source: MemorySource, candidates: unknown[], outcome: string, error = "", epoch: ScanEpoch | null = null): Promise<ScanCounts> => {
-  const message_id = clean_text(source.message_id, 160);
-  if (!message_id || is_scanned(message_id) || (epoch && epoch_changed(message_id, epoch))) {
-    return { returned: 0, saved: 0, pending: 0, dropped: {} };
-  }
-  const considered = candidates.slice(0, max_candidates);
-  const counts: ScanCounts = { returned: considered.length, saved: 0, pending: 0, dropped: {} };
-  const now = new Date().toISOString();
-  for (const raw of considered) {
-    const verdict = sanitize_candidate(raw, source, now);
-    if (verdict.drop) {
-      counts.dropped[verdict.drop] = (counts.dropped[verdict.drop] ?? 0) + 1;
-      continue;
-    }
-    counts[keep_candidate(verdict.entry)] += 1;
-  }
-  state.scans = { ...state.scans, [message_id]: { scanned_at: now, outcome, counts, ...(error ? { error: clean_text(error, 300) } : {}) } };
-  await persist();
-  return counts;
-};
 
 const confirmed = (): MemoryEntry[] =>
   state.records.filter((entry) => entry.status === "confirmed").sort((a, b) => b.updated_at.localeCompare(a.updated_at));
@@ -297,7 +212,6 @@ export const move_project_memories = async (old_path: string, next_path: string)
 };
 
 export const reset_memories = async () => {
-  resets += 1;
   state = empty_state();
   await persist();
 };

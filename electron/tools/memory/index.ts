@@ -1,9 +1,8 @@
 import type { ApprovalDecision } from "../../../shared/approval.ts";
 import type { ReviewNote } from "../../../shared/review.ts";
-import { canonicalize_memory } from "../../memory/canonical.ts";
 import { new_memory_id } from "../../memory/records.ts";
-import { confirm_memory, confirmed_memories, find_confirmed, known_memories, memory_loaded, remove_memory } from "../../memory/store.ts";
-import { memory_handle, memory_text_chars, normalize_memory_key, redact_secrets } from "../../memory/text.ts";
+import { confirm_memory, confirmed_memories, find_confirmed, memory_loaded, remove_memory } from "../../memory/store.ts";
+import { manual_memory_key, memory_handle, memory_kinds, memory_text_chars, redact_secrets, type MemoryKind } from "../../memory/text.ts";
 import { chat_home_of } from "../../chats/workspace.ts";
 import { path_key } from "../../storage/paths.ts";
 import { require_string } from "../browser/common.ts";
@@ -39,15 +38,23 @@ const refused = async (ctx: ToolContext, action: "remember" | "forget", text: st
   return decision.approved ? null : declined(action, text, decision, gate.note);
 };
 
-const remember_tool = define_tool<{ text: string }>({
+const remember_tool = define_tool<{ text: string; kind: MemoryKind }>({
   spec: {
     name: "remember",
     description:
-      "Propose saving ONE short durable fact about the user to your long-term memory, so it is available in future chats. Use it when the user states a stable preference, convention, workflow rule, or fact about their stack that will still matter in unrelated future chats, or explicitly asks you to remember something. On your own, do NOT save one-off task details, transient state, secrets, or file contents; when the user explicitly asks you to save something, such as their email address, save it. The automatic review checks the save and may ask the user (in ask mode the user always approves it), so never assume it succeeded until the tool result confirms it, and do not re-propose a fact that was declined or denied.",
+      "Propose saving ONE short durable fact about the user to your long-term memory, so it is available in future chats. Use it when the user states a stable preference, convention, workflow rule, or fact about their stack that will still matter in unrelated future chats, or explicitly asks you to remember something. On your own, do NOT save one-off task details, transient state, secrets, or file contents; when the user explicitly asks you to save something, such as their email address, save it. To change a saved memory, forget the old one and remember the new version. The automatic review checks the save and may ask the user (in ask mode the user always approves it), so never assume it succeeded until the tool result confirms it, and do not re-propose a fact that was declined or denied.",
     parameters: {
       type: "object",
-      properties: { text: { type: "string", description: "The single durable fact to save, one concise self-contained sentence." } },
-      required: ["text"],
+      properties: {
+        text: { type: "string", description: "The single durable fact to save, one concise self-contained sentence." },
+        kind: {
+          type: "string",
+          enum: [...memory_kinds],
+          description:
+            "global_preference: how the user wants you to work or communicate, in every project. global_environment: a stable fact about the user's machine, stack or tools. project_rule: a rule that applies only to the project of this chat.",
+        },
+      },
+      required: ["text", "kind"],
       additionalProperties: false,
     },
   },
@@ -58,16 +65,18 @@ const remember_tool = define_tool<{ text: string }>({
     if (text.length > memory_text_chars) {
       throw new ToolArgumentError(`text is ${text.length} characters, over the ${memory_text_chars}-character limit for one memory. Nothing was saved. Shorten the fact and call remember again.`);
     }
-    return { text };
+    const kind = memory_kinds.find((entry) => entry === raw.kind);
+    if (!kind) {
+      throw new ToolArgumentError(`kind must be one of ${memory_kinds.join(", ")}. Nothing was saved.`);
+    }
+    return { text, kind };
   },
   run: async (ctx, args) => {
     if (!memory_loaded()) {
       return unavailable("remember");
     }
-    const canonical = await canonicalize_memory(args.text, known_memories(), ctx.side_model, ctx.signal);
     const project = path_key(await chat_home_of(ctx.chat_id));
-    const kind = canonical.kind === "project_rule" && !project ? "global_preference" : canonical.kind;
-    const text = redact_secrets(canonical.text, memory_text_chars);
+    const text = redact_secrets(args.text, memory_text_chars);
     const stop = await refused(ctx, "remember", text);
     if (stop) {
       return stop;
@@ -75,10 +84,10 @@ const remember_tool = define_tool<{ text: string }>({
     const now = new Date().toISOString();
     const saved = await confirm_memory({
       id: new_memory_id(),
-      key: normalize_memory_key(canonical.key, kind, text),
-      kind,
-      scope: kind === "project_rule" ? "project" : "global",
-      project_path: kind === "project_rule" ? project : "",
+      key: manual_memory_key(args.kind, text),
+      kind: args.kind,
+      scope: args.kind === "project_rule" ? "project" : "global",
+      project_path: args.kind === "project_rule" ? project : "",
       text,
       evidence: args.text,
       confidence: 1,
@@ -88,9 +97,7 @@ const remember_tool = define_tool<{ text: string }>({
       created_at: now,
       updated_at: now,
     });
-    const saved_line = `Saved to memory as (${memory_handle(saved.id)}) [${saved.scope}/${saved.kind}]: ${saved.text}`;
-    const fallback = canonical.failure ? `\nThe memory model could not classify this fact (${canonical.failure}), so it was saved as written, as a global preference without a canonical key.` : "";
-    return result("done", "remember", `${saved_line}${fallback}`, saved.text);
+    return result("done", "remember", `Saved to memory as (${memory_handle(saved.id)}) [${saved.scope}/${saved.kind}]: ${saved.text}`, saved.text);
   },
 });
 

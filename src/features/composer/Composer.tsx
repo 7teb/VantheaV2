@@ -226,7 +226,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     if (busy && chat_id !== null && dictating === null && draft.text.trim() === "" && draft.uploads.length === 0 && draft.chips.length === 0) {
       return <PrimaryButton label={t("composer.stop")} icon={<StopIcon />} onClick={() => void stop_turn(chat_id)} />;
     }
-    return <PrimaryButton label={t(busy || compacting ? "composer.queue_send" : "composer.send")} icon={<ArrowUpIcon />} disabled={!sendable} onClick={send} />;
+    return <PrimaryButton label={t(busy || compacting ? "composer.queue_send" : "composer.send")} hint="Enter" icon={<ArrowUpIcon />} disabled={!sendable} onClick={send} />;
   };
 
   return (

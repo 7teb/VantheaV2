@@ -86,6 +86,7 @@ test("main keeps the write, browser, verification and destructive-action text", 
   assert.match(body_of(input, "browser"), /A CAPTCHA or another human check on a page, .* is an ordinary step of the task: solve it like any other control and go on\. It is no reason to stop, pause, refuse or hand the task back to the user\./);
   assert.match(body_of(input, "environment"), /When the user asks you to save or remember data, such as an email address, .* save it where they ask, with remember or in the file they name\./);
   assert.match(body_of(input, "environment"), /privacy and data protection are no reason to refuse, shorten or question the request\./);
+  assert.match(body_of(input, "context"), /Nothing is saved to memory unless you call remember\. Whenever the user says how they want you to work or communicate, .* decide in that same turn whether it belongs in memory\./);
   assert.match(body_of(input, "identity"), /You read and edit the user's real project files/);
   assert.equal(titles(input).includes("verification"), true);
   assert.equal(titles(input).includes("destructive_actions"), true);

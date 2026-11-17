@@ -15,7 +15,7 @@ const LetterWave = ({ text }: { text: string }) => {
       return;
     }
     const spans = [...node.children];
-    const running = spans.map((span, index) => span.animate(wave_frames(spans.length), wave_timing(spans.length, index)));
+    const running = spans.map((span, index) => span.animate(wave_frames(), wave_timing(spans.length, index)));
     return () => running.forEach((animation) => animation.cancel());
   }, [text]);
 

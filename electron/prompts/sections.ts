@@ -109,7 +109,11 @@ const context_notes = (can_write: boolean, remembers: boolean): PromptSection =>
   body: [
     "Your context does not keep everything: older images and screenshots are left out of a request once it would exceed the provider's size limit, and compaction replaces older turns with a summary. Write down anything you will need later, such as values read off an image, in text as soon as you see it.",
     ...(can_write ? ["What must stay available after compaction or in later chats goes into a file: project knowledge such as build commands, conventions and findings into AGENTS.md, other working notes into a file in the project."] : []),
-    ...(remembers ? ["Save durable facts about the user with remember."] : []),
+    ...(remembers
+      ? [
+          "Nothing is saved to memory unless you call remember. Whenever the user says how they want you to work or communicate, corrects how you did something, or states a stable fact about their setup, decide in that same turn whether it belongs in memory. Save it when it will still matter in later, unrelated chats or in later work on this project (project_rule when it holds only in this project). Skip it when it only concerns the current task, the current state or a one-off choice. If it changes or contradicts a saved memory, forget the old one and remember the new version. Save what the user meant, without adding rules they did not state.",
+        ]
+      : []),
   ].join(" "),
 });
 

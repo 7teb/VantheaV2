@@ -21,7 +21,7 @@ const model = (id: string, efforts: string[], default_effort: string, extra: Par
 
 const catalog: ModelCatalog = {
   models: [model("openai/gpt-sol", ["low", "medium", "high"], "medium", { pro: { id: "openai/gpt-sol-pro", label: "Sol Pro" } }), model("google/flash", [], "")],
-  side: { title: "", overseer: "", vision: "", memory: "", reasoning_status: "", transcription: "", git_text: "" },
+  side: { title: "", overseer: "", vision: "", reasoning_status: "", transcription: "", git_text: "" },
   side_models: [],
   image_models: [],
 };

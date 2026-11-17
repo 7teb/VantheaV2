@@ -7,7 +7,7 @@ import { chat_home_of } from "../electron/chats/workspace.ts";
 import { confirmed_memories, init_memory } from "../electron/memory/store.ts";
 import { path_key, set_storage_root } from "../electron/storage/paths.ts";
 import { memory_tools } from "../electron/tools/memory/index.ts";
-import type { SideModelCall, ToolContext } from "../electron/tools/types.ts";
+import type { ToolContext } from "../electron/tools/types.ts";
 import { boot_chats, make_root } from "./fixtures/legacy/harness.ts";
 
 let root = "";
@@ -24,8 +24,6 @@ after(async () => {
   await fs.rm(root, { recursive: true, force: true });
 });
 
-const side_model: SideModelCall = async () => JSON.stringify({ kind: "project_rule", key: "project.package", text: "Run npm run package after changes." });
-
 test("remember in a worktree chat stores the rule under the project, not under the worktree folder", async () => {
   const project = path.join(root, "projects", "shop");
   const worktree_path = path.join(root, "v2", "worktrees", "0a1b2c3d", "shop");
@@ -39,10 +37,9 @@ test("remember in a worktree chat stores the rule under the project, not under t
     mode: "ask",
     turn_id: "turn-1",
     signal: new AbortController().signal,
-    side_model,
     approve: async () => ({ approved: true }),
   } as unknown as ToolContext;
-  const outcome = await remember.execute(ctx, { text: "In this repo run npm run package after changes." });
+  const outcome = await remember.execute(ctx, { text: "In this repo run npm run package after changes.", kind: "project_rule" });
   assert.equal(outcome.status, "done");
   const [saved] = confirmed_memories();
   assert.equal(saved?.scope, "project");

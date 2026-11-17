@@ -1,5 +1,35 @@
 [
   {
+    "id": "openai/gpt-6.2-sol",
+    "label": "GPT 6.2 Sol",
+    "pro": { "id": "openai/gpt-6.2-sol-pro", "label": "GPT 6.2 Sol Pro" },
+    "tiers": { "fast": ["openai/fast"], "ultrafast": ["openai/ultrafast"] },
+    "provider": "OpenAI",
+    "verbosity": "low",
+    "provider_order": ["openai"],
+    "efforts": ["low", "medium", "high", "xhigh", "max"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1050000,
+    "default_context": { "limit": 272000, "compact_percent": 80 },
+    "max_output": 128000
+  },
+  {
+    "id": "openai/gpt-6.2-astra",
+    "label": "GPT 6.2 Astra",
+    "pro": { "id": "openai/gpt-6.2-astra-pro", "label": "GPT 6.2 Astra Pro" },
+    "tiers": { "fast": ["openai/fast"], "ultrafast": ["openai/ultrafast"] },
+    "provider": "OpenAI",
+    "verbosity": "low",
+    "provider_order": ["openai"],
+    "efforts": ["low", "medium", "high", "xhigh", "max"],
+    "default_effort": "high",
+    "vision": true,
+    "context_length": 1050000,
+    "default_context": { "limit": 272000, "compact_percent": 80 },
+    "max_output": 128000
+  },
+  {
     "id": "openai/gpt-6.1-sol",
     "label": "GPT 6.1 Sol",
     "pro": { "id": "openai/gpt-6.1-sol-pro", "label": "GPT 6.1 Sol Pro" },

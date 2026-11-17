@@ -1,13 +1,14 @@
 import { useState } from "react";
 import type { AssistantMessage, RetryState, TurnError, TurnErrorKind } from "../../../shared/chat.ts";
 import { Button } from "../../components/Button.tsx";
-import { Collapsible } from "../../components/Collapsible.tsx";
-import { CircleAlertIcon, CloudAlertIcon } from "../../components/icons.tsx";
+import { CollapsibleBody } from "../../components/Collapsible.tsx";
+import { ChevronRightIcon, CircleAlertIcon, CloudAlertIcon } from "../../components/icons.tsx";
 import { use_clock } from "../../components/use-clock.ts";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { continue_turn } from "../../state/chat-actions.ts";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
+import "./TurnStatus.css";
 
 export const RetryBanner = ({ retry }: { retry: RetryState }) => {
   const t = use_t();
@@ -41,16 +42,23 @@ const error_keys: Record<TurnErrorKind, MessageKey> = {
 
 export const ErrorCard = ({ error }: { error: TurnError }) => {
   const t = use_t();
+  const [open, set_open] = useState(false);
   return (
-    <div className="error-card enter-fade-up">
+    <div className="error-card enter-fade-up" data-open={open}>
       <div className="error-card-head">
         <CircleAlertIcon />
-        <span>{t(error_keys[error.kind])}</span>
+        <span className="error-card-title">{t(error_keys[error.kind])}</span>
+        {error.message && (
+          <button type="button" className="error-card-toggle" aria-expanded={open} onClick={() => set_open(!open)}>
+            <span>{t("chat.error_details")}</span>
+            <ChevronRightIcon />
+          </button>
+        )}
       </div>
       {error.message && (
-        <Collapsible header={t("chat.error_details")} className="error-card-details">
+        <CollapsibleBody open={open}>
           <pre className="error-card-raw">{error.message}</pre>
-        </Collapsible>
+        </CollapsibleBody>
       )}
     </div>
   );

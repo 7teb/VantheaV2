@@ -278,7 +278,7 @@
 
   .question-button[data-variant="primary"] {
     background: var(--surface-accent);
-    color: var(--text-on-accent);
+    color: var(--text-on-surface-accent);
   }
 
   .question-button[data-variant="primary"]:hover {

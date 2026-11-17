@@ -7,7 +7,8 @@ import { ensure_continuable } from "../electron/agents/runner.ts";
 import { chat_meta, create_chat, flush_all_sync } from "../electron/chats/store.ts";
 import { chat_root } from "../electron/chats/workspace.ts";
 import { init_artifacts, list_artifacts } from "../electron/media/artifacts.ts";
-import { init_memory, resolve_pending, retrieve_memories, review_items, store_scan_result } from "../electron/memory/store.ts";
+import { new_memory_id } from "../electron/memory/records.ts";
+import { confirm_memory, init_memory, retrieve_memories } from "../electron/memory/store.ts";
 import { find_renamed, read_folder_id } from "../electron/project/folder.ts";
 import { check_project_folders, follow_project } from "../electron/project/follow.ts";
 import { add_project, find_project, init_settings, update_project } from "../electron/settings/store.ts";
@@ -59,14 +60,21 @@ test("a renamed project folder moves the project, its chats, memories and images
   const old_dir = await folder("site");
   await add_project(old_dir, await read_folder_id(old_dir));
   const chat = await create_chat(old_dir);
-  await store_scan_result(
-    { chat_id: chat.id, message_id: "m-follow", content: "in this repo run npm run package", project_path: old_dir },
-    [{ kind: "project_rule", key: "project.package", text: "Run npm run package after changes.", evidence: "run npm run package", confidence: 0.95, explicit: true }],
-    "scanned",
-  );
-  for (const item of review_items()) {
-    await resolve_pending(item.id, "keep");
-  }
+  await confirm_memory({
+    id: new_memory_id(),
+    key: "project.package",
+    kind: "project_rule",
+    scope: "project",
+    project_path: old_dir,
+    text: "Run npm run package after changes.",
+    evidence: "run npm run package",
+    confidence: 1,
+    status: "confirmed",
+    source_chat_id: chat.id,
+    source_message_id: "m-follow",
+    created_at: "2026-10-07T00:00:00.000Z",
+    updated_at: "2026-10-07T00:00:00.000Z",
+  });
   const artifacts_file = path.join(root, "artifacts.json");
   const image = { id: "img_follow_0a1b2c3d.png", kind: "image", title: "", prompt: "", project_path: old_dir, chat_id: chat.id, pinned: false, created_at: "2026-10-07T00:00:00.000Z" };
   await fs.writeFile(artifacts_file, JSON.stringify({ version: 1, artifacts: [image] }));

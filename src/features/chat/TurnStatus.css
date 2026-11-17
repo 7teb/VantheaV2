@@ -1,0 +1,109 @@
+@layer components {
+  .retry-banner,
+  .interrupted-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin: var(--space-1) 0 14px;
+    font-size: var(--font-size-body);
+    color: var(--text-secondary);
+  }
+
+  .retry-banner svg,
+  .interrupted-row svg {
+    flex: none;
+    color: var(--text-tertiary);
+  }
+
+  .retry-banner-wait,
+  .retry-banner-reason {
+    font-size: var(--font-size-ui);
+    color: var(--text-tertiary);
+  }
+
+  .interrupted-text {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .error-card {
+    margin: var(--space-1) 0 14px;
+    border: 1px solid var(--rule-command);
+    border-radius: 12.5px;
+    corner-shape: superellipse(1.5);
+    background: var(--fill-command);
+  }
+
+  .error-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px var(--space-2) 10px 14px;
+    font-size: var(--font-size-body);
+    line-height: var(--leading-ui);
+    color: var(--text-primary);
+  }
+
+  .error-card-head > svg {
+    flex: none;
+    margin-top: 2px;
+    color: var(--text-waiting);
+  }
+
+  .error-card-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .error-card-toggle {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: 24px;
+    margin: -2px 0;
+    padding: 0 6px 0 var(--space-2);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-ui);
+    color: var(--text-secondary);
+    transition:
+      background var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .error-card-toggle:hover {
+    background: var(--fill-hover);
+    color: var(--text-primary);
+  }
+
+  .error-card-toggle .chevron-icon {
+    color: var(--text-tertiary);
+    transition: transform var(--duration-chevron) var(--ease-out);
+  }
+
+  .error-card[data-open="true"] .error-card-toggle .chevron-icon {
+    transform: rotate(90deg);
+  }
+
+  .error-card-raw {
+    margin: 0 14px var(--space-3) 40px;
+    padding: 2px 0 2px var(--space-3);
+    box-shadow: inset 2px 0 0 var(--rail);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-code);
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 600px) {
+    .error-card-raw {
+      margin-left: 14px;
+    }
+
+    .interrupted-text {
+      min-width: 0;
+    }
+  }
+}

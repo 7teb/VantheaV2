@@ -1,4 +1,4 @@
-import { find_model, type ModelCatalog, type ModelEntry } from "../../shared/models.ts";
+import { fallback_model, find_model, type ModelCatalog, type ModelEntry } from "../../shared/models.ts";
 import { api } from "../api/bridge.ts";
 import { create_store } from "./create-store.ts";
 import { settings_store, update_settings } from "./settings.ts";
@@ -27,7 +27,7 @@ export const select_model = (model: ModelEntry) => {
 const replace_unknown_model = () => {
   const { catalog } = models_store.get();
   const settings = settings_store.get();
-  const fallback = catalog?.models[0];
+  const fallback = catalog ? fallback_model(catalog.models) : undefined;
   if (!settings || !fallback || find_model(catalog, settings.model)) {
     return;
   }

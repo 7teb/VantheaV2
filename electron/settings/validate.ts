@@ -2,8 +2,8 @@ import type { McpTier } from "../../shared/approval.ts";
 import type { PermissionMode } from "../../shared/chat.ts";
 import { compact_fraction } from "../../shared/chat.ts";
 import { empty_hooks } from "../../shared/hooks.ts";
-import { flex_base } from "../../shared/models.ts";
-import { compact_percent_range, min_context_limit, type Language, type McpServerConfig, type McpToolOverride, type ModelContext, type Personality, type ProjectEntry, type Settings } from "../../shared/settings.ts";
+import { default_model_id, flex_base } from "../../shared/models.ts";
+import { compact_percent_range, is_accent_color, min_context_limit, type Language, type McpServerConfig, type McpToolOverride, type ModelContext, type Personality, type ProjectEntry, type Settings } from "../../shared/settings.ts";
 import { normalize_hooks } from "../hooks/validate.ts";
 import { as_array, as_boolean, as_record, as_string, clamp_int, is_record, pick } from "../storage/coerce.ts";
 import { folder_name, path_key } from "../storage/paths.ts";
@@ -22,16 +22,22 @@ const max_project_name = 80;
 const server_name_pattern = /^[A-Za-z0-9_-]{1,40}$/;
 const effort_pattern = /^[a-z_]{1,16}$/;
 
+const accent_color = (value: unknown, fallback: string): string => {
+  const color = as_string(value, fallback).trim().toLowerCase();
+  return color === "" || is_accent_color(color) ? color : fallback;
+};
+
 export const default_settings = (): Settings => ({
   language: "en",
-  model: "deepseek/deepseek-v4.1-flash-1017",
+  model: default_model_id,
   effort: "high",
   mode: "auto",
   projects: [],
   personality: "pragmatic",
   custom_instructions: "",
   notification_sound: true,
-  memory: { enabled: false, exclude_tool_chats: false },
+  accent_color: "",
+  memory: { enabled: false },
   web_search: { enabled: false, max_results: 5, topic: "general" },
   image_gen: { enabled: false, model: "google/gemini-3.1-flash-image", quality: "auto" },
   mcp_servers: {},
@@ -172,10 +178,8 @@ export const normalize_settings = (value: unknown, base: Settings): Settings => 
     personality: pick(raw.personality, personalities, base.personality),
     custom_instructions: as_string(raw.custom_instructions, base.custom_instructions),
     notification_sound: as_boolean(raw.notification_sound, base.notification_sound),
-    memory: {
-      enabled: as_boolean(memory.enabled, base.memory.enabled),
-      exclude_tool_chats: as_boolean(memory.exclude_tool_chats, base.memory.exclude_tool_chats),
-    },
+    accent_color: accent_color(raw.accent_color, base.accent_color),
+    memory: { enabled: as_boolean(memory.enabled, base.memory.enabled) },
     web_search: {
       enabled: as_boolean(web.enabled, base.web_search.enabled),
       max_results: clamp_int(web.max_results, 1, 20, base.web_search.max_results),

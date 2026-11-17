@@ -1,5 +1,5 @@
 import type { PermissionMode } from "../../../shared/chat.ts";
-import { model_listing, type ModelCatalog, type ModelChoice } from "../../../shared/models.ts";
+import { fallback_model, model_listing, type ModelCatalog, type ModelChoice } from "../../../shared/models.ts";
 import type { ScheduledInput, ScheduledTaskView, ScheduleInterval } from "../../../shared/scheduled.ts";
 import type { ProjectEntry, Settings } from "../../../shared/settings.ts";
 import { normalize_path } from "../sidebar/sidebar-model.ts";
@@ -23,7 +23,7 @@ const listed_project = (projects: readonly ProjectEntry[], path: string): string
   path ? (projects.find((project) => normalize_path(project.path) === normalize_path(path))?.path ?? "") : "";
 
 const default_choice = ({ settings, catalog }: FormDefaults): ModelChoice => {
-  const entry = model_listing(catalog?.models ?? [], settings.model)?.entry ?? catalog?.models[0];
+  const entry = model_listing(catalog?.models ?? [], settings.model)?.entry ?? (catalog ? fallback_model(catalog.models) : undefined);
   if (!entry) {
     return { model: settings.model, effort: settings.effort, pro: false };
   }

@@ -53,7 +53,7 @@ const ended = (message_id = "m1"): TurnEvent => ({
 
 before(async () => {
   Object.defineProperty(globalThis, "localStorage", { configurable: true, value: { getItem: () => null, setItem: () => undefined, removeItem: () => undefined } });
-  Object.defineProperty(globalThis, "document", { configurable: true, value: { documentElement: { lang: "en" }, visibilityState: "hidden", addEventListener: () => undefined, removeEventListener: () => undefined } });
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { documentElement: { lang: "en", style: { setProperty: () => undefined, removeProperty: () => undefined } }, visibilityState: "hidden", addEventListener: () => undefined, removeEventListener: () => undefined } });
   Object.defineProperty(globalThis, "window", { configurable: true, value: {
     innerWidth: 1440, matchMedia: () => ({ matches: false, addEventListener: () => {} }), setTimeout, clearTimeout,
     vx: {

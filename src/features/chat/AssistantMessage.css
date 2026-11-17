@@ -151,75 +151,6 @@
     min-width: 0;
   }
 
-  .retry-banner,
-  .interrupted-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2) var(--space-3);
-    margin: var(--space-1) 0 14px;
-    font-size: var(--font-size-body);
-    color: var(--text-secondary);
-  }
-
-  .retry-banner svg,
-  .interrupted-row svg {
-    flex: none;
-    color: var(--text-tertiary);
-  }
-
-  .retry-banner-wait,
-  .retry-banner-reason {
-    font-size: var(--font-size-ui);
-    color: var(--text-tertiary);
-  }
-
-  .interrupted-text {
-    flex: 1;
-    min-width: 200px;
-  }
-
-  .error-card {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-    margin: var(--space-1) 0 14px;
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-xl);
-    background: var(--fill-danger);
-    box-shadow: inset 0 0 0 1px var(--ring-danger);
-  }
-
-  .error-card-head {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-2);
-    font-size: var(--font-size-body);
-    line-height: var(--leading-ui);
-    color: var(--text-primary);
-  }
-
-  .error-card-head svg {
-    flex: none;
-    margin-top: 2px;
-    color: var(--text-danger);
-  }
-
-  .error-card-details {
-    margin-left: 18px;
-  }
-
-  .error-card-raw {
-    margin: var(--space-1) 0 0;
-    padding: 2px 0 2px var(--space-3);
-    box-shadow: inset 2px 0 0 var(--rail);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-code);
-    color: var(--text-secondary);
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-
   .plan-card {
     display: flex;
     flex-direction: column;
@@ -346,14 +277,6 @@
   @media (max-width: 600px) {
     .plan-card {
       padding: var(--space-4);
-    }
-
-    .error-card {
-      padding: var(--space-3);
-    }
-
-    .interrupted-text {
-      min-width: 0;
     }
   }
 

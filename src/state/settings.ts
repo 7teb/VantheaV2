@@ -2,6 +2,7 @@ import { context_setting, with_compact_percent, with_context_limit, type ModelEn
 import type { ModelContext, ProjectEntry, SecretName, SettingsPatch, SettingsView } from "../../shared/settings.ts";
 import { api } from "../api/bridge.ts";
 import { set_language } from "../i18n/index.ts";
+import { set_accent } from "./accent.ts";
 import { create_store } from "./create-store.ts";
 import { apply_settings_patch } from "./settings-patch.ts";
 import { ui_store } from "./ui.ts";
@@ -76,6 +77,7 @@ export const init_settings = (): (() => void) => {
     const view = settings_store.get();
     if (view) {
       set_language(view.language);
+      set_accent(view.accent_color);
       follow_moved_project(projects, view.projects);
       projects = view.projects;
     }

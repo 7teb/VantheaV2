@@ -45,31 +45,31 @@
   animation: brand-drift var(--ease-in-out) infinite alternate;
 }
 
-.brand-blob.is-violet {
+.brand-blob.is-accent {
   top: -46px;
   left: -40px;
   width: 200px;
   height: 96px;
-  background: radial-gradient(closest-side, var(--brand-violet), transparent);
+  background: radial-gradient(closest-side, var(--brand-accent), transparent);
   animation-duration: 18s;
 }
 
-.brand-blob.is-indigo {
+.brand-blob.is-deep {
   top: -44px;
   left: 120px;
   width: 210px;
   height: 84px;
-  background: radial-gradient(closest-side, var(--brand-indigo), transparent);
+  background: radial-gradient(closest-side, var(--brand-deep), transparent);
   animation-duration: 23s;
   animation-delay: -8s;
 }
 
-.brand-blob.is-lilac {
+.brand-blob.is-light {
   top: -34px;
   left: 30px;
   width: 120px;
   height: 64px;
-  background: radial-gradient(closest-side, var(--brand-lilac), transparent);
+  background: radial-gradient(closest-side, var(--brand-light), transparent);
   animation-duration: 14s;
   animation-delay: -5s;
 }
