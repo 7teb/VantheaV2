@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
-import type { SteerStep, ToolStep } from "../shared/chat.ts";
 import type { AgentRunStatus, AgentSummary } from "../shared/ipc/work.ts";
 import { bundle, install_dom, quiet_vx, stub_components, type FakeElement } from "./dom-kit.ts";
 
@@ -98,36 +97,11 @@ test("the pool holds the 5x5 critters, the 7x7 critters and the blooms, each blo
   assert.ok(critters()[0]?.className.split(" ").includes("is-running"));
 });
 
-const main_steer: SteerStep = { id: "steer:4", round: 2, kind: "steer", text: "Stop editing tokens.ts, the parser agent owns it." };
+const message_path = (element: { tagName: string; getAttribute: (name: string) => string | null }) => element.tagName.toLowerCase() === "path" && element.getAttribute("d") === "M10.15 4.02A7 7 0 0 1 19.98 13.86";
 
-const message_main: ToolStep = {
-  id: "tool:3:0",
-  round: 3,
-  kind: "tool",
-  index: 0,
-  call_id: "call-3",
-  name: "message_main_agent",
-  args: { text: "tokens.ts is done" },
-  status: "done",
-  progress: null,
-  approval: null,
-  view: { kind: "text", text: "tokens.ts is done" },
-  error: null,
-  result_text: "",
-  started_at: 1000,
-  ended_at: 2000,
-};
-
-test("a message from the main agent shows as a closed row with the main agent's critter, which stays the same for the whole chat", () => {
-  render(client.createElement(client.MainMessageRow, { chat_id: "c1", step: main_steer }));
+test("a message from the main agent shows as a closed row with the agent message icon instead of a critter", () => {
+  render(client.createElement(client.MainMessageRow));
   assert.equal(container.textContent, "Received a message from the parent agent");
-  const from_row = critters()[0]?.getAttribute("data-glyph");
-  assert.ok(from_row);
-  render(client.createElement(client.AgentCritter, { chat_id: "c1", step: message_main }));
-  assert.equal(critters()[0]?.getAttribute("data-glyph"), from_row);
-  const chats = ["c2", "c3", "c4", "c5", "c6", "c7"].map((chat_id) => {
-    render(client.createElement(client.MainMessageRow, { chat_id, step: main_steer }));
-    return critters()[0]?.getAttribute("data-glyph");
-  });
-  assert.ok(new Set(chats).size > 1);
+  assert.equal(critters().length, 0);
+  assert.equal(container.matching(message_path).length, 1);
 });

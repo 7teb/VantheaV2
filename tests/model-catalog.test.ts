@@ -158,6 +158,7 @@ test("exactly the shipped vision models take images, so a flag flip or a new mod
     "openai/gpt-6-astra",
     "google/gemini-4-argon",
     "google/gemini-4-carbon",
+    "google/gemini-4-neon",
     "google/gemini-4-hydrogen",
     "x-ai/grok-4.7",
     "moonshotai/kimi-k3.1-pro",

@@ -72,7 +72,7 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
         onClick={() => (run ? open_agent_run({ agent_id: run.agent_id, run_id: run.run_id }) : set_chosen(!open))}
       >
         <span className="tool-row-icon">
-          {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter chat_id={chat_id} step={step} /> : <Icon plain />}
+          {step.status !== "denied" && tool_meta(step).icon === "agent" ? <AgentCritter step={step} /> : <Icon plain />}
         </span>
         <span className={class_names("tool-row-label", working && !reviewing && "is-working")}>
           <LabelMorph morph_key={reviewing ? "review" : `${working}:${label}`}>

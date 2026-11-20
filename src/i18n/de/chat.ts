@@ -47,7 +47,7 @@ export const chat: Record<keyof typeof en, string> = {
   "chat.notice_agent_update": "Zwischenstand eines Agenten",
   "chat.notice_update_reminder": "An Zwischenstand für den übergeordneten Agenten erinnert",
   "chat.agent_report_from": "Bericht von {x}",
-  "chat.agent_update_from": "Zwischenstand von {x}",
+  "chat.agent_update_from": "Nachricht von einem Subagenten erhalten",
   "chat.notice_plan_blocked": "Vom Planmodus blockiert",
   "chat.notice_output_limit": "Die Antwort hat das Ausgabelimit erreicht",
   "chat.notice_todos_carried": "Offene To-dos übernommen",

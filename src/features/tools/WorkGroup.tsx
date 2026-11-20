@@ -58,14 +58,14 @@ const DeniedCount = ({ denied }: { denied: number }) => {
   return denied > 0 ? <span className="tool-row-status is-denied">{t(denied === 1 ? "tools.group_denied_one" : "tools.group_denied_other", { n: denied })}</span> : null;
 };
 
-const GroupIcon = ({ chat_id, steps }: { chat_id: string; steps: WorkStep[] }) => {
+const GroupIcon = ({ steps }: { steps: WorkStep[] }) => {
   const first = work_tools(steps)[0];
   if (!first) {
     return <SquareTerminalToolIcon plain />;
   }
   const icon = tool_meta(first).icon;
   if (icon === "agent" && first.status !== "denied") {
-    return <AgentCritter chat_id={chat_id} step={first} />;
+    return <AgentCritter step={first} />;
   }
   const Icon = tool_icons[icon];
   return <Icon plain />;
@@ -81,7 +81,7 @@ const GroupRow = memo(({ chat_id, step, streaming, main_chat }: GroupRowProps) =
     return <NoticeRow step={step} />;
   }
   if (step.kind === "steer") {
-    return <MainMessageRow chat_id={chat_id} />;
+    return <MainMessageRow />;
   }
   return <ThoughtRow step={step} live={streaming} />;
 });
@@ -113,7 +113,7 @@ const StepGroup = ({ chat_id, steps, streaming, pending, run }: StepGroupProps) 
     <div className="work-group" data-open={open} data-web={web || undefined} data-live={streaming || undefined} data-running={running || undefined} data-review={reviewing || undefined}>
       <button type="button" className="work-group-head" aria-expanded={open} onClick={() => set_chosen(!open)}>
         <span className="tool-row-icon">
-          <LabelMorph morph_key={running ? "spinner" : "icon"}>{running ? <DotSpinner /> : <GroupIcon chat_id={chat_id} steps={steps} />}</LabelMorph>
+          <LabelMorph morph_key={running ? "spinner" : "icon"}>{running ? <DotSpinner /> : <GroupIcon steps={steps} />}</LabelMorph>
         </span>
         {(shown.kind === "review" || shown.label !== "") && (
           <span ref={label_ref} className={class_names("tool-row-label", working && shown.kind !== "review" && "is-working")}>

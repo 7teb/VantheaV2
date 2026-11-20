@@ -31,7 +31,7 @@ export const agent: Record<keyof typeof en, string> = {
   "agent.untitled_run": "Lauf",
   "agent.open_questions_one": "1 offene Frage",
   "agent.open_questions_other": "{n} offene Fragen",
-  "agent.peer_from": "Von {x}: {summary}",
+  "agent.peer_from": "Nachricht von einem anderen Agenten erhalten",
   "agent.peer_type_info": "Info",
   "agent.peer_type_question": "Frage",
   "agent.peer_type_answer": "Antwort",

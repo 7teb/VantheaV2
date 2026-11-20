@@ -81,8 +81,6 @@ const file_name = (step: ToolStep) => base_name(step_path(step));
 
 const agent_name = (step: ToolStep) => view_of(step, "agent")?.name || text_arg(step, "name") || text_arg(step, "agent_id");
 
-const peer_name = (step: ToolStep) => view_of(step, "peer_message")?.to_name || text_arg(step, "to");
-
 const skill_name = (step: ToolStep) => view_of(step, "skill")?.name || text_arg(step, "name");
 
 const skill_file = (step: ToolStep) => [skill_name(step), text_arg(step, "file")].filter(Boolean).join("/");
@@ -232,9 +230,9 @@ const named: Record<string, ToolMeta> = {
   cancel_agent: entry("agent", "agent_stops", with_x("tool_label.cancel_agent", agent_name), with_x("tool_label.stopped_agent", agent_name)),
   run_workflow: entry("workflow", "workflows", workflow_label("workflow.label_starting", "workflow.label_starting_plain"), workflow_label("workflow.label_completed", "workflow.label_completed_plain")),
   stop_workflow: entry("workflow", "workflow_stops", workflow_label("workflow.label_stopping", "workflow.label_stopping_plain"), workflow_label("workflow.label_stopped", "workflow.label_stopped_plain")),
-  message_agent: entry("agent", "messages", with_x("tool_label.message_agent", agent_name), with_x("tool_label.messaged_agent", agent_name), with_x("tool_label.message_agent_attempt", agent_name)),
-  message_main_agent: entry("agent", "messages", fixed("tool_label.message_main"), fixed("tool_label.messaged_main")),
-  message_peer: entry("agent", "messages", with_x("tool_label.message_peer", peer_name), with_x("tool_label.messaged_peer", peer_name)),
+  message_agent: entry("agent_message", "messages", fixed("tool_label.message_agent"), fixed("tool_label.messaged_agent"), fixed("tool_label.message_agent_attempt")),
+  message_main_agent: entry("agent_message", "messages", fixed("tool_label.message_main"), fixed("tool_label.messaged_main")),
+  message_peer: entry("agent_message", "messages", fixed("tool_label.message_peer"), fixed("tool_label.messaged_peer")),
   list_agents: entry("agent", "other", fixed("tool_label.list_agents"), fixed("tool_label.listed_agents")),
   remember: entry("memory", "memory", fixed("tool_label.remember"), fixed("tool_label.remembered"), fixed("tool_label.remember_attempt")),
   forget: entry("memory", "memory", fixed("tool_label.forget"), fixed("tool_label.forgot"), fixed("tool_label.forget_attempt")),

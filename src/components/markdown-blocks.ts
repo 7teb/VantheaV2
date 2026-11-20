@@ -278,12 +278,14 @@ const single_dollar = (text: string, at: number) => text[at] === "$" && text[at 
 
 const opens_math = (text: string, at: number) => single_dollar(text, at) && /\S/.test(text[at + 1] ?? "");
 
-const closes_math = (text: string, at: number) => single_dollar(text, at) && /\S/.test(text[at - 1] ?? "") && !/\d/.test(text[at + 1] ?? "");
+const ends_formula = (text: string, at: number) => !/[\w{(]/.test(text[at + 1] ?? "") || /^(?:st|nd|rd|th)\b/.test(text.slice(at + 1, at + 4));
+
+const closes_math = (text: string, at: number) => single_dollar(text, at) && /\S/.test(text[at - 1] ?? "") && ends_formula(text, at);
 
 const math_close = (text: string, open: number): number => {
   for (let at = open + 2; at < text.length && text[at] !== "\n"; at += 1) {
-    if (closes_math(text, at)) {
-      return at;
+    if (single_dollar(text, at)) {
+      return closes_math(text, at) ? at : -1;
     }
   }
   return -1;

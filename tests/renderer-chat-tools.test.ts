@@ -95,6 +95,9 @@ test("every view kind has an icon and readable labels for running and finished s
 
 test("known tool names resolve by name before the view kind", () => {
   assert.equal(tool_meta(step("run_command", null)).icon, "terminal");
+  for (const name of ["message_agent", "message_main_agent", "message_peer"]) {
+    assert.equal(tool_meta(step(name, null)).icon, "agent_message", name);
+  }
   assert.equal(tool_label(t, step("run_command", null, "running", { command: "npm test" })), "Running npm test");
   assert.equal(tool_label(t, step("run_command", views.command)), "Ran npm test");
   assert.equal(tool_label(t, step("read_file", views.read)), "Read a.ts");

@@ -59,9 +59,8 @@ export const NoticeRow = memo(({ step }: { step: NoticeStep }) => {
   if (step.notice === "agent_update" && holds_peer_alert(step.text)) {
     return null;
   }
-  const peer = step.notice === "peer_message" ? parse_peer_notice(step.text) : null;
-  if (peer) {
-    return <PeerMessageRow message={peer} />;
+  if (step.notice === "peer_message" && parse_peer_notice(step.text)) {
+    return <PeerMessageRow />;
   }
   const workflow = step.notice === "workflow_result" ? parse_workflow_notice(step.text) : null;
   if (workflow) {

@@ -119,7 +119,12 @@ test("the action, writing, shell, test and batching rules are in their sections 
   assert.match(body_of(input, "verification"), /Do not write tests for small reversible changes or tests that only mirror the implementation/);
   assert.match(body_of(base(explore_tools), "tool_use"), /request them together in one response/);
   for (const tools of [main_tools, explore_tools, plan_tools]) {
-    assert.match(body_of(base(tools, { plan: tools === plan_tools }), "tool_use"), /How many tokens your reading has used is never a reason to stop early or to start before you understand what the task touches/);
+    const budget = body_of(base(tools, { plan: tools === plan_tools }), "context_budget");
+    assert.match(budget, /Your context window is not a budget for the task\./);
+    assert.match(budget, /never count, estimate or plan around tokens left/);
+    assert.match(budget, /do not call context_status to decide how much work is left in you/);
+    assert.match(budget, /drop that thought and continue with the next step the task needs/);
+    assert.doesNotMatch(body_of(base(tools, { plan: tools === plan_tools }), "tool_use"), /tokens/);
   }
 });
 

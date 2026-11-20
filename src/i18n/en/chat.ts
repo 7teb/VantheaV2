@@ -45,7 +45,7 @@ export const chat = {
   "chat.notice_agent_update": "Agent update",
   "chat.notice_update_reminder": "Reminded to share findings with the parent agent",
   "chat.agent_report_from": "Report from {x}",
-  "chat.agent_update_from": "Update from {x}",
+  "chat.agent_update_from": "Received a message from a subagent",
   "chat.notice_plan_blocked": "Blocked by plan mode",
   "chat.notice_output_limit": "The answer reached the output limit",
   "chat.notice_todos_carried": "Open todos carried over",

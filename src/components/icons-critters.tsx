@@ -54,5 +54,3 @@ export const CritterIcon = ({ name, running = false, className }: CritterIconPro
 };
 
 export const CritterMark = ({ className }: IconProps) => <CritterIcon name={null} className={className} />;
-
-export const MainAgentIcon = ({ chat_id }: { chat_id: string }) => <CritterIcon name={`main:${chat_id}`} />;

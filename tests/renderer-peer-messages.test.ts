@@ -45,10 +45,13 @@ const step = (name: string, tool_view: ToolView | null, status: ToolStep["status
   ended_at: null,
 });
 
-test("a message_peer row names the recipient, shows only a failed delivery and never opens", () => {
-  assert.equal(tool_label(t, step("message_peer", null, "running", { to: "Lexer#3f2a91c0" })), "Messaging Lexer#3f2a91c0");
-  assert.equal(tool_label(t, step("message_peer", view("queued"))), "Messaged Lexer");
-  assert.equal(tool_label(de, step("message_peer", view("queued"))), "Lexer benachrichtigt");
+test("agent message rows name no agent: a subagent from the main agent, another agent between sub-agents; they show only a failed delivery and never open", () => {
+  assert.equal(tool_label(t, step("message_peer", null, "running", { to: "Lexer#3f2a91c0" })), "Messaging another agent");
+  assert.equal(tool_label(t, step("message_peer", view("queued"))), "Messaged another agent");
+  assert.equal(tool_label(de, step("message_peer", view("queued"))), "Einen anderen Agenten benachrichtigt");
+  const delivered = step("message_agent", { kind: "agent", agent_id: "agent_3f2a91c0", run_id: "run_1", name: "Lexer", status: "completed", report: "" });
+  assert.equal(tool_label(t, delivered), "Messaged a subagent");
+  assert.equal(step_detail(t, delivered), "");
   assert.equal(step_detail(t, step("message_peer", view("queued"))), "");
   assert.equal(step_detail(t, step("message_peer", view("held"))), "");
   assert.equal(step_detail(t, step("message_peer", view("denied"))), "");

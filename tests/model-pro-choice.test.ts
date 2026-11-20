@@ -104,6 +104,7 @@ test("Fast, Ultrafast and Flex route the same model to the provider's other endp
       ["openai/gpt-6-astra", "fast,ultrafast,flex"],
       ["google/gemini-4-argon", "flex"],
       ["google/gemini-4-carbon", "flex"],
+      ["google/gemini-4-neon", "flex"],
       ["deepseek/deepseek-v4.1-flash-1017", "fast"],
       ["z-ai/glm-5.3", "fast"],
       ["xiaomi/mimo-v2.6-pro", "fast"],

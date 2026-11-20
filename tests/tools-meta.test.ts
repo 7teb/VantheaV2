@@ -54,10 +54,14 @@ test("datetime gives local ISO time with offset and zone name", async () => {
 test("context_status reports the window, the tokens in use and the next compaction point", async () => {
   assert.equal(
     context_text({ used: 84_312, limit: 200_000, compact_at: 140_001 }),
-    "Context window: 200,000 tokens. In use: 84,312 tokens (42%). Automatic compaction runs before the next model call once the context reaches 140,001 tokens (70%), 55,689 tokens from now.",
+    "Context window: 200,000 tokens. In use: 84,312 tokens (42%). Automatic compaction runs before the next model call once the context reaches 140,001 tokens (70%), 55,689 tokens from now. Compaction keeps the task going, so plan by what the task needs, not by this number.",
   );
   assert.match(context_text({ used: 150_000, limit: 200_000, compact_at: 140_001 }), /Automatic compaction is due: the app compacts the conversation before your next model call/);
+  assert.match(context_text({ used: 150_000, limit: 200_000, compact_at: 140_001 }), /Compaction keeps the task going, so plan by what the task needs, not by this number\.$/);
   assert.match(context_text({ used: 9_000, limit: 0, compact_at: null }), /^In use: 9,000 tokens\. The model's context window is unknown/);
+  assert.doesNotMatch(context_text({ used: 9_000, limit: 0, compact_at: null }), /Compaction keeps the task going/);
+  assert.match(context_status_tool.spec.description, /remaining room is never a reason to stop, shorten or wrap up work\. Use this only when the user asks about the context/);
+  assert.doesNotMatch(context_status_tool.spec.description, /how much room is left/);
   const result = await context_status_tool.execute({ ...ctx, context: () => ({ used: 10, limit: 100, compact_at: 71 }) }, {});
   assert.equal(result.status, "done");
   assert.match(result.text, /In use: 10 tokens \(10%\)\. Automatic compaction runs .* 71 tokens \(71%\), 61 tokens from now\./);

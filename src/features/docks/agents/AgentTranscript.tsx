@@ -47,7 +47,7 @@ const BlockView = ({ block, chat_id, run, streaming, tail, pending }: BlockViewP
     case "visual":
       return <WorkGroup chat_id={chat_id} run={run} steps={[block.step]} streaming={streaming} tail={tail} />;
     case "steer":
-      return <MainMessageRow chat_id={chat_id} />;
+      return <MainMessageRow />;
     case "notice":
       return <NoticeRow step={block.step} />;
     case "compaction":

@@ -70,7 +70,7 @@ export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unk
     case "background":
       return is_shell_run(step.name) ? "" : row_status_label(t, background_status_label, view.status, live);
     case "agent":
-      return live.status === "running" ? "" : row_status_label(t, agent_status_label, view.status, live);
+      return live.status === "running" || tool_meta(step).category === "messages" ? "" : row_status_label(t, agent_status_label, view.status, live);
     default:
       return "";
   }

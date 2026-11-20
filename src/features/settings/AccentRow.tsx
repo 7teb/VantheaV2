@@ -34,22 +34,17 @@ const CustomSwatch = ({ color, custom }: { color: string; custom: boolean }) => 
     if (!node) {
       return;
     }
+    node.value = color || default_accent();
     const commit = () => choose(node.value);
     node.addEventListener("change", commit);
     return () => node.removeEventListener("change", commit);
-  }, []);
+  }, [color]);
 
   return (
     <Tooltip label={t("settings.accent_custom")}>
       <label className="accent-swatch accent-custom" data-custom={custom} style={custom ? { background: color } : undefined}>
         {!custom && <PlusIcon />}
-        <input
-          ref={input}
-          type="color"
-          aria-label={t("settings.accent_custom")}
-          value={color || default_accent()}
-          onChange={(event) => apply_accent(event.target.value)}
-        />
+        <input ref={input} type="color" aria-label={t("settings.accent_custom")} onChange={(event) => apply_accent(event.target.value)} />
       </label>
     </Tooltip>
   );

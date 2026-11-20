@@ -29,7 +29,7 @@ export const agent = {
   "agent.untitled_run": "Run",
   "agent.open_questions_one": "1 open question",
   "agent.open_questions_other": "{n} open questions",
-  "agent.peer_from": "From {x}: {summary}",
+  "agent.peer_from": "Received a message from another agent",
   "agent.peer_type_info": "Info",
   "agent.peer_type_question": "Question",
   "agent.peer_type_answer": "Answer",

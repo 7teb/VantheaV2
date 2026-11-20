@@ -124,22 +124,24 @@ const token_count = (tokens: number) => `${tokens.toLocaleString("en-US")} token
 
 const share = (tokens: number, limit: number) => `${Math.round((tokens / limit) * 100)}%`;
 
+const keeps_going = "Compaction keeps the task going, so plan by what the task needs, not by this number.";
+
 export const context_text = ({ used, limit, compact_at }: ContextReading): string => {
   if (compact_at === null) {
     return `In use: ${token_count(used)}. The model's context window is unknown, so the app does not compact this conversation automatically.`;
   }
   const facts = [`Context window: ${token_count(limit)}.`, `In use: ${token_count(used)} (${share(used, limit)}).`];
   if (used >= compact_at) {
-    return [...facts, `Automatic compaction is due: the app compacts the conversation before your next model call (threshold ${token_count(compact_at)}, ${share(compact_at, limit)}).`].join(" ");
+    return [...facts, `Automatic compaction is due: the app compacts the conversation before your next model call (threshold ${token_count(compact_at)}, ${share(compact_at, limit)}).`, keeps_going].join(" ");
   }
-  return [...facts, `Automatic compaction runs before the next model call once the context reaches ${token_count(compact_at)} (${share(compact_at, limit)}), ${token_count(compact_at - used)} from now.`].join(" ");
+  return [...facts, `Automatic compaction runs before the next model call once the context reaches ${token_count(compact_at)} (${share(compact_at, limit)}), ${token_count(compact_at - used)} from now.`, keeps_going].join(" ");
 };
 
 export const context_status_tool = define_tool<Record<string, never>>({
   spec: {
     name: "context_status",
     description:
-      "Get your context window size, how many tokens this conversation uses right now (including your current response) and at which size the app compacts it automatically. Use it before a large read or a long run of tool calls when you need to know how much room is left.",
+      "Get your context window size, how many tokens this conversation uses right now (including your current response) and at which size the app compacts it automatically. Compaction continues the same task with the handoff note you write, so remaining room is never a reason to stop, shorten or wrap up work. Use this only when the user asks about the context, or before a single read so large that it alone could exceed the whole window.",
     parameters: { type: "object", properties: {}, additionalProperties: false },
   },
   profiles: ["main", "plan", "explore", "worker"],

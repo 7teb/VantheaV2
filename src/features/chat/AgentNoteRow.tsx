@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import type { AgentNote } from "../../../shared/agent-notes.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon, CritterIcon, MessageSquareToolIcon, ShieldAlertIcon } from "../../components/icons.tsx";
+import { AgentMessageIcon, ChevronRightIcon, CritterIcon, ShieldAlertIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
@@ -30,7 +30,7 @@ const NoteIcon = ({ note }: { note: AgentNote }) => {
     return <CritterIcon name={note.name || note.agent_id} />;
   }
   if (note.kind === "update") {
-    return <MessageSquareToolIcon plain />;
+    return <AgentMessageIcon plain />;
   }
   return <ShieldAlertIcon plain />;
 };

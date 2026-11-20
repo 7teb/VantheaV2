@@ -15,6 +15,7 @@ export type ToolIconName =
   | "web"
   | "image"
   | "agent"
+  | "agent_message"
   | "workflow"
   | "memory"
   | "hook"

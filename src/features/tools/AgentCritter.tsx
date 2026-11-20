@@ -1,16 +1,16 @@
 import { match_agents } from "../../../shared/agent-match.ts";
 import type { ToolStep } from "../../../shared/chat.ts";
 import type { AgentSummary } from "../../../shared/ipc/work.ts";
-import { CritterIcon, MainAgentIcon } from "../../components/icons.tsx";
+import { CritterIcon } from "../../components/icons.tsx";
 import { agents_store } from "../../state/agents.ts";
 import { use_store } from "../../state/use-store.ts";
 import { text_arg, view_of } from "./tool-meta.ts";
 
 const target_id = (step: ToolStep): string =>
-  view_of(step, "agent")?.agent_id || view_of(step, "peer_message")?.to_id || text_arg(step, "agent_id") || text_arg(step, "to");
+  view_of(step, "agent")?.agent_id || text_arg(step, "agent_id");
 
 const target_name = (step: ToolStep): string | null =>
-  view_of(step, "agent")?.name || view_of(step, "peer_message")?.to_name || text_arg(step, "name") || null;
+  view_of(step, "agent")?.name || text_arg(step, "name") || null;
 
 const step_agent = (agents: AgentSummary[], step: ToolStep): AgentSummary | null => {
   const id = target_id(step);
@@ -21,11 +21,8 @@ const step_agent = (agents: AgentSummary[], step: ToolStep): AgentSummary | null
   return matches.length === 1 ? matches[0] : null;
 };
 
-export const AgentCritter = ({ chat_id, step }: { chat_id: string; step: ToolStep }) => {
+export const AgentCritter = ({ step }: { step: ToolStep }) => {
   const agent = use_store(agents_store, (state) => step_agent(state.agents, step));
-  if (step.name === "message_main_agent") {
-    return <MainAgentIcon chat_id={chat_id} />;
-  }
   const running = agent?.runs.some((run) => run.status === "running") ?? false;
   return <CritterIcon name={agent?.name ?? target_name(step)} running={running} />;
 };
