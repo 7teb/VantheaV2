@@ -40,7 +40,7 @@ export type ScriptFile = {
 
 export type CommandSources = { files: ScriptFile[]; gaps: string[]; catastrophic: string[]; complete: boolean; hash: string; pins: ScriptPin[]; programs: ProgramFact[]; notes: string[] };
 
-export type SourceScope = { chat_id: string; chat_started_at: number; env?: Record<string, string | undefined>; shell?: Dialect; app_root?: string };
+export type SourceScope = { chat_id: string; chat_started_at: number; env?: Record<string, string | undefined>; shell?: Dialect; app_roots?: readonly string[] };
 
 type Start = { dialect: Dialect | null; origin: string; state: WalkState; walk_depth: number; language?: SourceLanguage | null; entry?: boolean };
 
@@ -53,7 +53,7 @@ const state_key = (state: WalkState): string =>
 
 export const inspect_command_sources = async (project_root: string, cwd: string, command: string, scope: SourceScope = no_scope): Promise<CommandSources> => {
   const env = scope.env ?? process.env;
-  const floor_scope: FloorScope = { app_root: scope.app_root ?? "", project_root, cwd: cwd || project_root };
+  const floor_scope: FloorScope = { app_roots: scope.app_roots ?? [], project_root, cwd: cwd || project_root };
   const gaps: string[] = [];
   const catastrophic: string[] = [];
   const notes: string[] = [];

@@ -58,7 +58,7 @@ test("implicit Windows PowerShell commands are followed from cmd callers", () =>
 });
 
 test("the direct floor follows the same implicit PowerShell payload", () => {
-  const scope = { app_root: String.raw`C:\Users\floor-user\AppData\Roaming\VantheaX`, project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
+  const scope = { app_roots: [String.raw`C:\Users\floor-user\AppData\Roaming\VantheaX`], project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
   for (const command of [
     "powershell.exe 'Remove-Item C:\\Windows -Recurse'",
     "powershell.exe -NoProfile 'Remove-Item C:\\Windows -Recurse'",
@@ -77,7 +77,7 @@ test("Windows PowerShell really executes a positional Command without -Command",
 
 test("POSIX cross-shell checks use the same PowerShell value switches and default mode", () => {
   const app_root = String.raw`C:\Users\floor-user\AppData\Roaming\VantheaX`;
-  const scope = { app_root, project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
+  const scope = { app_roots: [app_root], project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
   for (const command of [
     `powershell.exe -NoProfile -WindowStyle Hidden 'Remove-Item ${app_root} -Recurse'`,
     `powershell.exe -InputFormat Text 'Remove-Item ${app_root} -Recurse'`,
@@ -104,7 +104,7 @@ for (const flag of ["-sta", "-mta", "-NoProfile"]) {
     assert.equal(child.status, 0, child.stderr);
     assert.equal(child.stdout.trim(), "VX_FLAG_COMMAND");
     assert.equal(collect(`powershell.exe ${flag} 'Write-Output VX_FLAG_COMMAND'`).some((step) => step.depth === 1 && step.command && step.words[0]?.word.raw === "Write-Output"), true);
-    const scope = { app_root: "", project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
+    const scope = { app_roots: [], project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
     assert.match(floor_reason(`powershell.exe ${flag} 'Remove-Item C:/Windows -Recurse'`, scope), /deleting Windows/);
   });
 }
@@ -116,7 +116,7 @@ for (const flag of ["-SettingsFile", "-WorkingDirectory"]) {
     assert.equal(child.stdout.trim(), "VX_SECOND");
     assert.equal(collect(`powershell.exe ${flag} 'Write-Output VX_FIRST; Write-Output VX_SECOND'`).some((step) => step.depth === 1 && step.text.includes("VX_SECOND")), true);
     const app_root = String.raw`C:\Users\floor-user\AppData\Roaming\VantheaX`;
-    const scope = { app_root, project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
+    const scope = { app_roots: [app_root], project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
     assert.match(floor_reason(`powershell.exe ${flag} 'Write-Output VX_FIRST; Remove-Item ${app_root} -Recurse'`, scope), /VantheaX's own chats/);
   });
 }

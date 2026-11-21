@@ -63,3 +63,17 @@ test("the phone may manage scheduled tasks but never sees the PC toast click", (
   assert.equal(remote_hidden_events.has("scheduled:open_chat"), true);
   assert.equal(remote_hidden_events.has("scheduled:changed"), false);
 });
+
+test("the phone cannot start, cancel or end a ChatGPT sign-in but may read the account status", () => {
+  for (const name of ["chatgpt:sign_in", "chatgpt:cancel_sign_in", "chatgpt:sign_out"] as const) {
+    assert.equal(channel_kind(name), "invoke", name);
+    assert.equal(remote_refused.has(name), true, name);
+  }
+  for (const name of ["chatgpt:status", "chatgpt:dismiss_notice"] as const) {
+    assert.equal(channel_kind(name), "invoke", name);
+    assert.equal(remote_refused.has(name), false, name);
+  }
+  assert.equal(channel_kind("chatgpt:changed"), "event");
+  assert.equal(channel_kind("models:changed"), "event");
+  assert.equal(remote_hidden_events.has("chatgpt:changed"), false);
+});

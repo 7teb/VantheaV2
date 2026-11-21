@@ -6,7 +6,7 @@ import { floor_reason, type FloorScope } from "../electron/permissions/floor.ts"
 import { shell_words } from "../electron/permissions/shell-words.ts";
 import { split_statements, statement_parts } from "../electron/permissions/statements.ts";
 
-const floor_scope: FloorScope = { app_root: "C:\\Users\\u\\AppData\\Roaming\\VantheaX", project_root: "C:\\work", cwd: "C:\\work" };
+const floor_scope: FloorScope = { app_roots: ["C:\\Users\\u\\AppData\\Roaming\\VantheaX"], project_root: "C:\\work", cwd: "C:\\work" };
 
 const commands = (text: string): string[] =>
   [...walk_command(text, { location: "C:\\work", dialect: "powershell", env: {} })]

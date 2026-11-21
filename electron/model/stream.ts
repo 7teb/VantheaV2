@@ -45,7 +45,7 @@ export const round_body = (request: RoundRequest): Record<string, unknown> => {
   };
 };
 
-const read_chunk = (reader: Reader, signal: AbortSignal) =>
+export const read_chunk = (reader: Reader, signal: AbortSignal) =>
   new Promise<ReadResult>((resolve, reject) => {
     if (signal.aborted) {
       reject(signal.reason);
@@ -87,7 +87,7 @@ const draft_update = (take: DraftTake | null): ToolDraftUpdate => {
   };
 };
 
-const create_draft_reporter = (accumulator: Accumulator, callbacks: RoundCallbacks, now: () => number): DraftReporter => {
+export const create_draft_reporter = (accumulator: Pick<Accumulator, "tool" | "draft">, callbacks: RoundCallbacks, now: () => number): DraftReporter => {
   const reports = new Map<number, DraftReport>();
   const report = (index: number, name: string) => callbacks.on_tool_draft(index, name, draft_update(accumulator.draft(index)?.take() ?? null));
   return {

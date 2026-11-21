@@ -2,6 +2,7 @@ import type { QuestionAnswer } from "../../shared/questions.ts";
 import { get_chat } from "../chats/store.ts";
 import { get_settings } from "../settings/store.ts";
 import { active_turn, steer_target } from "../turn/active.ts";
+import { run_options } from "../turn/run-options.ts";
 import { start_turn, steer_turn } from "../turn/run.ts";
 import { answer_group, answer_request, begin_answer, drop_sending, mark_dismissed } from "./answers.ts";
 
@@ -16,7 +17,7 @@ export const answer_questions = async (chat_id: string, answers: QuestionAnswer[
     return;
   }
   if (!active_turn(chat_id)) {
-    await start_turn(answer_request(chat, group.text, get_settings()), [], "user");
+    await start_turn(answer_request(chat, group.text, get_settings(), run_options(chat.id) ?? undefined), [], "user");
     return;
   }
   const turn = steer_target(chat_id);

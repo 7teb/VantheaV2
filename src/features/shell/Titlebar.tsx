@@ -32,12 +32,12 @@ export const Titlebar = () => {
         <span className="titlebar-brand">{wordmark}</span>
         <span className="titlebar-actions">
           <ActivityBell />
-          <IconButton label={t("sidebar.search")} hint={shortcut_hint("search")} className="titlebar-search" onClick={open_search}>
+          <IconButton label={t("sidebar.search")} hint={shortcut_hint("search", t)} className="titlebar-search" onClick={open_search}>
             <SearchIcon />
           </IconButton>
           <IconButton
             label={collapsed ? t("shell.sidebar_open") : t("shell.sidebar_close")}
-            hint={shortcut_hint("toggle_sidebar")}
+            hint={shortcut_hint("toggle_sidebar", t)}
             aria-expanded={!collapsed}
             className="titlebar-sidebar-toggle"
             onClick={toggle_sidebar}
@@ -53,18 +53,19 @@ export const Titlebar = () => {
       <div className="titlebar-end">
         <div className="titlebar-docks">
           {titlebar_docks.map((kind) => {
-            const { label, icon: DockIcon } = dock_toggles[kind];
+            const { label, icon: DockIcon, shortcut } = dock_toggles[kind];
             return (
               <IconButton
                 key={kind}
                 label={t(label)}
+                hint={shortcut ? shortcut_hint(shortcut, t) : undefined}
                 active={open_dock === kind}
                 aria-pressed={open_dock === kind}
                 className="titlebar-dock"
                 data-dock={kind}
                 onClick={() => toggle_dock(kind)}
               >
-                <DockIcon />
+                <DockIcon plain />
               </IconButton>
             );
           })}

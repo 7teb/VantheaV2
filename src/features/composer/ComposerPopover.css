@@ -148,6 +148,19 @@
     color: var(--text-tertiary);
   }
 
+  .composer-popover-shortcut {
+    flex: none;
+    margin-left: auto;
+    padding-left: 10px;
+    font-family: var(--font-ui);
+    font-size: var(--font-size-caption);
+    color: var(--text-tertiary);
+  }
+
+  .composer-popover-shortcut + .composer-popover-trail {
+    margin-left: 0;
+  }
+
   .composer-popover-trail {
     display: inline-flex;
     flex: none;
@@ -257,6 +270,14 @@
   @media (hover: none) and (pointer: coarse) {
     .composer-popover-row {
       min-height: 40px;
+    }
+
+    .composer-popover-shortcut {
+      display: none;
+    }
+
+    .composer-popover-shortcut + .composer-popover-trail {
+      margin-left: auto;
     }
 
     .composer-popover-tab {

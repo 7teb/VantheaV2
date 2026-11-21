@@ -20,6 +20,8 @@ export const review = {
   "review.failure_refused": "The provider of the review model refused to check this request. Nothing has run yet.",
   "review.failure_too_large": "The review request is too large for the review model. Nothing has run yet.",
   "review.failure_unreadable": "The automatic review gave no usable answer. Nothing has run yet.",
+  "review.failure_plan_auth": "The ChatGPT sign-in is missing or has expired, so the automatic review cannot run. Nothing has run yet.",
+  "review.failure_plan_limit": "The ChatGPT plan usage limit is reached, so the automatic review cannot run. Nothing has run yet.",
   "review.allowed_prefix": "Allowed by your choice for commands starting with: {x}",
   "review.approved": "Approved by you",
   "review.approved_unavailable": "Approved by you without automatic review",

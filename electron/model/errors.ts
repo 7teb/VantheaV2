@@ -35,7 +35,7 @@ const policy_types = new Set(["content_policy_violation", "refusal", "permission
 
 const unavailable_types = new Set(["provider_overloaded", "provider_unavailable", "server", "unmapped"]);
 
-const context_phrase = /maximum context length|context[ _]length[ _]exceeded|prompt is too long|exceeds the context window/i;
+export const context_phrase = /maximum context length|context[ _]length[ _]exceeded|prompt is too long|exceeds the context window/i;
 
 export const retry_backoff_ms = [2000, 5000, 10_000, 20_000, 30_000, 60_000, 120_000, 120_000];
 
@@ -124,6 +124,8 @@ export const parse_error_body = (text: string): ProviderError | null => {
   }
 };
 
+export const context_limit_message = (detail: string) => `The conversation is larger than the model's context window. Compact the chat or start a new one. (${detail})`;
+
 const kind_for = (status: number | null, error: ProviderError | null, retry_after_ms: number): ModelErrorKind => {
   const type = error?.error_type ?? "";
   const provider_code = error?.provider_code ?? "";
@@ -167,10 +169,7 @@ export const classify_provider_error = (
   const kind = kind_for(effective_status, error, retry_after_ms);
   const detail = redact_key(error_detail(error, fallback_text)).slice(0, 1200);
   const prefix = effective_status === null ? "OpenRouter" : `OpenRouter ${effective_status}`;
-  const message =
-    kind === "context_limit"
-      ? `The conversation is larger than the model's context window. Compact the chat or start a new one. (${detail})`
-      : `${prefix}: ${detail}`;
+  const message = kind === "context_limit" ? context_limit_message(detail) : `${prefix}: ${detail}`;
   return new ModelError(kind, message, effective_status, kind === "rate_limited" || kind === "provider_unavailable" ? retry_after_ms : 0);
 };
 
@@ -179,10 +178,10 @@ const network_code = (error: unknown): string => {
   return as_string(cause?.code) || as_string(as_record(error)?.code);
 };
 
-export const network_error = (error: unknown, phase: "connect" | "read"): ModelError => {
+export const network_error = (error: unknown, phase: "connect" | "read", provider = "OpenRouter"): ModelError => {
   const code = network_code(error);
   const detail = redact_key(`${error instanceof Error ? error.message : String(error)}${code ? ` (${code})` : ""}`).slice(0, 240);
   return phase === "connect"
-    ? new ModelError("provider_unavailable", `Lost the connection to OpenRouter before it answered: ${detail}`)
-    : new ModelError("stream_interrupted", `The OpenRouter stream broke off before the answer was complete: ${detail}`);
+    ? new ModelError("provider_unavailable", `Lost the connection to ${provider} before it answered: ${detail}`)
+    : new ModelError("stream_interrupted", `The ${provider} stream broke off before the answer was complete: ${detail}`);
 };

@@ -2,6 +2,7 @@ import { register_agents_ipc } from "./agents.ts";
 import { register_app_ipc } from "./app.ts";
 import { register_background_ipc } from "./background.ts";
 import { register_browser_ipc } from "./browser.ts";
+import { register_chatgpt_ipc } from "./chatgpt.ts";
 import { register_chats_ipc } from "./chats.ts";
 import { register_computer_ipc } from "./computer.ts";
 import { register_extensions_ipc } from "./extensions.ts";
@@ -27,6 +28,7 @@ export const register_ipc = () => {
   register_app_ipc();
   register_settings_ipc();
   register_models_ipc();
+  register_chatgpt_ipc();
   register_chats_ipc();
   register_computer_ipc();
   register_turn_ipc();

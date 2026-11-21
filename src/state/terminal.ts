@@ -3,7 +3,7 @@ import { random_id } from "../api/random-id.ts";
 import { draft_key } from "./chat-drafts.ts";
 import { create_store } from "./create-store.ts";
 import { drop_group, drop_tab, find_terminal_tab, move_group, patch_tab, pick_tab, put_tab, terminal_group, type TerminalState, type TerminalTab } from "./terminal-groups.ts";
-import { ui_store } from "./ui.ts";
+import { open_dock, ui_store } from "./ui.ts";
 
 export type TerminalOutput = { data: (text: string) => void; exit: (exit_code: number) => void; release: () => void };
 
@@ -16,6 +16,7 @@ const pty_tabs = new Map<string, string>();
 const outputs = new Map<string, TerminalOutput>();
 const early_output = new Map<string, string>();
 const early_exit = new Map<string, number>();
+const pending_input = new Map<string, string>();
 const closed = new Set<string>();
 
 const find_tab = (tab_id: string) => find_terminal_tab(terminal_store.get(), tab_id);
@@ -66,6 +67,12 @@ const claim = (tab_id: string, pty_id: string) => {
   early_exit.delete(pty_id);
   if (exit_code !== undefined) {
     finish(tab_id, exit_code);
+    return;
+  }
+  const input = pending_input.get(tab_id);
+  pending_input.delete(tab_id);
+  if (input) {
+    api.send("terminal:input", pty_id, input);
   }
 };
 
@@ -119,7 +126,23 @@ export const resize_terminal = (tab_id: string, cols: number, rows: number) => {
   }
 };
 
+export const run_in_terminal = (command: string) => {
+  const { active_chat_id, project_path } = ui_store.get();
+  const group = terminal_group(terminal_store.get(), draft_key(active_chat_id, project_path));
+  const active = group.tabs.find((tab) => tab.id === group.active_id);
+  const tab_id = active && (active.status === "running" || active.status === "starting") ? active.id : add_terminal_tab(active_chat_id, project_path);
+  select_terminal_tab(tab_id);
+  open_dock("terminal");
+  const input = `${command}\r`;
+  if (pty_ids.has(tab_id)) {
+    write_terminal(tab_id, input);
+    return;
+  }
+  pending_input.set(tab_id, `${pending_input.get(tab_id) ?? ""}${input}`);
+};
+
 const release_tab = (tab_id: string) => {
+  pending_input.delete(tab_id);
   const pty_id = unlink(tab_id);
   if (pty_id !== null) {
     close_pty(pty_id);

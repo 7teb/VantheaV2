@@ -128,12 +128,12 @@ export const Sidebar = () => {
     <aside className="sidebar" data-state={collapsed ? "closed" : "open"} inert={collapsed} aria-label={t("sidebar.navigation")}>
       <div className="sidebar-inner">
         <nav className="sidebar-nav">
-          <NavButton icon={<ComposeIcon />} label={t("sidebar.new_chat")} hint={shortcut_hint("new_chat")} on_click={() => start_new_chat(project_path)} />
+          <NavButton icon={<ComposeIcon />} label={t("sidebar.new_chat")} hint={shortcut_hint("new_chat", t)} on_click={() => start_new_chat(project_path)} />
           <ScheduledNav />
         </nav>
         <div className="sidebar-scroll">{body()}</div>
         <div className="sidebar-footer">
-          <IconButton label={t("sidebar.settings")} hint={shortcut_hint("settings")} onClick={() => open_settings()}>
+          <IconButton label={t("sidebar.settings")} hint={shortcut_hint("settings", t)} onClick={() => open_settings()}>
             <SettingsIcon />
           </IconButton>
           {chats.status === "ready" && archived.length > 0 && (
@@ -159,7 +159,15 @@ export const Sidebar = () => {
             items: [
               ...(remote_client
                 ? []
-                : [{ id: "existing", label: t("projects.add_existing"), icon: <FolderOpenIcon />, on_select: () => choose_project().catch(report("choosing a project")) }]),
+                : [
+                  {
+                    id: "existing",
+                    label: t("projects.add_existing"),
+                    icon: <FolderOpenIcon />,
+                    shortcut: shortcut_hint("open_project", t),
+                    on_select: () => choose_project().catch(report("choosing a project")),
+                  },
+                ]),
               { id: "create", label: t("projects.create"), icon: <FolderPlusIcon />, on_select: () => set_create_open(true) },
             ],
           },

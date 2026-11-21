@@ -61,7 +61,8 @@ export const Tooltip = ({ label, hint, placement = "bottom-center", children }: 
       onBlur={hide}
       onPointerDown={hide}
       onKeyDown={(event) => {
-        if (event.key === "Escape") {
+        if (event.key === "Escape" && visible) {
+          event.preventDefault();
           hide();
         }
       }}

@@ -25,7 +25,7 @@ export const terminal_look = (): TerminalLook => {
       scrollbarSliderBackground: read("--scrollbar"),
       scrollbarSliderHoverBackground: read("--scrollbar-hover"),
       scrollbarSliderActiveBackground: read("--scrollbar-hover"),
-      black: read("--terminal-black"),
+      black: background,
       red: read("--terminal-red"),
       green: read("--terminal-green"),
       yellow: read("--terminal-yellow"),

@@ -2,6 +2,10 @@
   width: 220px;
 }
 
+.billing-switch {
+  width: 260px;
+}
+
 .balance-block {
   display: flex;
   flex-direction: column;

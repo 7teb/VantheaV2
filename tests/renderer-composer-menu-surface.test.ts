@@ -65,11 +65,11 @@ test("menu rows sit in menu containers and the input is a combobox for the comma
 test("the plus button replaces the paperclip and the plan chip shows in the bar only while plan mode is on", () => {
   assert.doesNotMatch(composer_tsx, /PaperclipIcon/);
   assert.match(composer_tsx, /<PlusIcon \/>/);
-  assert.match(composer_tsx, /\{draft\.plan && \(\s*<button\s+type="button"\s+className="composer-chip draft-chip"\s+data-active\s+data-kind="plan"/);
+  assert.match(composer_tsx, /\{draft\.plan && \(\s*<Tooltip label=\{t\("commands\.plan"\)\} hint=\{shortcut_hint\("toggle_plan", t\)\}>\s*<button\s+type="button"\s+className="composer-chip draft-chip"\s+data-active\s+data-kind="plan"/);
   assert.match(composer_tsx, /onClick=\{\(\) => toggle_plan\(draft_key\)\}\s*>\s*<span className="draft-chip-icon">\s*<ClipboardListIcon \/>\s*<CloseIcon \/>/);
   assert.doesNotMatch(menu_css, /composer-plan-chip/);
   assert.match(read("features/composer/PlusMenu.tsx"), /checked=\{draft\.plan\}[\s\S]*on_select=\{\(\) => toggle_plan\(draft_key\)\}/);
-  assert.match(read("features/composer/command-registry.ts"), /toggled: \(\{ plan \}\) => plan,\s*run: \(\{ draft_key \}\) => toggle_plan\(draft_key\),/);
+  assert.match(read("features/composer/command-registry.ts"), /shortcut: "toggle_plan",\s*toggled: \(\{ plan \}\) => plan,\s*run: \(\{ draft_key \}\) => toggle_plan\(draft_key\),/);
   assert.match(composer_tsx, /<PlusMenu/);
   assert.match(composer_tsx, /<SlashMenu/);
 });

@@ -17,7 +17,7 @@ set_storage_root("C:\\Users\\user\\AppData\\Roaming\\VantheaX");
 
 const app_root = "C:\\Users\\user\\AppData\\Roaming\\VantheaX";
 
-const scope = { app_root, project_root: "D:\\proj", cwd: "D:\\proj" };
+const scope = { app_roots: [app_root], project_root: "D:\\proj", cwd: "D:\\proj" };
 
 let chats = 0;
 
@@ -25,7 +25,7 @@ const input = (mode: PermissionMode, command: string, extra: Partial<CommandInpu
   command,
   background: false,
   mode,
-  app_root,
+  app_roots: [app_root],
   project_root: "",
   cwd: "",
   plan: false,

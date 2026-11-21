@@ -28,6 +28,10 @@ const failure_kind = (error: unknown): ReviewFailure => {
         return "refused";
       case "context_limit":
         return "too_large";
+      case "plan_auth":
+        return "plan_auth";
+      case "plan_limit":
+        return "plan_limit";
       default:
         return "provider";
     }

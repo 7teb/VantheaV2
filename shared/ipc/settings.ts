@@ -9,6 +9,7 @@ export const settings_channels = {
   "settings:balance": invoke<[], Balance | null>(),
   "settings:changed": emit<SettingsView>(),
   "models:catalog": invoke<[], ModelCatalog>(),
+  "models:changed": emit<ModelCatalog>(),
   "projects:choose": invoke<[], ProjectEntry | null>(),
   "projects:pick_folder": invoke<[], string | null>(),
   "projects:create": invoke<[request: { name: string; folder: string | null }], ProjectEntry | null>(),

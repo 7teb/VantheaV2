@@ -135,6 +135,10 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
         session.emit({ type: "notice", round, notice: "context_trimmed", text: "" });
       }
       const outcome = await run_round(session, round, api_messages, calibration, floor);
+      if (outcome.usage) {
+        const { prompt_tokens, completion_tokens, reasoning_tokens } = outcome.usage;
+        session.emit({ type: "usage", round, prompt_tokens, completion_tokens, reasoning_tokens });
+      }
       const next = calibrate(outcome.usage, outcome.estimate) ?? calibration;
       const rescale = calibration_scale(next) / calibration_scale(calibration);
       floor = Math.ceil(floor * rescale);

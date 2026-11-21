@@ -1,5 +1,6 @@
 import type { ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
+import { is_headless } from "../app/runtime.ts";
 import { agent_tools } from "./agents/index.ts";
 import { read_attachment_tool } from "./attachments/index.ts";
 import { browser_tools } from "./browser/index.ts";
@@ -45,7 +46,9 @@ const groups: Tool[][] = [
   workflow_tools,
 ];
 
-const all_tools = () => groups.flat();
+const headless_hidden = new Set<Tool[]>([computer_tools, scheduled_tools]);
+
+const all_tools = () => (is_headless() ? groups.filter((group) => !headless_hidden.has(group)) : groups).flat();
 
 export const tools_for = (profile: ToolProfile, settings: Settings, model: ModelEntry, dynamic: Tool[] = []): Tool[] =>
   [...all_tools(), ...dynamic].filter((tool) => tool.profiles.includes(profile) && tool.available(settings, model));

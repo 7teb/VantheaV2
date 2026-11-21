@@ -19,8 +19,8 @@ export const ModelsBody = ({ view }: BodyProps<"models">) => {
               <span className="model-prices-name">{model.label}</span>
               <span className="model-prices-slug">{model.id}</span>
             </span>
-            <span className="model-prices-amount">{price(model.input)}</span>
-            <span className="model-prices-amount">{price(model.output)}</span>
+            <span className="model-prices-amount">{model.plan ? t("tools.model_plan") : price(model.input)}</span>
+            <span className="model-prices-amount">{model.plan ? null : price(model.output)}</span>
           </div>
         ))}
       </div>

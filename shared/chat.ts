@@ -156,7 +156,11 @@ export type TurnErrorKind =
   | "bad_request"
   | "app_closed"
   | "hook"
-  | "internal";
+  | "internal"
+  | "plan_auth"
+  | "plan_limit"
+  | "plan_blocked"
+  | "plan_model";
 
 export type TurnError = { kind: TurnErrorKind; message: string };
 
@@ -176,6 +180,8 @@ export const compact_fraction = 0.7;
 
 export type RoundReasoning = { round: number; details: unknown[] };
 
+export type MessageUsage = { prompt_tokens: number; completion_tokens: number; reasoning_tokens: number; rounds: number };
+
 export type AssistantMessage = {
   id: string;
   role: "assistant";
@@ -191,6 +197,7 @@ export type AssistantMessage = {
   retry: RetryState | null;
   error: TurnError | null;
   context: ContextUsage | null;
+  usage?: MessageUsage;
   last_seq: number;
   quiet?: true;
 };

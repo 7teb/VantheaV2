@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { floor_reason, type FloorScope } from "../electron/permissions/floor.ts";
 
-const scope: FloorScope = { app_root: String.raw`C:\Users\user\AppData\Roaming\VantheaX`, project_root: String.raw`C:\Users\user\project`, cwd: String.raw`C:\Users\user\project` };
+const scope: FloorScope = { app_roots: [String.raw`C:\Users\user\AppData\Roaming\VantheaX`], project_root: String.raw`C:\Users\user\project`, cwd: String.raw`C:\Users\user\project` };
 
 const powershell_literals = [
   "rg -n 'Clear-Disk' .",

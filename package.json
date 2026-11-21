@@ -10,6 +10,9 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
     "test": "node scripts/test.mjs",
     "build": "npm.cmd run typecheck && vite build && node scripts/build-main.mjs",
+    "build:sdk": "node scripts/build-sdk.mjs",
+    "test:headless": "node scripts/headless-smoke.mjs",
+    "test:plan": "node scripts/chatgpt-plan-smoke.mjs",
     "start": "electron .",
     "package": "npm.cmd run build && electron-builder --win dir",
     "dist": "npm.cmd run build && electron-builder --win nsis"

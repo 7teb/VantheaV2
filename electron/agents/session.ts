@@ -7,6 +7,7 @@ import { wait_for_decision } from "../permissions/approvals.ts";
 import { chat_decisions, merge_decisions, mirror_decision } from "../permissions/decisions.ts";
 import { agent_review } from "../permissions/review-records.ts";
 import type { Tool } from "../tools/types.ts";
+import { reject_feedback, run_options } from "../turn/run-options.ts";
 import type { TurnNote, TurnSession } from "../turn/session.ts";
 import { keep_report, type LiveRun } from "./live.ts";
 import { send_peer } from "./peers.ts";
@@ -106,7 +107,15 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
     without_tools: agent.without_tools,
     side_model,
     wait_decision: (call_id, request, on_hold) =>
-      wait_for_decision({ key: agent_approval_key(run.run_id), chat_id: agent.chat_id, call_id, request, signal: live.controller.signal, on_hold }),
+      wait_for_decision({
+        key: agent_approval_key(run.run_id),
+        chat_id: agent.chat_id,
+        call_id,
+        request,
+        signal: live.controller.signal,
+        on_hold,
+        reject_feedback: run_options(agent.chat_id)?.approvals === "reject" ? reject_feedback : undefined,
+      }),
     review: agent_review(
       {
         chat_id: agent.chat_id,

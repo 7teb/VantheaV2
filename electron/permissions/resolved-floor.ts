@@ -3,6 +3,7 @@ import { walk_command, type Step, type StepWord, type Value } from "./command-wa
 import { binding_writes, definite, expression_value, group_items, module_prefix, unqualified } from "./command-values.ts";
 import { source_depth, values_at } from "./command-steps.ts";
 import { delete_names, dotnet_delete, type FloorScope } from "./floor-shared.ts";
+import { write_verb } from "./floor-writes.ts";
 import { flag_name } from "./powershell-move.ts";
 import { shell_words, type Piece, type Word } from "./shell-words.ts";
 import type { Dialect } from "./statements.ts";
@@ -275,6 +276,22 @@ const invocation_step = (step: Step, head: StepWord, args: StepWord[], call: boo
   }
 };
 
+const write_argument = (arg: StepWord): string =>
+  arg.word.op || !("values" in arg.value) || !arg.value.values.length ? arg.word.raw : arg.value.values.map(literal_text).join(",");
+
+const write_step = (step: Step, pass: Pass) => {
+  const at = step.command && (step.words[0]?.word.raw === "&" || step.words[0]?.word.raw === ".") ? 1 : 0;
+  const head = step.words[at];
+  const names = step.command && head && "values" in head.value ? head.value.values.map(unqualified) : [];
+  const redirected = step.words.some((arg) => arg.word.op === ">" && !/&\d$/.test(arg.word.raw));
+  if (!head || !(redirected || names.some(write_verb))) return;
+  const rest = step.words.slice(at + 1).map(write_argument).join(" ");
+  const heads = names.length ? names.map(literal_text).map((name) => (name.startsWith("'") ? `& ${name}` : name)) : [write_argument(head)];
+  for (const name of heads) {
+    pass.scan.reason ||= pass.check(`${name} ${rest}`, { ...pass.scope, cwd: location_of(step) });
+  }
+};
+
 const command_step = (step: Step, pass: Pass) => {
   const call = step.words[0]?.word.raw === "&" || step.words[0]?.word.raw === ".";
   const at = call ? 1 : 0;
@@ -297,6 +314,7 @@ export const resolved_floor = (command: string, scope: FloorScope, dialect: Dial
   const pass: Pass = { scope, check, scan, depth };
   for (const step of walk_command(command, { dialect, location: scope.cwd ?? "", env: process.env })) {
     if (step.dialect !== "powershell") continue;
+    if (scope.guard_writes) write_step(step, pass);
     if (step.command) {
       command_step(step, pass);
     } else {

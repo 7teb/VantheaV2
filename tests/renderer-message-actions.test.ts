@@ -31,7 +31,7 @@ const default_icon_size = () => {
 };
 
 const copy_icon_size = () => {
-  assert.match(copy_tsx, /const icon = copied \? <CheckIcon \/> : <CopyIcon \/>;/);
+  assert.match(copy_tsx, /\{copied \? <CheckIcon plain=\{thin\} \/> : <CopyIcon plain=\{thin\} \/>\}/);
   return default_icon_size();
 };
 
@@ -116,10 +116,10 @@ test("the action buttons under both message kinds are 26px buttons with icons in
     for (const icon of icons) {
       assert.doesNotMatch(icon.props, /size=/, `${name} ${icon.name}`);
     }
-    assert.match(row, /<CopyButton text=\{[\w.]+\}( label=\{t\("chat\.copy_answer"\)\})? \/>/, name);
+    assert.match(row, /<CopyButton (ref=\{answer_copy\} )?text=\{[\w.]+\}( label=\{t\("chat\.copy_answer"\)\})?( hint=\{[^}]+\})? \/>/, name);
   }
   assert.equal(copy_icon_size(), 16);
-  assert.match(copy_tsx, /<IconButton label=\{[^}]+\} size="sm" onClick=\{copy\}>/);
+  assert.match(copy_tsx, /<IconButton label=\{[^}]+\} hint=\{hint\} size="sm" onClick=\{copy\}>/);
   assert.equal((px(small_button.width) - copy_icon_size()) % 2, 0, "icon on whole pixels");
 });
 

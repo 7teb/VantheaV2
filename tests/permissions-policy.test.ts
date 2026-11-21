@@ -4,7 +4,7 @@ import { read_only_command } from "../electron/permissions/allowlist.ts";
 import { floor_reason, type FloorScope } from "../electron/permissions/floor.ts";
 import { split_statements, statement_parts } from "../electron/permissions/statements.ts";
 
-const floor_scope: FloorScope = { app_root: "C:\\Users\\user\\AppData\\Roaming\\VantheaX", project_root: "C:\\Users\\user\\project", cwd: "C:\\Users\\user\\project" };
+const floor_scope: FloorScope = { app_roots: ["C:\\Users\\user\\AppData\\Roaming\\VantheaX"], project_root: "C:\\Users\\user\\project", cwd: "C:\\Users\\user\\project" };
 
 test("statements split on separators but not inside quotes", () => {
   assert.deepEqual(split_statements("a; b"), ["a", "b"]);

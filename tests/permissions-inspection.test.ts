@@ -28,12 +28,12 @@ for (const [cwd, command] of [
   ["C:/Windows", "[System.IO.File]::Delete('win.ini')"],
   ["C:/Windows", "$target = 'System32'; [IO.Directory]::Delete($target, $true)"],
 ] as const) test(`resolves system targets at ${cwd} for ${command}`, () => {
-  assert.equal(floor_reason(command, { cwd, project_root: "D:/project", app_root: "" }), system_delete_reason);
+  assert.equal(floor_reason(command, { cwd, project_root: "D:/project", app_roots: [] }), system_delete_reason);
 });
 
 test("keeps project-relative deletes and reads allowed", () => {
   for (const command of ["Remove-Item .\\Windows -Recurse", "Remove-Item .\\out -Recurse", "Get-Item . | Remove-Item", "Get-Content C:/Windows/win.ini"]) {
-    assert.equal(floor_reason(command, { cwd: "D:/project", project_root: "D:/project", app_root: "" }), "", command);
+    assert.equal(floor_reason(command, { cwd: "D:/project", project_root: "D:/project", app_roots: [] }), "", command);
   }
 });
 

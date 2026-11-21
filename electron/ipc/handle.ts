@@ -7,13 +7,13 @@ type InvokeDispatcher = (client: ClientId, args: unknown[]) => unknown;
 
 type SendDispatcher = (client: ClientId, args: unknown[]) => void;
 
-type EventTap = (target: ClientId | null, name: EventName, payload: unknown) => void;
+export type EventTap = (target: ClientId | null, name: EventName, payload: unknown) => void;
 
 const invoke_handlers = new Map<InvokeName, InvokeDispatcher>();
 
 const send_handlers = new Map<SendName, SendDispatcher>();
 
-let event_tap: EventTap | null = null;
+const event_taps = new Set<EventTap>();
 
 const trusted = (event: IpcMainInvokeEvent | IpcMainEvent) => {
   const window = main_window();
@@ -85,18 +85,20 @@ export const handle_window = <K extends InvokeName>(name: K, accepts: (event: Ip
 export const listen_window = <K extends SendName>(name: K, accepts: (event: IpcMainEvent) => boolean, handler: (...args: SendArgs<K>) => void) =>
   register_send(name, (_client, args) => handler(...(args as SendArgs<K>)), accepts);
 
-export const set_event_tap = (tap: EventTap | null): void => {
-  event_tap = tap;
+export const add_event_tap = (tap: EventTap): (() => void) => {
+  event_taps.add(tap);
+  return () => {
+    event_taps.delete(tap);
+  };
 };
 
 const tap_event = (target: ClientId | null, name: EventName, payload: unknown) => {
-  if (!event_tap) {
-    return;
-  }
-  try {
-    event_tap(target, name, payload);
-  } catch (error) {
-    console.error(`[ipc] forwarding ${name} to ${target ?? "every remote client"} failed:`, error);
+  for (const tap of [...event_taps]) {
+    try {
+      tap(target, name, payload);
+    } catch (error) {
+      console.error(`[ipc] forwarding ${name} to ${target ?? "every remote client"} failed:`, error);
+    }
   }
 };
 

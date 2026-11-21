@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { AssistantMessage, Chat, SteerMessage } from "../../shared/chat.ts";
+import type { AssistantMessage, Chat, PermissionMode, SteerMessage } from "../../shared/chat.ts";
 import type { SendRequest } from "../../shared/ipc/chats.ts";
+import type { ModelChoice } from "../../shared/models.ts";
 import { answer_text, open_questions, type OpenQuestion, type QuestionAnswer, type QuestionState } from "../../shared/questions.ts";
 import type { Settings } from "../../shared/settings.ts";
 import { set_question_states, type QuestionPatch } from "../chats/questions.ts";
@@ -96,15 +97,18 @@ export const dismiss_questions = async (chat_id: string, ids: string[]): Promise
   mark_dismissed(chat_id, open_group(chat, ids).map((question) => question.id));
 };
 
-export const answer_request = (chat: Chat, text: string, settings: Settings): SendRequest => ({
-  chat_id: chat.id,
-  text,
-  attachment_ids: [],
-  model: chat.choice?.model ?? settings.model,
-  effort: chat.choice?.effort ?? settings.effort,
-  pro: chat.choice?.pro ?? false,
-  ...(chat.choice?.tier ? { tier: chat.choice.tier } : {}),
-  mode: settings.mode,
-  plan: chat.messages.findLast((message): message is AssistantMessage => message.role === "assistant")?.plan ?? false,
-  origin: "user",
-});
+export const answer_request = (chat: Chat, text: string, settings: Settings, pinned?: { mode: PermissionMode; choice: ModelChoice }): SendRequest => {
+  const choice = pinned?.choice ?? chat.choice;
+  return {
+    chat_id: chat.id,
+    text,
+    attachment_ids: [],
+    model: choice?.model ?? settings.model,
+    effort: choice?.effort ?? settings.effort,
+    pro: choice?.pro ?? false,
+    ...(choice?.tier ? { tier: choice.tier } : {}),
+    mode: pinned?.mode ?? settings.mode,
+    plan: chat.messages.findLast((message): message is AssistantMessage => message.role === "assistant")?.plan ?? false,
+    origin: "user",
+  };
+};

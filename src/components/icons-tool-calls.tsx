@@ -1,4 +1,11 @@
-import { codicon, Icon, type IconProps } from "./icons-base.tsx";
+import { codicon, Icon, lucide, type IconProps } from "./icons-base.tsx";
+
+export const ReadFileToolIcon = (props: IconProps) => (
+  <Icon {...lucide} {...props}>
+    <path d="M12 6.5C10.5 5 8.5 4 5.5 4h-2a1 1 0 0 0-1 1v12.5a1 1 0 0 0 1 1h2.5c2.5 0 4.5.7 6 2 1.5-1.3 3.5-2 6-2h2.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2c-3 0-5 1-6.5 2.5z" />
+    <path d="M12 6.5v14" />
+  </Icon>
+);
 
 export const SquareTerminalToolIcon = (props: IconProps) => (
   <Icon {...codicon} viewBox="0 0 24 24" {...props}>

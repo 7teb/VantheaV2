@@ -1,8 +1,8 @@
 import { native_size } from "../../shared/image-native.ts";
+import { side_choice } from "../billing/side.ts";
 import type { VisionAnalyzer } from "../browser/vision.ts";
 import { fitted_image_url } from "../media/fitted-image.ts";
 import { media_mime } from "../media/files.ts";
-import { model_catalog } from "../model/catalog-file.ts";
 import type { ApiMessage } from "../model/types.ts";
 import { side_complete } from "./model.ts";
 import { noted_text, type SideReply } from "./reply.ts";
@@ -24,8 +24,7 @@ const attachment_data_url = async (attachment_id: string): Promise<string> => {
   if (!mime.startsWith("image/")) {
     throw new Error(`attachment ${attachment_id} is not an image`);
   }
-  const catalog = await model_catalog();
-  return fitted_image_url(attachment_id, mime, [native_size(catalog.side.vision)]);
+  return fitted_image_url(attachment_id, mime, [native_size((await side_choice("vision")).model_id)]);
 };
 
 export const describe_attachment_image = async (attachment_id: string, signal: AbortSignal, question = ""): Promise<string> => {

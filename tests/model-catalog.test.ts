@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { api_effort, major_effort, parse_catalog, resolve_effort, side_window } from "../electron/model/catalog.ts";
+import { api_effort, major_effort, parse_catalog, parse_plan_side, plan_eligible, plan_served, plan_slug, resolve_effort, routes_to_openai, side_window } from "../electron/model/catalog.ts";
 import { read_catalog_source } from "../electron/model/catalog-source.ts";
 import { fallback_model, find_model } from "../shared/models.ts";
 
@@ -211,4 +211,119 @@ test("the catalog reader joins the model files in index order and names the file
   await assert.rejects(read_catalog_source(folder({ model_files: ["missing.json"] })), /missing\.json: ENOENT/);
   await assert.rejects(read_catalog_source(folder({ model_files: "a.json" })), /index\.json: model_files must be an array of file names/);
   await assert.rejects(read_catalog_source(folder([])), /index\.json: must be an object/);
+});
+
+test("the shipped plan_side names GPT 6 Luna for every role the ChatGPT plan serves", () => {
+  const source = shipped();
+  const plan_side = parse_plan_side(source, parse_catalog(source));
+  assert.deepEqual(plan_side, {
+    title: { model: "openai/gpt-6-luna", effort: "none" },
+    overseer: { model: "openai/gpt-6-luna", effort: "low" },
+    vision: { model: "openai/gpt-6-luna", effort: "none" },
+    reasoning_status: { model: "openai/gpt-6-luna", effort: "none" },
+    git_text: { model: "openai/gpt-6-luna", effort: "none" },
+  });
+  assert.equal(parse_catalog(source).side.title, "google/gemini-3.1-flash-lite");
+});
+
+test("parse_plan_side refuses unknown and non-OpenAI models, unknown efforts and missing roles", () => {
+  const with_plan_side = (patch: (plan_side: Record<string, Record<string, unknown>>) => void) => {
+    const source = shipped();
+    const plan_side = source.plan_side as Record<string, Record<string, unknown>>;
+    patch(plan_side);
+    return () => parse_plan_side(source, parse_catalog(source));
+  };
+  assert.throws(
+    with_plan_side((plan_side) => {
+      plan_side.title = { model: "openai/not-in-catalog", effort: "none" };
+    }),
+    /model catalog: plan_side\.title\.model: openai\/not-in-catalog has no entry in models/,
+  );
+  assert.throws(
+    with_plan_side((plan_side) => {
+      plan_side.git_text = { model: "openai/gpt-oss-120b", effort: "low" };
+    }),
+    /plan_side\.git_text\.model: openai\/gpt-oss-120b does not route to OpenAI/,
+  );
+  assert.throws(
+    with_plan_side((plan_side) => {
+      plan_side.overseer = { model: "google/gemini-4-neon", effort: "low" };
+    }),
+    /plan_side\.overseer\.model: google\/gemini-4-neon does not route to OpenAI/,
+  );
+  assert.throws(
+    with_plan_side((plan_side) => {
+      plan_side.title = { model: "openai/gpt-6-luna", effort: "ultra" };
+    }),
+    /plan_side\.title\.effort: must be one of none, minimal, low, medium, high, xhigh, max/,
+  );
+  assert.throws(
+    with_plan_side((plan_side) => {
+      plan_side.reasoning_status = { model: "openai/gpt-6-luna", effort: "" };
+    }),
+    /plan_side\.reasoning_status\.effort: must be a non-empty string/,
+  );
+  assert.throws(
+    with_plan_side((plan_side) => {
+      delete plan_side.git_text;
+    }),
+    /plan_side\.git_text: must be an object/,
+  );
+  const source = shipped();
+  delete source.plan_side;
+  assert.throws(() => parse_plan_side(source, parse_catalog(source)), /model catalog: plan_side: must be an object/);
+});
+
+test("the plan_side vision role needs a model that takes images", () => {
+  const entry = (id: string, vision: boolean) => ({ id, label: id, provider: "OpenAI", provider_order: ["openai"], efforts: ["low"], default_effort: "low", vision, context_length: 1000, max_output: 100 });
+  const role = (model: string) => ({ model, effort: "low" });
+  const source = (vision_model: string) => ({
+    ...minimal(),
+    models: [entry("openai/fixture-vision", true), entry("openai/fixture-text", false)],
+    plan_side: { title: role("openai/fixture-text"), overseer: role("openai/fixture-text"), vision: role(vision_model), reasoning_status: role("openai/fixture-text"), git_text: role("openai/fixture-text") },
+  });
+  const blind = source("openai/fixture-text");
+  assert.throws(() => parse_plan_side(blind, parse_catalog(blind)), /plan_side\.vision\.model: openai\/fixture-text has vision false/);
+  const seer = source("openai/fixture-vision");
+  assert.deepEqual(parse_plan_side(seer, parse_catalog(seer)).vision, { model: "openai/fixture-vision", effort: "low" });
+});
+
+test("plan_slug strips the OpenAI prefix and the flex suffix and plan_eligible needs an OpenAI route", () => {
+  assert.equal(plan_slug("openai/gpt-6.2-sol"), "gpt-6.2-sol");
+  assert.equal(plan_slug("openai/gpt-6-astra:floor"), "gpt-6-astra");
+  assert.equal(plan_slug("openai/gpt-6-luna-pro"), "gpt-6-luna-pro");
+  assert.equal(plan_slug("google/gemini-4-argon"), null);
+  assert.equal(plan_slug("gpt-6-luna"), null);
+  assert.equal(plan_slug("openai/"), null);
+  const catalog = parse_catalog(shipped());
+  const shipped_entry = (id: string) => {
+    const entry = catalog.models.find((model) => model.id === id);
+    assert.ok(entry, id);
+    return entry;
+  };
+  assert.equal(plan_eligible(shipped_entry("openai/gpt-6-luna")), true);
+  assert.equal(plan_eligible(shipped_entry("openai/gpt-oss-120b")), false);
+  assert.equal(plan_eligible(shipped_entry("google/gemini-4-argon")), false);
+  assert.equal(plan_eligible({ id: "openai/gpt-6.1-sol:floor", provider_order: ["openai/flex", "openai"] }), true);
+  assert.equal(plan_eligible({ id: "anthropic/claude-opus-5.5", provider_order: ["openai"] }), false);
+  assert.equal(routes_to_openai({ provider_order: ["openai/fast"] }), true);
+  assert.equal(routes_to_openai({ provider_order: ["cerebras/fp16"] }), false);
+});
+
+test("plan_served needs a plan eligible model the account lists, or an account list that is not known yet", () => {
+  const catalog = parse_catalog(shipped());
+  const shipped_entry = (id: string) => {
+    const entry = catalog.models.find((model) => model.id === id);
+    assert.ok(entry, id);
+    return entry;
+  };
+  const listed = (...slugs: string[]) => slugs.map((slug) => ({ slug, display_name: slug, context_window: null }));
+  const luna = shipped_entry("openai/gpt-6-luna");
+  assert.equal(plan_served(luna, null), true);
+  assert.equal(plan_served(luna, listed("gpt-6-luna")), true);
+  assert.equal(plan_served(luna, listed("gpt-6.2-sol")), false);
+  assert.equal(plan_served(luna, []), false);
+  assert.equal(plan_served(shipped_entry("openai/gpt-oss-120b"), listed("gpt-oss-120b")), false);
+  assert.equal(plan_served({ id: "openai/gpt-6.1-sol:floor", provider_order: ["openai/flex", "openai"] }, listed("gpt-6.1-sol")), true);
+  assert.equal(plan_served(shipped_entry("google/gemini-4-argon"), null), false);
 });

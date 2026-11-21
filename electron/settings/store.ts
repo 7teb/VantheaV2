@@ -11,7 +11,7 @@ export type SettingsFiles = { settings: string; secrets: string; legacy_settings
 
 export type SettingsInit = { files: SettingsFiles; codec: SecretCodec; on_change: (view: SettingsView) => void };
 
-type InternalSecretName = "remote_token";
+type InternalSecretName = "remote_token" | "chatgpt_session";
 
 type Ciphers = Record<SecretName | InternalSecretName, string | null>;
 
@@ -21,9 +21,10 @@ let files: SettingsFiles | null = null;
 let codec: SecretCodec | null = null;
 let on_change: (view: SettingsView) => void = () => undefined;
 let current: Settings = default_settings();
-const empty_ciphers: Ciphers = { openrouter: null, tavily: null, remote_token: null };
+const empty_ciphers: Ciphers = { openrouter: null, tavily: null, remote_token: null, chatgpt_session: null };
 let ciphers: Ciphers = empty_ciphers;
 const decrypted = new Map<SecretName | InternalSecretName, string>();
+const change_listeners = new Set<(view: SettingsView) => void>();
 
 const settings_files = (): SettingsFiles => {
   if (!files) {
@@ -34,7 +35,12 @@ const settings_files = (): SettingsFiles => {
 
 const parse_ciphers = (value: unknown): Ciphers => {
   const raw = as_record(value);
-  return { openrouter: as_string(raw.openrouter) || null, tavily: as_string(raw.tavily) || null, remote_token: as_string(raw.remote_token) || null };
+  return {
+    openrouter: as_string(raw.openrouter) || null,
+    tavily: as_string(raw.tavily) || null,
+    remote_token: as_string(raw.remote_token) || null,
+    chatgpt_session: as_string(raw.chatgpt_session) || null,
+  };
 };
 
 const load_ciphers = async (file: string, legacy: Record<SecretName, string | null> | null): Promise<Ciphers> => {
@@ -87,6 +93,24 @@ export const init_settings = async (options: SettingsInit) => {
 
 export const get_settings = (): Settings => current;
 
+export const on_settings_changed = (listener: (view: SettingsView) => void): (() => void) => {
+  change_listeners.add(listener);
+  return () => {
+    change_listeners.delete(listener);
+  };
+};
+
+const notify_change = (view: SettingsView) => {
+  on_change(view);
+  for (const listener of [...change_listeners]) {
+    try {
+      listener(view);
+    } catch (error) {
+      console.error("[settings] a settings change listener failed:", error);
+    }
+  }
+};
+
 const read_cipher = (name: SecretName | InternalSecretName): string => {
   const cached = decrypted.get(name);
   if (cached !== undefined) {
@@ -125,7 +149,7 @@ export const update_settings = async (patch: SettingsPatch | Record<string, unkn
   }
   current = next;
   const view = settings_view();
-  on_change(view);
+  notify_change(view);
   await write_json(settings_files().settings, current);
   return view;
 };
@@ -146,7 +170,7 @@ export const set_internal_secret = (name: InternalSecretName, value: string): Pr
 export const set_secret = async (name: SecretName, value: string): Promise<SettingsView> => {
   await store_cipher(name, value);
   const view = settings_view();
-  on_change(view);
+  notify_change(view);
   return view;
 };
 

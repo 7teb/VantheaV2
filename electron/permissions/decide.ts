@@ -19,7 +19,8 @@ export type CommandInput = {
   command: string;
   background: boolean;
   mode: PermissionMode;
-  app_root: string;
+  app_roots: readonly string[];
+  guard_writes?: boolean;
   project_root: string;
   cwd: string;
   plan: boolean;
@@ -74,7 +75,7 @@ const command_sources = (input: CommandInput): Promise<CommandSources> =>
     chat_id: input.chat_id,
     chat_started_at: input.chat_started_at,
     shell: input.shell,
-    app_root: input.app_root,
+    app_roots: input.app_roots,
     ...(input.shell === "posix" ? { env: bash_env(process.env) } : {}),
   });
 
@@ -121,7 +122,7 @@ export const decide_command = async (input: CommandInput, reviewer: Reviewer, si
   if (!command) {
     return floor_block(input, reviewer, "The command is empty.");
   }
-  const floor = command_floor(command, { app_root: input.app_root, project_root: input.project_root, cwd: input.cwd }, input.shell);
+  const floor = command_floor(command, { app_roots: input.app_roots, project_root: input.project_root, cwd: input.cwd, guard_writes: input.guard_writes }, input.shell);
   if (floor.reason) {
     return floor_block(input, reviewer, floor.reason);
   }

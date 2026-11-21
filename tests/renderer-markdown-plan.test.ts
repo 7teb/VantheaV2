@@ -21,7 +21,7 @@ const stubs: Record<string, string> = {
   QuestionForm: 'import {createElement} from "react";export const QuestionForm=(props)=>{globalThis.composer_runtime.question=props;return createElement("button",{},"Plan question")}',
 };
 const modules: Record<string, string> = {
-  "dictation.ts": 'import {create_store} from "./src/state/create-store.ts"; export const dictation_store=create_store(null); export const cancel_dictation=()=>dictation_store.set(null); export const finish_dictation=async()=>{const r=globalThis.composer_runtime; r.finish_calls++;dictation_store.set({draft_key:"c1",phase:"transcribing"});try{return await r.recording;}finally{dictation_store.set(null)}};',
+  "dictation.ts": 'import {create_store} from "./src/state/create-store.ts"; export const dictation_store=create_store(null); export const cancel_dictation=()=>dictation_store.set(null); export const dictation_cancellable=(state)=>state!==null&&state.phase!=="transcribing"; export const dictation_supported=()=>false; export const start_dictation=async()=>{}; export const finish_dictation=async()=>{const r=globalThis.composer_runtime; r.finish_calls++;dictation_store.set({draft_key:"c1",phase:"transcribing"});try{return await r.recording;}finally{dictation_store.set(null)}};',
   "composer-hooks.ts": 'export const use_chat_busy=()=>globalThis.composer_runtime.busy; export const use_model_context=()=>({model:{id:"m",vision:true},setting:undefined}); export const use_model_choice=()=>({model:"m",pro:false});export const use_shown_context=()=>({usage:null});',
   "use-command-context.ts": 'export const use_command_context=(input)=>input;',
   "use-slash-menu.ts": 'export const use_slash_menu=()=>({open:false,items:[],active:0,on_key_down:()=>false,track:()=>{}});',
@@ -105,7 +105,7 @@ test("Tab finishes active dictation before queuing typed and spoken text togethe
   client.set_draft_text("c1", "typed");client.dictation_store.set({ draft_key: "c1", phase: "recording" });
   client.flushSync(() => root.render(client.createElement(client.Composer, { chat_id: "c1", project_path: "", draft_key: "c1", placement: "docked" })));
   const area = container.matching((element) => element.tagName === "TEXTAREA")[0];
-  client.flushSync(() => props(area).onKeyDown({ key: "Tab", currentTarget: area, preventDefault() {}, nativeEvent: {} }));
+  client.flushSync(() => props(area).onKeyDown({ key: "Tab", ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, currentTarget: area, preventDefault() {}, nativeEvent: {} }));
   assert.equal(runtime.finish_calls, 1);
   assert.equal(client.queue_of(client.composer_store.get(), "c1").length, 0);
   finish("spoken");await settle();await settle();
@@ -178,7 +178,7 @@ test("dictation failure and switching drafts preserve text without queuing a par
     const render = (id: string) => client.createElement(client.Composer, { chat_id: id, project_path: "", draft_key: id, placement: "docked" });
     client.flushSync(() => root.render(render("c1")));
     const area = container.matching((element) => element.tagName === "TEXTAREA")[0];
-    client.flushSync(() => props(area).onKeyDown({ key: "Tab", currentTarget: area, preventDefault() {}, nativeEvent: {} }));
+    client.flushSync(() => props(area).onKeyDown({ key: "Tab", ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, currentTarget: area, preventDefault() {}, nativeEvent: {} }));
     if (switched) client.flushSync(() => root.render(render("c2")));
     finish(switched ? "spoken" : null);await settle();await settle();
     assert.equal(client.composer_store.get().drafts.c1.text, switched ? "typed spoken" : "typed");

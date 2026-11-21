@@ -46,6 +46,7 @@ const event_types: readonly StreamEventBody["type"][] = [
   "notice",
   "compaction",
   "context",
+  "usage",
   "end",
 ];
 

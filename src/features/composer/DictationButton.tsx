@@ -4,6 +4,7 @@ import { Tooltip } from "../../components/Tooltip.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { cancel_dictation, dictation_store, dictation_supported, start_dictation } from "../../state/dictation.ts";
 import { use_store } from "../../state/use-store.ts";
+import { shortcut_hint } from "../shell/shortcuts.ts";
 import { DictationWave } from "./DictationWave.tsx";
 import "./DictationButton.css";
 
@@ -21,9 +22,10 @@ export const DictationButton = ({ draft_key, on_stop }: DictationButtonProps) =>
   if (!dictation_supported()) {
     return null;
   }
+  const hint = shortcut_hint("dictate", t);
   if (phase === "recording") {
     return (
-      <Tooltip label={t("dictation.stop")}>
+      <Tooltip label={t("dictation.stop")} hint={hint}>
         <button type="button" className="dictation-recording" aria-label={t("dictation.stop")} onClick={on_stop}>
           <DictationWave />
           <StopIcon />
@@ -36,6 +38,7 @@ export const DictationButton = ({ draft_key, on_stop }: DictationButtonProps) =>
       <IconButton
         className="dictation-mic"
         label={t(phase === "starting" ? "dictation.starting" : "dictation.transcribing")}
+        hint={phase === "starting" ? hint : undefined}
         disabled={phase === "transcribing"}
         onClick={cancel_dictation}
       >
@@ -44,8 +47,8 @@ export const DictationButton = ({ draft_key, on_stop }: DictationButtonProps) =>
     );
   }
   return (
-    <IconButton className="dictation-mic" label={t("dictation.dictate")} disabled={phase === "elsewhere"} onClick={() => void start_dictation(draft_key)}>
-      <MicIcon />
+    <IconButton className="dictation-mic" label={t("dictation.dictate")} hint={hint} disabled={phase === "elsewhere"} onClick={() => void start_dictation(draft_key)}>
+      <MicIcon plain />
     </IconButton>
   );
 };

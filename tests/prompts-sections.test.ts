@@ -112,6 +112,7 @@ test("the action, writing, shell, test and batching rules are in their sections 
   assert.match(body_of(input, "environment"), /instead of guessing at that part, and keep working on what does not depend on the answer/);
   assert.match(body_of(input, "communication"), /Never start a reply, a paragraph or a sentence with a summary label and a colon, in any language: no "Short:", "Short version:", "In short:", "TL;DR:", "Bottom line:", "Kurz:", "Kurz gesagt:", "Fazit:" or "Zusammengefasst:", and no closing summary line; write ordinary sentences the way a person would\. Use such labels only when the user asks for them\./);
   assert.match(body_of(input, "communication"), /say what changed, why, how you tested it and what risk remains/);
+  assert.match(body_of(input, "communication"), /put it alone in a fenced code block tagged powershell, one command on one line: the app shows a Run button/);
   assert.match(body_of(input, "shell"), /Keep each wait under about 60 seconds/);
   assert.match(body_of(input, "shell"), /through a temporary file with --body-file/);
   assert.doesNotMatch(body_of(input, "shell"), /moves to the background on its own/);

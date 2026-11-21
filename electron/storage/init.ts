@@ -1,5 +1,3 @@
-import { app } from "electron";
-import path from "node:path";
 import { init_chats } from "../chats/store.ts";
 import { emit } from "../ipc/handle.ts";
 import { init_artifacts } from "../media/artifacts.ts";
@@ -11,10 +9,10 @@ import { sweep_tmp } from "./json-file.ts";
 import { ensure_storage_dirs, set_storage_root, storage_dirs } from "./paths.ts";
 import { safe_storage_codec } from "./secrets.ts";
 
-export const init_persistence = async () => {
+export const init_persistence = async (root: string) => {
   let step = "storage directories";
   try {
-    const paths = set_storage_root(path.join(app.getPath("appData"), "VantheaX"));
+    const paths = set_storage_root(root);
     await ensure_storage_dirs(paths);
     step = "stale temp file sweep";
     const swept = await sweep_tmp(storage_dirs(paths));

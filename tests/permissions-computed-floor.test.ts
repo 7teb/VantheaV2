@@ -10,7 +10,7 @@ let policy: Policy;
 const signal = () => new AbortController().signal;
 const reviewer = { actor: { id: "main", name: "Main", kind: "main" } } as Reviewer;
 const input = (command: string, mode: PermissionMode = "full"): CommandInput => ({
-  command, mode, shell: "powershell", background: false, plan: false, app_root: "C:\\Users\\fixture\\AppData\\Roaming\\VantheaX",
+  command, mode, shell: "powershell", background: false, plan: false, app_roots: ["C:\\Users\\fixture\\AppData\\Roaming\\VantheaX"],
   project_root: "D:\\project", cwd: "D:\\project", chat_id: "computed-policy", chat_started_at: 0, call_id: "fixture", profile: "main",
   custom_instructions: "", decisions: [], last_human_id: null, changed: [],
 });

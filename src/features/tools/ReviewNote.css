@@ -14,10 +14,13 @@
     grid-column: 1 / -1;
     gap: 2px;
     min-width: 0;
-    padding: var(--space-2);
     font-size: var(--font-size-ui);
     line-height: 19.5px;
     overflow-wrap: anywhere;
+  }
+
+  .command-card > .review-notice {
+    padding: var(--space-2);
   }
 
   .review-notice-title {

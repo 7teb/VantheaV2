@@ -1,6 +1,7 @@
 import { agent } from "./agent.ts";
 import { approval } from "./approval.ts";
 import { background } from "./background.ts";
+import { billing } from "./billing.ts";
 import { browser } from "./browser.ts";
 import { chat } from "./chat.ts";
 import { commands } from "./commands.ts";
@@ -46,6 +47,7 @@ export const en = {
   ...agent,
   ...approval,
   ...background,
+  ...billing,
   ...browser,
   ...chat,
   ...commands,

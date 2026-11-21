@@ -7,6 +7,7 @@ export type StoragePaths = {
   root: string;
   settings: string;
   secrets: string;
+  chatgpt: string;
   chats: string;
   chat_index: string;
   chat_data: string;
@@ -41,6 +42,7 @@ const storage_paths_for = (user_data: string): StoragePaths => {
     root,
     settings: path.join(root, "settings.json"),
     secrets: path.join(root, "secrets.json"),
+    chatgpt: path.join(root, "chatgpt.json"),
     chats,
     chat_index: path.join(chats, "index.json"),
     chat_data: path.join(chats, "data"),

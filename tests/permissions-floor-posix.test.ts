@@ -12,9 +12,9 @@ const workspace = path.win32.join(app_root, "v2", "workspaces", "chat1");
 
 const to_msys = (win: string) => `/${win[0]?.toLowerCase()}${win.slice(2).replace(/\\/g, "/")}`;
 
-const scope: FloorScope = { app_root, project_root: String.raw`C:\Users\user\project`, cwd: String.raw`C:\Users\user\project` };
+const scope: FloorScope = { app_roots: [app_root], project_root: String.raw`C:\Users\user\project`, cwd: String.raw`C:\Users\user\project` };
 
-const in_workspace: FloorScope = { app_root, project_root: workspace, cwd: workspace };
+const in_workspace: FloorScope = { app_roots: [app_root], project_root: workspace, cwd: workspace };
 
 const delete_prefixes = ["rm -rf", "rm -r --force", "rmdir", "unlink", "shred -u"];
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { floor_reason, type FloorScope } from "../electron/permissions/floor.ts";
 
-const floor_scope: FloorScope = { app_root: "C:\\Users\\user\\AppData\\Roaming\\VantheaX", project_root: "C:\\Users\\user\\project", cwd: "C:\\Users\\user\\project" };
+const floor_scope: FloorScope = { app_roots: ["C:\\Users\\user\\AppData\\Roaming\\VantheaX"], project_root: "C:\\Users\\user\\project", cwd: "C:\\Users\\user\\project" };
 
 const blocked = [
   "format c:",

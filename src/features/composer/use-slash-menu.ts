@@ -20,6 +20,7 @@ export type SlashItem = {
   id: string;
   label: string;
   hint: string | null;
+  shortcut: string | null;
   icon: CommandIcon | null;
   disabled: boolean;
   toggled: boolean | null;
@@ -58,11 +59,11 @@ export const use_slash_menu = (text: string, context: CommandContext, replace_te
   const parent = state.parent === null ? null : (rows.find((row) => row.id === state.parent && row.options) ?? null);
   const entries: SlashEntry[] = parent?.options
     ? parent.options().map((option) => ({
-        item: { id: option.id, label: option.label, hint: option.hint ?? null, icon: null, disabled: false, toggled: null, checked: option.checked ?? false, submenu: false },
+        item: { id: option.id, label: option.label, hint: option.hint ?? null, shortcut: null, icon: null, disabled: false, toggled: null, checked: option.checked ?? false, submenu: false },
         run: option.run,
       }))
     : filter_matches(token ? rows : [], token?.query ?? "").map((row) => ({
-        item: { id: row.id, label: row.label, hint: row.hint, icon: row.icon, disabled: row.disabled, toggled: row.toggled, checked: null, submenu: row.options !== null },
+        item: { id: row.id, label: row.label, hint: row.hint, shortcut: row.shortcut, icon: row.icon, disabled: row.disabled, toggled: row.toggled, checked: null, submenu: row.options !== null },
         run: row.run,
       }));
   const items = entries.map((entry) => entry.item);

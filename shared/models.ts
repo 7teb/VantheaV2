@@ -64,6 +64,7 @@ export type ModelCatalog = {
   side: Record<SideModelRole, string>;
   side_models: SideModelEntry[];
   image_models: ImageModelEntry[];
+  plan_ids?: string[];
 };
 
 export const pro_variant = (model: ModelEntry): ModelEntry => {
@@ -96,7 +97,15 @@ export const flex_base = (id: string): string | null => (id.endsWith(flex_suffix
 
 export const flex_id = (id: string): string => `${id}${flex_suffix}`;
 
-export const with_choice = (model: ModelEntry, choice: Pick<ModelChoice, "pro" | "tier">): ModelEntry => with_tier(with_pro(model, choice.pro), choice.tier);
+export const with_choice = (model: ModelEntry, choice: Pick<ModelChoice, "pro" | "tier">, plan_ids?: readonly string[]): ModelEntry => {
+  const variant = with_pro(model, choice.pro);
+  if (!plan_ids?.includes(variant.id)) {
+    return with_tier(variant, choice.tier);
+  }
+
+  const { tiers, ...plan_variant } = variant;
+  return plan_variant;
+};
 
 export type ModelListing = { entry: ModelEntry; pro: boolean; tier?: SpeedTier };
 
@@ -126,7 +135,7 @@ export const model_listing = (models: readonly ModelEntry[], id: string): ModelL
   return { entry, pro: entry.id !== wanted, ...(base ? { tier: "flex" as const } : {}) };
 };
 
-export const listed_model = (listed: ModelListing): ModelEntry => with_choice(listed.entry, listed);
+export const listed_model = (listed: ModelListing, plan_ids?: readonly string[]): ModelEntry => with_choice(listed.entry, listed, plan_ids);
 
 export const catalog_choice = (models: readonly ModelEntry[], choice: ModelChoice): ModelChoice => {
   if (models.some((entry) => entry.id === choice.model)) {
@@ -143,7 +152,7 @@ export const catalog_choice = (models: readonly ModelEntry[], choice: ModelChoic
 
 export const find_model = (catalog: ModelCatalog | null, id: string): ModelEntry | null => {
   const listed = model_listing(catalog?.models ?? [], id);
-  return listed ? listed_model(listed) : null;
+  return listed ? listed_model(listed, catalog?.plan_ids) : null;
 };
 
 export const default_model_id = "deepseek/deepseek-v4.1-flash-1017";

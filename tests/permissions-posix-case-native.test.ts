@@ -8,7 +8,7 @@ import { walk_command } from "../electron/permissions/command-walk.ts";
 
 const bash = "C:/Program Files/Git/bin/bash.exe";
 const payload = "rm -rf /c/Windows";
-const scope = { app_root: "C:/Users/test/AppData/Roaming/VantheaX", project_root: "D:/project", cwd: "D:/project" };
+const scope = { app_roots: ["C:/Users/test/AppData/Roaming/VantheaX"], project_root: "D:/project", cwd: "D:/project" };
 const sources = [
   `function f { case value in value) ${payload};; esac; }; f`,
   `case "$(${payload})" in esac`,

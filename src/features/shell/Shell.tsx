@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { layout_store } from "../../state/layout.ts";
 import { set_sidebar_collapsed, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
+import { PlanNotice } from "../settings/panes/PlanNotice.tsx";
 import { SettingsPage } from "../settings/SettingsPage.tsx";
 import { Sidebar } from "../sidebar/Sidebar.tsx";
 import { BrandField } from "./BrandField.tsx";
@@ -46,6 +47,7 @@ export const Shell = () => {
         <SettingsPage />
       </div>
       <SearchOverlay />
+      <PlanNotice />
     </div>
   );
 };

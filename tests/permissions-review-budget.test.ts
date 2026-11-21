@@ -70,6 +70,7 @@ const huge_input = (chat_id: string, human_text_chars: number, scripts: ScriptFi
       humans,
       profile: { root: "D:/p", git: "git: not a git repository", listing: "a\nb", readme: "r".repeat(1500), scripts: null },
       snapshot: { anchor: "h49", number: 50, after_restart: false, files: [] },
+      app_data: [],
     },
     chat_key: `key-${human_text_chars}-${scripts.length}-${human_count}`,
     agent: { actor: { id: "main", name: "main", kind: "main" }, model: { id: tool_model.id, label: tool_model.label }, profile: null, delegated_task: null, earlier_commands: 0 },

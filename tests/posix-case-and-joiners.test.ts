@@ -8,7 +8,7 @@ import { walk_command } from "../electron/permissions/command-walk.ts";
 
 const bash = "C:/Program Files/Git/bin/bash.exe";
 const dangerous = "rm -rf /c/Windows";
-const scope = { app_root: "C:/Users/test/AppData/Roaming/VantheaX", project_root: "D:/project", cwd: "D:/project" };
+const scope = { app_roots: ["C:/Users/test/AppData/Roaming/VantheaX"], project_root: "D:/project", cwd: "D:/project" };
 
 test("braces joined to hashes are shell words rather than comment boundaries", () => {
   for (const word of ["{#", "}#", "x{#", "x}#"]) {

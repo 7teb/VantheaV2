@@ -9,10 +9,12 @@ export type ChoiceView = { model: ModelEntry | null; effort: string };
 export const choice_view = (catalog: ModelCatalog, stored: ModelChoice): ChoiceView => {
   const choice = catalog_choice(catalog.models, stored);
   const base = catalog.models.find((entry) => entry.id === choice.model) ?? null;
-  return { model: base ? with_choice(base, choice) : null, effort: base ? effective_effort(base, choice.effort) : choice.effort };
+  return { model: base ? with_choice(base, choice, catalog.plan_ids) : null, effort: base ? effective_effort(base, choice.effort) : choice.effort };
 };
 
 export const with_model = (choice: ModelChoice, entry: ModelEntry): ModelChoice => ({ ...choice, model: entry.id, effort: effective_effort(entry, choice.effort) });
+
+export const runs_on_plan = (catalog: ModelCatalog, model: ModelEntry | null): boolean => model !== null && (catalog.plan_ids ?? []).includes(model.id);
 
 export const model_menu_sections = (t: Translate, catalog: ModelCatalog, choice: ModelChoice, on_choice: (choice: ModelChoice) => void): MenuSection[] => {
   const { model, effort } = choice_view(catalog, choice);

@@ -165,13 +165,20 @@ export const take_agent_notes = (chat_id: string, agent_tools = true): TurnNote[
   return [...queue.map((note) => turn_note(note, agent_tools)), ...lines.map(digest_note)];
 };
 
+const kept_note = (note: AgentNotice, stopped: boolean): boolean => (stopped && note.kind === "update") || (note.kind === "workflow" && note.workflow.held);
+
+export const has_due_agent_notes = (chat_id: string): boolean => {
+  const stopped = user_stopped(chat_id);
+  return (pending.get(chat_id) ?? []).some((note) => !kept_note(note, stopped));
+};
+
 export const flush_reports = (chat_id: string): void => {
   const queue = pending.get(chat_id);
   if (!queue || is_active(chat_id)) {
     return;
   }
   const stopped = user_stopped(chat_id);
-  const kept: AgentNotice[] = queue.filter((note) => (stopped && note.kind === "update") || (note.kind === "workflow" && note.workflow.held));
+  const kept: AgentNotice[] = queue.filter((note) => kept_note(note, stopped));
   const due = queue.filter((note) => !kept.includes(note));
   set_pending(chat_id, kept);
   for (const [at, note] of due.entries()) {

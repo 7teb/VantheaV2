@@ -84,9 +84,11 @@ export const start_dictation = async (draft_key: string) => {
   }
 };
 
+export const dictation_cancellable = (state: DictationState) => state !== null && state.phase !== "transcribing";
+
 export const cancel_dictation = () => {
   const state = dictation_store.get();
-  if (state === null || state.phase === "transcribing") {
+  if (!dictation_cancellable(state)) {
     return;
   }
   attempt += 1;

@@ -104,6 +104,13 @@
     color: var(--text-secondary);
   }
 
+  .menu-item-shortcut {
+    padding-left: 10px;
+    font-family: var(--font-ui);
+    font-size: var(--font-size-caption);
+    color: var(--text-tertiary);
+  }
+
   .menu-item-check {
     display: inline-grid;
     place-items: center;
@@ -131,7 +138,8 @@
       padding: 8px 10px;
     }
 
-    .menu-item-hint {
+    .menu-item-hint,
+    .menu-item-shortcut {
       display: none;
     }
   }

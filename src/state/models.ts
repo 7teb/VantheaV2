@@ -37,9 +37,11 @@ const replace_unknown_model = () => {
 export const init_models = (): (() => void) => {
   const stop_models = models_store.subscribe(replace_unknown_model);
   const stop_settings = settings_store.subscribe(replace_unknown_model);
+  const stop_changes = api.on("models:changed", (catalog) => models_store.set({ status: "ready", catalog }));
   void load_models();
   return () => {
     stop_models();
     stop_settings();
+    stop_changes();
   };
 };

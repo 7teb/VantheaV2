@@ -54,6 +54,8 @@ const settings = (): Settings => ({
   skills: { disabled: [] },
   model_context: {},
   hooks: { global: [], projects: {} },
+  billing: "api",
+  inactive_billing_model: "",
 });
 
 test("settings patches merge objects one level and replace arrays and scalars", () => {

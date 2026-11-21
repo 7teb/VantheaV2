@@ -25,6 +25,7 @@ export type ChatView = {
   humans: HumanRequest[];
   profile: ProjectProfile;
   snapshot: InstructionSnapshot;
+  app_data: readonly string[];
 };
 
 export type AgentView = { actor: ReviewActor; model: { id: string; label: string }; profile: string | null; delegated_task: string | null; earlier_commands: number };
@@ -37,9 +38,9 @@ const bytes_each = (lines: string[]): number[] => lines.map((line) => Buffer.byt
 
 const bytes = (lines: string[]): number => bytes_each(lines).reduce((total, size) => total + size, 0);
 
-const project_lines = (profile: ProjectProfile, tag: string, level: TrimLevel): string[] => {
+const project_lines = (profile: ProjectProfile, app_data: readonly string[], tag: string, level: TrimLevel): string[] => {
   const minimal = trimmed(level, "project");
-  const lines = [`root: ${profile.root || "(none)"}`, profile.git];
+  const lines = [`root: ${profile.root || "(none)"}`, ...(app_data.length ? [`app data folders: ${app_data.join("; ")}`] : []), profile.git];
   if (!minimal && profile.listing) lines.push("top-level entries:", profile.listing);
   if (profile.scripts) lines.push(`package.json scripts: ${profile.scripts}`);
   if (!minimal && profile.readme) lines.push(file_block(`README.md (${profile.readme.length} characters)`, profile.readme, tag));
@@ -80,7 +81,7 @@ export const human_line_bytes = (humans: HumanRequest[], level: TrimLevel): numb
 
 export const chat_part = (view: ChatView, tag: string, level: TrimLevel, dropped_humans: number): string =>
   [
-    section(review_headers.project, project_lines(view.profile, tag, level)),
+    section(review_headers.project, project_lines(view.profile, view.app_data, tag, level)),
     section(review_headers.custom_instructions, view.custom_instructions.trim() ? [JSON.stringify(view.custom_instructions.trim())] : []),
     section(review_headers.instruction_files, instruction_lines(view.snapshot, tag, level)),
     section(review_headers.human_messages, human_lines(view.humans, level, dropped_humans)),

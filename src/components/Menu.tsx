@@ -13,6 +13,7 @@ export type MenuItem = {
   hint?: string;
   description?: string;
   badge?: string;
+  shortcut?: string;
   checked?: boolean;
   toggled?: boolean;
   danger?: boolean;
@@ -128,6 +129,7 @@ export const Menu = ({ open, anchor, label, sections, on_close, placement = "bot
                 </span>
                 {item.hint && <span className="menu-item-hint">{item.hint}</span>}
                 {item.badge && <span className="menu-item-badge">{item.badge}</span>}
+                {item.shortcut && <kbd className="menu-item-shortcut">{item.shortcut}</kbd>}
                 {item.toggled !== undefined && <ToggleTrack checked={item.toggled} />}
                 {selectable && <span className="menu-item-check">{item.checked && <CheckIcon />}</span>}
               </button>

@@ -14,7 +14,7 @@ import { server_of_tool } from "../mcp/servers.ts";
 import { save_tool_images } from "../media/files.ts";
 import { major_effort } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
-import { stream_round } from "../model/stream.ts";
+import { stream_model } from "../model/provider.ts";
 import { cancel_chat, wait_for_decision } from "../permissions/approvals.ts";
 import { human_requests_of, set_authorization } from "../permissions/context.ts";
 import { chat_decisions } from "../permissions/decisions.ts";
@@ -39,6 +39,7 @@ import { carried_todos_note } from "./carried-todos.ts";
 import { model_switch_note } from "./model-switch.ts";
 import { build_api_messages } from "./history.ts";
 import { run_compaction_turn, run_turn_loop } from "./loop.ts";
+import { reject_feedback, run_options } from "./run-options.ts";
 import type { CompactionHooks, OpeningNotes, TurnNote, TurnSession } from "./session.ts";
 import { admit_steer } from "./steer-admission.ts";
 import { note_newest_user } from "./vision-notes.ts";
@@ -178,10 +179,19 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       plan: plan.plan,
       signal,
       emit: turn.emit,
-      stream: stream_round,
+      stream: stream_model,
       resolve_tools: (p) => defer_mcp(tools_for(p, settings, plan.model, mcp_tools())),
       side_model,
-      wait_decision: (call_id, request, on_hold) => wait_for_decision({ key: plan.chat_id, chat_id: plan.chat_id, call_id, request, signal, on_hold }),
+      wait_decision: (call_id, request, on_hold) =>
+        wait_for_decision({
+          key: plan.chat_id,
+          chat_id: plan.chat_id,
+          call_id,
+          request,
+          signal,
+          on_hold,
+          reject_feedback: run_options(plan.chat_id)?.approvals === "reject" ? reject_feedback : undefined,
+        }),
       review: main_review(plan.chat_id, review_call, plan.model),
       human_decisions: () => chat_decisions(plan.chat_id),
       steers: {

@@ -5,6 +5,7 @@ type MenuRowProps = {
   icon: IconComponent | null;
   label: ReactNode;
   hint?: ReactNode;
+  shortcut?: string | null;
   trail?: ReactNode;
   disabled?: boolean;
   active?: boolean;
@@ -16,7 +17,7 @@ type MenuRowProps = {
   on_hover?: () => void;
 };
 
-export const MenuRow = ({ icon: Icon, label, hint, trail, disabled = false, active = false, index = 0, id, role = "menuitem", checked, on_select, on_hover }: MenuRowProps) => (
+export const MenuRow = ({ icon: Icon, label, hint, shortcut, trail, disabled = false, active = false, index = 0, id, role = "menuitem", checked, on_select, on_hover }: MenuRowProps) => (
   <button
     id={id}
     type="button"
@@ -34,6 +35,7 @@ export const MenuRow = ({ icon: Icon, label, hint, trail, disabled = false, acti
     <span className="composer-popover-icon">{Icon && <Icon />}</span>
     <span className="composer-popover-name">{label}</span>
     {hint && <span className="composer-popover-hint">{hint}</span>}
+    {shortcut && <kbd className="composer-popover-shortcut">{shortcut}</kbd>}
     {trail && <span className="composer-popover-trail">{trail}</span>}
   </button>
 );

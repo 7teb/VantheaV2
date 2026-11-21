@@ -1,6 +1,6 @@
 import { review_deadline_ms } from "../../shared/review.ts";
 import type { ReviewCall, ReviewReply } from "../tools/types.ts";
-import { complete } from "./complete.ts";
+import { complete_model } from "./provider.ts";
 import { review_request } from "./review-body.ts";
 import type { Transport } from "./transport.ts";
 
@@ -8,10 +8,17 @@ export type ReviewLimits = { attempt_ms: number; deadline_ms: number; attempts: 
 
 export const review_limits: ReviewLimits = { attempt_ms: 30000, deadline_ms: review_deadline_ms, attempts: 2 };
 
-export const review_completion = async (model_id: string, call: ReviewCall, signal: AbortSignal, limits: ReviewLimits = review_limits): Promise<ReviewReply> => {
+export const review_completion = async (
+  model_id: string,
+  call: ReviewCall,
+  signal: AbortSignal,
+  limits: ReviewLimits = review_limits,
+  effort?: string,
+): Promise<ReviewReply> => {
   const started = Date.now();
-  const result = await complete(
-    review_request(model_id, call),
+  const request = review_request(model_id, call);
+  const result = await complete_model(
+    effort ? { ...request, reasoning_effort: effort } : request,
     AbortSignal.any([signal, AbortSignal.timeout(limits.deadline_ms)]),
     { ...limits.transport, first_byte_ms: limits.attempt_ms, max_attempts: limits.attempts },
   );

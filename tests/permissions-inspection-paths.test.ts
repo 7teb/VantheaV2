@@ -25,20 +25,20 @@ for (const [name, command, phase] of [
 });
 
 test("unrelated absolute pipeline sources remain allowed from a system cwd", () => {
-  const scope = { cwd: "C:/Windows", project_root: "D:/project", app_root: "" };
+  const scope = { cwd: "C:/Windows", project_root: "D:/project", app_roots: [] };
   for (const command of ["Get-Item D:/project/out.txt | Remove-Item", "Get-ChildItem D:/project -File | Remove-Item", "Write-Output D:/project/out.txt | Remove-Item"]) {
     assert.equal(floor_reason(command, scope), "", command);
   }
 });
 
 test("normalized relative targets and later locations agree with execution order", () => {
-  const scope = { cwd: "C:/Windows/System32", project_root: "D:/project", app_root: "" };
+  const scope = { cwd: "C:/Windows/System32", project_root: "D:/project", app_roots: [] };
   assert.ok(floor_reason("Remove-Item ..\\..\\Windows\\System32 -Recurse", scope));
   assert.equal(floor_reason("Set-Location D:/project; Remove-Item .\\Windows -Recurse", scope), "");
 });
 
 test("a comma in a quoted relative .NET argument remains part of the path", () => {
-  const scope = { cwd: "C:/project", project_root: "C:/project", app_root: "" };
+  const scope = { cwd: "C:/project", project_root: "C:/project", app_roots: [] };
   assert.ok(floor_reason("[IO.File]::Delete('..\\dummy,dir\\..\\Windows\\file')", scope));
 });
 

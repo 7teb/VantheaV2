@@ -178,6 +178,7 @@ test("the request shows every human message numbered by position, keeps a long m
     humans: human_requests_of("context-long"),
     profile: { root: "", git: "git: no project folder", listing: "", readme: null, scripts: null },
     snapshot: { anchor: "u60", number: 60, after_restart: false, files: [] },
+    app_data: [],
   };
   const part = chat_part(view, "aaaaaaaaaaaa", 0, 0);
   const lines = part.split("\n").filter((line) => /^#\d+ /.test(line));

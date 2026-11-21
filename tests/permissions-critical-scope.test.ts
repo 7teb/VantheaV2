@@ -11,7 +11,7 @@ const parents = ["C:\\", String.raw`C:\Users`, String.raw`C:\Users\floor-user`, 
 
 for (const project_root of parents) {
   test(`the app-data floor survives project root ${project_root}`, () => {
-    const scope: FloorScope = { app_root, project_root, cwd: project_root };
+    const scope: FloorScope = { app_roots: [app_root], project_root, cwd: project_root };
     for (const target of targets) {
       assert.equal(hits_app(target, scope), true, target);
       assert.equal(floor_reason(`Remove-Item -Recurse -Force '${target}'`, scope), app_reason, target);
@@ -21,26 +21,26 @@ for (const project_root of parents) {
 }
 
 test("app-data protection handles normalized parent projects and casing", () => {
-  const scope: FloorScope = { app_root: app_root.toUpperCase() + "\\", project_root: String.raw`c:/Users/floor-user/project/..`, cwd: String.raw`C:\Users\floor-user` };
+  const scope: FloorScope = { app_roots: [app_root.toUpperCase() + "\\"], project_root: String.raw`c:/Users/floor-user/project/..`, cwd: String.raw`C:\Users\floor-user` };
   const target = path.win32.join(app_root, "v2", "chats", "..", "settings.json");
   assert.equal(hits_app(target, scope), true);
   assert.equal(floor_reason(`Remove-Item '${target}'`, scope), app_reason);
 });
 
 test("only descendants of a nested app-data project are exempt, never its root or siblings", () => {
-  const scope: FloorScope = { app_root, project_root: project, cwd: project };
+  const scope: FloorScope = { app_roots: [app_root], project_root: project, cwd: project };
   assert.equal(hits_app(path.win32.join(project, "build"), scope), false);
   assert.equal(hits_app(project, scope), true);
   assert.equal(hits_app(path.win32.join(project, "..", "chat2", "build"), scope), true);
   assert.equal(hits_app(path.win32.join(app_root + "-other", "v2", "chats"), scope), false);
   assert.equal(hits_app(path.win32.join(app_root, "v2", "chats"), { ...scope, project_root: "" }), true);
   assert.equal(hits_app(null, scope), false);
-  assert.equal(hits_app(app_root, { ...scope, app_root: "" }), false);
+  assert.equal(hits_app(app_root, { ...scope, app_roots: [] }), false);
 });
 
 test("removing an ancestor of app data is protected as well", () => {
   const parent = path.win32.dirname(app_root);
-  const scope: FloorScope = { app_root, project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
+  const scope: FloorScope = { app_roots: [app_root], project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
   assert.equal(hits_app(parent, scope, true), true);
   assert.equal(floor_reason(`Remove-Item -Recurse '${parent}'`, scope), app_reason);
   assert.equal(floor_reason(`rm -rf '${parent.replaceAll("\\", "/")}'`, scope, "posix"), app_reason);
@@ -48,7 +48,7 @@ test("removing an ancestor of app data is protected as well", () => {
 
 test("a nonrecursive parent file listing is not treated as the app-data subtree", () => {
   const home = String.raw`C:\Users\floor-user`;
-  const scope: FloorScope = { app_root, project_root: home, cwd: home };
+  const scope: FloorScope = { app_roots: [app_root], project_root: home, cwd: home };
   assert.equal(floor_reason("Get-ChildItem . -File -Filter '*.tmp' | Remove-Item", scope), "");
   assert.equal(floor_reason(`Move-Item .\\out.txt '${home}'`, scope), "");
 });
@@ -56,7 +56,7 @@ test("a nonrecursive parent file listing is not treated as the app-data subtree"
 test("moving or renaming an app-data parent protects only the source, not an unrelated destination", () => {
   const parent = path.win32.dirname(app_root);
   const home = String.raw`C:\Users\floor-user`;
-  const scope: FloorScope = { app_root, project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
+  const scope: FloorScope = { app_roots: [app_root], project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
   for (const command of [
     `Move-Item '${parent}' 'D:\\archive'`,
     `Move-Item -LiteralPath '${parent}' -Destination 'D:\\archive'`,
@@ -80,7 +80,7 @@ for (const [name, command, dialect] of [
   ["recursive find deletion", `find '${path.win32.dirname(app_root).replaceAll("\\", "/")}' -delete`, "posix"],
 ] as const) {
   test(`parent sources remain protected through ${name}`, () => {
-    const scope: FloorScope = { app_root, project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
+    const scope: FloorScope = { app_roots: [app_root], project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
     assert.equal(floor_reason(command, scope, dialect), app_reason);
   });
 }
@@ -88,7 +88,7 @@ for (const [name, command, dialect] of [
 test("pipeline sources use cwd and variables from their execution point", () => {
   const home = String.raw`C:\Users\floor-user`;
   const parent = path.win32.dirname(app_root);
-  const scope: FloorScope = { app_root, project_root: home, cwd: home };
+  const scope: FloorScope = { app_roots: [app_root], project_root: home, cwd: home };
   assert.equal(floor_reason("Get-Item .\\AppData\\Roaming | Remove-Item -Recurse -Force; Set-Location D:\\project", scope), app_reason);
   assert.equal(floor_reason(`$source = '${parent}'; Get-Item $source | Remove-Item -Recurse -Force; $source = 'D:\\project'`, scope), app_reason);
   assert.equal(floor_reason(`Get-Item .\\VantheaX | Remove-Item -Recurse -Force; Set-Location '${parent}'`, scope), "");
@@ -96,7 +96,18 @@ test("pipeline sources use cwd and variables from their execution point", () => 
 });
 
 test("non-head pipeline shell payloads retain direct app-data protection", () => {
-  const scope: FloorScope = { app_root, project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
+  const scope: FloorScope = { app_roots: [app_root], project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
   assert.equal(floor_reason(`Write-Output ok | powershell.exe -Command 'Remove-Item ${app_root.replaceAll("\\", "/")} -Recurse'`, scope), app_reason);
   assert.equal(floor_reason("Write-Output ok | powershell.exe -Command 'Remove-Item D:/project/out -Recurse'", scope), "");
+});
+
+test("a headless scope guards its whole data dir and the desktop app's data folder", () => {
+  const data_dir = String.raw`D:\vx-headless`;
+  const scope: FloorScope = { app_roots: [path.win32.join(data_dir, "data"), data_dir, app_root], project_root: String.raw`D:\project`, cwd: String.raw`D:\project` };
+  for (const target of [path.win32.join(app_root, "v2", "chats"), path.win32.join(app_root, "v2", "secrets.json"), path.win32.join(data_dir, "chromium"), path.win32.join(data_dir, "data", "v2")]) {
+    assert.equal(floor_reason(`Remove-Item -Recurse -Force '${target}'`, scope), app_reason, target);
+    assert.equal(floor_reason(`Move-Item '${target}' D:/project/moved`, scope), app_reason, target);
+    assert.equal(floor_reason(`rm -rf '${target.replaceAll("\\", "/")}'`, scope, "posix"), app_reason, target);
+  }
+  assert.equal(floor_reason(String.raw`Remove-Item -Recurse -Force D:\project\build`, scope), "");
 });

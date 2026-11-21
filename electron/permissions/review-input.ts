@@ -1,6 +1,7 @@
 import type { HumanDecision } from "../../shared/approval.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import type { ReviewActor, ReviewRecord, ReviewStep } from "../../shared/review.ts";
+import { guarded_roots } from "../app/runtime.ts";
 import { bash_env } from "../shell/git-bash.ts";
 import { human_requests_of, last_human_id } from "./context.ts";
 import { agent_edits, instruction_snapshot } from "./instruction-files.ts";
@@ -53,7 +54,7 @@ export const review_input = async (request: InputRequest, git: GitRunner = run_g
   const targets = action.call.kind !== "command" ? null : await command_targets(action.subject, action.cwd, action.files, action.shell === "posix" ? bash_env(process.env) : process.env, action.shell);
   const facts = targets ? [...program_lines(action.programs, action.notes, action.files), ...(await target_facts(targets, { chat_id: request.chat_id, chat_started_at: request.chat_started_at }, git))] : [];
   return {
-    chat: { chat_id: request.chat_id, project_root: request.project_root, custom_instructions: request.custom_instructions, humans, profile, snapshot },
+    chat: { chat_id: request.chat_id, project_root: request.project_root, custom_instructions: request.custom_instructions, humans, profile, snapshot, app_data: guarded_roots() },
     chat_key,
     agent: { actor: request.actor, model: { id: request.model.id, label: request.model.label }, profile: request.profile, delegated_task: request.delegated_task, earlier_commands: request.earlier_commands },
     source: { records: request.records, decisions: request.decisions, steps: request.steps },

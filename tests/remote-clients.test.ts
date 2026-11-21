@@ -72,7 +72,7 @@ before(async () => {
     stdin: {
       contents: [
         'export * from "./electron/ipc/clients.ts";',
-        'export { dispatch_invoke, dispatch_send, set_event_tap } from "./electron/ipc/handle.ts";',
+        'export { add_event_tap, dispatch_invoke, dispatch_send } from "./electron/ipc/handle.ts";',
         'export { newest_claim, register_files_ipc, stop_chat_files_watch } from "./electron/ipc/files.ts";',
         'export { register_terminal_ipc } from "./electron/ipc/terminal.ts";',
         'export { held_union, hold_events_for, notify_background_finished } from "./electron/app/notifications.ts";',
@@ -222,7 +222,7 @@ test("the files watch follows the newest viewer and falls back when it leaves", 
 test("terminal output goes only to the client that opened it and others cannot drive it", async (t) => {
   const warn = t.mock.method(console, "warn", () => {});
   const tapped: { target: string | null; name: string; payload: { terminal_id: string; data?: string } }[] = [];
-  vx.set_event_tap((target: string | null, name: string, payload: { terminal_id: string }) => tapped.push({ target, name, payload }));
+  const remove_tap = vx.add_event_tap((target: string | null, name: string, payload: { terminal_id: string }) => tapped.push({ target, name, payload }));
   const owner = "remote:t.p1";
   const terminal_id = await vx.dispatch_invoke(owner, "terminal:create", [{ chat_id: null, project_path: "", cols: 80, rows: 24 }]);
   const pty = vx.ptys.at(-1);
@@ -239,12 +239,12 @@ test("terminal output goes only to the client that opened it and others cannot d
   assert.equal(pty.killed, true);
   vx.dispatch_send(owner, "terminal:input", [terminal_id, "late"]);
   assert.deepEqual(pty.written, ["ls\r"]);
-  vx.set_event_tap(null);
+  remove_tap();
 });
 
 test("a window terminal is driven by the window and its output stays off the tap", async () => {
   const tapped: string[] = [];
-  vx.set_event_tap((target: string | null) => tapped.push(String(target)));
+  const remove_tap = vx.add_event_tap((target: string | null) => tapped.push(String(target)));
   const terminal_id = await vx.dispatch_invoke("window", "terminal:create", [{ chat_id: null, project_path: "", cols: 80, rows: 24 }]);
   const pty = vx.ptys.at(-1);
   pty.data[0]("prompt> ");
@@ -253,7 +253,7 @@ test("a window terminal is driven by the window and its output stays off the tap
   assert.deepEqual(tapped, []);
   vx.dispatch_send("window", "terminal:close", [terminal_id]);
   assert.equal(pty.killed, true);
-  vx.set_event_tap(null);
+  remove_tap();
 });
 
 test("dispatch refuses a channel without a handler", async () => {

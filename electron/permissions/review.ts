@@ -1,4 +1,5 @@
 import path from "node:path";
+import { guarded_roots, is_headless } from "../app/runtime.ts";
 import { chat_meta } from "../chats/store.ts";
 import { get_settings } from "../settings/store.ts";
 import { storage_paths } from "../storage/paths.ts";
@@ -14,11 +15,14 @@ export const chat_start = (chat_id: string): number => {
   return Number.isFinite(started) ? started : Date.now();
 };
 
+const desktop_root = (): string[] => (is_headless() && process.env.APPDATA ? [path.join(process.env.APPDATA, "VantheaX")] : []);
+
 export const command_input = async (ctx: ToolContext, command: string, cwd: string, background: boolean, shell: Dialect, changed: PinChange[] = []): Promise<CommandInput> => ({
   command,
   background,
   mode: effective_mode(ctx.chat_id, ctx.mode),
-  app_root: storage_paths().user_data,
+  app_roots: [storage_paths().user_data, ...guarded_roots(), ...desktop_root()],
+  guard_writes: is_headless(),
   project_root: ctx.project_root,
   cwd: path.resolve(ctx.project_root || ".", cwd || "."),
   plan: ctx.profile === "plan",

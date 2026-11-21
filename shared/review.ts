@@ -31,7 +31,7 @@ export const review_raises = ["protected", "plan", "script_floor"] as const;
 
 export type ReviewRaise = (typeof review_raises)[number];
 
-export const review_failures = ["timeout", "network", "provider", "rate_limited", "auth", "credits", "refused", "too_large", "unreadable"] as const;
+export const review_failures = ["timeout", "network", "provider", "rate_limited", "auth", "credits", "refused", "too_large", "unreadable", "plan_auth", "plan_limit"] as const;
 
 export type ReviewFailure = (typeof review_failures)[number];
 

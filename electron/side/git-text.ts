@@ -1,5 +1,4 @@
 import { estimate_tokens } from "../context/estimate.ts";
-import { side_window } from "../model/catalog.ts";
 
 export const commit_message_system =
   'You write git commit messages. You get the diff of one commit, the list of changed files, and the subjects of the latest commits of this repository. Write the message in the language of those subjects, English when there are none. First line: at most 72 characters, imperative mood, saying what the change does, in the style of the latest subjects (use a prefix such as "fix:" or a ticket key only when they do). Add a body after one blank line only when the first line cannot carry why the change was made or what it affects; wrap it at 72 characters. Describe the change, not how it was made. Never add a trailer, a sign-off, a co-author line, an issue reference that is not in the diff, or the name of any tool, assistant or model. Output only the message, no code fence and no explanation.';
@@ -28,8 +27,8 @@ export const split_pr_text = (raw: string): { title: string; body: string } => {
 };
 
 export const git_text_room = async (system: string): Promise<number> => {
-  const { model_catalog } = await import("../model/catalog-file.ts");
-  const window = side_window(await model_catalog(), "git_text");
+  const { side_room } = await import("../billing/side.ts");
+  const window = await side_room("git_text");
   return window.context_length - window.max_output - estimate_tokens(system);
 };
 

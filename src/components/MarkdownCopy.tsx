@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 import { use_t } from "../i18n/index.ts";
 import { copy_text } from "../state/chat-actions.ts";
 import { IconButton } from "./Button.tsx";
 import { CheckIcon, CopyIcon } from "./icons.tsx";
-import "./MarkdownCopy.css";
 
-type CopyButtonProps = { text: string; label?: string; labelled?: boolean };
+export type CopyHandle = { copy: () => Promise<boolean> };
+
+type CopyButtonProps = { text: string; label?: string; hint?: string; thin?: boolean; ref?: Ref<CopyHandle> };
 
 const copied_ms = 1400;
 
-export const CopyButton = ({ text, label, labelled = false }: CopyButtonProps) => {
+export const CopyButton = ({ text, label, hint, thin = false, ref }: CopyButtonProps) => {
   const t = use_t();
   const [copied, set_copied] = useState(false);
   const timer = useRef(0);
@@ -18,28 +19,21 @@ export const CopyButton = ({ text, label, labelled = false }: CopyButtonProps) =
 
   const copy = async () => {
     if (!(await copy_text(text))) {
-      return;
+      return false;
     }
     set_copied(true);
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => set_copied(false), copied_ms);
+    return true;
   };
 
-  const name = label ?? t("chat.copy");
-  const icon = copied ? <CheckIcon /> : <CopyIcon />;
+  useImperativeHandle(ref, () => ({ copy }));
 
-  if (labelled) {
-    return (
-      <button type="button" className="copy-button" onClick={copy} aria-label={name}>
-        {icon}
-        <span>{copied ? t("chat.copied") : t("chat.copy")}</span>
-      </button>
-    );
-  }
+  const name = label ?? t("chat.copy");
 
   return (
-    <IconButton label={copied ? t("chat.copied") : name} size="sm" onClick={copy}>
-      {icon}
+    <IconButton label={copied ? t("chat.copied") : name} hint={hint} size="sm" onClick={copy}>
+      {copied ? <CheckIcon plain={thin} /> : <CopyIcon plain={thin} />}
     </IconButton>
   );
 };

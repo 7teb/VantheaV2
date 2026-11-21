@@ -1,6 +1,10 @@
-export type ClientId = "window" | `remote:${string}`;
+export type ClientId = "window" | "api" | `remote:${string}`;
 
 export const window_client: ClientId = "window";
+
+export const api_client: ClientId = "api";
+
+const remote_prefix = "remote:";
 
 type PresenceListener = (client: ClientId, connected: boolean) => void;
 
@@ -25,7 +29,7 @@ const run_listener = (client: ClientId, kind: string, index: number, call: () =>
 export const client_connected = (client: ClientId): boolean => client === window_client || connected.has(client);
 
 export const note_client = (client: ClientId): void => {
-  if (client !== window_client) {
+  if (client.startsWith(remote_prefix)) {
     known.add(client);
   }
 };
@@ -62,6 +66,6 @@ export const on_client_gone = (listener: GoneListener): void => {
   gone_listeners.push(listener);
 };
 
-export const remote_client_id = (session_id: string, page_id: string): ClientId => `remote:${session_id}.${page_id}`;
+export const remote_client_id = (session_id: string, page_id: string): ClientId => `${remote_prefix}${session_id}.${page_id}`;
 
-export const client_session = (client: ClientId): string | null => (client === window_client ? null : client.slice("remote:".length, client.lastIndexOf(".")));
+export const client_session = (client: ClientId): string | null => (client.startsWith(remote_prefix) ? client.slice(remote_prefix.length, client.lastIndexOf(".")) : null);

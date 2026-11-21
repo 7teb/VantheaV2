@@ -22,6 +22,8 @@ export const review: Record<keyof typeof en, string> = {
   "review.failure_refused": "Der Anbieter des Prüfmodells hat die Prüfung dieser Anfrage verweigert. Es wurde noch nichts ausgeführt.",
   "review.failure_too_large": "Die Prüfanfrage ist zu groß für das Prüfmodell. Es wurde noch nichts ausgeführt.",
   "review.failure_unreadable": "Die automatische Prüfung hat keine verwertbare Antwort geliefert. Es wurde noch nichts ausgeführt.",
+  "review.failure_plan_auth": "Die ChatGPT-Anmeldung fehlt oder ist abgelaufen, daher kann die automatische Prüfung nicht laufen. Es wurde noch nichts ausgeführt.",
+  "review.failure_plan_limit": "Das Nutzungslimit des ChatGPT-Abos ist erreicht, daher kann die automatische Prüfung nicht laufen. Es wurde noch nichts ausgeführt.",
   "review.allowed_prefix": "Erlaubt durch deine Wahl für Befehle, die beginnen mit: {x}",
   "review.approved": "Von dir freigegeben",
   "review.approved_unavailable": "Von dir freigegeben, ohne automatische Prüfung",

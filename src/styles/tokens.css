@@ -24,6 +24,8 @@
     --surface-primary: #ececec;
     --surface-primary-hover: #ffffff;
     --surface-primary-disabled: rgba(252, 252, 252, 0.1);
+    --chatgpt-button-bg: #ffffff;
+    --chatgpt-button-fg: #000000;
     --surface-accent: hsl(from var(--accent) calc(h - 1) calc(s * 0.9) calc(l - 7));
     --surface-accent-hover: hsl(from var(--accent) calc(h - 1) calc(s * 0.98) calc(l - 3));
     --surface-accent-disabled: color-mix(in srgb, var(--accent) 24%, transparent);
@@ -119,7 +121,6 @@
     --ring-avatar: #2c2c2c;
     --live: #e6e6e6;
 
-    --terminal-black: #1c1c1c;
     --terminal-red: #d0686f;
     --terminal-green: #8fb573;
     --terminal-yellow: #d2b36b;

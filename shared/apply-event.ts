@@ -1,4 +1,4 @@
-import type { ReasoningStep, Step, ToolProgress, ToolStep } from "./chat.ts";
+import type { MessageUsage, ReasoningStep, Step, ToolProgress, ToolStep } from "./chat.ts";
 import type { Sequenced, StreamEventBody, TranscriptState } from "./events.ts";
 import { lines_after } from "./tool-drafts.ts";
 
@@ -107,6 +107,18 @@ const settle_step = (step: Step, at: number): Step => {
     return { ...step, status: "interrupted" };
   }
   return step;
+};
+
+const no_usage: MessageUsage = { prompt_tokens: 0, completion_tokens: 0, reasoning_tokens: 0, rounds: 0 };
+
+const add_usage = (usage: MessageUsage | undefined, event: Extract<Event, { type: "usage" }>): MessageUsage => {
+  const before = usage ?? no_usage;
+  return {
+    prompt_tokens: before.prompt_tokens + event.prompt_tokens,
+    completion_tokens: before.completion_tokens + event.completion_tokens,
+    reasoning_tokens: before.reasoning_tokens + event.reasoning_tokens,
+    rounds: before.rounds + 1,
+  };
 };
 
 const settle_steps = (steps: Step[], at: number): Step[] =>
@@ -269,6 +281,8 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
     }
     case "context":
       return { ...state, context: event.usage };
+    case "usage":
+      return { ...state, usage: add_usage(state.usage, event) };
     case "end":
       return {
         ...state,

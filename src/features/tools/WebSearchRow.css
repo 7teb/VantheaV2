@@ -29,18 +29,6 @@
     max-width: 70%;
   }
 
-  .web-row-query {
-    flex: 0 1 auto;
-    min-width: 0;
-    margin-left: -2px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-caption);
-    color: var(--text-tertiary);
-  }
-
   .web-row:has(> .web-sources-row) > .web-row-head::after {
     content: "";
     position: absolute;

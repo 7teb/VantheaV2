@@ -1,0 +1,5 @@
+.plan-notice-logo {
+  display: block;
+  margin-bottom: var(--space-3);
+  color: var(--text-primary);
+}

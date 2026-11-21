@@ -1,12 +1,16 @@
 import { useState } from "react";
 import type { AssistantMessage, RetryState, TurnError, TurnErrorKind } from "../../../shared/chat.ts";
+import { chatgpt_usage_url } from "../../../shared/chatgpt.ts";
 import { Button } from "../../components/Button.tsx";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon, CircleAlertIcon, CloudAlertIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon, CircleAlertIcon, CloudAlertIcon, ExternalLinkIcon } from "../../components/icons.tsx";
 import { use_clock } from "../../components/use-clock.ts";
 import { use_t } from "../../i18n/index.ts";
 import type { MessageKey } from "../../i18n/translate.ts";
-import { continue_turn } from "../../state/chat-actions.ts";
+import { continue_turn, open_external } from "../../state/chat-actions.ts";
+import { chatgpt_store } from "../../state/chatgpt.ts";
+import { open_settings } from "../../state/ui.ts";
+import { use_store } from "../../state/use-store.ts";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import "./TurnStatus.css";
 
@@ -38,16 +42,52 @@ const error_keys: Record<TurnErrorKind, MessageKey> = {
   app_closed: "chat.error_app_closed",
   hook: "hooks.error_turn",
   internal: "chat.error_internal",
+  plan_auth: "chat.error_plan_auth",
+  plan_limit: "chat.error_plan_limit",
+  plan_blocked: "chat.error_plan_blocked",
+  plan_model: "chat.error_plan_model",
+};
+
+const PlanAction = ({ kind }: { kind: TurnErrorKind }) => {
+  const t = use_t();
+  if (kind === "plan_limit") {
+    return (
+      <div className="error-card-actions">
+        <Button
+          size="sm"
+          icon_end={<ExternalLinkIcon />}
+          aria-label={t("billing.manage_usage_aria")}
+          onClick={() => open_external(chatgpt_usage_url)}
+        >
+          {t("billing.manage_usage")}
+        </Button>
+      </div>
+    );
+  }
+  if (kind === "plan_auth") {
+    return (
+      <div className="error-card-actions">
+        <Button size="sm" onClick={() => open_settings("general")}>
+          {t("billing.open_settings")}
+        </Button>
+      </div>
+    );
+  }
+  return null;
 };
 
 export const ErrorCard = ({ error }: { error: TurnError }) => {
   const t = use_t();
   const [open, set_open] = useState(false);
+  const email = use_store(chatgpt_store, (account) => account?.email ?? null);
   return (
     <div className="error-card enter-fade-up" data-open={open}>
       <div className="error-card-head">
         <CircleAlertIcon />
-        <span className="error-card-title">{t(error_keys[error.kind])}</span>
+        <span className="error-card-title">
+          {t(error_keys[error.kind])}
+          {error.kind === "plan_limit" && email && <span className="error-card-account">{email}</span>}
+        </span>
         {error.message && (
           <button type="button" className="error-card-toggle" aria-expanded={open} onClick={() => set_open(!open)}>
             <span>{t("chat.error_details")}</span>
@@ -55,6 +95,7 @@ export const ErrorCard = ({ error }: { error: TurnError }) => {
           </button>
         )}
       </div>
+      <PlanAction kind={error.kind} />
       {error.message && (
         <CollapsibleBody open={open}>
           <pre className="error-card-raw">{error.message}</pre>

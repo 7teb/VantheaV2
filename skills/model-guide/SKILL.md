@@ -1,11 +1,13 @@
 ---
 name: model-guide
-description: How to choose a model and effort in VantheaX, above all for deploy_agent and continue_agent. Covers cost rules for sub-agents, the owner's own benchmark of the catalog models with the cost of each run, public benchmarks (Artificial Analysis Intelligence Index, Humanity's Last Exam, Terminal-Bench 4.0, AutomationBench, SWE-bench), what "Flex" in a model name means, and which model fits which kind of task. Load it before you pick a model or effort for a sub-agent, and when the user asks which model is strongest, cheapest or best for something. Current prices per 1M tokens come from list_models.
+description: How to choose a model and effort in VantheaX, above all for deploy_agent and continue_agent. Covers cost rules for sub-agents, the owner's own benchmark of the catalog models with the cost of each run, public benchmarks (Artificial Analysis Intelligence Index, Humanity's Last Exam, Terminal-Bench 4.0, AutomationBench, SWE-bench), what "Flex" in a model name means, and which model fits which kind of task. Load it before you pick a model or effort for a sub-agent, and when the user asks which model is strongest, cheapest or best for something. Current prices per 1M tokens come from list_models; with the ChatGPT plan it marks the OpenAI models the plan serves as included in the plan, without a price.
 ---
 
 # Model guide
 
 Prices and ids: call `list_models`. It returns the exact model ids that `deploy_agent` and `continue_agent` take and the current OpenRouter price per 1M input and output tokens of the route each model uses. Prices change; the numbers in this skill are a snapshot from October 2026 and only show how models compare.
+
+When Model billing is set to ChatGPT plan (Settings > General), list_models still lists every model: the OpenAI models the signed-in ChatGPT plan offers are marked as included in the plan without a price, because they count against the plan's usage, and every other model runs through OpenRouter at its listed price. A model that runs on the plan has no Flex route, so list_models lists no `:floor` id for it, and a `:floor` id of it named in deploy_agent runs on the plan like the model itself. Sub-agents can be deployed on any of them. The recommendations below still say how the models compare.
 
 ## Cost comes first
 

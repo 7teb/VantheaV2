@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { brotliCompress, brotliCompressSync, brotliDecompress, constants as zlib_constants } from "node:zlib";
-import type { Chat, ChatMeta, ChatSummary, Message, RoundReasoning, Step, StepImage, ToolStep } from "../../shared/chat.ts";
+import type { AssistantMessage, Chat, ChatMeta, ChatSummary, Message, MessageUsage, RoundReasoning, Step, StepImage, ToolStep } from "../../shared/chat.ts";
 import { coerce_hook_runs } from "../../shared/hook-notes.ts";
 import { flex_base, speed_tiers, type ModelChoice } from "../../shared/models.ts";
 import { coerce_context_usage } from "../context/calibration.ts";
@@ -117,15 +117,27 @@ const parse_step = (step: Step, chat_id: string): Step => {
   return coerced.length ? { ...rest, reviews: coerced } : rest;
 };
 
+const usage_count = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;
+
+const coerce_message_usage = (value: unknown): MessageUsage | null =>
+  is_record(value) && usage_count(value.prompt_tokens) && usage_count(value.completion_tokens) && usage_count(value.reasoning_tokens) && usage_count(value.rounds)
+    ? { prompt_tokens: value.prompt_tokens, completion_tokens: value.completion_tokens, reasoning_tokens: value.reasoning_tokens, rounds: value.rounds }
+    : null;
+
+const parse_assistant = (message: AssistantMessage, chat_id: string): AssistantMessage => {
+  const { usage: stored_usage, ...rest } = message;
+  const usage = coerce_message_usage(stored_usage);
+  return {
+    ...rest,
+    steps: message.steps.map((step) => parse_step(step, chat_id)),
+    reasoning_details: as_array(as_record(message).reasoning_details).flatMap(parse_round_reasoning),
+    context: coerce_context_usage(message.context),
+    ...(usage ? { usage } : {}),
+  };
+};
+
 const parse_message = (message: Message, chat_id: string): Message =>
-  message.role === "assistant"
-    ? {
-        ...message,
-        steps: message.steps.map((step) => parse_step(step, chat_id)),
-        reasoning_details: as_array(as_record(message).reasoning_details).flatMap(parse_round_reasoning),
-        context: coerce_context_usage(message.context),
-      }
-    : { ...message, attachments: parse_attachments(message.attachments, chat_id) };
+  message.role === "assistant" ? parse_assistant(message, chat_id) : { ...message, attachments: parse_attachments(message.attachments, chat_id) };
 
 const parse_summary = (value: unknown): ChatSummary | null => {
   const raw = as_record(value);

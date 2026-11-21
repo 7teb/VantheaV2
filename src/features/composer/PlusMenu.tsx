@@ -11,6 +11,7 @@ import { choose_project } from "../../state/projects.ts";
 import { settings_store } from "../../state/settings.ts";
 import { open_settings } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
+import { shortcut_hint } from "../shell/shortcuts.ts";
 import { normalize_path, project_label } from "../sidebar/sidebar-model.ts";
 import { step_enabled } from "./command-menu.ts";
 import { ComposerPopover } from "./ComposerPopover.tsx";
@@ -150,6 +151,7 @@ export const PlusMenu = ({ open, keep, chat_id, project_path, draft_key, draft, 
         <MenuRow
           icon={ClipboardListIcon}
           label={t("commands.plan")}
+          shortcut={shortcut_hint("toggle_plan", t)}
           trail={<ToggleTrack checked={draft.plan} />}
           role="menuitemcheckbox"
           checked={draft.plan}

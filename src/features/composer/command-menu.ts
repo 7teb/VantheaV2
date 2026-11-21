@@ -3,6 +3,7 @@ import type { ModelEntry, SpeedTier } from "../../../shared/models.ts";
 import type { ModelContext } from "../../../shared/settings.ts";
 import type { ReactNode } from "react";
 import type { Translate } from "../../i18n/translate.ts";
+import { shortcut_hint, type ShortcutId } from "../shell/shortcuts.ts";
 
 export type CommandIcon = (props: { size?: number }) => ReactNode;
 
@@ -21,6 +22,7 @@ export type CommandContext = {
   model_context: ModelContext | undefined;
   pro: boolean;
   tier: SpeedTier | null;
+  tiers?: ModelEntry["tiers"];
   t: Translate;
   report: (text: string, tone: "note" | "error") => void;
 };
@@ -40,6 +42,7 @@ type Shown = {
   icon: (context: CommandContext) => CommandIcon;
   label: (context: CommandContext) => string;
   keywords?: string[];
+  shortcut?: ShortcutId;
   shown?: (context: CommandContext) => boolean;
   toggled?: (context: CommandContext) => boolean;
 };
@@ -53,6 +56,7 @@ export type CommandRow = {
   label: string;
   keywords: string[];
   hint: string | null;
+  shortcut: string | null;
   disabled: boolean;
   toggled: boolean | null;
   run: (() => void | Promise<void>) | null;
@@ -64,6 +68,7 @@ const shown_fields = (command: Shown, context: CommandContext) => ({
   icon: command.icon(context),
   label: command.label(context),
   keywords: command.keywords ?? [],
+  shortcut: command.shortcut ? shortcut_hint(command.shortcut, context.t) : null,
   toggled: command.toggled ? command.toggled(context) : null,
 });
 

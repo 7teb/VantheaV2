@@ -4,7 +4,7 @@ import { floor_reason } from "../electron/permissions/floor.ts";
 import { split_statements_posix, split_pipelines_posix, statement_parts_posix, posix_script } from "../electron/permissions/statements-posix.ts";
 
 const tail = "rm -rf /c/Windows";
-const scope = { app_root: "C:\\Users\\user\\AppData\\Roaming\\VantheaX", project_root: "D:\\project", cwd: "D:\\project" };
+const scope = { app_roots: ["C:\\Users\\user\\AppData\\Roaming\\VantheaX"], project_root: "D:\\project", cwd: "D:\\project" };
 
 const visible_tail = (source: string) => {
   assert.ok(split_statements_posix(source).includes(tail), source);

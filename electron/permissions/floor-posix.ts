@@ -1,6 +1,7 @@
 import path from "node:path";
 import {
   app_reason,
+  app_write_reason,
   cipher_reason,
   format_reason,
   hits_app,
@@ -10,9 +11,11 @@ import {
   partition_reason,
   shadow_reason,
   system_delete_reason,
+  writes_app,
   type FloorScope,
 } from "./floor-shared.ts";
 import { literal_view } from "./floor-quotes.ts";
+import { posix_destinations, type PosixDestination } from "./floor-writes-posix.ts";
 import { is_msys_root_target, msys_resolve, msys_translate, type MsysPath } from "./msys-paths.ts";
 import { basename, head_index, is_flag, posix_literal } from "./posix-command.ts";
 import { shell_words, type Word } from "./shell-words.ts";
@@ -104,6 +107,13 @@ const classifier = (scope: FloorScope, state: State, ancestors = false) => (toke
   if (target.kind === "msys_root") return is_msys_system(target.rest) ? "system" : "none";
   if (is_system_path(target.path)) return "system";
   return hits_app(target.path, scope, ancestors) ? "app" : "none";
+};
+
+const write_hit = (scope: FloorScope, state: State) => (target: PosixDestination): boolean => {
+  const expanded = expand_posix(target.token.trim(), state.variables);
+  if (/[$`]/.test(expanded)) return unresolved_class(expanded) === "app";
+  const located = locate(expanded, state);
+  return located.kind === "windows" && writes_app(located.path, scope, target.ancestors);
 };
 
 const targets_of = (words: Word[], at: number): string[] =>
@@ -261,9 +271,11 @@ const walk_pipeline = (pipeline: PosixPipeline, scope: FloorScope, cross: CrossF
   const classify = classifier(scope, state);
   const ancestor_classify = classifier(scope, state, true);
   if (!cd) {
+    const writes = write_hit(scope, state);
     for (const stage of pipeline.stages) {
       const reason = classify_stage(stage, classify, ancestor_classify);
       if (reason) return reason;
+      if (scope.guard_writes && posix_destinations(shell_words(stage.text, "posix")).some(writes)) return app_write_reason;
     }
     const feed = feeds_removal(pipeline.stages, classify);
     if (feed) return feed;

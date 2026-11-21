@@ -24,7 +24,7 @@ test("the scheduled task styles take every colour from the tokens", () => {
 test("New chat and Scheduled tasks sit as one block at the top of the sidebar", () => {
   assert.equal(declarations(css_block(read("features/sidebar/Sidebar.css"), ".sidebar-nav {")).gap, "2px");
   const sidebar = read("features/sidebar/Sidebar.tsx");
-  assert.match(sidebar, /hint=\{shortcut_hint\("new_chat"\)\} on_click=\{\(\) => start_new_chat\(project_path\)\} \/>\s*<ScheduledNav \/>/);
+  assert.match(sidebar, /hint=\{shortcut_hint\("new_chat", t\)\} on_click=\{\(\) => start_new_chat\(project_path\)\} \/>\s*<ScheduledNav \/>/);
   assert.equal(declarations(css_block(read("features/scheduled/scheduled-sidebar.css"), '.scheduled-nav[aria-current="page"] {')).background, "var(--fill-active)");
 });
 

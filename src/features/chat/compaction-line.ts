@@ -17,6 +17,10 @@ const reason_keys: Record<CompactionErrorKind, MessageKey> = {
   app_closed: "context.reason_app_closed",
   internal: "context.reason_internal",
   empty_note: "context.reason_empty_note",
+  plan_auth: "context.reason_plan_auth",
+  plan_limit: "context.reason_plan_limit",
+  plan_blocked: "context.reason_plan_blocked",
+  plan_model: "context.reason_plan_model",
 };
 
 export const compaction_key = (step: CompactionStep): MessageKey => {

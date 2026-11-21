@@ -1,12 +1,14 @@
-import { memo, useState, type ReactNode } from "react";
+import { memo, useRef, useState, type ReactNode } from "react";
 import { manual_compaction_only, type UserMessage } from "../../../shared/chat.ts";
 import { is_quiet_answer, quiet_answer_prefix } from "../../../shared/scheduled.ts";
 import { IconButton } from "../../components/Button.tsx";
 import { ForkIcon, InfoIcon, RetryIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
-import { CopyButton } from "../../components/MarkdownCopy.tsx";
+import { CopyButton, type CopyHandle } from "../../components/MarkdownCopy.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { edit_message, fork_chat, type ActionResult } from "../../state/chat-actions.ts";
+import { shortcut_hint } from "../shell/shortcuts.ts";
+import { use_shortcut_binding } from "../shell/use-shortcut-binding.ts";
 import { ImageBody, ShownImagesBody } from "../tools/bodies-web.tsx";
 import { WorkGroup } from "../tools/WorkGroup.tsx";
 import { answer_text, shows_thinking, thinks_in_group, type Block } from "./assistant-blocks.ts";
@@ -103,6 +105,13 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
   const regenerate = async (source: UserMessage) => settle(await edit_message(chat_id, source.id, source.text));
   const quiet = message.quiet === true && message.status === "done";
   const answer = quiet ? "" : answer_text(message);
+  const actions_shown = final && !streaming && !manual_compaction_only(message);
+  const answer_copy = useRef<CopyHandle>(null);
+  const copies_last = actions_shown && is_last && answer !== "";
+  use_shortcut_binding("copy_answer", copies_last, () => {
+    void answer_copy.current?.copy();
+    return answer_copy.current !== null;
+  });
   const outcome = (
     <>
       {message.retry && <RetryBanner retry={message.retry} />}
@@ -142,9 +151,9 @@ export const TurnBody = memo(({ chat_id, facts, folds, folded, final, is_last, b
       {streaming && <ComputerLiveNote chat_id={chat_id} />}
       {final ? outcome : <FoldItem folded={folded}>{outcome}</FoldItem>}
       {final && file_card}
-      {final && !streaming && !manual_compaction_only(message) && (
+      {actions_shown && (
         <div className="message-actions assistant-actions">
-          {answer && <CopyButton text={answer} label={t("chat.copy_answer")} />}
+          {answer && <CopyButton ref={answer_copy} text={answer} label={t("chat.copy_answer")} hint={copies_last ? shortcut_hint("copy_answer", t) : undefined} />}
           {retry_from && !busy && (
             <IconButton label={t("chat.regenerate")} size="sm" onClick={() => void regenerate(retry_from)}>
               <RetryIcon />

@@ -1,13 +1,13 @@
 import path from "node:path";
 import {
   app_reason,
+  app_write_reason,
   cipher_reason,
   delete_names,
   dotnet_delete,
   format_reason,
   hits_app,
   hklm_reason,
-  in_project,
   is_system_glob,
   is_system_path,
   partition_reason,
@@ -17,10 +17,12 @@ import {
   type FloorScope,
 } from "./floor-shared.ts";
 import { posix_floor_reason } from "./floor-posix.ts";
+import { assignment, command_of, expand, joined_literal, literal, resolve_target, unexplained, uses_app_variable, variable_use, type Command, type Walk } from "./floor-targets.ts";
+import { writes_into_app } from "./floor-writes.ts";
 import { resolved_floor, type FloorAnalysis } from "./resolved-floor.ts";
 import { literal_view } from "./floor-quotes.ts";
 import { flag_name, is_flag, move_sources } from "./powershell-move.ts";
-import { shell_words, type Piece, type Word } from "./shell-words.ts";
+import { shell_words, type Word } from "./shell-words.ts";
 import { quote_of, split_pipelines, split_statements, statement_parts, type Dialect, type StatementElement } from "./statements.ts";
 
 export type { FloorScope } from "./floor-shared.ts";
@@ -39,17 +41,7 @@ const pipeline_item = /\$(?:_|psitem)\b/i;
 
 const loop_header = /^\s*\$([a-z_]\w*)\s+in\s+([\s\S]+)$/i;
 
-const lone_variable = /^\$(?:\{[^}]+\}|[a-z_][\w:]*)$/i;
-
 const location_verb = /^(?:cd|chdir|set-location|sl|push-location|pushd)$/i;
-
-const app_path = /(?:%appdata%|\$env:appdata|\$\{env:appdata\}|\$\(\s*(?:\$env:appdata|\$\{env:appdata\})\s*\)|appdata[\\/]roaming)[\\/]vantheax/i;
-
-const assignment = /^\s*\$([a-z_][\w:]*)\s*=\s*([\s\S]+)$/i;
-
-const variable_use = /\$([a-z_][\w:]*)/gi;
-
-const joined_literal = (text: string) => text.replace(/["']\s*\+\s*["']/g, "").replace(/["']/g, "");
 
 export const deletes = (statement: string) => delete_verb.test(statement) || dotnet_delete.test(statement);
 
@@ -102,78 +94,6 @@ const system_path_variables = (statements: string[]) => {
   return names;
 };
 
-type Walk = { scope: FloorScope; location: string | null; variables: Map<string, string>; app_variables: Set<string> };
-
-type Command = { text: string; verb: string; words: Word[]; args: Word[] };
-
-const mentions_app = (text: string) => app_path.test(text) || app_path.test(joined_literal(text));
-
-const env_value = (name: string): string | null => process.env[name] || null;
-
-const expansions: [RegExp, string][] = [
-  [/%appdata%|\$\{env:appdata\}|\$env:appdata\b/gi, "APPDATA"],
-  [/%systemdrive%|\$\{env:systemdrive\}|\$env:systemdrive\b/gi, "SYSTEMDRIVE"],
-  [/%userprofile%|\$\{env:userprofile\}|\$env:userprofile\b|\$\{home\}|\$home\b/gi, "USERPROFILE"],
-];
-
-const expand = (token: string, variables: Map<string, string>): string | null => {
-  const home = env_value("USERPROFILE");
-  let value = home ? token.replace(/^~(?=$|[\\/])/, home) : token;
-  for (const [pattern, name] of expansions) {
-    const real = variables.get("env:" + name.toLowerCase()) ?? env_value(name);
-    value = real ? value.replace(pattern, real) : value;
-  }
-  value = value.replace(/\$\{?([a-z_]\w*)\}?/gi, (match, name: string) => variables.get(name.toLowerCase()) ?? match);
-  return value && !/[$%`]/.test(value) ? value : null;
-};
-
-const piece_text = (piece: Piece): string | null => {
-  if (piece.kind === "text") {
-    return piece.text;
-  }
-  const inner = piece.kind === "group" && piece.open === "$(" ? piece.text.trim() : "";
-  return lone_variable.test(inner) ? inner : null;
-};
-
-const literal = (word: Word): string | null => {
-  if (word.op || !word.pieces.length) {
-    return null;
-  }
-  let text = "";
-  for (const piece of word.pieces) {
-    const part = piece_text(piece);
-    if (part === null) {
-      return null;
-    }
-    text += part;
-  }
-  return text;
-};
-
-const resolve_target = (token: string, walk: Walk): string | null => {
-  const expanded = expand(token.trim(), walk.variables);
-  if (expanded === null || (walk.location === null && !path.win32.isAbsolute(expanded))) {
-    return null;
-  }
-  return path.win32.resolve(walk.location ?? "", expanded);
-};
-
-const unexplained = (text: string, walk: Walk): boolean => {
-  if (!mentions_app(text)) {
-    return false;
-  }
-  const words = shell_words(text, "powershell").filter((word) => mentions_app(word.raw));
-  return !words.length || words.some((word) => unexplained_word(word, walk));
-};
-
-const unexplained_word = (word: Word, walk: Walk): boolean => {
-  const text = literal(word);
-  if (text !== null) {
-    return !in_project(resolve_target(text, walk), walk.scope);
-  }
-  return word.pieces.some((piece) => (piece.kind === "text" ? mentions_app(piece.text) : piece.kind !== "splat" && unexplained(piece.text, walk)));
-};
-
 const moved_location = (args: Word[], walk: Walk): string | null => {
   const targets = args.filter((word) => !is_flag(word));
   if (!targets.length) {
@@ -182,8 +102,6 @@ const moved_location = (args: Word[], walk: Walk): string | null => {
   const text = targets.length === 1 && targets[0] ? literal(targets[0]) : null;
   return text === null ? null : resolve_target(text, walk);
 };
-
-const uses_app_variable = (text: string, walk: Walk) => [...text.matchAll(variable_use)].some((match) => walk.app_variables.has((match[1] ?? "").toLowerCase()));
 
 const literal_hits = (word: Word, walk: Walk, ancestors: boolean): boolean => {
   const text = is_flag(word) ? null : literal(word);
@@ -202,17 +120,6 @@ const system_arguments = (args: Word[], walk: Walk, wildcards = true): boolean =
     const target = text === null ? "" : resolve_target(text, walk) ?? "";
     return is_system_path(target) || (wildcards && !exact && is_system_glob(target));
   });
-};
-
-const command_of = (statement: string): Command => {
-  let text = statement.trim();
-  for (let assigned = assignment.exec(text); assigned; assigned = assignment.exec(text)) {
-    text = (assigned[2] ?? "").trim();
-  }
-  const words = shell_words(text, "powershell");
-  const at = words[0]?.raw === "&" ? 1 : 0;
-  const head = words[at];
-  return { text, verb: head ? (literal(head) ?? "") : "", words, args: words.slice(at + 1) };
 };
 
 const removes = (command: Command) => removal_verb.test(command.verb) || command.text.search(dotnet_delete) === 0;
@@ -299,6 +206,7 @@ const walk_floor_reason = (command: string, statements: string[], scope: FloorSc
           const system_target = system_arguments(targets, walk, !method);
           if ((delete_verb.test(current.verb) || dotnet_delete.test(current.text)) && system_target) return system_delete_reason;
           if (removes(current) && (moving_parent || app_arguments(current.text, targets, walk, delete_verb.test(current.verb) || dotnet_delete.test(current.text)))) return app_reason;
+          if (scope.guard_writes && writes_into_app(current, walk)) return app_write_reason;
           const assigned = assignment.exec(element.text);
           if (assigned) {
             track_assignment((assigned[1] ?? "").toLowerCase(), (assigned[2] ?? "").trim(), walk);

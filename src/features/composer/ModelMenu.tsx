@@ -1,13 +1,19 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { chatgpt_usage_url, type ChatgptAccount } from "../../../shared/chatgpt.ts";
 import type { ModelCatalog, ModelChoice, ModelEntry } from "../../../shared/models.ts";
+import { class_names } from "../../components/class-names.ts";
 import { Floating } from "../../components/Floating.tsx";
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from "../../components/icons.tsx";
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, OpenAiIcon } from "../../components/icons.tsx";
 import { LabelMorph } from "../../components/LabelMorph.tsx";
 import { menu_keys, move_focus } from "../../components/Menu.tsx";
 import { use_t } from "../../i18n/index.ts";
+import { open_external } from "../../state/chat-actions.ts";
+import { chatgpt_store } from "../../state/chatgpt.ts";
+import { open_settings } from "../../state/ui.ts";
+import { use_store } from "../../state/use-store.ts";
 import { effort_label } from "./composer-hooks.ts";
 import { EffortSlider } from "./EffortSlider.tsx";
-import { choice_view, with_model } from "./model-menu.ts";
+import { choice_view, runs_on_plan, with_model } from "./model-menu.ts";
 import "./ModelMenu.css";
 
 export type ModelMenuView = "effort" | "models";
@@ -27,6 +33,45 @@ type Heights = Record<ModelMenuView, number>;
 
 const effort_targets = ".model-menu-toggle, .effort-slider-input";
 
+const plan_text = (account: ChatgptAccount | null) => {
+  if (account?.status !== "signed_in") {
+    return "billing.not_signed_in";
+  }
+  return account.plan_enabled ? "billing.using_plan" : "billing.plan_off";
+};
+
+const PlanFooter = ({ on_close }: { on_close: () => void }) => {
+  const t = use_t();
+  const text = use_store(chatgpt_store, plan_text);
+  const connected = text === "billing.using_plan";
+  const act = () => {
+    on_close();
+    if (connected) {
+      open_external(chatgpt_usage_url);
+      return;
+    }
+    open_settings("general");
+  };
+  return (
+    <div className="model-menu-plan">
+      <span className="model-menu-plan-label">
+        <OpenAiIcon size={14} />
+        <span className="model-menu-plan-text">{t(text)}</span>
+      </span>
+      <button
+        type="button"
+        role="menuitem"
+        tabIndex={-1}
+        className="model-menu-plan-action"
+        aria-label={connected ? t("billing.manage_usage_aria") : undefined}
+        onClick={act}
+      >
+        {t(connected ? "billing.manage_usage" : "billing.open_settings")}
+      </button>
+    </div>
+  );
+};
+
 export const ModelMenu = ({ open, anchor, catalog, choice, view, on_view, on_choice, on_close }: ModelMenuProps) => {
   const t = use_t();
   const effort_panel = useRef<HTMLDivElement>(null);
@@ -34,6 +79,7 @@ export const ModelMenu = ({ open, anchor, catalog, choice, view, on_view, on_cho
   const [heights, set_heights] = useState<Heights | null>(null);
   const [preview, set_preview] = useState<string | null>(null);
   const { model, effort } = choice_view(catalog, choice);
+  const on_plan = runs_on_plan(catalog, model);
   const efforts = model?.efforts ?? [];
   const has_slider = efforts.length > 1;
   const shown: ModelMenuView = has_slider ? view : "models";
@@ -140,7 +186,7 @@ export const ModelMenu = ({ open, anchor, catalog, choice, view, on_view, on_cho
       anchor={anchor}
       on_close={on_close}
       placement="top-start"
-      className="menu composer-menu model-menu"
+      className={class_names("menu composer-menu model-menu", on_plan && "has-plan-footer")}
       role="menu"
       label={t("composer.model_select")}
       min_width={260}
@@ -206,6 +252,7 @@ export const ModelMenu = ({ open, anchor, catalog, choice, view, on_view, on_cho
           ))}
         </div>
       </div>
+      {on_plan && <PlanFooter on_close={on_close} />}
     </Floating>
   );
 };

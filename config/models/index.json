@@ -20,6 +20,13 @@
     "transcription": "elevenlabs/scribe-v2",
     "git_text": "google/gemini-3.5-flash-lite"
   },
+  "plan_side": {
+    "title": { "model": "openai/gpt-6-luna", "effort": "none" },
+    "overseer": { "model": "openai/gpt-6-luna", "effort": "low" },
+    "vision": { "model": "openai/gpt-6-luna", "effort": "none" },
+    "reasoning_status": { "model": "openai/gpt-6-luna", "effort": "none" },
+    "git_text": { "model": "openai/gpt-6-luna", "effort": "none" }
+  },
   "side_models": [
     {
       "id": "google/gemini-3.5-flash-lite",

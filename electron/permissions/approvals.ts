@@ -9,7 +9,7 @@ type Pending = {
   hold: () => void;
 };
 
-export type WaitRequest = { key: string; chat_id: string; call_id: string; request: ApprovalRequest; signal: AbortSignal; on_hold?: () => void };
+export type WaitRequest = { key: string; chat_id: string; call_id: string; request: ApprovalRequest; signal: AbortSignal; on_hold?: () => void; reject_feedback?: string };
 
 const registry = new Map<string, Map<string, Pending>>();
 
@@ -63,10 +63,14 @@ export const hold_decision = (key: string, call_id: string): boolean => {
   return true;
 };
 
-export const wait_for_decision = ({ key, chat_id, call_id, request, signal, on_hold }: WaitRequest): Promise<ApprovalDecision> =>
+export const wait_for_decision = ({ key, chat_id, call_id, request, signal, on_hold, reject_feedback }: WaitRequest): Promise<ApprovalDecision> =>
   new Promise<ApprovalDecision>((resolve) => {
     if (signal.aborted) {
       resolve(denied());
+      return;
+    }
+    if (reject_feedback !== undefined) {
+      resolve(denied(reject_feedback));
       return;
     }
     if (full_window_until(chat_id) !== null && full_mode_covers(request)) {
@@ -95,6 +99,9 @@ export const wait_for_decision = ({ key, chat_id, call_id, request, signal, on_h
     key_map(key).set(call_id, { chat_id, request, resolve, detach, hold });
     signal.addEventListener("abort", on_abort, { once: true });
   });
+
+export const pending_approvals = (chat_id: string): { key: string; call_id: string; request: ApprovalRequest }[] =>
+  [...registry].flatMap(([key, calls]) => [...calls].flatMap(([call_id, pending]) => (pending.chat_id === chat_id ? [{ key, call_id, request: pending.request }] : [])));
 
 export const open_chat_window = (chat_id: string): void => {
   open_full_window(chat_id);

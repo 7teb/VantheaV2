@@ -7,6 +7,7 @@ import type { CompactResult, SendRequest, TurnStarted } from "../../shared/ipc/c
 import type { CommandOrigin, UserOrigin } from "../../shared/chat.ts";
 import { catalog_choice, chat_choice, with_choice, type ModelChoice, type ModelEntry } from "../../shared/models.ts";
 import { wake_idle } from "../agents/reports.ts";
+import { billing_catalog } from "../billing/catalog.ts";
 import { replace_tail } from "../chats/edit.ts";
 import { append_message, flush_chat, get_chat, set_streaming, unarchive_chat, update_message, update_meta } from "../chats/store.ts";
 import { chat_root } from "../chats/workspace.ts";
@@ -36,6 +37,7 @@ import { uncompacted_work } from "./history.ts";
 import { git_init_request_text } from "./git-init-request.ts";
 import { init_request_text } from "./init-request.ts";
 import { review_request_text } from "./review-request.ts";
+import { run_options } from "./run-options.ts";
 import type { Emitter, OpeningNotes } from "./session.ts";
 import { undo_request_text } from "./undo-request.ts";
 import { stop_chat_workflows } from "../workflows/runtime.ts";
@@ -86,19 +88,23 @@ export type InternalTurn = Pick<BeginInput, "notes" | "quiet_end" | "keep_order"
 const last_request = (messages: Message[]): string => passed_prompts(messages).findLast((message) => message.origin === "user")?.text ?? "";
 
 const turn_model = async (stored: ModelChoice): Promise<ModelEntry> => {
-  const models = (await model_catalog()).models;
-  const choice = catalog_choice(models, stored);
-  const listed = models.find((model) => model.id === choice.model);
+  const catalog = await billing_catalog();
+  const choice = catalog_choice(catalog.models, stored);
+  const listed = catalog.models.find((model) => model.id === choice.model);
   if (!listed) {
     throw new Error(`model ${choice.model} is not in the catalog`);
   }
-  return with_choice(context_model(listed), choice);
+  return with_choice(context_model(listed), choice, catalog.plan_ids);
 };
 
 const same_choice = (stored: ModelChoice | undefined, choice: ModelChoice) =>
   stored?.model === choice.model && stored.effort === choice.effort && stored.pro === choice.pro && stored.tier === choice.tier;
 
 const chat_request = async (chat_id: string): Promise<{ choice: ModelChoice; mode: SendRequest["mode"] }> => {
+  const pinned = run_options(chat_id);
+  if (pinned) {
+    return { choice: pinned.choice, mode: pinned.mode };
+  }
   const settings = get_settings();
   const chat = await get_chat(chat_id);
   const fallback = { model: settings.model, effort: settings.effort, pro: false };

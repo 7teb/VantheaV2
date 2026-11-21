@@ -14,6 +14,7 @@ const aliases: Record<string, string> = {
   zsh: "bash",
   ps1: "powershell",
   ps: "powershell",
+  pwsh: "powershell",
   yml: "yaml",
   html: "xml",
   htm: "xml",
@@ -63,3 +64,10 @@ export const file_language = (file: string): string => {
 };
 
 export const highlightable = (language: string) => language !== "" && language !== "plaintext";
+
+const terminal_languages = new Set(["powershell", "shell"]);
+
+export const runnable_command = (language: string, code: string): string | null => {
+  const command = code.trim();
+  return terminal_languages.has(language) && command !== "" && !/[\r\n]/.test(command) ? command : null;
+};

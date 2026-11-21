@@ -26,7 +26,7 @@ const input = (mode: PermissionMode, command: string, extra: Partial<CommandInpu
   command,
   background: false,
   mode,
-  app_root: "C:\\Users\\user\\AppData\\Roaming\\VantheaX",
+  app_roots: ["C:\\Users\\user\\AppData\\Roaming\\VantheaX"],
   project_root: "",
   cwd: "",
   plan: false,
@@ -207,6 +207,8 @@ test("every failure becomes a review with its failure kind and never runs", asyn
     [new ModelError("credits", "empty", 402), "credits"],
     [new ModelError("policy", "refused", 403), "refused"],
     [new ModelError("context_limit", "too long"), "too_large"],
+    [new ModelError("plan_auth", "signed out"), "plan_auth"],
+    [new ModelError("plan_limit", "usage limit"), "plan_limit"],
     ["not json at all", "unreadable"],
     [answer("allow", "x", { workaround_of: "d1" }), "unreadable"],
   ];

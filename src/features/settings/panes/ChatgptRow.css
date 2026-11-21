@@ -1,0 +1,17 @@
+.chatgpt-button {
+  background: var(--chatgpt-button-bg);
+  box-shadow: none;
+  color: var(--chatgpt-button-fg);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.chatgpt-button:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.chatgpt-opening {
+  font-size: var(--font-size-ui);
+  white-space: nowrap;
+}

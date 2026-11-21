@@ -13,9 +13,9 @@ const legacy = path.win32.join(app_root, "workspace", "My Chat");
 
 const reason = "deleting or moving VantheaX's own chats, media or settings";
 
-const in_workspace: FloorScope = { app_root, project_root: workspace, cwd: workspace };
+const in_workspace: FloorScope = { app_roots: [app_root], project_root: workspace, cwd: workspace };
 
-const in_project: FloorScope = { app_root, project_root: String.raw`C:\Users\user\project`, cwd: String.raw`C:\Users\user\project` };
+const in_project: FloorScope = { app_roots: [app_root], project_root: String.raw`C:\Users\user\project`, cwd: String.raw`C:\Users\user\project` };
 
 const blocked: [string, FloorScope][] = [
   [String.raw`Remove-Item -Recurse "$env:APPDATA\VantheaX"`, in_project],
@@ -46,7 +46,7 @@ const blocked: [string, FloorScope][] = [
 const allowed: [string, FloorScope][] = [
   [`Remove-Item -Recurse "${path.win32.join(workspace, "build")}"`, in_workspace],
   ["Remove-Item -Recurse build", in_workspace],
-  [`Remove-Item -Recurse "${path.win32.join(legacy, "build")}"`, { app_root, project_root: legacy, cwd: legacy }],
+  [`Remove-Item -Recurse "${path.win32.join(legacy, "build")}"`, { app_roots: [app_root], project_root: legacy, cwd: legacy }],
   [`Get-ChildItem ${path.win32.join(workspace, "build")} | Remove-Item -Recurse`, in_workspace],
   [`if (Test-Path ${path.win32.join(workspace, "out")}) { Remove-Item -Recurse ${path.win32.join(workspace, "out")} }`, in_workspace],
   [String.raw`Copy-Item "$env:APPDATA\VantheaX\v2\media\attachments\img_a_b.png" .\input.png`, in_project],
@@ -78,7 +78,7 @@ test("work inside the chat's own project folder and reads or copies of the app d
 test("a worktree chat may delete inside its worktree but never the worktrees folder itself", () => {
   const worktrees = path.win32.join(app_root, "v2", "worktrees");
   const tree = path.win32.join(worktrees, "0a1b2c3d", "shop");
-  const in_worktree: FloorScope = { app_root, project_root: tree, cwd: tree };
+  const in_worktree: FloorScope = { app_roots: [app_root], project_root: tree, cwd: tree };
   assert.equal(floor_reason(`Remove-Item -Recurse -Force "${path.win32.join(tree, "dist")}"`, in_worktree), "");
   assert.equal(floor_reason("Remove-Item -Recurse build", in_worktree), "");
   assert.equal(floor_reason(`Remove-Item -Recurse -Force "${worktrees}"`, in_worktree), reason);

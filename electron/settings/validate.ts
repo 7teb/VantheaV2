@@ -3,7 +3,7 @@ import type { PermissionMode } from "../../shared/chat.ts";
 import { compact_fraction } from "../../shared/chat.ts";
 import { empty_hooks } from "../../shared/hooks.ts";
 import { default_model_id, flex_base } from "../../shared/models.ts";
-import { compact_percent_range, is_accent_color, min_context_limit, type Language, type McpServerConfig, type McpToolOverride, type ModelContext, type Personality, type ProjectEntry, type Settings } from "../../shared/settings.ts";
+import { billing_modes, compact_percent_range, is_accent_color, min_context_limit, type Language, type McpServerConfig, type McpToolOverride, type ModelContext, type Personality, type ProjectEntry, type Settings } from "../../shared/settings.ts";
 import { normalize_hooks } from "../hooks/validate.ts";
 import { as_array, as_boolean, as_record, as_string, clamp_int, is_record, pick } from "../storage/coerce.ts";
 import { folder_name, path_key } from "../storage/paths.ts";
@@ -45,6 +45,8 @@ export const default_settings = (): Settings => ({
   skills: { disabled: [] },
   model_context: {},
   hooks: empty_hooks(),
+  billing: "api",
+  inactive_billing_model: "",
 });
 
 const model_id = (value: unknown, fallback: string): string => {
@@ -195,6 +197,8 @@ export const normalize_settings = (value: unknown, base: Settings): Settings => 
     skills: { disabled: string_list(skills.disabled, base.skills.disabled, 200) },
     model_context: model_contexts(raw.model_context, base.model_context),
     hooks: normalize_hooks(raw.hooks, base.hooks),
+    billing: pick(raw.billing, billing_modes, base.billing),
+    inactive_billing_model: model_id(raw.inactive_billing_model, base.inactive_billing_model),
   };
 };
 
@@ -208,5 +212,13 @@ export const merge_settings = (current: Settings, patch: unknown): Settings => {
     const value = raw[key];
     merged[key] = struct_keys.has(key) && is_record(value) ? { ...as_record(current[key]), ...value } : value;
   }
-  return normalize_settings(merged, current);
+  const next = normalize_settings(merged, current);
+  if (next.billing === current.billing) {
+    return next;
+  }
+  return {
+    ...next,
+    model: Object.hasOwn(raw, "model") ? next.model : current.inactive_billing_model || current.model,
+    inactive_billing_model: current.model,
+  };
 };

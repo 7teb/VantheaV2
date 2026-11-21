@@ -32,7 +32,6 @@ export const WebSearchRow = ({ chat_id, step }: WebSearchRowProps) => {
             <WorkingLetters text={label} active={working} />
           </LabelMorph>
         </span>
-        {query && <span className="web-row-query">{query}</span>}
         <span className="tool-row-meta">
           <RowDetail chat_id={chat_id} step={step} />
         </span>

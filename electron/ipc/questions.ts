@@ -1,18 +1,17 @@
+import { question_limits } from "../../shared/ipc/questions.ts";
 import type { QuestionAnswer } from "../../shared/questions.ts";
 import { dismiss_questions } from "../questions/answers.ts";
 import { answer_questions } from "../questions/deliver.ts";
 import { require_record, require_string } from "../storage/coerce.ts";
 import { handle } from "./handle.ts";
 
-const max_entries = 50;
-
 const chat_id_of = (value: unknown) => require_string(value, "chat id", 200);
 
 const id_of = (value: unknown) => require_string(value, "question id", 300);
 
 const list_of = (value: unknown, label: string): unknown[] => {
-  if (!Array.isArray(value) || value.length > max_entries) {
-    throw new Error(`${label} must be a list of at most ${max_entries} entries`);
+  if (!Array.isArray(value) || value.length > question_limits.entries) {
+    throw new Error(`${label} must be a list of at most ${question_limits.entries} entries`);
   }
   return value;
 };
@@ -25,7 +24,7 @@ const require_unique = (ids: string[]): void => {
 
 const parse_answer = (value: unknown): QuestionAnswer => {
   const raw = require_record(value, "answer");
-  return { id: id_of(raw.id), answer: require_string(raw.answer, "answer text", 200_000) };
+  return { id: id_of(raw.id), answer: require_string(raw.answer, "answer text", question_limits.answer) };
 };
 
 const parse_answers = (value: unknown): QuestionAnswer[] => {

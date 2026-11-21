@@ -61,7 +61,7 @@ before(async () => {
       },
     },
   } });
-  const entry = 'export * from "./src/state/terminal.ts";';
+  const entry = 'export * from "./src/state/terminal.ts";\nexport { ui_store } from "./src/state/ui.ts";';
   const result = await build({ stdin: { contents: entry, resolveDir: process.cwd(), loader: "ts" }, bundle: true, platform: "browser", format: "esm", write: false, legalComments: "none", logLevel: "silent" });
   client = await import("data:text/javascript;base64," + Buffer.from(result.outputFiles[0].contents).toString("base64"));
   client.init_terminal();
@@ -174,4 +174,26 @@ test("closing a tab picks its neighbour and an emptied group disappears", () => 
     ["x", "c2"],
     ["y", "c2"],
   ]);
+});
+
+test("run_in_terminal opens the panel, waits for the shell to start, then types into the active tab or a fresh one", async () => {
+  client.ui_store.update((state: Record<string, unknown>) => ({ ...state, active_chat_id: "c3", project_path: "D:/p3" }));
+  client.run_in_terminal("git status");
+  assert.equal(client.ui_store.get().dock.kind, "terminal");
+  assert.equal(group("c3").tabs.length, 1);
+  assert.deepEqual(sent, []);
+  const captured = capture();
+  const starting = start(group("c3").tabs[0].id, captured);
+  answer_create("p3");
+  assert.equal(await starting, true);
+  assert.deepEqual(sent, [{ name: "terminal:input", args: ["p3", "git status\r"] }]);
+  client.run_in_terminal("dir");
+  assert.equal(group("c3").tabs.length, 1);
+  assert.deepEqual(sent.at(-1), { name: "terminal:input", args: ["p3", "dir\r"] });
+  emit("terminal:exit", { terminal_id: "p3", exit_code: 0 });
+  sent.length = 0;
+  client.run_in_terminal("ls");
+  assert.equal(group("c3").tabs.length, 2);
+  assert.equal(group("c3").active_id, group("c3").tabs[1].id);
+  assert.deepEqual(sent, []);
 });

@@ -1,0 +1,20 @@
+{
+  "name": "vantheax-sdk",
+  "version": "0.2.0",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": {
+      "types": "./types/sdk/index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "types": "./types/sdk/index.d.ts",
+  "bin": {
+    "vantheax": "./cli.js"
+  }
+}

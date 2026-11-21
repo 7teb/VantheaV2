@@ -159,6 +159,13 @@ export const toggle_dock = (kind: DockKind) =>
     dock: { ...state.dock, kind: state.settings_open || state.dock.kind !== kind ? kind : null, expanded: false },
   }));
 
+export const open_dock = (kind: DockKind) =>
+  ui_store.update((state) => ({
+    ...state,
+    settings_open: false,
+    dock: { ...state.dock, kind, expanded: state.dock.kind === kind && state.dock.expanded },
+  }));
+
 export const close_dock = () => ui_store.update((state) => ({ ...state, dock: { ...state.dock, kind: null, expanded: false } }));
 
 export const set_dock_width = (width: number) =>

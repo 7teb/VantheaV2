@@ -21,7 +21,7 @@ const prepare = (context: TestContext) => {
   context.after(() => { if (drive === undefined) delete process.env.SystemDrive; else process.env.SystemDrive = drive; });
 };
 const decide = (command: string, mode: PermissionMode = "full") => policy.decide_command({ command, mode, shell: "powershell", background: false, plan: false,
-  app_root: "C:/Users/fixture/AppData/Roaming/VantheaX", project_root: "D:/project", cwd: "D:/project", chat_id: "remaining-floor", chat_started_at: 0, call_id: "fixture", profile: "main",
+  app_roots: ["C:/Users/fixture/AppData/Roaming/VantheaX"], project_root: "D:/project", cwd: "D:/project", chat_id: "remaining-floor", chat_started_at: 0, call_id: "fixture", profile: "main",
   custom_instructions: "", decisions: [], last_human_id: null, changed: [], } satisfies CommandInput,
   { actor: { id: "main", name: "Main", kind: "main" } } as Reviewer, new AbortController().signal);
 

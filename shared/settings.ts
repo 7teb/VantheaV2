@@ -6,6 +6,10 @@ export type Language = "en" | "de";
 
 export type Personality = "pragmatic" | "friendly" | "cynical";
 
+export const billing_modes = ["api", "chatgpt"] as const;
+
+export type BillingMode = (typeof billing_modes)[number];
+
 export type ProjectEntry = { path: string; name: string; pinned: boolean; folder_id: string };
 
 export type McpServerConfig = {
@@ -44,6 +48,8 @@ export type Settings = {
   skills: { disabled: string[] };
   model_context: Record<string, ModelContext>;
   hooks: HooksConfig;
+  billing: BillingMode;
+  inactive_billing_model: string;
 };
 
 export const is_accent_color = (value: string): boolean => /^#[0-9a-f]{6}$/.test(value);

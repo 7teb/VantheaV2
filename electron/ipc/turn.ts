@@ -1,11 +1,11 @@
 import type { ApprovalDecision, GrantScope } from "../../shared/approval.ts";
 import { command_origins, type AssistantMessage, type CommandOrigin, type ContextUsage, type PermissionMode, type UserOrigin } from "../../shared/chat.ts";
-import type { SendRequest } from "../../shared/ipc/chats.ts";
+import { message_limits, type SendRequest } from "../../shared/ipc/chats.ts";
 import { fallback_model, model_listing, speed_tiers, with_choice } from "../../shared/models.ts";
+import { billing_catalog } from "../billing/catalog.ts";
 import { get_chat } from "../chats/store.ts";
 import { estimate_messages } from "../context/usage.ts";
 import { uploaded } from "../media/uploads.ts";
-import { model_catalog } from "../model/catalog-file.ts";
 import { hold_decision, open_chat_window, resolve_decision } from "../permissions/approvals.ts";
 import { close_full_window, full_window_until, on_full_window } from "../permissions/full-window.ts";
 import { context_model } from "../settings/model-context.ts";
@@ -51,7 +51,7 @@ const parse_send = (value: unknown): SendRequest => {
   const tier = speed_tiers.find((entry) => entry === raw.tier);
   return {
     chat_id: chat_id_of(raw.chat_id),
-    text: require_string(raw.text, "message text", 200_000),
+    text: require_string(raw.text, "message text", message_limits.text),
     attachment_ids: parse_ids(raw.attachment_ids),
     model: require_string(raw.model, "model id", 300),
     effort: as_string(raw.effort).slice(0, 40),
@@ -65,12 +65,12 @@ const parse_send = (value: unknown): SendRequest => {
 
 export const parse_decision = (value: unknown): ApprovalDecision => {
   const raw = require_record(value, "approval decision");
-  return { approved: raw.approved === true, grant: pick(raw.grant, grants, "once"), feedback: as_string(raw.feedback).slice(0, 4000) };
+  return { approved: raw.approved === true, grant: pick(raw.grant, grants, "once"), feedback: as_string(raw.feedback).slice(0, message_limits.feedback) };
 };
 
 const resolve_model = async (model_id: string) => {
-  const catalog = await model_catalog();
-  const listed = model_listing(catalog.models, model_id) ?? { entry: fallback_model(catalog.models), pro: false };
+  const models = (await billing_catalog()).models;
+  const listed = model_listing(models, model_id) ?? { entry: fallback_model(models), pro: false };
   return with_choice(context_model(listed.entry), listed);
 };
 
@@ -96,7 +96,7 @@ export const register_turn_ipc = () => {
     return start_turn(parsed, uploaded(parsed.attachment_ids), parsed.origin);
   });
   handle("turn:edit", (chat_id, message_id, text) =>
-    edit_turn(chat_id_of(chat_id), require_string(message_id, "message id", 200), require_string(text, "message text", 200_000)),
+    edit_turn(chat_id_of(chat_id), require_string(message_id, "message id", 200), require_string(text, "message text", message_limits.text)),
   );
   handle("turn:continue", (chat_id) => continue_turn(chat_id_of(chat_id)));
   handle("turn:accept_plan", (chat_id, message_id) => accept_plan(chat_id_of(chat_id), require_string(message_id, "message id", 200)));
@@ -110,7 +110,7 @@ export const register_turn_ipc = () => {
   handle("turn:steer", (chat_id, text, attachment_ids, steer_id) =>
     steer_turn(
       chat_id_of(chat_id),
-      require_string(text, "steer text", 200_000),
+      require_string(text, "steer text", message_limits.text),
       uploaded(parse_ids(attachment_ids)),
       require_string(steer_id, "steer id", 200),
     ),

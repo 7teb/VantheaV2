@@ -131,6 +131,8 @@ export const deliver_pending_events = (chat_id: string): void => {
   void deliver(chat_id);
 };
 
+export const pending_event_count = (chat_id: string): number => (pending.get(chat_id)?.length ?? 0) + (delivering.has(chat_id) ? 1 : 0);
+
 export const held_union = (entries: Iterable<[ClientId, string[]]>, connected: (client: ClientId) => boolean): Set<string> => {
   const union = new Set<string>();
   for (const [client, chat_ids] of entries) {

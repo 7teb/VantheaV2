@@ -17,7 +17,7 @@ const input = (command: string): CommandInput => ({
   shell: "powershell",
   background: false,
   plan: false,
-  app_root: "C:/Users/fixture/AppData/Roaming/VantheaX",
+  app_roots: ["C:/Users/fixture/AppData/Roaming/VantheaX"],
   project_root: "D:/project",
   cwd: "D:/project",
   chat_id: "independent-policy",

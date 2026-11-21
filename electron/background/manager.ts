@@ -110,8 +110,8 @@ const finish = (record: TaskRecord, exit_code: number | null, failure: string) =
   record.pid = null;
   invalidate_index(record.project_root);
   save();
-  emit_now(record);
   notify(finished_listeners, record);
+  emit_now(record);
 };
 
 const watch = (record: TaskRecord, child: ChildProcess) => {

@@ -85,6 +85,7 @@ export const SlashMenu = ({ slash, keep, list_id }: SlashMenuProps) => {
             icon={icon_of(item)}
             label={<Label label={item.label} query={shown.parent === null ? shown.query : ""} />}
             hint={item.hint}
+            shortcut={item.shortcut}
             trail={trail_of(item)}
             disabled={item.disabled}
             active={index === shown.active}

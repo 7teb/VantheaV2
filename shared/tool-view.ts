@@ -32,6 +32,7 @@ export type ModelPrice = {
   efforts: string[];
   note: string;
   error: string;
+  plan?: true;
 };
 
 export type PeerOutcome = "queued" | "held" | "denied" | "declined" | "not_running" | "duplicate";

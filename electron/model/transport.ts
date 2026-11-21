@@ -86,26 +86,26 @@ export const create_watchdog = (parent: AbortSignal): Watchdog => {
   };
 };
 
-const timeout_text = (expiry: Expiry): string => {
+const timeout_text = (expiry: Expiry, provider: string): string => {
   const seconds = Math.round(expiry.ms / 1000);
   switch (expiry.phase) {
     case "first_byte":
-      return `OpenRouter sent nothing for ${seconds} s after the request.`;
+      return `${provider} sent nothing for ${seconds} s after the request.`;
     case "idle":
-      return `The OpenRouter stream went silent for ${seconds} s before the answer was complete.`;
+      return `The ${provider} stream went silent for ${seconds} s before the answer was complete.`;
     case "complete":
-      return `OpenRouter returned no complete answer within ${seconds} s of the request.`;
+      return `${provider} returned no complete answer within ${seconds} s of the request.`;
   }
 };
 
-const timeout_error = (expiry: Expiry) => new ModelError("timeout", timeout_text(expiry));
+const timeout_error = (expiry: Expiry, provider: string) => new ModelError("timeout", timeout_text(expiry, provider));
 
-export const attempt_failure = (error: unknown, watchdog: Watchdog, phase: "connect" | "read"): ModelError => {
+export const attempt_failure = (error: unknown, watchdog: Watchdog, phase: "connect" | "read", provider = "OpenRouter"): ModelError => {
   if (error instanceof ModelError) {
     return error;
   }
   const expiry = watchdog.expired();
-  return expiry ? timeout_error(expiry) : network_error(error, phase);
+  return expiry ? timeout_error(expiry, provider) : network_error(error, phase, provider);
 };
 
 const request_headers = (): Record<string, string> => {

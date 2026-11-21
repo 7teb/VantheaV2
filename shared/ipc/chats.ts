@@ -23,6 +23,8 @@ export type CompactResult = { status: "done" | "nothing" | "busy" | "failed" };
 
 export type FullWindow = { chat_id: string; until: number | null };
 
+export const message_limits = { text: 200_000, feedback: 4000 } as const;
+
 export const chats_channels = {
   "chats:list": invoke<[], ChatMeta[]>(),
   "chats:get": invoke<[chat_id: string], Chat | null>(),

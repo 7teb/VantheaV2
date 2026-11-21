@@ -1,13 +1,15 @@
 import path from "node:path";
 import { glob_pattern } from "./script-loads.ts";
 
-export type FloorScope = { app_root: string; project_root: string; cwd: string };
+export type FloorScope = { app_roots: readonly string[]; project_root: string; cwd: string; guard_writes?: boolean };
 
 export const delete_names = "remove-item|ri|rm|rmdir|rd|del|erase";
 
 export const dotnet_delete = /\[(?:system\.)?io\.(?:directory|file)\]::delete\s*\(/i;
 
 export const app_reason = "deleting or moving VantheaX's own chats, media or settings";
+
+export const app_write_reason = "writing into VantheaX's own chats, media or settings";
 
 export const system_delete_reason = "deleting Windows / System32 / Program Files / a drive root / boot files";
 
@@ -51,9 +53,16 @@ export const strictly_within = (root: string, target: string) => path_key(target
 export const in_project = (target: string | null, scope: FloorScope) =>
   target !== null && Boolean(scope.project_root) && strictly_within(scope.project_root, target);
 
-export const hits_app = (target: string | null, scope: FloorScope, ancestors = false): boolean => {
-  if (target === null || !scope.app_root) return false;
-  if (!within(scope.app_root, target) && !(ancestors && within(target, scope.app_root))) return false;
-  const nested_project = Boolean(scope.project_root) && strictly_within(scope.app_root, scope.project_root);
-  return !nested_project || !in_project(target, scope);
+type Containment = (root: string, target: string) => boolean;
+
+const hits_root = (root: string, target: string, scope: FloorScope, ancestors: boolean, inside: Containment): boolean => {
+  if (!within(root, target) && !(ancestors && within(target, root))) return false;
+  const nested_project = Boolean(scope.project_root) && strictly_within(root, scope.project_root);
+  return !nested_project || !inside(scope.project_root, target);
 };
+
+export const hits_app = (target: string | null, scope: FloorScope, ancestors = false): boolean =>
+  target !== null && scope.app_roots.some((root) => hits_root(root, target, scope, ancestors, strictly_within));
+
+export const writes_app = (target: string | null, scope: FloorScope, ancestors = false): boolean =>
+  target !== null && scope.app_roots.some((root) => hits_root(root, target, scope, ancestors, within));

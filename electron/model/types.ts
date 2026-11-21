@@ -84,11 +84,13 @@ const wire_message = (message: ApiMessage, keep_reasoning: boolean, reasoning_re
 
 const empty_assistant = (message: ApiMessage) => message.role === "assistant" && !message.content && !message.tool_calls?.length;
 
-export const wire_messages = (messages: ApiMessage[], reasoning_passback: boolean): ApiMessage[] => {
+export type SentMessage = { message: ApiMessage; current_turn: boolean };
+
+export const sent_messages = (messages: ApiMessage[]): SentMessage[] => {
   const sent = messages.filter((message) => !empty_assistant(message));
   const last_user = sent.findLastIndex((message) => message.role === "user" && !message.tool_images && !message.steer && !message.compaction);
-  return sent.map((message, index) => {
-    const current_turn = index > last_user;
-    return wire_message(message, reasoning_passback || current_turn, reasoning_passback && current_turn);
-  });
+  return sent.map((message, index) => ({ message, current_turn: index > last_user }));
 };
+
+export const wire_messages = (messages: ApiMessage[], reasoning_passback: boolean): ApiMessage[] =>
+  sent_messages(messages).map(({ message, current_turn }) => wire_message(message, reasoning_passback || current_turn, reasoning_passback && current_turn));

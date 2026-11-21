@@ -1,4 +1,5 @@
-import { find_model, verbosity_levels, type ImageModelEntry, type ModelCatalog, type ModelEntry, type ProVariant, type SideModelEntry, speed_tiers, type SpeedRoute, type SpeedTier, type SideModelRole, type Verbosity } from "../../shared/models.ts";
+import { find_model, flex_base, verbosity_levels, type ImageModelEntry, type ModelCatalog, type ModelEntry, type ProVariant, type SideModelEntry, speed_tiers, type SpeedRoute, type SpeedTier, type SideModelRole, type Verbosity } from "../../shared/models.ts";
+import type { AccountModel } from "../../shared/chatgpt.ts";
 import { compact_percent_range, min_context_limit, type ModelContext } from "../../shared/settings.ts";
 
 export const major_effort = "major";
@@ -221,7 +222,55 @@ export const api_effort = (model: ModelEntry, effort: string): string => {
   return model.efforts.filter((item) => item !== major_effort).at(-1) ?? model.default_effort;
 };
 
-const routes_to_openai = (model: ModelEntry): boolean => model.provider_order.some((route) => route === "openai" || route.startsWith("openai/"));
+export const routes_to_openai = (model: Pick<ModelEntry, "provider_order">): boolean =>
+  model.provider_order.some((route) => route === "openai" || route.startsWith("openai/"));
+
+const openai_prefix = "openai/";
+
+export const plan_slug = (model_id: string): string | null => {
+  const id = flex_base(model_id) ?? model_id;
+  return id.startsWith(openai_prefix) && id.length > openai_prefix.length ? id.slice(openai_prefix.length) : null;
+};
+
+export const plan_eligible = (model: Pick<ModelEntry, "id" | "provider_order">): boolean => plan_slug(model.id) !== null && routes_to_openai(model);
+
+export const plan_served = (model: Pick<ModelEntry, "id" | "provider_order">, account: readonly AccountModel[] | null): boolean =>
+  plan_eligible(model) && (account === null || account.some((listed) => listed.slug === plan_slug(model.id)));
+
+export type PlanSideRole = Exclude<SideModelRole, "transcription">;
+
+export type PlanSideEntry = { model: string; effort: string };
+
+export type PlanSide = Record<PlanSideRole, PlanSideEntry>;
+
+const plan_side_roles: PlanSideRole[] = ["title", "overseer", "vision", "reasoning_status", "git_text"];
+
+const parse_plan_side_entry = (value: unknown, role: PlanSideRole, catalog: ModelCatalog): PlanSideEntry => {
+  const where = `plan_side.${role}`;
+  const raw = as_record(value, where);
+  const model = as_text(raw.model, `${where}.model`);
+  const effort = as_text(raw.effort, `${where}.effort`);
+  if (!effort_rank.includes(effort)) {
+    fail(`${where}.effort`, `must be one of ${effort_rank.join(", ")}`);
+  }
+  const entry = catalog.models.find((candidate) => candidate.id === model);
+  if (!entry) {
+    return fail(`${where}.model`, `${model} has no entry in models`);
+  }
+  if (!plan_eligible(entry)) {
+    fail(`${where}.model`, `${model} does not route to OpenAI, so the ChatGPT plan cannot serve it`);
+  }
+  if (role === "vision" && !entry.vision) {
+    fail(`${where}.model`, `${model} has vision false`);
+  }
+  return { model, effort };
+};
+
+export const parse_plan_side = (value: unknown, catalog: ModelCatalog): PlanSide => {
+  const raw = as_record(as_record(value, "root").plan_side, "plan_side");
+  const entries = plan_side_roles.map((role) => [role, parse_plan_side_entry(raw[role], role, catalog)] as const);
+  return Object.fromEntries(entries) as PlanSide;
+};
 
 export const reasoning_fields = (model: ModelEntry, effort: string): Record<string, string> => ({
   effort: api_effort(model, effort),

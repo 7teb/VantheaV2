@@ -7,6 +7,7 @@ import { init_background } from "./background.ts";
 import { init_browser } from "./browser.ts";
 import { init_chat_marks } from "./chat-marks.ts";
 import { init_chat_view } from "./chat-view.ts";
+import { init_chatgpt } from "./chatgpt.ts";
 import { init_chats } from "./chats.ts";
 import { init_composer } from "./composer.ts";
 import { init_computer } from "./computer.ts";
@@ -62,6 +63,7 @@ export const init_state = (): (() => void) => {
     init_turn_diff(),
     init_turn_diff_ui(),
     init_models(),
+    init_chatgpt(),
     init_worktree(),
     init_scheduled(),
     remote_client ? init_remote_connection() : init_remote(),

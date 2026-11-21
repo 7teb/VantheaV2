@@ -1,8 +1,11 @@
-import { dialog } from "electron";
+import { app, dialog } from "electron";
+import path from "node:path";
 import { flush_reports, set_agent_continuation } from "../agents/reports.ts";
 import { clear_chat_agents, init_agents, running_agent_roots, shutdown_agents_sync } from "../agents/runner.ts";
 import { on_agents_changed } from "../agents/store.ts";
 import { init_background, on_background_changed, on_background_finished, remove_chat_background, running_background_roots, shutdown_background_sync } from "../background/manager.ts";
+import { billing_catalog } from "../billing/catalog.ts";
+import { init_billing, shutdown_billing, wire_billing } from "../billing/wire.ts";
 import { set_vision_analyzer } from "../browser/vision.ts";
 import { init_browser, shutdown_browser } from "../browser/service.ts";
 import { close_chat_tabs } from "../browser/tabs.ts";
@@ -21,9 +24,8 @@ import { close_chat_terminals, kill_all_terminals } from "../ipc/terminal.ts";
 import { init_mcp, set_settings_access, shutdown_mcp } from "../mcp/servers.ts";
 import { sweep_attachments } from "../media/sweep.ts";
 import { memory_prompt_section } from "../memory/prompt.ts";
-import { model_catalog } from "../model/catalog-file.ts";
 import { set_key_source } from "../model/key.ts";
-import { stream_round } from "../model/stream.ts";
+import { stream_model } from "../model/provider.ts";
 import { mcp_command_gate } from "../permissions/mcp-gate.ts";
 import { check_project_folders } from "../project/follow.ts";
 import { forget_chat_reads } from "../project/read-ledger.ts";
@@ -56,6 +58,7 @@ import { tools_for } from "../tools/registry.ts";
 import { active_turn, active_turns, forget_user_stop, on_active_turns_changed, turn_settled } from "../turn/active.ts";
 import { init_turn_diffs, turn_diffs } from "../turn-diff/index.ts";
 import { set_event_notes_hook, set_turn_finished_hook } from "../turn/drive.ts";
+import { forget_run_options } from "../turn/run-options.ts";
 import { interrupt_all_turns, stop_turn } from "../turn/run.ts";
 import { release_worktree } from "../worktrees/remove.ts";
 import { sweep_worktree_ledger } from "../worktrees/sweep.ts";
@@ -89,6 +92,7 @@ const chat_known = async (chat_id: string): Promise<boolean> => chat_meta(chat_i
 
 const wire_hooks = () => {
   set_key_source(() => get_secret("openrouter"));
+  wire_billing();
   set_vision_analyzer(vision_analyzer);
   set_command_gate(mcp_command_gate);
   set_settings_access({ get: get_settings, update: update_settings });
@@ -137,6 +141,7 @@ const wire_hooks = () => {
     clear_computer(chat_id);
     remove_chat_background(chat_id);
     forget_answers(chat_id);
+    forget_run_options(chat_id);
     forget_scheduled_chat(chat_id);
     close_chat_tabs(chat_id);
     close_chat_terminals(chat_id);
@@ -154,9 +159,10 @@ const wire_hooks = () => {
 
 export type StartedServices = { mcp_settled: Promise<void> };
 
-export const init_services = async (): Promise<StartedServices> => {
+export const init_services = async (options: { storage_root?: string } = {}): Promise<StartedServices> => {
   wire_hooks();
-  await run_step("storage", init_persistence);
+  await run_step("storage", () => init_persistence(options.storage_root ?? path.join(app.getPath("appData"), "VantheaX")));
+  await run_step("chatgpt account", init_billing);
   await run_step("scheduled tasks", load_scheduled_tasks);
   const swept = sweep_worktree_ledger().catch((error: unknown) => {
     console.error("[worktrees] finishing worktree steps left over from the last run failed:", error);
@@ -186,11 +192,11 @@ export const init_services = async (): Promise<StartedServices> => {
   await run_step("agents", () =>
     init_agents({
       dir: storage_paths().agents,
-      stream: stream_round,
+      stream: stream_model,
       resolve_tools: (profile, settings, model) => tools_for(profile, settings, model),
       side_model,
       review_call,
-      models: async () => (await model_catalog()).models.map(context_model),
+      models: async () => (await billing_catalog()).models.map(context_model),
       reasoning_status: reasoning_status_call,
     }),
   );
@@ -217,6 +223,7 @@ export const shutdown_services = (): void => {
   shutdown_browser();
   stop_files_watch();
   shutdown_github();
+  shutdown_billing();
   shutdown_git();
   shutdown_background_sync();
   close_scratchpads();

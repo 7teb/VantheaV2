@@ -29,6 +29,9 @@ export const remote_refused: ReadonlySet<InvokeName | SendName> = new Set<Invoke
   "remote:status",
   "remote:set_enabled",
   "remote:renew_link",
+  "chatgpt:sign_in",
+  "chatgpt:cancel_sign_in",
+  "chatgpt:sign_out",
 ]);
 
 export const remote_local_channels: ReadonlySet<InvokeName> = new Set<InvokeName>(["window:state", "shell:open_external", "artifacts:export"]);

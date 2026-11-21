@@ -4,21 +4,15 @@ import { MoreVerticalIcon } from "../../components/icons.tsx";
 import { Menu, type MenuSection } from "../../components/Menu.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { agent_approvals_store } from "../../state/agent-approvals.ts";
-import { agents_store, close_agent_run } from "../../state/agents.ts";
+import { agents_store } from "../../state/agents.ts";
 import { running_runs } from "../../state/agents-reduce.ts";
 import { background_store } from "../../state/background.ts";
 import { keep_awake_store, set_keep_awake } from "../../state/keep-awake.ts";
 import { layout_store } from "../../state/layout.ts";
 import { toggle_dock, ui_store } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
-import { dock_toggles, titlebar_docks } from "./docks.ts";
-
-const toggle_background = () => {
-  if (ui_store.get().dock.kind !== "background") {
-    close_agent_run();
-  }
-  toggle_dock("background");
-};
+import { dock_toggles, titlebar_docks, toggle_background_dock } from "./docks.ts";
+import { shortcut_hint } from "./shortcuts.ts";
 
 export const TitlebarMenu = () => {
   const t = use_t();
@@ -40,8 +34,8 @@ export const TitlebarMenu = () => {
         {
           id: "docks",
           items: titlebar_docks.map((kind) => {
-            const { label, icon: DockIcon } = dock_toggles[kind];
-            return { id: kind, label: t(label), icon: <DockIcon />, on_select: () => toggle_dock(kind) };
+            const { label, icon: DockIcon, shortcut } = dock_toggles[kind];
+            return { id: kind, label: t(label), icon: <DockIcon />, shortcut: shortcut ? shortcut_hint(shortcut, t) : undefined, on_select: () => toggle_dock(kind) };
           }),
         },
       ]
@@ -58,7 +52,7 @@ export const TitlebarMenu = () => {
         className="titlebar-more"
         onClick={() => set_open(!open)}
       >
-        <MoreVerticalIcon />
+        <MoreVerticalIcon plain />
         {waiting && <span className="wait-dot titlebar-wait" aria-hidden="true" />}
       </IconButton>
       <Menu
@@ -83,7 +77,8 @@ export const TitlebarMenu = () => {
                   </span>
                 ),
                 badge: running > 0 ? String(running) : undefined,
-                on_select: toggle_background,
+                shortcut: shortcut_hint("toggle_tasks", t),
+                on_select: toggle_background_dock,
               },
               {
                 id: "artifacts",

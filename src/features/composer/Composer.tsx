@@ -3,13 +3,16 @@ import { IconButton, PrimaryButton } from "../../components/Button.tsx";
 import { class_names } from "../../components/class-names.ts";
 import { ArrowUpIcon, ClipboardListIcon, CircleSpinnerIcon, CloseIcon, PlusIcon, StopIcon } from "../../components/icons.tsx";
 import { layer_count } from "../../components/layers.ts";
+import { Tooltip } from "../../components/Tooltip.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { draft_of, draft_sendable, has_chip, visualize_chip } from "../../state/chat-drafts.ts";
 import { attach_files, composer_store, dismiss_error, queue_draft, set_composer_error, set_draft_text, stop_turn, submit, toggle_plan } from "../../state/composer.ts";
-import { cancel_dictation, dictation_store, finish_dictation } from "../../state/dictation.ts";
+import { cancel_dictation, dictation_cancellable, dictation_store, finish_dictation } from "../../state/dictation.ts";
 import { insert_dictation } from "../../state/dictation-text.ts";
 import { layout_store } from "../../state/layout.ts";
 import { use_store } from "../../state/use-store.ts";
+import { escape_fallback } from "../shell/escape-fallback.ts";
+import { shortcut_hint, shortcut_matches } from "../shell/shortcuts.ts";
 import { start_typed_review } from "./command-registry.ts";
 import { use_chat_busy, use_model_choice, use_model_context, use_shown_context } from "./composer-hooks.ts";
 import { ComposerMedia } from "./ComposerMedia.tsx";
@@ -21,6 +24,7 @@ import { PlusMenu } from "./PlusMenu.tsx";
 import { parse_review_command } from "./review-command.ts";
 import { SlashMenu, slash_option_id } from "./SlashMenu.tsx";
 import { use_command_context } from "./use-command-context.ts";
+import { use_composer_shortcuts } from "./use-composer-shortcuts.ts";
 import { use_slash_menu } from "./use-slash-menu.ts";
 import { WorktreeChip } from "./WorktreeChip.tsx";
 
@@ -122,20 +126,6 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     };
   }, [draft_key]);
 
-  useEffect(() => {
-    if (dictating !== "starting" && dictating !== "recording") {
-      return;
-    }
-    const on_escape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        cancel_dictation();
-      }
-    };
-    window.addEventListener("keydown", on_escape);
-    return () => window.removeEventListener("keydown", on_escape);
-  }, [dictating]);
-
   const finish_dictating = async (action: "send" | "queue" | "insert") => {
     const key = draft_key;
     const spoken = await finish_dictation();
@@ -159,6 +149,8 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
     }
   };
 
+  use_composer_shortcuts({ draft_key, area, finish_dictation: () => void finish_dictating("insert") });
+
   const send = () => {
     if (dictating === "recording") {
       void finish_dictating("send");
@@ -178,10 +170,12 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
       return;
     }
     if (event.key === "Escape") {
-      event.currentTarget.blur();
+      if (escape_fallback({ consumed: false, focus: "composer", dictating: dictation_cancellable(dictation_store.get()), busy: busy && chat_id !== null }) === null) {
+        event.currentTarget.blur();
+      }
       return;
     }
-    if (event.key === "Tab" && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey && busy && chat_id !== null && sendable) {
+    if (shortcut_matches("queue", event) && busy && chat_id !== null && sendable) {
       event.preventDefault();
       if (dictating === "recording") {
         void finish_dictating("queue");
@@ -190,7 +184,7 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
       }
       return;
     }
-    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) {
+    if (!shortcut_matches("send", event) || event.nativeEvent.isComposing) {
       return;
     }
     const layout = layout_store.get();
@@ -224,9 +218,9 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
       return <PrimaryButton label={t("composer.sending")} icon={<CircleSpinnerIcon className="spin" />} disabled />;
     }
     if (busy && chat_id !== null && dictating === null && draft.text.trim() === "" && draft.uploads.length === 0 && draft.chips.length === 0) {
-      return <PrimaryButton label={t("composer.stop")} icon={<StopIcon />} onClick={() => void stop_turn(chat_id)} />;
+      return <PrimaryButton label={t("composer.stop")} hint={shortcut_hint("stop_turn", t)} icon={<StopIcon />} onClick={() => void stop_turn(chat_id)} />;
     }
-    return <PrimaryButton label={t(busy || compacting ? "composer.queue_send" : "composer.send")} hint="Enter" icon={<ArrowUpIcon />} disabled={!sendable} onClick={send} />;
+    return <PrimaryButton label={t(busy || compacting ? "composer.queue_send" : "composer.send")} hint={shortcut_hint("send", t)} icon={<ArrowUpIcon />} disabled={!sendable} onClick={send} />;
   };
 
   return (
@@ -305,21 +299,23 @@ export const Composer = ({ chat_id, project_path, draft_key, placement }: Compos
         <ModelPicker chat_id={chat_id} />
         <ModePicker chat_id={chat_id} />
         {draft.plan && (
-          <button
-            type="button"
-            className="composer-chip draft-chip"
-            data-active
-            data-kind="plan"
-            aria-pressed
-            onPointerDown={(event) => event.preventDefault()}
-            onClick={() => toggle_plan(draft_key)}
-          >
-            <span className="draft-chip-icon">
-              <ClipboardListIcon />
-              <CloseIcon />
-            </span>
-            <span className="composer-chip-label">{t("composer.plan")}</span>
-          </button>
+          <Tooltip label={t("commands.plan")} hint={shortcut_hint("toggle_plan", t)}>
+            <button
+              type="button"
+              className="composer-chip draft-chip"
+              data-active
+              data-kind="plan"
+              aria-pressed
+              onPointerDown={(event) => event.preventDefault()}
+              onClick={() => toggle_plan(draft_key)}
+            >
+              <span className="draft-chip-icon">
+                <ClipboardListIcon />
+                <CloseIcon />
+              </span>
+              <span className="composer-chip-label">{t("composer.plan")}</span>
+            </button>
+          </Tooltip>
         )}
         {chat_id === null && <WorktreeChip draft_key={draft_key} project_path={project_path} />}
         <DraftChips draft_key={draft_key} chips={draft.chips} />

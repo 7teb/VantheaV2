@@ -16,7 +16,7 @@ const step = (index: number, name: string, status: ToolStep["status"] = "running
 });
 const input = (steps: ScopedStep[], call_id: string, chat_id = `parallel-review-${++sequence}`): ReviewInput => ({
   chat: { chat_id, project_root: "", custom_instructions: "", humans: [{ id: "human", at: 1, text: "Fix both bugs using exactly two agents." }],
-    profile: { root: "", git: "not a repository", listing: "", readme: null, scripts: null }, snapshot: { anchor: "human", number: 1, after_restart: false, files: [] } },
+    profile: { root: "", git: "not a repository", listing: "", readme: null, scripts: null }, snapshot: { anchor: "human", number: 1, after_restart: false, files: [] }, app_data: [] },
   chat_key: "fixture", agent: { actor: { id: "main", name: "Main", kind: "main" }, model: { id: "fixture", label: "Fixture" }, profile: "main", delegated_task: null, earlier_commands: 0 },
   source: { records: [], decisions: [], steps }, mark: "human", call_id,
   action: { tool: "deploy_agent", subject: JSON.stringify(steps.findLast((entry) => entry.call_id === call_id)?.args ?? {}), cwd: "", background: false,

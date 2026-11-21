@@ -11,9 +11,9 @@ import "./SecretRow.css";
 
 const masked_key = "•".repeat(18);
 
-type SecretRowProps = { name: SecretName; label: string; stored: boolean; placeholder: string; on_saved?: () => void };
+type SecretRowProps = { name: SecretName; label: string; stored: boolean; placeholder: string; hint?: string; on_saved?: () => void };
 
-export const SecretRow = ({ name, label, stored, placeholder, on_saved }: SecretRowProps) => {
+export const SecretRow = ({ name, label, stored, placeholder, hint, on_saved }: SecretRowProps) => {
   const t = use_t();
   const [value, set_value] = useState("");
   const [saving, set_saving] = useState(false);
@@ -42,7 +42,7 @@ export const SecretRow = ({ name, label, stored, placeholder, on_saved }: Secret
   };
 
   return (
-    <SettingsRow label={label} hint={stored ? t("settings.stored") : t("settings.api_key_sub")} error={error}>
+    <SettingsRow label={label} hint={hint ?? (stored ? t("settings.stored") : t("settings.api_key_sub"))} error={error}>
       <form className="key-form" onSubmit={save}>
         <TextField
           className="key-field"
