@@ -38,6 +38,7 @@ export const commands: Record<keyof typeof en, string> = {
   "commands.review": "Review",
   "commands.review_hint": "Aktuelle Änderungen, oder /review 123 für einen Pull Request",
   "commands.pro_hint": "GPT-Modell im Pro-Modus nutzen",
+  "commands.pro_not_in_plan": "Pro ist im ChatGPT-Abo nicht enthalten",
   "commands.fast_hint": "Schnellere Auslieferung, höherer Preis",
   "commands.ultrafast_hint": "Schnellste OpenAI-Auslieferung, etwa sechsfacher Preis",
   "commands.flex_hint": "Halber Preis, langsamer, Standard-Auslieferung wenn Flex ausgelastet ist",

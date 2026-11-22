@@ -29,6 +29,7 @@
 !/scripts/headless-smoke.mjs
 !/scripts/headless-smoke-support.mjs
 !/scripts/chatgpt-plan-smoke.mjs
+!/scripts/claude-plan-smoke.mjs
 
 !/Resources/
 /Resources/*

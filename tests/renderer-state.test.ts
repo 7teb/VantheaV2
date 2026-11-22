@@ -56,6 +56,7 @@ const settings = (): Settings => ({
   hooks: { global: [], projects: {} },
   billing: "api",
   inactive_billing_model: "",
+  claude_billing: "api",
 });
 
 test("settings patches merge objects one level and replace arrays and scalars", () => {

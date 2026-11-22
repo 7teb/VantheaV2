@@ -1,11 +1,12 @@
 import type { ApprovalRequest } from "../approval.ts";
 import type { AssistantMessage, Chat, ChatMeta, MessageUsage, PermissionMode, TurnError } from "../chat.ts";
 import type { ChatgptAccount } from "../chatgpt.ts";
+import type { ClaudeAccount } from "../claude.ts";
 import type { FinalStatus, TurnEvent } from "../events.ts";
 import type { FileChange } from "../file-changes.ts";
 import type { EventPayload } from "../ipc/index.ts";
 import type { OpenQuestion, QuestionAnswer } from "../questions.ts";
-import type { BillingMode } from "../settings.ts";
+import type { BillingMode, ClaudeBillingMode } from "../settings.ts";
 
 export const api_version = 1;
 
@@ -37,7 +38,7 @@ export type InfoResult = {
 
 export type ModelInfo = { id: string; label: string; efforts: string[] };
 
-export type AccountInfo = { billing: BillingMode; chatgpt: ChatgptAccount };
+export type AccountInfo = { billing: BillingMode; chatgpt: ChatgptAccount; claude_billing: ClaudeBillingMode; claude: ClaudeAccount };
 
 export type SignInRequest = { fresh?: boolean; consent?: boolean };
 
@@ -105,4 +106,5 @@ export type ApiEvent =
   | { type: "agent.approvals_changed"; id: string; data: EventPayload<"agents:approvals_changed"> }
   | { type: "background.changed"; id: string; data: EventPayload<"background:changed"> }
   | { type: "account.changed"; id: string; data: ChatgptAccount }
+  | { type: "claude.changed"; id: string; data: ClaudeAccount }
   | { type: "run.settled"; id: string; data: { session_id: string; run_id: string; status: FinalStatus } };

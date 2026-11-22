@@ -10,6 +10,10 @@ export const billing_modes = ["api", "chatgpt"] as const;
 
 export type BillingMode = (typeof billing_modes)[number];
 
+export const claude_billing_modes = ["api", "claude"] as const;
+
+export type ClaudeBillingMode = (typeof claude_billing_modes)[number];
+
 export type ProjectEntry = { path: string; name: string; pinned: boolean; folder_id: string };
 
 export type McpServerConfig = {
@@ -50,6 +54,7 @@ export type Settings = {
   hooks: HooksConfig;
   billing: BillingMode;
   inactive_billing_model: string;
+  claude_billing: ClaudeBillingMode;
 };
 
 export const is_accent_color = (value: string): boolean => /^#[0-9a-f]{6}$/.test(value);

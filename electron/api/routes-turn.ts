@@ -41,6 +41,7 @@ const send_request = (chat_id: string, text: string, ids: string[], plan: boolea
 });
 
 const admitted = async (context: ApiContext, session_id: string, options: RunOptions, start: () => Promise<TurnStarted>): Promise<PromptStarted | null> => {
+  await context.ended_turn_settled(session_id);
   if (context.is_active(session_id)) {
     throw busy(session_id);
   }

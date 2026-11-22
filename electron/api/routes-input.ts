@@ -110,6 +110,7 @@ export const input_routes = {
     if (!answers.length) {
       return empty_reply(204);
     }
+    await context.ended_turn_settled(params.id);
     if (context.is_active(params.id)) {
       await context.invoke("questions:answer", params.id, answers);
       return empty_reply(204);

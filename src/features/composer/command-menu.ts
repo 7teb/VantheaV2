@@ -21,6 +21,7 @@ export type CommandContext = {
   model: ModelEntry | null;
   model_context: ModelContext | undefined;
   pro: boolean;
+  pro_locked: boolean;
   tier: SpeedTier | null;
   tiers?: ModelEntry["tiers"];
   t: Translate;

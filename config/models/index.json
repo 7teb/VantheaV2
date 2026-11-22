@@ -21,11 +21,10 @@
     "git_text": "google/gemini-3.5-flash-lite"
   },
   "plan_side": {
-    "title": { "model": "openai/gpt-6-luna", "effort": "none" },
+    "title": { "model": "openai/gpt-6-luna", "effort": "low" },
     "overseer": { "model": "openai/gpt-6-luna", "effort": "low" },
-    "vision": { "model": "openai/gpt-6-luna", "effort": "none" },
-    "reasoning_status": { "model": "openai/gpt-6-luna", "effort": "none" },
-    "git_text": { "model": "openai/gpt-6-luna", "effort": "none" }
+    "vision": { "model": "openai/gpt-6-luna", "effort": "low" },
+    "git_text": { "model": "openai/gpt-6-luna", "effort": "low" }
   },
   "side_models": [
     {

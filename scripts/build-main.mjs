@@ -9,7 +9,7 @@ const targets = [
     entryPoints: ["electron/main.ts"],
     outfile: "dist-electron/main.js",
     format: "esm",
-    external: ["electron", "node-pty", "@modelcontextprotocol/sdk", "@vscode/ripgrep"],
+    external: ["electron", "node-pty", "@modelcontextprotocol/sdk", "@vscode/ripgrep", "@anthropic-ai/claude-agent-sdk"],
     banner: { js: require_shim },
   },
   {

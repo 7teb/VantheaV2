@@ -1,12 +1,13 @@
 import type { QuestionAnswer } from "../../shared/questions.ts";
 import { get_chat } from "../chats/store.ts";
 import { get_settings } from "../settings/store.ts";
-import { active_turn, steer_target } from "../turn/active.ts";
+import { active_turn, ended_turn_settled, steer_target } from "../turn/active.ts";
 import { run_options } from "../turn/run-options.ts";
 import { start_turn, steer_turn } from "../turn/run.ts";
 import { answer_group, answer_request, begin_answer, drop_sending, mark_dismissed } from "./answers.ts";
 
 export const answer_questions = async (chat_id: string, answers: QuestionAnswer[]): Promise<void> => {
+  await ended_turn_settled(chat_id);
   const chat = await get_chat(chat_id);
   if (!chat) {
     throw new Error(`chat ${chat_id} not found`);

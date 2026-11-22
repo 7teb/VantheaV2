@@ -123,6 +123,7 @@ const parse_model = (value: unknown, index: number): ModelEntry => {
     ...(raw.pro === undefined ? {} : { pro: parse_pro(raw.pro, `${named}.pro`) }),
     ...(raw.tiers === undefined ? {} : { tiers: parse_tiers(raw.tiers, `${named}.tiers`) }),
     ...(raw.default_context === undefined ? {} : { default_context: parse_default_context(raw.default_context, `${named}.default_context`, context_length) }),
+    ...(raw.claude_code === undefined ? {} : { claude_code: as_text(raw.claude_code, `${named}.claude_code`) }),
   };
 };
 
@@ -237,13 +238,13 @@ export const plan_eligible = (model: Pick<ModelEntry, "id" | "provider_order">):
 export const plan_served = (model: Pick<ModelEntry, "id" | "provider_order">, account: readonly AccountModel[] | null): boolean =>
   plan_eligible(model) && (account === null || account.some((listed) => listed.slug === plan_slug(model.id)));
 
-export type PlanSideRole = Exclude<SideModelRole, "transcription">;
+export type PlanSideRole = Exclude<SideModelRole, "transcription" | "reasoning_status">;
 
 export type PlanSideEntry = { model: string; effort: string };
 
 export type PlanSide = Record<PlanSideRole, PlanSideEntry>;
 
-const plan_side_roles: PlanSideRole[] = ["title", "overseer", "vision", "reasoning_status", "git_text"];
+const plan_side_roles: PlanSideRole[] = ["title", "overseer", "vision", "git_text"];
 
 const parse_plan_side_entry = (value: unknown, role: PlanSideRole, catalog: ModelCatalog): PlanSideEntry => {
   const where = `plan_side.${role}`;

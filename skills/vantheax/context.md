@@ -50,6 +50,12 @@ Every error of the compaction call is caught. The app retries after 2 s, 5 s and
 
 If the last attempt fails, an automatic compaction falls back to dropping old tool results and the turn continues; a manual compaction shows the failed line and nothing else.
 
+## On the Claude plan
+
+A chat on a Claude model with Claude models set to Claude plan (see settings.md) runs in a Claude Code session (see turns.md), and Claude Code compacts that conversation itself; the handoff note, the retry plan and the 70% check above do not apply there. The compaction line looks the same: "Compacting context" while Claude Code compacts, then "Context automatically compacted", or "Context compaction failed" when Claude Code reports a failure. The model's context setting sets the point: Claude Code compacts at the model's Context limit times its Auto-compact percent, the point the context panel shows, but never below 100,000 tokens, so a setting that puts the point lower compacts at 100,000 tokens. Claude Code's summary is also stored as the chat's compaction note, so a later turn on another model or a new Claude Code session for the chat starts from the compacted state. The context ring and panel use the token counts Claude Code reports after each response. The same applies to sub-agents on the Claude plan.
+
+"Compact now" and /compact ask Claude Code to compact the chat's session. A chat that has no Claude Code session to continue (nothing ran on the Claude plan yet, or the next Claude-plan turn would start a new session after an edit, a retry, a fork or a turn on another model) answers "Nothing to compact yet." ("Noch nichts zu komprimieren.") instead; the next message starts a new session from the stored conversation. The compaction ends as soon as Claude Code has compacted the session and handed over its summary. When Claude Code reports a failure or does not confirm the compaction, the line shows "Context compaction failed".
+
 ## How it looks
 
 Compaction shows as one plain line in the chat and in the agent transcript, not as a tool row; it cannot be opened and does not show the note.

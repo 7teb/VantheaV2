@@ -8,7 +8,7 @@ import { flush_chat, forget_saves, persist_index, reset_saves, save_now, save_pe
 import { stored_question_states } from "./question-coerce.ts";
 import { attachment_ids, change_refs, is_held, same_ids } from "./refs.ts";
 import { settle_streaming } from "./settle.ts";
-import { bodies, chat_events, metas, reset_chat_state, sorted_metas, type ChatBody, type ChatDirs, type ChatEvents } from "./state.ts";
+import { bodies, chat_events, metas, reset_chat_state, sorted_metas, type ChatBody, type ChatDirs, type ChatEvents, type ChatRemovedListener } from "./state.ts";
 
 export { flush_all_sync, flush_chat } from "./persist.ts";
 export { search_chats } from "./search.ts";
@@ -269,16 +269,16 @@ const remove_chat = async (chat_id: string): Promise<void> => {
   chat_events().removed(chat_id);
   for (const listener of removed_listeners) {
     try {
-      listener(chat_id, meta);
+      listener(chat_id, meta, body?.claude_session);
     } catch (error) {
       console.error(`[chats] cleanup after deleting chat ${chat_id} failed:`, error);
     }
   }
 };
 
-const removed_listeners = new Set<(chat_id: string, meta: ChatMeta) => void>();
+const removed_listeners = new Set<ChatRemovedListener>();
 
-export const on_chat_removed = (listener: (chat_id: string, meta: ChatMeta) => void): (() => void) => {
+export const on_chat_removed = (listener: ChatRemovedListener): (() => void) => {
   removed_listeners.add(listener);
   return () => {
     removed_listeners.delete(listener);

@@ -72,6 +72,8 @@ export const turn_settled = (chat_id: string): Promise<void> =>
     });
   });
 
+export const ended_turn_settled = (chat_id: string): Promise<void> => (active.get(chat_id)?.ended ? turn_settled(chat_id) : Promise.resolve());
+
 export const active_turn = (chat_id: string): ActiveTurn | null => active.get(chat_id) ?? null;
 
 export const mark_user_stop = (chat_id: string): void => {

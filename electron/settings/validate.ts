@@ -3,7 +3,7 @@ import type { PermissionMode } from "../../shared/chat.ts";
 import { compact_fraction } from "../../shared/chat.ts";
 import { empty_hooks } from "../../shared/hooks.ts";
 import { default_model_id, flex_base } from "../../shared/models.ts";
-import { billing_modes, compact_percent_range, is_accent_color, min_context_limit, type Language, type McpServerConfig, type McpToolOverride, type ModelContext, type Personality, type ProjectEntry, type Settings } from "../../shared/settings.ts";
+import { billing_modes, claude_billing_modes, compact_percent_range, is_accent_color, min_context_limit, type Language, type McpServerConfig, type McpToolOverride, type ModelContext, type Personality, type ProjectEntry, type Settings } from "../../shared/settings.ts";
 import { normalize_hooks } from "../hooks/validate.ts";
 import { as_array, as_boolean, as_record, as_string, clamp_int, is_record, pick } from "../storage/coerce.ts";
 import { folder_name, path_key } from "../storage/paths.ts";
@@ -47,6 +47,7 @@ export const default_settings = (): Settings => ({
   hooks: empty_hooks(),
   billing: "api",
   inactive_billing_model: "",
+  claude_billing: "api",
 });
 
 const model_id = (value: unknown, fallback: string): string => {
@@ -199,6 +200,7 @@ export const normalize_settings = (value: unknown, base: Settings): Settings => 
     hooks: normalize_hooks(raw.hooks, base.hooks),
     billing: pick(raw.billing, billing_modes, base.billing),
     inactive_billing_model: model_id(raw.inactive_billing_model, base.inactive_billing_model),
+    claude_billing: pick(raw.claude_billing, claude_billing_modes, base.claude_billing),
   };
 };
 

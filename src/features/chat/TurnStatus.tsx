@@ -46,6 +46,11 @@ const error_keys: Record<TurnErrorKind, MessageKey> = {
   plan_limit: "chat.error_plan_limit",
   plan_blocked: "chat.error_plan_blocked",
   plan_model: "chat.error_plan_model",
+  claude_auth: "chat.error_claude_auth",
+  claude_limit: "chat.error_claude_limit",
+  claude_blocked: "chat.error_claude_blocked",
+  claude_model: "chat.error_claude_model",
+  claude_process: "chat.error_claude_process",
 };
 
 const PlanAction = ({ kind }: { kind: TurnErrorKind }) => {
@@ -64,7 +69,7 @@ const PlanAction = ({ kind }: { kind: TurnErrorKind }) => {
       </div>
     );
   }
-  if (kind === "plan_auth") {
+  if (kind === "plan_auth" || kind === "claude_auth") {
     return (
       <div className="error-card-actions">
         <Button size="sm" onClick={() => open_settings("general")}>

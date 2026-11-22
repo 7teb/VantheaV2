@@ -100,19 +100,22 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
       live.finish_reason = result.finish_reason;
       return result;
     },
+    finished: (reason) => {
+      live.finish_reason = reason;
+    },
     resolve_tools: (profile) => {
       const offered = allowed_tools(resolve_tools(profile, request.settings, model), agent);
       return request.workflow ? workflow_agent_tools(offered, request.workflow) : offered;
     },
     without_tools: agent.without_tools,
     side_model,
-    wait_decision: (call_id, request, on_hold) =>
+    wait_decision: (call_id, request, on_hold, call_signal) =>
       wait_for_decision({
         key: agent_approval_key(run.run_id),
         chat_id: agent.chat_id,
         call_id,
         request,
-        signal: live.controller.signal,
+        signal: call_signal,
         on_hold,
         reject_feedback: run_options(agent.chat_id)?.approvals === "reject" ? reject_feedback : undefined,
       }),

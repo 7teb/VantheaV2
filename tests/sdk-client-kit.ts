@@ -2,7 +2,8 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import type { AccountInfo, RunResult } from "../shared/api/contract.ts";
 import type { ChatgptAccount } from "../shared/chatgpt.ts";
-import type { BillingMode } from "../shared/settings.ts";
+import type { ClaudeAccount } from "../shared/claude.ts";
+import type { BillingMode, ClaudeBillingMode } from "../shared/settings.ts";
 import { create_client } from "../sdk/client.ts";
 
 type Seen = { method: string; path: string; query: Record<string, string>; headers: http.IncomingHttpHeaders; body: Buffer };
@@ -84,9 +85,21 @@ export const result_of = (run_id: string, status: RunResult["status"]): RunResul
   ended_at: status === "running" ? null : "2026-11-20T12:00:05.000Z",
 });
 
-export const account_info = (billing: BillingMode, patch: Partial<ChatgptAccount> = {}): AccountInfo => ({
+const claude_account = (patch: Partial<ClaudeAccount> = {}): ClaudeAccount => ({
+  status: "signed_out",
+  email: null,
+  subscription: null,
+  auth_method: null,
+  login_command: "",
+  detail: "",
+  ...patch,
+});
+
+export const account_info = (billing: BillingMode, patch: Partial<ChatgptAccount> = {}, claude: Partial<ClaudeAccount> = {}, claude_billing: ClaudeBillingMode = "api"): AccountInfo => ({
   billing,
   chatgpt: { status: "signed_out", email: null, name: null, plan_enabled: false, notice_seen: false, error: null, ...patch },
+  claude_billing,
+  claude: claude_account(claude),
 });
 
 export const turn_event = (message_id: string, body: Record<string, unknown>, seq: number) => ({ ...body, seq, at: 0, chat_id: "s1", message_id });

@@ -15,7 +15,7 @@ import { continuation_text, steer_message } from "./user-input.ts";
 
 const interrupted_kinds = new Set<TurnError["kind"]>(["stream_interrupted", "timeout", "provider_unavailable", "empty_answer"]);
 
-const end_status = (error: unknown): FinalStatus => {
+export const end_status = (error: unknown): FinalStatus => {
   if (error instanceof ModelError) {
     if (error.kind === "policy") {
       return "blocked";
@@ -25,7 +25,7 @@ const end_status = (error: unknown): FinalStatus => {
   return "failed";
 };
 
-const end_error = (error: unknown): TurnError =>
+export const end_error = (error: unknown): TurnError =>
   error instanceof ModelError ? { kind: error.kind, message: error.message } : { kind: "internal", message: error_text(error) };
 
 const round_specs = (session: TurnSession): ToolSpec[] => session.resolve_tools(round_profile(session)).map((tool) => tool.spec);
@@ -36,7 +36,7 @@ const measure = (session: TurnSession, messages: ApiMessage[], calibration: Cont
 const report_context = (session: TurnSession, messages: ApiMessage[], used: number, calibration: ContextCalibration | null, floor: number) =>
   session.emit({ type: "context", usage: context_usage(used, session.model, calibration, floor, context_parts(messages, round_specs(session), session.model, used)) });
 
-const inject_steers = async (session: TurnSession, round: number, api_messages: ApiMessage[]): Promise<boolean> => {
+export const inject_steers = async (session: TurnSession, round: number, api_messages: ApiMessage[]): Promise<boolean> => {
   const source = session.steers;
   if (!source) {
     return false;
@@ -78,7 +78,7 @@ export const push_notes = (emit: TurnSession["emit"], notes: TurnNote[], round: 
   }
 };
 
-const deliver_input = async (session: TurnSession, round: number, api_messages: ApiMessage[]) => {
+export const deliver_input = async (session: TurnSession, round: number, api_messages: ApiMessage[]) => {
   await inject_steers(session, round, api_messages);
   push_notes(session.emit, session.take_notes?.() ?? [], round, api_messages);
 };
@@ -89,9 +89,9 @@ const drop_old_results = (session: TurnSession, round: number, api_messages: Api
   }
 };
 
-type StopState = { active: boolean };
+export type StopState = { active: boolean };
 
-const stop_continues = async (session: TurnSession, round: number, last_text: string, api_messages: ApiMessage[], state: StopState, filtered = false): Promise<boolean> => {
+export const stop_continues = async (session: TurnSession, round: number, last_text: string, api_messages: ApiMessage[], state: StopState, filtered = false): Promise<boolean> => {
   const gate = session.hooks ? await session.hooks.stop(round, last_text, state.active) : null;
   if (gate?.kind !== "continue" || filtered) {
     return false;

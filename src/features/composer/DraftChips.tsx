@@ -1,10 +1,10 @@
-import { BookOpenIcon, ChartPieIcon, CloseIcon, PlugIcon, type IconComponent } from "../../components/icons.tsx";
+import { BookOpenIcon, CloseIcon, ImageIcon, PlugIcon, type IconComponent } from "../../components/icons.tsx";
 import { use_t } from "../../i18n/index.ts";
 import type { Translate } from "../../i18n/translate.ts";
 import type { DraftChip } from "../../state/chat-drafts.ts";
 import { remove_draft_chip } from "../../state/composer.ts";
 
-const chip_icons: Record<DraftChip["kind"], IconComponent> = { skill: BookOpenIcon, mcp: PlugIcon, visualize: ChartPieIcon };
+const chip_icons: Record<DraftChip["kind"], IconComponent> = { skill: BookOpenIcon, mcp: PlugIcon, visualize: ImageIcon };
 
 const chip_text = (t: Translate, chip: DraftChip): { name: string; label: string } => {
   switch (chip.kind) {

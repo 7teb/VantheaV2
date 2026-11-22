@@ -4,10 +4,12 @@ import type { ApiEvent } from "./contract.ts";
 export const api_routes = [
   { id: "info", method: "GET", path: "/v1/info", summary: "Server name, version, API version and the defaults a prompt falls back to" },
   { id: "models", method: "GET", path: "/v1/models", summary: "Models a session can use, with their reasoning efforts" },
-  { id: "account.get", method: "GET", path: "/v1/account", summary: "Billing mode and the ChatGPT account of the data dir" },
+  { id: "account.get", method: "GET", path: "/v1/account", summary: "Billing modes, the ChatGPT account of the data dir and the Claude Code login of the host" },
   { id: "account.billing", method: "POST", path: "/v1/account/billing", summary: "Switch model billing between API pricing and the ChatGPT plan" },
   { id: "account.sign_in", method: "POST", path: "/v1/account/chatgpt/sign_in", summary: "Open the ChatGPT sign-in in the system browser of the host; the result arrives as account.changed" },
   { id: "account.sign_out", method: "POST", path: "/v1/account/chatgpt/sign_out", summary: "Sign out of ChatGPT and revoke the stored refresh token" },
+  { id: "account.claude_billing", method: "POST", path: "/v1/account/claude-billing", summary: "Switch Claude model billing between API pricing and the Claude plan" },
+  { id: "account.claude_refresh", method: "POST", path: "/v1/account/claude/refresh", summary: "Read the Claude Code login state of the host again" },
   { id: "sessions.list", method: "GET", path: "/v1/sessions", summary: "All sessions of the data dir" },
   { id: "sessions.create", method: "POST", path: "/v1/sessions", summary: "Create a session in an absolute, existing directory" },
   { id: "sessions.get", method: "GET", path: "/v1/sessions/:id", summary: "One session with all messages and question states" },
@@ -61,6 +63,7 @@ export const event_names = {
   "agents:approvals_changed": "agent.approvals_changed",
   "background:changed": "background.changed",
   "chatgpt:changed": "account.changed",
+  "claude:changed": "claude.changed",
 } as const satisfies Partial<Record<EventName, ApiEvent["type"]>>;
 
 export const api_event_types = [
@@ -77,5 +80,6 @@ export const api_event_types = [
   "agent.approvals_changed",
   "background.changed",
   "account.changed",
+  "claude.changed",
   "run.settled",
 ] as const satisfies readonly ApiEvent["type"][];

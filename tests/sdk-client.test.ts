@@ -220,7 +220,7 @@ test("run_account prints the account, the billing switch and the sign-out with t
     assert.equal(await run_account(client, { name: "account" }, "text", {}, shown.sink), 0);
     assert.equal(
       shown.output.out,
-      "billing: chatgpt\nchatgpt: signed_in (owner@example.invalid)\nchatgpt: plan usage is not enabled for this sign-in, run vantheax sign-in --consent to enable it\n",
+      "billing: chatgpt\nchatgpt: signed_in (owner@example.invalid)\nchatgpt: plan usage is not enabled for this sign-in, run vantheax sign-in --consent to enable it\nclaude billing: api\nclaude: signed_out\n",
     );
     const switched = collect();
     assert.equal(await run_account(client, { name: "billing", billing: "chatgpt" }, "text", {}, switched.sink), 0);
@@ -233,7 +233,83 @@ test("run_account prints the account, the billing switch and the sign-out with t
       "billing: api",
       "chatgpt: signed_out (owner@example.invalid)",
       "chatgpt error: revocation_unconfirmed",
+      "claude billing: api",
+      "claude: signed_out",
     ]);
+  } finally {
+    await close();
+  }
+});
+
+test("Claude account methods use the Claude routes with their bodies", async () => {
+  const { stub, client, close } = await start_stub();
+  const info = account_info("api", {}, { status: "signed_in", email: "owner@example.invalid", subscription: "max", auth_method: "claude.ai" }, "claude");
+  stub.replies.set("POST /v1/account/claude-billing", { status: 200, body: info });
+  stub.replies.set("POST /v1/account/claude/refresh", { status: 200, body: info });
+  try {
+    assert.deepEqual(await client.account.set_claude_billing("claude"), info);
+    assert.deepEqual(await client.account.refresh_claude(), info);
+    assert.deepEqual(
+      stub.seen.map((seen) => `${seen.method} ${seen.path}`),
+      ["POST /v1/account/claude-billing", "POST /v1/account/claude/refresh"],
+    );
+    assert.deepEqual(stub.seen.map((seen) => json_body(seen)), [{ billing: "claude" }, undefined]);
+    assert.equal(stub.seen[0].headers["content-type"], "application/json");
+  } finally {
+    await close();
+  }
+});
+
+test("account_lines names the Claude billing and the Claude Code login with email and subscription when known", () => {
+  assert.deepEqual(account_lines(account_info("api", {}, { status: "signed_in", email: "owner@example.invalid", subscription: "max" }, "claude")).slice(-2), [
+    "claude billing: claude",
+    "claude: signed_in (owner@example.invalid, max)",
+  ]);
+  assert.deepEqual(account_lines(account_info("api", {}, { status: "other_login", subscription: "pro" })).slice(-1), ["claude: other_login (pro)"]);
+  assert.deepEqual(account_lines(account_info("api", {}, { status: "unknown" })).slice(-1), ["claude: unknown"]);
+});
+
+test("run_account switches the Claude billing and warns while Claude Code is not signed in", async () => {
+  const { stub, client, close } = await start_stub();
+  stub.replies.set("POST /v1/account/claude-billing", { status: 200, body: account_info("chatgpt", {}, { status: "signed_out" }, "claude") });
+  try {
+    const switched = collect();
+    assert.equal(await run_account(client, { name: "claude-billing", billing: "claude" }, "text", {}, switched.sink), 0);
+    assert.deepEqual([switched.output.out, switched.output.err], ["claude billing: claude\n", "vantheax: the Claude Code login is signed_out, run vantheax claude\n"]);
+    assert.deepEqual(json_body(stub.seen.at(-1)), { billing: "claude" });
+    stub.replies.set("POST /v1/account/claude-billing", { status: 200, body: account_info("chatgpt", {}, { status: "signed_out" }) });
+    const back = collect();
+    assert.equal(await run_account(client, { name: "claude-billing", billing: "api" }, "text", {}, back.sink), 0);
+    assert.deepEqual([back.output.out, back.output.err], ["claude billing: api\n", ""]);
+    const json = collect();
+    assert.equal(await run_account(client, { name: "claude-billing", billing: "api" }, "json", {}, json.sink), 0);
+    assert.deepEqual(JSON.parse(json.output.out), { type: "account", account: account_info("chatgpt", {}, { status: "signed_out" }) });
+  } finally {
+    await close();
+  }
+});
+
+test("run_account claude refreshes the login, prints it and names the login command until Claude Code is signed in", async () => {
+  const { stub, client, close } = await start_stub();
+  const command = "& 'C:/Claude Code/claude.exe' auth login --claudeai";
+  try {
+    stub.replies.set("POST /v1/account/claude/refresh", { status: 200, body: account_info("api", {}, { status: "signed_in", email: "owner@example.invalid", subscription: "max", login_command: command }) });
+    const signed = collect();
+    assert.equal(await run_account(client, { name: "claude" }, "text", {}, signed.sink), 0);
+    assert.deepEqual([signed.output.out, signed.output.err], ["claude: signed_in (owner@example.invalid, max)\n", ""]);
+    stub.replies.set("POST /v1/account/claude/refresh", { status: 200, body: account_info("api", {}, { status: "signed_out", login_command: command }) });
+    const out = collect();
+    assert.equal(await run_account(client, { name: "claude" }, "text", {}, out.sink), 1);
+    assert.equal(out.output.out, "claude: signed_out\n");
+    assert.equal(out.output.err, `vantheax: sign in to Claude Code with your Claude subscription, run this in PowerShell on the machine that runs VantheaX: ${command}\n`);
+    stub.replies.set("POST /v1/account/claude/refresh", { status: 200, body: account_info("api", {}, { status: "missing", detail: "the Claude Code executable is missing at C:/x/claude.exe" }) });
+    const missing = collect();
+    assert.equal(await run_account(client, { name: "claude" }, "text", {}, missing.sink), 1);
+    assert.deepEqual([missing.output.out, missing.output.err], ["claude: missing\n", "vantheax: the Claude Code executable is missing at C:/x/claude.exe\n"]);
+    const json = collect();
+    assert.equal(await run_account(client, { name: "claude" }, "json", {}, json.sink), 1);
+    assert.equal(JSON.parse(json.output.out).account.claude.status, "missing");
+    assert.ok(stub.seen.every((seen) => seen.method === "POST" && seen.path === "/v1/account/claude/refresh"));
   } finally {
     await close();
   }

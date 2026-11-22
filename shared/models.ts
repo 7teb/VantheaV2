@@ -35,6 +35,7 @@ export type ModelEntry = {
   pro?: ProVariant;
   tiers?: Partial<Record<SpeedTier, SpeedRoute>>;
   default_context?: ModelContext;
+  claude_code?: string;
 };
 
 export const context_setting = (model: ModelEntry, stored: ModelContext | undefined): ModelContext | undefined => stored ?? model.default_context;
@@ -65,6 +66,8 @@ export type ModelCatalog = {
   side_models: SideModelEntry[];
   image_models: ImageModelEntry[];
   plan_ids?: string[];
+  pro_locked?: string[];
+  claude_plan_ids?: string[];
 };
 
 export const pro_variant = (model: ModelEntry): ModelEntry => {

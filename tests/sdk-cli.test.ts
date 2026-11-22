@@ -160,6 +160,8 @@ test("parse_cli reads the account commands with their switches and connection fl
   });
   assert.deepEqual(parse_cli(["sign-out"]), { kind: "account", options: { ...connection, command: { name: "sign-out" } } });
   assert.deepEqual(parse_cli(["sign-in", "--help"]), { kind: "help" });
+  assert.deepEqual(parse_cli(["claude-billing", "claude", "--format", "json"]), { kind: "account", options: { ...connection, format: "json", command: { name: "claude-billing", billing: "claude" } } });
+  assert.deepEqual(parse_cli(["claude", "--server", "http://127.0.0.1:4000"]), { kind: "account", options: { ...connection, server: "http://127.0.0.1:4000", command: { name: "claude" } } });
 });
 
 test("parse_cli rejects account commands with wrong arguments, flags or connections", () => {
@@ -177,6 +179,10 @@ test("parse_cli rejects account commands with wrong arguments, flags or connecti
   assert.equal(message(["account", "--server"]), "text: --server needs a value");
   assert.equal(message(["account", "--format", "xml"]), "text: --format must be text or json, got xml");
   assert.equal(message(["sign-out", "--server", "http://127.0.0.1:4000", "--data-dir", "D:/data"]), "text: --exe and --data-dir start a private instance and cannot be combined with --server");
+  assert.equal(message(["claude-billing"]), "text: claude-billing needs exactly one of api, claude");
+  assert.equal(message(["claude-billing", "chatgpt"]), "text: claude-billing needs exactly one of api, claude");
+  assert.equal(message(["claude", "now"]), "text: claude takes no arguments, got now");
+  assert.equal(message(["claude", "--consent"]), "text: unknown flag --consent");
 });
 
 test("stdin is read only without a message or with -, and the dash never reaches the message", () => {
@@ -331,6 +337,7 @@ test("the CLI exits 2 with an error line for rejected prompts and usage errors",
   const help = await run_cli(["run", "--help"]);
   assert.equal(help.code, 0);
   assert.match(help.stdout, /^usage: vantheax run /);
+  assert.match(help.stdout, /vantheax claude-billing api\|claude .*\n.*vantheax claude \[--format/);
   const usage = await run_cli(["run", "--format", "json", "--nope"]);
   assert.equal(usage.code, 2);
   assert.deepEqual(JSON.parse(usage.stdout), { type: "error", error: { code: "usage", message: "unknown flag --nope" } });
@@ -370,6 +377,11 @@ test("the CLI signs in through a running server and follows the event stream to 
     const refused = await run_cli(["billing", "api", "--server", base_url]);
     assert.equal(refused.code, 1);
     assert.match(refused.stderr, /^vantheax: POST \/v1\/account\/billing/);
+    const claude = { status: "signed_out", email: null, subscription: null, auth_method: null, login_command: "& 'C:/x/claude.exe' auth login --claudeai", detail: "" };
+    stub.replies.set("POST /v1/account/claude/refresh", { status: 200, body: { ...account_info("api"), claude_billing: "claude", claude } });
+    const checked = await run_cli(["claude", "--server", base_url]);
+    assert.deepEqual([checked.code, checked.stdout], [1, "claude: signed_out\n"]);
+    assert.match(checked.stderr, /run this in PowerShell on the machine that runs VantheaX: & 'C:\/x\/claude\.exe' auth login --claudeai/);
   } finally {
     await close();
   }

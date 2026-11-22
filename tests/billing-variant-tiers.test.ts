@@ -14,8 +14,7 @@ import { read_catalog_source } from "../electron/model/catalog-source.ts";
 import { set_key_source } from "../electron/model/key.ts";
 import { plan_responses_url } from "../electron/model/plan/send.ts";
 import { stream_model } from "../electron/model/provider.ts";
-import { stream_round } from "../electron/model/stream.ts";
-import { api_base, type Transport } from "../electron/model/transport.ts";
+import type { Transport } from "../electron/model/transport.ts";
 import type { RoundRequest } from "../electron/model/types.ts";
 import { body_of, chunk, write_spec } from "./model-stream-harness.ts";
 import { answer_frames, fake_source, with_source } from "./plan-harness.ts";
@@ -27,8 +26,8 @@ const catalog = parse_catalog(await read_catalog_source(fileURLToPath(new URL(".
 const listed = (...slugs: string[]): AccountModel[] => slugs.map((slug) => ({ slug, display_name: slug, context_window: null }));
 
 const plan_catalog = (account: readonly AccountModel[]): ModelCatalog => {
-  const { models, plan_ids } = plan_models(catalog.models, account);
-  return { ...catalog, models, plan_ids };
+  const { models, plan_ids, pro_locked } = plan_models(catalog.models, account);
+  return { ...catalog, models, plan_ids, pro_locked };
 };
 
 const entry_of = (models: readonly ModelEntry[], id: string): ModelEntry => {
@@ -76,12 +75,6 @@ const routed_seen = async (model: ModelEntry) => {
   return routed.seen;
 };
 
-const direct_seen = async (model: ModelEntry) => {
-  const direct = capture();
-  await stream_round(round(model), callbacks, new AbortController().signal, direct.transport);
-  return direct.seen;
-};
-
 const assistant = (model: string) => ({ id: `a-${model}`, role: "assistant", model, effort: "high", steps: [] }) as unknown as Message;
 
 let root = "";
@@ -94,30 +87,26 @@ after(async () => {
   await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
 });
 
-test("plan billing with the base model listed and Pro not: Pro with Fast reaches OpenRouter on openai/fast exactly as with API billing", async () => {
+test("plan billing with the base model listed and Pro not: Pro is locked and a stored Pro choice runs the base model on the plan", async () => {
   const account = listed("gpt-6.2-sol");
   const plan = plan_catalog(account);
   const plan_sol = entry_of(plan.models, "openai/gpt-6.2-sol");
   const api_sol = entry_of(catalog.models, "openai/gpt-6.2-sol");
+  assert.equal(plan_sol.pro, undefined);
+  assert.ok(plan.pro_locked?.includes("openai/gpt-6.2-sol"));
   const pro_fast = with_choice(plan_sol, { pro: true, tier: "fast" }, plan.plan_ids);
-  assert.deepEqual([pro_fast.id, pro_fast.label, pro_fast.provider_order], ["openai/gpt-6.2-sol-pro", "GPT 6.2 Sol Pro Fast", ["openai/fast"]]);
-  assert.deepEqual(pro_fast, with_choice(api_sol, { pro: true, tier: "fast" }));
-  assert.deepEqual(with_choice(plan_sol, { pro: true }, plan.plan_ids).tiers, api_sol.tiers);
-  const base_fast = with_choice(plan_sol, { pro: false, tier: "fast" }, plan.plan_ids);
-  assert.deepEqual([base_fast.id, base_fast.label, base_fast.provider_order, base_fast.tiers], ["openai/gpt-6.2-sol", "GPT 6.2 Sol", ["openai"], undefined]);
+  assert.deepEqual([pro_fast.id, pro_fast.label, pro_fast.provider_order, pro_fast.tiers], ["openai/gpt-6.2-sol", "GPT 6.2 Sol", ["openai"], undefined]);
+  const api_pro_fast = with_choice(api_sol, { pro: true, tier: "fast" });
+  assert.deepEqual([api_pro_fast.id, api_pro_fast.label, api_pro_fast.provider_order], ["openai/gpt-6.2-sol-pro", "GPT 6.2 Sol Pro Fast", ["openai/fast"]]);
   await with_source(fake_source("chatgpt", ["plan-token-1"], account).source, async () => {
-    const pro_seen = await routed_seen(pro_fast);
-    assert.deepEqual(pro_seen, await direct_seen(with_choice(api_sol, { pro: true, tier: "fast" })));
-    assert.equal(pro_seen[0]?.url, `${api_base}/chat/completions`);
-    assert.deepEqual((JSON.parse(pro_seen[0]?.body ?? "{}") as { provider?: { order?: string[] } }).provider?.order, ["openai/fast"]);
     assert.deepEqual(
-      (await routed_seen(base_fast)).map((seen) => seen.url),
+      (await routed_seen(pro_fast)).map((seen) => seen.url),
       [plan_responses_url],
     );
   });
 });
 
-test("an openai :floor id of a plan model resolves in plan billing for sub-agents, stored messages and labels", async () => {
+test("an openai :floor id of a plan model resolves in plan billing for sub-agents, stored messages and labels, its locked Pro does not", async () => {
   const account = listed("gpt-6.1-sol");
   const plan = plan_catalog(account);
   await init_agents({
@@ -134,22 +123,18 @@ test("an openai :floor id of a plan model resolves in plan billing for sub-agent
   });
   const flex = await find_agent_model("openai/gpt-6.1-sol:floor");
   assert.deepEqual([flex.id, flex.provider_order], ["openai/gpt-6.1-sol", ["openai/flex", "openai"]]);
-  const pro_flex = await find_agent_model("openai/gpt-6.1-sol-pro:floor");
-  assert.deepEqual([pro_flex.id, pro_flex.provider_order], ["openai/gpt-6.1-sol-pro", ["openai/flex", "openai"]]);
+  await assert.rejects(find_agent_model("openai/gpt-6.1-sol-pro:floor"));
+  await assert.rejects(find_agent_model("openai/gpt-6.1-sol-pro"));
   assert.deepEqual(message_choice(plan, [assistant("openai/gpt-6.1-sol:floor")]), { model: "openai/gpt-6.1-sol", effort: "high", pro: false, tier: "flex" });
   const plan_label = find_model(plan, "openai/gpt-6.1-sol:floor");
   assert.deepEqual([plan_label?.label, plan_label?.tiers], ["GPT 6.1 Sol", undefined]);
-  assert.equal(find_model(plan, "openai/gpt-6.1-sol-pro:floor")?.label, "GPT 6.1 Sol Pro Flex");
+  assert.equal(find_model(plan, "openai/gpt-6.1-sol-pro:floor"), null);
   assert.equal(find_model(catalog, "openai/gpt-6.1-sol:floor")?.label, "GPT 6.1 Sol Flex");
-  const api_pro_flex = find_model(catalog, "openai/gpt-6.1-sol-pro:floor");
-  assert.ok(api_pro_flex);
+  assert.equal(find_model(catalog, "openai/gpt-6.1-sol-pro:floor")?.label, "GPT 6.1 Sol Pro Flex");
   await with_source(fake_source("chatgpt", ["plan-token-1"], account).source, async () => {
     assert.deepEqual(
       (await routed_seen(flex)).map((seen) => seen.url),
       [plan_responses_url],
     );
-    const pro_seen = await routed_seen(pro_flex);
-    assert.deepEqual(pro_seen, await direct_seen(api_pro_flex));
-    assert.equal(pro_seen[0]?.url, `${api_base}/chat/completions`);
   });
 });

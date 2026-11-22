@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { BillingMode, Language } from "../../../shared/settings.ts";
+import type { BillingMode, ClaudeBillingMode, Language } from "../../../shared/settings.ts";
 import { Segmented, type SegmentedOption } from "../../components/Segmented.tsx";
 import { Skeleton } from "../../components/Skeleton.tsx";
 import { Toggle } from "../../components/Toggle.tsx";
@@ -9,6 +9,7 @@ import { use_store } from "../../state/use-store.ts";
 import { AccentRow } from "./AccentRow.tsx";
 import { BalanceLine } from "./BalanceLine.tsx";
 import { ChatgptRow } from "./panes/ChatgptRow.tsx";
+import { ClaudeRow } from "./panes/ClaudeRow.tsx";
 import { SecretRow } from "./panes/SecretRow.tsx";
 import { SettingsGroup, SettingsRow } from "./SettingsLayout.tsx";
 import "./GeneralPane.css";
@@ -22,6 +23,7 @@ export const GeneralPane = () => {
   const t = use_t();
   const language = use_store(settings_store, (view) => view?.language ?? null);
   const billing = use_store(settings_store, (view) => view?.billing ?? "api");
+  const claude_billing = use_store(settings_store, (view) => view?.claude_billing ?? "api");
   const has_key = use_store(settings_store, (view) => view?.secrets.openrouter ?? false);
   const sound = use_store(settings_store, (view) => view?.notification_sound ?? true);
   const [revision, set_revision] = useState(0);
@@ -43,6 +45,13 @@ export const GeneralPane = () => {
     { id: "api", label: t("billing.mode_api") },
     { id: "chatgpt", label: t("billing.mode_plan") },
   ];
+
+  const claude_billing_options: SegmentedOption<ClaudeBillingMode>[] = [
+    { id: "api", label: t("billing.mode_api") },
+    { id: "claude", label: t("billing.mode_claude_plan") },
+  ];
+
+  const any_plan = billing === "chatgpt" || claude_billing === "claude";
 
   return (
     <>
@@ -68,12 +77,22 @@ export const GeneralPane = () => {
           />
         </SettingsRow>
         <ChatgptRow />
+        <SettingsRow label={t("billing.claude_mode")}>
+          <Segmented
+            className="billing-switch"
+            options={claude_billing_options}
+            value={claude_billing}
+            label={t("billing.claude_mode")}
+            on_change={(next) => update_settings({ claude_billing: next })}
+          />
+        </SettingsRow>
+        <ClaudeRow />
         <SecretRow
           name="openrouter"
           label={t("settings.api_key")}
           stored={has_key}
           placeholder={t("settings.key_placeholder")}
-          hint={billing === "chatgpt" ? t("billing.key_hint_plan") : undefined}
+          hint={any_plan ? t("billing.key_hint_plan") : undefined}
           on_saved={() => set_revision((value) => value + 1)}
         />
         <SettingsRow label={t("settings.balance")}>

@@ -5,6 +5,7 @@ import { instruction_fallback } from "../chats/workspace.ts";
 import { major_effort } from "../model/catalog.ts";
 import { open_scratchpad } from "../scratchpad/index.ts";
 import type { Tool } from "../tools/types.ts";
+import { claude_plan_sections } from "./claude-plan.ts";
 import { list_top_level, load_project_docs } from "./project.ts";
 import { compose_sections, major_review, render_sections, type PromptSection } from "./sections.ts";
 
@@ -34,6 +35,7 @@ export type BuildPromptInput = {
   effort: string;
   deferred_mcp: string[];
   role: PromptSection | null;
+  claude_plan?: boolean;
 };
 
 const user_titles = new Set(["personality", "user_instructions", "project_instructions"]);
@@ -76,7 +78,7 @@ export const build_system_prompt = async (input: BuildPromptInput): Promise<stri
     extra_sections(input, tool_names),
     chat_scratchpad(input.chat_id),
   ]);
-  const sections = compose_sections({
+  const composed = compose_sections({
     model: input.model,
     mode: input.mode,
     plan: input.plan,
@@ -92,5 +94,6 @@ export const build_system_prompt = async (input: BuildPromptInput): Promise<stri
     deferred_mcp: input.deferred_mcp,
   });
   const major = input.effort === major_effort && tool_names.has("deploy_agent") ? [major_review()] : [];
+  const sections = input.claude_plan ? claude_plan_sections(composed) : composed;
   return render_sections(arrange_sections(sections, major, extra, input.role));
 };

@@ -127,6 +127,23 @@ test("a ChatGPT account change reaches unfiltered streams as account.changed and
   all.close();
 });
 
+test("a Claude Code login change reaches unfiltered streams as claude.changed and never a session stream", async () => {
+  const filtered = await open("?session=chat-1");
+  const all = await open();
+  await filtered.next();
+  await all.next();
+  const account = { status: "signed_in", email: "smoke@example.invalid", subscription: "max", auth_method: "claude.ai", login_command: "& 'C:/x/claude.exe' auth login --claudeai", detail: "" };
+  fire("window", "claude:changed", { ...account, status: "signed_out" });
+  fire(null, "claude:changed", account);
+  fire(null, "chats:changed", { id: "chat-1", streaming: false });
+  const first = await all.next();
+  assert.deepEqual([first.type, first.data], ["claude.changed", account]);
+  assert.equal((await all.next()).type, "session.updated");
+  assert.equal((await filtered.next()).type, "session.updated");
+  filtered.close();
+  all.close();
+});
+
 test("a stream resumed with last replays the frames after it, filtered like a live stream", async () => {
   const first = await open("?session=chat-1");
   await first.next();

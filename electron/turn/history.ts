@@ -6,6 +6,7 @@ import type { ModelEntry } from "../../shared/models.ts";
 import { alert_note_content, digest_note_content, report_note_content, update_note_content } from "../agents/reports.ts";
 import { compacted_messages, window_meter } from "../context/compact.ts";
 import { hook_notice_content } from "../hooks/text.ts";
+import { is_plan_output } from "../model/plan/input.ts";
 import type { ApiAssistantMessage, ApiMessage } from "../model/types.ts";
 import { stopped_text } from "../permissions/verdict-text.ts";
 import { media_mime } from "../media/files.ts";
@@ -97,6 +98,8 @@ const terminal_note = (message: AssistantMessage): string | null => {
   return null;
 };
 
+export const replay_note = (message: AssistantMessage): string | null => (manual_compaction_only(message) ? null : terminal_note(message));
+
 const replay_image = async (image: StepImage, model: ModelEntry, read_image: ImageReader): Promise<CarrierImage> => {
   if (!model.vision) {
     return { label: image.label, note: not_shown_note };
@@ -119,6 +122,11 @@ const round_reasoning = (message: AssistantMessage, round: number, steps: Step[]
     .map((step) => step.text)
     .join("");
   return text ? { reasoning: text } : {};
+};
+
+const plan_output = (message: AssistantMessage, round: number, model: ModelEntry): Pick<ApiAssistantMessage, "reasoning_details"> => {
+  const details = message.reasoning_details.find((entry) => entry.round === round)?.details ?? [];
+  return message.model === model.id && is_plan_output(details) ? { reasoning_details: details } : {};
 };
 
 type ReplayInput = { with_reasoning: boolean; model: ModelEntry; read_image: ImageReader; agent_tools: boolean };
@@ -176,7 +184,7 @@ const replay_round = async (message: AssistantMessage, round: number, steps: Ste
   const assistant: ApiAssistantMessage = {
     role: "assistant",
     content: content || null,
-    ...(with_reasoning ? round_reasoning(message, round, steps) : {}),
+    ...(with_reasoning ? round_reasoning(message, round, steps) : plan_output(message, round, model)),
   };
   if (tools.length) {
     assistant.tool_calls = tools.map((step) => ({
@@ -215,7 +223,7 @@ const replay_assistant = async (message: AssistantMessage, input: ReplayInput, f
     const steps = message.steps.filter((step) => step.round === round);
     rounds.push({ round, messages: round < from_round ? await lead_messages(steps, input, true) : await replay_round(message, round, steps, input) });
   }
-  const note = manual_compaction_only(message) ? null : terminal_note(message);
+  const note = replay_note(message);
   return { rounds, tail: note ? [{ role: "user", content: note }] : [] };
 };
 

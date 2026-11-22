@@ -13,7 +13,7 @@ import { uploaded } from "../media/uploads.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { pending_approvals } from "../permissions/approvals.ts";
 import { get_settings } from "../settings/store.ts";
-import { active_turn, is_active, turn_settled } from "../turn/active.ts";
+import { active_turn, ended_turn_settled, is_active, turn_settled } from "../turn/active.ts";
 import { forget_run_options, run_options, set_run_options } from "../turn/run-options.ts";
 import { start_events, stop_events } from "./events.ts";
 import { api_handlers, check_handlers, route, type ApiContext } from "./router.ts";
@@ -61,6 +61,7 @@ export const start_api = async (config: HeadlessConfig): Promise<ApiServer> => {
     is_active,
     active_message: (chat_id) => active_turn(chat_id)?.message_id ?? null,
     turn_settled,
+    ended_turn_settled,
     chat_activity,
     chat_idle,
     when_idle,

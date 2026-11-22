@@ -160,7 +160,12 @@ export type TurnErrorKind =
   | "plan_auth"
   | "plan_limit"
   | "plan_blocked"
-  | "plan_model";
+  | "plan_model"
+  | "claude_auth"
+  | "claude_limit"
+  | "claude_blocked"
+  | "claude_model"
+  | "claude_process";
 
 export type TurnError = { kind: TurnErrorKind; message: string };
 

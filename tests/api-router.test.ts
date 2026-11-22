@@ -102,6 +102,7 @@ before(async () => {
     is_active: (id) => state.active.has(id),
     active_message: () => null,
     turn_settled: async () => {},
+    ended_turn_settled: async () => {},
     chat_activity: () => ({ turn: false, agents: 0, workflows: 0, background: 0, queued: 0 }),
     chat_idle: () => true,
     when_idle: (chat_id, signal) =>

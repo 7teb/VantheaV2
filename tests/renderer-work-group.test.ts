@@ -114,7 +114,7 @@ test("a finished group starts closed with the tool count and shows no time", () 
 test("a finished group shows the icon of its first tool call instead of a fixed terminal square", () => {
   const path_d = (d: string) => (element: FakeElement) => element.getAttribute("d") === d;
   const terminal = path_d("M1.5 3L3 1.5H21L22.5 3V21L21 22.5H3L1.5 21V3ZM3 3V21H21V3H3Z");
-  const book = path_d("M2.5 2C1.67157 2 1 2.67157 1 3.5V12.5C1 13.3284 1.67157 14 2.5 14H6C6.8178 14 7.54389 13.6073 8 13.0002C8.45612 13.6073 9.1822 14 10 14H13.5C14.3284 14 15 13.3284 15 12.5V3.5C15 2.67157 14.3284 2 13.5 2H10C9.1822 2 8.45612 2.39267 8 2.99976C7.54389 2.39267 6.8178 2 6 2H2.5ZM7.5 4.5V11.5C7.5 12.3284 6.82843 13 6 13H2.5C2.22386 13 2 12.7761 2 12.5V3.5C2 3.22386 2.22386 3 2.5 3H6C6.82843 3 7.5 3.67157 7.5 4.5ZM8.5 11.5V4.5C8.5 3.67157 9.17157 3 10 3H13.5C13.7761 3 14 3.22386 14 3.5V12.5C14 12.7761 13.7761 13 13.5 13H10C9.17157 13 8.5 12.3284 8.5 11.5Z");
+  const book = path_d("M12 6.5C10.5 5 8.5 4 5.5 4h-2a1 1 0 0 0-1 1v12.5a1 1 0 0 0 1 1h2.5c2.5 0 4.5.7 6 2 1.5-1.3 3.5-2 6-2h2.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2c-3 0-5 1-6.5 2.5z");
   render(finished(), false);
   assert.equal(head().matching(book).length, 1);
   assert.equal(head().matching(terminal).length, 0);

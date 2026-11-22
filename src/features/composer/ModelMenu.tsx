@@ -11,9 +11,10 @@ import { open_external } from "../../state/chat-actions.ts";
 import { chatgpt_store } from "../../state/chatgpt.ts";
 import { open_settings } from "../../state/ui.ts";
 import { use_store } from "../../state/use-store.ts";
+import { ClaudePlanFooter } from "./ClaudePlanFooter.tsx";
 import { effort_label } from "./composer-hooks.ts";
 import { EffortSlider } from "./EffortSlider.tsx";
-import { choice_view, runs_on_plan, with_model } from "./model-menu.ts";
+import { choice_view, runs_on_claude_plan, runs_on_plan, with_model } from "./model-menu.ts";
 import "./ModelMenu.css";
 
 export type ModelMenuView = "effort" | "models";
@@ -80,6 +81,7 @@ export const ModelMenu = ({ open, anchor, catalog, choice, view, on_view, on_cho
   const [preview, set_preview] = useState<string | null>(null);
   const { model, effort } = choice_view(catalog, choice);
   const on_plan = runs_on_plan(catalog, model);
+  const on_claude_plan = runs_on_claude_plan(catalog, model);
   const efforts = model?.efforts ?? [];
   const has_slider = efforts.length > 1;
   const shown: ModelMenuView = has_slider ? view : "models";
@@ -186,7 +188,7 @@ export const ModelMenu = ({ open, anchor, catalog, choice, view, on_view, on_cho
       anchor={anchor}
       on_close={on_close}
       placement="top-start"
-      className={class_names("menu composer-menu model-menu", on_plan && "has-plan-footer")}
+      className={class_names("menu composer-menu model-menu", (on_plan || on_claude_plan) && "has-plan-footer")}
       role="menu"
       label={t("composer.model_select")}
       min_width={260}
@@ -253,6 +255,7 @@ export const ModelMenu = ({ open, anchor, catalog, choice, view, on_view, on_cho
         </div>
       </div>
       {on_plan && <PlanFooter on_close={on_close} />}
+      {on_claude_plan && <ClaudePlanFooter on_close={on_close} />}
     </Floating>
   );
 };

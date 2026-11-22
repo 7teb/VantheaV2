@@ -5,6 +5,7 @@ import { brotliCompress, brotliCompressSync, brotliDecompress, constants as zlib
 import type { AssistantMessage, Chat, ChatMeta, ChatSummary, Message, MessageUsage, RoundReasoning, Step, StepImage, ToolStep } from "../../shared/chat.ts";
 import { coerce_hook_runs } from "../../shared/hook-notes.ts";
 import { flex_base, speed_tiers, type ModelChoice } from "../../shared/models.ts";
+import type { ClaudeSessionRef } from "../claude/runtime.ts";
 import { coerce_context_usage } from "../context/calibration.ts";
 import { is_media_id } from "../media/files.ts";
 import { coerce_reviews } from "../permissions/review-coerce.ts";
@@ -156,15 +157,25 @@ const parse_summary = (value: unknown): ChatSummary | null => {
   };
 };
 
+export const parse_claude_session = (value: unknown): ClaudeSessionRef | null => {
+  const raw = as_record(value);
+  const session_id = as_string(raw.session_id);
+  const cwd = as_string(raw.cwd);
+  const through_message_id = as_string(raw.through_message_id);
+  return session_id && cwd && through_message_id ? { session_id, cwd, through_message_id } : null;
+};
+
 export const parse_body = (value: unknown, chat_id: string): ChatBody | null => {
   const raw = as_record(value);
   if (!Array.isArray(raw.messages)) {
     return null;
   }
+  const claude_session = parse_claude_session(raw.claude_session);
   return {
     summary: parse_summary(raw.summary),
     messages: raw.messages.filter(is_message).map((message) => parse_message(message, chat_id)),
     questions: parse_question_states(raw.questions, chat_id),
+    ...(claude_session ? { claude_session } : {}),
   };
 };
 

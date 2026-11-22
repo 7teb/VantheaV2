@@ -24,8 +24,9 @@ export type {
   SteerRequest,
   WaitUntil,
 } from "../shared/api/contract.ts";
-export type { BillingMode } from "../shared/settings.ts";
+export type { BillingMode, ClaudeBillingMode } from "../shared/settings.ts";
 export type { ChatgptAccount, ChatgptErrorCode, ChatgptStatus } from "../shared/chatgpt.ts";
+export type { ClaudeAccount, ClaudeStatus } from "../shared/claude.ts";
 export { create_client } from "./client.ts";
 export type { CallOptions, Client, DiffOptions, RunOptions, Upload, WaitOptions } from "./client.ts";
 export type { EventsOptions } from "./events.ts";

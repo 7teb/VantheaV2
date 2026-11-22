@@ -61,6 +61,7 @@ const view = (billing: BillingMode, model: string): SettingsView => ({
   hooks: { global: [], projects: {} },
   billing,
   inactive_billing_model: "",
+  claude_billing: "api",
   secrets: { openrouter: false, tavily: false },
 });
 

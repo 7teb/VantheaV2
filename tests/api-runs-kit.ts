@@ -114,6 +114,7 @@ export const context: ApiContext = {
   is_active: (id) => state.active.has(id),
   active_message: () => state.active_message,
   turn_settled: () => turn_done.promise,
+  ended_turn_settled: async () => {},
   chat_activity: () => ({ turn: false, agents: 0, workflows: 0, background: 1, queued: 0 }),
   chat_idle: () => state.idle_now,
   when_idle: (chat_id, signal) => {

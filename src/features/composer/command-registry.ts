@@ -2,7 +2,6 @@ import type { CompactResult } from "../../../shared/ipc/chats.ts";
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
-  ChartPieIcon,
   ClipboardListIcon,
   CoinsIcon,
   FilePenIcon,
@@ -12,6 +11,7 @@ import {
   GaugeIcon,
   GitBranchPlusIcon,
   HookIcon,
+  ImageIcon,
   LayersIcon,
   PercentIcon,
   PinIcon,
@@ -178,8 +178,9 @@ export const composer_commands: ComposerCommand[] = [
     label: ({ t }) => t("commands.pro"),
     keywords: ["gpt", "reasoning"],
     hint: ({ t }) => t("commands.pro_hint"),
-    shown: ({ model }) => Boolean(model?.pro),
-    toggled: ({ pro }) => pro,
+    blocked: ({ t, pro_locked }) => (pro_locked ? t("commands.pro_not_in_plan") : null),
+    shown: ({ model, pro_locked }) => Boolean(model?.pro) || pro_locked,
+    toggled: ({ pro, pro_locked }) => pro && !pro_locked,
     run: ({ chat_id }) => toggle_pro(chat_id),
   },
   {
@@ -218,7 +219,7 @@ export const composer_commands: ComposerCommand[] = [
   {
     id: "visualize",
     needs: "none",
-    icon: () => ChartPieIcon,
+    icon: () => ImageIcon,
     label: ({ t }) => t("commands.visualize"),
     keywords: ["chart", "diagram", "graph", "visual", "widget", "Diagramm", "Grafik", "visualisieren"],
     toggled: ({ visualize }) => visualize,

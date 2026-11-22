@@ -1,6 +1,8 @@
 import { coerce_hook_runs } from "../../shared/hook-notes.ts";
 import type { Sequenced, StreamEventBody } from "../../shared/events.ts";
 import type { AgentProfile, AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
+import { parse_claude_session } from "../chats/files.ts";
+import type { ClaudeSessionRef } from "../claude/runtime.ts";
 import { coerce_context_usage } from "../context/calibration.ts";
 import { coerce_review } from "../permissions/review-coerce.ts";
 import { as_array, as_iso, as_record, as_string, is_record, pick } from "../storage/coerce.ts";
@@ -16,6 +18,7 @@ export type AgentRecord = Omit<AgentSummary, "runs"> & {
   runs: RunRecord[];
   scope: string[];
   held: HeldEntry[];
+  claude_session?: ClaudeSessionRef;
 };
 
 export type StoredEvent = Sequenced & StreamEventBody;
@@ -122,6 +125,7 @@ const parse_agent = (value: unknown, now: string): AgentRecord | null => {
   const runs = as_array(raw.runs)
     .map((entry) => parse_run(entry, now))
     .filter((run): run is RunRecord => run !== null);
+  const claude_session = parse_claude_session(raw.claude_session);
   return {
     agent_id,
     chat_id,
@@ -141,6 +145,7 @@ const parse_agent = (value: unknown, now: string): AgentRecord | null => {
       .map(parse_held)
       .filter((entry): entry is HeldEntry => entry !== null),
     ...parse_workflow_link(raw.workflow),
+    ...(claude_session ? { claude_session } : {}),
   };
 };
 

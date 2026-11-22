@@ -16,6 +16,9 @@ export const with_model = (choice: ModelChoice, entry: ModelEntry): ModelChoice 
 
 export const runs_on_plan = (catalog: ModelCatalog, model: ModelEntry | null): boolean => model !== null && (catalog.plan_ids ?? []).includes(model.id);
 
+export const runs_on_claude_plan = (catalog: ModelCatalog, model: ModelEntry | null): boolean =>
+  model !== null && (catalog.claude_plan_ids ?? []).includes(model.id);
+
 export const model_menu_sections = (t: Translate, catalog: ModelCatalog, choice: ModelChoice, on_choice: (choice: ModelChoice) => void): MenuSection[] => {
   const { model, effort } = choice_view(catalog, choice);
   const models_section: MenuSection = {

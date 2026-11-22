@@ -12,6 +12,7 @@ import { close_chat_tabs } from "../browser/tabs.ts";
 import { chat_file } from "../chats/files.ts";
 import { chat_meta, flush_all_sync, get_chat, on_chat_removed } from "../chats/store.ts";
 import { chat_home_of, chat_root } from "../chats/workspace.ts";
+import { claude_runtime } from "../claude/runtime.ts";
 import { init_computer } from "../computer/runtime.ts";
 import { clear_computer, close_computer } from "../computer/service.ts";
 import { git_service, init_git, shutdown_git } from "../git/index.ts";
@@ -57,6 +58,7 @@ import { clear_mcp_chat, set_command_gate } from "../tools/mcp/decide.ts";
 import { tools_for } from "../tools/registry.ts";
 import { active_turn, active_turns, forget_user_stop, on_active_turns_changed, turn_settled } from "../turn/active.ts";
 import { init_turn_diffs, turn_diffs } from "../turn-diff/index.ts";
+import { run_claude_turn } from "../turn/claude/drive.ts";
 import { set_event_notes_hook, set_turn_finished_hook } from "../turn/drive.ts";
 import { forget_run_options } from "../turn/run-options.ts";
 import { interrupt_all_turns, stop_turn } from "../turn/run.ts";
@@ -122,7 +124,7 @@ const wire_hooks = () => {
       if (run.ended_at && run.status !== "interrupted") turn_diffs.work_ended(summary.chat_id, run.run_id, run.started_at, run.ended_at);
     }
   });
-  on_chat_removed((chat_id, meta) => {
+  on_chat_removed((chat_id, meta, claude_session) => {
     const workflows_cleared = clear_chat_workflows(chat_id);
     workflows_cleared.catch((error) => console.error(`[workflows] removing the workflows of chat ${chat_id} failed:`, error));
     stop_turn(chat_id);
@@ -148,6 +150,11 @@ const wire_hooks = () => {
     stop_chat_files_watch(chat_id);
     turn_diffs.remove_chat(chat_id).catch((error) => console.error(`[turn-diff] removing the turn snapshots of the deleted chat ${chat_id} failed:`, error));
     remove_scratchpad(chat_id).catch((error) => console.error(`[scratchpad] removing the scratchpad of the deleted chat ${chat_id} failed:`, error));
+    if (claude_session) {
+      turn_settled(chat_id)
+        .then(() => claude_runtime().delete_session(claude_session.session_id, claude_session.cwd))
+        .catch((error) => console.error(`[claude] deleting Claude Code session ${claude_session.session_id} of the deleted chat ${chat_id} failed:`, error));
+    }
     const { worktree } = meta;
     if (worktree) {
       release_worktree({ chat_id, project_path: meta.project_path, worktree, settled: Promise.all([turn_settled(chat_id), agents_cleared, workflows_cleared]) }).catch((error) =>
@@ -198,6 +205,7 @@ export const init_services = async (options: { storage_root?: string } = {}): Pr
       review_call,
       models: async () => (await billing_catalog()).models.map(context_model),
       reasoning_status: reasoning_status_call,
+      claude_turn: run_claude_turn,
     }),
   );
   await run_step("workflows", () => init_workflows(storage_paths().workflows));

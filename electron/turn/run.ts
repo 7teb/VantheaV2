@@ -8,6 +8,8 @@ import type { CommandOrigin, UserOrigin } from "../../shared/chat.ts";
 import { catalog_choice, chat_choice, with_choice, type ModelChoice, type ModelEntry } from "../../shared/models.ts";
 import { wake_idle } from "../agents/reports.ts";
 import { billing_catalog } from "../billing/catalog.ts";
+import { claude_plan_serves } from "../billing/claude.ts";
+import { claude_session_of } from "../chats/claude-session.ts";
 import { replace_tail } from "../chats/edit.ts";
 import { append_message, flush_chat, get_chat, set_streaming, unarchive_chat, update_message, update_meta } from "../chats/store.ts";
 import { chat_root } from "../chats/workspace.ts";
@@ -24,6 +26,7 @@ import {
   active_turns,
   clear_active,
   drop_untaken_steers,
+  ended_turn_settled,
   is_active,
   mark_user_stop,
   push_steer,
@@ -31,6 +34,7 @@ import {
   release_chat,
   reserve_chat,
 } from "./active.ts";
+import { claude_session_resumable } from "./claude/sessions.ts";
 import { drive, type TurnPlan } from "./drive.ts";
 import { create_emitter, type EmitDeps, type QuietEnd } from "./emit.ts";
 import { uncompacted_work } from "./history.ts";
@@ -71,6 +75,7 @@ type BeginInput = {
 };
 
 const with_reservation = async <T>(chat_id: string, work: () => Promise<T>): Promise<T> => {
+  await ended_turn_settled(chat_id);
   if (!reserve_chat(chat_id)) {
     throw new Error(`chat ${chat_id} already has a running turn`);
   }
@@ -228,6 +233,7 @@ export const start_turn = (request: SendRequest, attachments: Attachment[], orig
   });
 
 export const launch_internal_turn = async (chat_id: string, origin: UserOrigin, text: string, turn: InternalTurn = {}): Promise<Launched | null> => {
+  await ended_turn_settled(chat_id);
   if (is_active(chat_id)) {
     return null;
   }
@@ -329,7 +335,16 @@ export const init_turn = async (chat_id: string, command: CommandOrigin, argumen
   return begin({ chat_id, choice, mode, plan: false, origin: command, ...(argument === null ? {} : { command_arg: argument }), trigger: { kind: "new", text, attachments: [] } });
 };
 
+const claude_without_session = async (chat: Chat, choice: ModelChoice): Promise<boolean> => {
+  if (!claude_plan_serves(await turn_model(choice))) {
+    return false;
+  }
+  const previous = chat.messages.findLast((message) => message.role === "assistant")?.id ?? null;
+  return !claude_session_resumable(await claude_session_of(chat.id), await chat_root(chat), previous);
+};
+
 export const compact_turn = async (chat_id: string): Promise<CompactResult> => {
+  await ended_turn_settled(chat_id);
   if (is_active(chat_id)) {
     return { status: "busy" };
   }
@@ -341,6 +356,9 @@ export const compact_turn = async (chat_id: string): Promise<CompactResult> => {
     return { status: "nothing" };
   }
   const { choice, mode } = await chat_request(chat_id);
+  if (await claude_without_session(chat, choice)) {
+    return { status: "nothing" };
+  }
   const launched = await with_reservation(chat_id, () => launch({ chat_id, choice, mode, plan: false, origin: "user", trigger: { kind: "compact" } }));
   await launched.finished;
   const message = (await get_chat(chat_id))?.messages.find((entry) => entry.id === launched.started.message_id);

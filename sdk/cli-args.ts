@@ -1,6 +1,6 @@
 import type { ApiEvent, RunResult, SessionInfo } from "../shared/api/contract.ts";
 import { permission_modes, type PermissionMode } from "../shared/chat.ts";
-import { billing_modes, type BillingMode } from "../shared/settings.ts";
+import { billing_modes, claude_billing_modes, type BillingMode, type ClaudeBillingMode } from "../shared/settings.ts";
 
 export type OutputFormat = "text" | "json";
 
@@ -19,7 +19,13 @@ export type CliOptions = {
   server: string | null;
 };
 
-export type AccountCommand = { name: "account" } | { name: "billing"; billing: BillingMode } | { name: "sign-in"; fresh: boolean; consent: boolean } | { name: "sign-out" };
+export type AccountCommand =
+  | { name: "account" }
+  | { name: "billing"; billing: BillingMode }
+  | { name: "sign-in"; fresh: boolean; consent: boolean }
+  | { name: "sign-out" }
+  | { name: "claude-billing"; billing: ClaudeBillingMode }
+  | { name: "claude" };
 
 export type AccountOptions = { command: AccountCommand; format: OutputFormat; exe: string | null; data_dir: string | null; server: string | null };
 
@@ -37,6 +43,8 @@ export const usage = [
   "       vantheax billing api|chatgpt [--format text|json] [--exe path] [--data-dir path] [--server url]",
   "       vantheax sign-in [--fresh] [--consent] [--format text|json] [--exe path] [--data-dir path] [--server url]",
   "       vantheax sign-out [--format text|json] [--exe path] [--data-dir path] [--server url]",
+  "       vantheax claude-billing api|claude [--format text|json] [--exe path] [--data-dir path] [--server url]",
+  "       vantheax claude [--format text|json] [--exe path] [--data-dir path] [--server url]",
   "       vantheax --help",
 ].join("\n");
 
@@ -46,7 +54,7 @@ const value_flags = new Set<string>(["cwd", "model", "effort", "mode", "session"
 
 const connection_flags = new Set<string>(["format", "exe", "data-dir", "server"]);
 
-const account_commands = new Set<string>(["account", "billing", "sign-in", "sign-out"]);
+const account_commands = new Set<string>(["account", "billing", "sign-in", "sign-out", "claude-billing", "claude"]);
 
 const sign_in_switches: readonly string[] = ["fresh", "consent"];
 
@@ -59,6 +67,8 @@ const is_mode = (value: string): value is PermissionMode => (permission_modes as
 const is_format = (value: string): value is OutputFormat => (output_formats as readonly string[]).includes(value);
 
 const is_billing = (value: string): value is BillingMode => (billing_modes as readonly string[]).includes(value);
+
+const is_claude_billing = (value: string): value is ClaudeBillingMode => (claude_billing_modes as readonly string[]).includes(value);
 
 type FlagValue = { value: string | undefined; consumed: boolean };
 
@@ -185,11 +195,18 @@ const account_command = (command: string, positional: readonly string[], switche
     const [billing] = positional;
     return positional.length === 1 && is_billing(billing) ? { name: "billing", billing } : `billing needs exactly one of ${billing_modes.join(", ")}`;
   }
+  if (command === "claude-billing") {
+    const [billing] = positional;
+    return positional.length === 1 && is_claude_billing(billing) ? { name: "claude-billing", billing } : `claude-billing needs exactly one of ${claude_billing_modes.join(", ")}`;
+  }
   if (positional.length) {
     return `${command} takes no arguments, got ${positional.join(" ")}`;
   }
   if (command === "sign-in") {
     return { name: "sign-in", fresh: switches.has("fresh"), consent: switches.has("consent") };
+  }
+  if (command === "claude") {
+    return { name: "claude" };
   }
   return command === "sign-out" ? { name: "sign-out" } : { name: "account" };
 };

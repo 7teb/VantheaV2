@@ -11,6 +11,8 @@ const without_arguments = (item: Record<string, unknown>): Record<string, unknow
 
 export const wrap_output = (items: Record<string, unknown>[]): unknown[] => [{ type: output_wrapper_type, items: items.map(without_arguments) }];
 
+export const is_plan_output = (details: readonly unknown[]): boolean => details.length === 1 && as_record(details[0])?.type === output_wrapper_type;
+
 const carries_wrapper = (message: ApiMessage): message is ApiAssistantMessage =>
   message.role === "assistant" && Boolean(message.reasoning_details?.some((entry) => as_record(entry)?.type === output_wrapper_type));
 
@@ -74,8 +76,7 @@ const replayed_items = (items: JsonRecord[], message: ApiAssistantMessage, call_
   });
 };
 
-const resendable = (item: JsonRecord, current_turn: boolean): boolean =>
-  item.type !== "reasoning" || (current_turn && typeof item.encrypted_content === "string" && item.encrypted_content !== "");
+const resendable = (item: JsonRecord): boolean => item.type !== "reasoning" || (typeof item.encrypted_content === "string" && item.encrypted_content !== "");
 
 const plain_assistant = (message: ApiAssistantMessage): InputItem[] => [
   ...(message.content ? [{ type: "message", role: "assistant", content: message.content }] : []),
@@ -87,7 +88,7 @@ export const plan_input = (messages: ApiMessage[], tools: ToolSpec[]): InputItem
   const call_ids = new Map<string, string>();
   const items: InputItem[] = [];
   let unreplayable = 0;
-  for (const { message, current_turn } of sent) {
+  for (const { message } of sent) {
     if (message.role === "system") {
       items.push({ type: "message", role: "developer", content: message.content });
       continue;
@@ -105,12 +106,12 @@ export const plan_input = (messages: ApiMessage[], tools: ToolSpec[]): InputItem
       items.push(...plain_assistant(message));
       continue;
     }
-    const kept = replay.filter((item) => resendable(item, current_turn));
-    unreplayable += current_turn ? replay.length - kept.length : 0;
+    const kept = replay.filter(resendable);
+    unreplayable += replay.length - kept.length;
     items.push(...replayed_items(kept, message, call_ids));
   }
   if (unreplayable) {
-    console.warn(`[plan] left out ${unreplayable} reasoning item(s) of the current turn that carry no encrypted content`);
+    console.warn(`[plan] left out ${unreplayable} reasoning item(s) that carry no encrypted content`);
   }
   if (tools.length) {
     items.splice(sent[0]?.message.role === "system" ? 1 : 0, 0, tools_item(tools));

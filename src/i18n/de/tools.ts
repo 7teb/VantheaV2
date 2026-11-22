@@ -88,6 +88,7 @@ export const tools: Record<keyof typeof en, string> = {
   "tools.model_price_unit": "USD pro 1M Tokens",
   "tools.price_unavailable": "k. A.",
   "tools.model_plan": "ChatGPT-Abo",
+  "tools.model_claude_plan": "Claude-Abo",
   "tools.created_file": "neue Datei",
   "tools.no_output": "Keine Ausgabe",
   "tools.command_running": "Läuft",

@@ -29,6 +29,7 @@ const session_of: { [K in MappedName]: (payload: EventPayload<K>) => string | nu
   "agents:approvals_changed": (payload) => payload.chat_id,
   "background:changed": (payload) => payload.chat_id,
   "chatgpt:changed": () => null,
+  "claude:changed": () => null,
 };
 
 const ring = create_ring<Frame>(ring_limit);

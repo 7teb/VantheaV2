@@ -19,6 +19,7 @@ const every_event_type: Record<ApiEvent["type"], true> = {
   "agent.approvals_changed": true,
   "background.changed": true,
   "account.changed": true,
+  "claude.changed": true,
   "run.settled": true,
 };
 
@@ -51,6 +52,8 @@ test("the route table covers exactly the endpoints of the contract", () => {
       "account.billing",
       "account.sign_in",
       "account.sign_out",
+      "account.claude_billing",
+      "account.claude_refresh",
       "sessions.list",
       "sessions.create",
       "sessions.get",
@@ -106,8 +109,21 @@ test("the ChatGPT account change is published as account.changed and the account
   const account = api_routes.filter((route) => route.id.startsWith("account."));
   assert.deepEqual(
     account.map((route) => `${route.method} ${route.path}`),
-    ["GET /v1/account", "POST /v1/account/billing", "POST /v1/account/chatgpt/sign_in", "POST /v1/account/chatgpt/sign_out"],
+    [
+      "GET /v1/account",
+      "POST /v1/account/billing",
+      "POST /v1/account/chatgpt/sign_in",
+      "POST /v1/account/chatgpt/sign_out",
+      "POST /v1/account/claude-billing",
+      "POST /v1/account/claude/refresh",
+    ],
   );
+});
+
+test("the Claude Code login change is published as claude.changed and the Claude routes fill their paths", () => {
+  assert.equal(event_names["claude:changed"], "claude.changed");
+  assert.equal(route_path("account.claude_billing", {}), "/v1/account/claude-billing");
+  assert.equal(route_path("account.claude_refresh", {}), "/v1/account/claude/refresh");
 });
 
 test("main approval ids round trip", () => {

@@ -4,6 +4,8 @@ import type { SendRequest } from "../../shared/ipc/chats.ts";
 import type { ModelEntry } from "../../shared/models.ts";
 import { major_wait_ms, take_agent_notes, wait_for_input } from "../agents/reports.ts";
 import { roster_facts } from "../agents/roster.ts";
+import { claude_plan_serves } from "../billing/claude.ts";
+import { claude_session_of, set_claude_session } from "../chats/claude-session.ts";
 import { flush_chat, get_chat, set_streaming, set_summary, update_message } from "../chats/store.ts";
 import { stored_context } from "../context/calibration.ts";
 import { release_computer } from "../computer/service.ts";
@@ -15,6 +17,7 @@ import { save_tool_images } from "../media/files.ts";
 import { major_effort } from "../model/catalog.ts";
 import { model_catalog } from "../model/catalog-file.ts";
 import { stream_model } from "../model/provider.ts";
+import type { ApiMessage } from "../model/types.ts";
 import { cancel_chat, wait_for_decision } from "../permissions/approvals.ts";
 import { human_requests_of, set_authorization } from "../permissions/context.ts";
 import { chat_decisions } from "../permissions/decisions.ts";
@@ -36,8 +39,9 @@ import { tools_for } from "../tools/registry.ts";
 import { turn_diffs } from "../turn-diff/index.ts";
 import { admit_steers, drop_untaken_steers, unregister_active, type ActiveTurn } from "./active.ts";
 import { carried_todos_note } from "./carried-todos.ts";
+import { run_claude_turn } from "./claude/drive.ts";
 import { model_switch_note } from "./model-switch.ts";
-import { build_api_messages } from "./history.ts";
+import { build_api_messages, replay_note } from "./history.ts";
 import { run_compaction_turn, run_turn_loop } from "./loop.ts";
 import { reject_feedback, run_options } from "./run-options.ts";
 import type { CompactionHooks, OpeningNotes, TurnNote, TurnSession } from "./session.ts";
@@ -107,6 +111,28 @@ const opening_hooks = async (plan: TurnPlan, identity: HookIdentity, messages: M
   return gate.notes;
 };
 
+const fresh_count = (api_messages: ApiMessage[], history: Message[], previous: number): number => {
+  const count = history.length - previous - 1;
+  const last = history[previous];
+  const note = last?.role === "assistant" ? replay_note(last) : null;
+  const before = api_messages[api_messages.length - count - 1];
+  return note !== null && before?.role === "user" && before.content === note ? count + 1 : count;
+};
+
+const claude_turn = async (plan: TurnPlan, session: TurnSession, api_messages: ApiMessage[], history: Message[], title: string): Promise<void> => {
+  const previous = history.findLastIndex((message) => message.role === "assistant");
+  await run_claude_turn(session, {
+    api_messages,
+    fresh_count: fresh_count(api_messages, history, previous),
+    compact_only: plan.compact_only,
+    title: title || plan.user_request.slice(0, 80),
+    turn_id: plan.message_id,
+    previous_turn_id: history[previous]?.id ?? null,
+    stored: await claude_session_of(plan.chat_id),
+    save: (ref) => set_claude_session(plan.chat_id, ref),
+  });
+};
+
 export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => {
   const signal = turn.controller.signal;
   try {
@@ -147,6 +173,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     const all_tools = tools_for(profile, settings, plan.model, mcp_tools());
     const offered = defer_mcp(all_tools);
     const agent_tools = offered.some((tool) => tool.spec.name === "continue_agent");
+    const claude = claude_plan_serves(plan.model);
     const system = await build_system_prompt({
       model: plan.model,
       settings,
@@ -161,6 +188,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       effort: plan.effort,
       deferred_mcp: all_tools.filter(is_mcp_tool).map((tool) => tool.spec.name),
       role: null,
+      claude_plan: claude,
     });
     const api_messages = await build_api_messages({ system, summary: loaded.summary, messages: history, model: plan.model, agent_tools });
     const carried = offered.some((tool) => tool.spec.name === "update_todos") ? carried_todos_note(history) : null;
@@ -182,13 +210,13 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       stream: stream_model,
       resolve_tools: (p) => defer_mcp(tools_for(p, settings, plan.model, mcp_tools())),
       side_model,
-      wait_decision: (call_id, request, on_hold) =>
+      wait_decision: (call_id, request, on_hold, call_signal) =>
         wait_for_decision({
           key: plan.chat_id,
           chat_id: plan.chat_id,
           call_id,
           request,
-          signal,
+          signal: call_signal,
           on_hold,
           reject_feedback: run_options(plan.chat_id)?.approvals === "reject" ? reject_feedback : undefined,
         }),
@@ -214,7 +242,11 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
       before_tools: () => turn_diffs.ready(plan.chat_id, plan.message_id, signal),
       hooks,
     };
-    await (plan.compact_only ? run_compaction_turn(session, api_messages) : run_turn_loop(session, api_messages));
+    if (claude) {
+      await claude_turn(plan, session, api_messages, history, loaded.title);
+    } else {
+      await (plan.compact_only ? run_compaction_turn(session, api_messages) : run_turn_loop(session, api_messages));
+    }
   } catch (error) {
     if (signal.aborted) {
       turn.emit({ type: "end", status: "stopped", error: null });

@@ -37,11 +37,16 @@ export const plan_lists = async (): Promise<PlanLists> => {
   return { ...lists, account };
 };
 
+const with_claude_plan = (catalog: ModelCatalog): ModelCatalog =>
+  get_settings().claude_billing === "claude"
+    ? { ...catalog, claude_plan_ids: catalog.models.filter((model) => model.claude_code !== undefined).map((model) => model.id) }
+    : catalog;
+
 export const billing_catalog = async (): Promise<ModelCatalog> => {
   const catalog = await model_catalog();
   if (get_settings().billing !== "chatgpt") {
-    return catalog;
+    return with_claude_plan(catalog);
   }
-  const { models, plan_ids } = await plan_lists();
-  return { ...catalog, models, plan_ids };
+  const { models, plan_ids, pro_locked } = await plan_lists();
+  return with_claude_plan({ ...catalog, models, plan_ids, ...(pro_locked.length ? { pro_locked } : {}) });
 };

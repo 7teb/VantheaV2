@@ -13,6 +13,7 @@
     "build:sdk": "node scripts/build-sdk.mjs",
     "test:headless": "node scripts/headless-smoke.mjs",
     "test:plan": "node scripts/chatgpt-plan-smoke.mjs",
+    "test:claude": "node scripts/claude-plan-smoke.mjs",
     "start": "electron .",
     "package": "npm.cmd run build && electron-builder --win dir",
     "dist": "npm.cmd run build && electron-builder --win nsis"
@@ -47,7 +48,8 @@
     "asarUnpack": [
       "node_modules/node-pty/**",
       "node_modules/@vscode/ripgrep/**",
-      "node_modules/@vscode/ripgrep-win32-x64/**"
+      "node_modules/@vscode/ripgrep-win32-x64/**",
+      "node_modules/@anthropic-ai/claude-agent-sdk-win32-x64/**"
     ],
     "win": {
       "target": [
@@ -58,6 +60,7 @@
     "asar": true
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.330",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@vscode/ripgrep": "1.18.0",
     "node-pty": "1.1.0"

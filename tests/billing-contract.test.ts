@@ -77,6 +77,47 @@ test("a patch that carries a model together with billing keeps the patch's model
   assert.equal(next.inactive_billing_model, "deepseek/deepseek-v4.1-flash-1017");
 });
 
+test("claude_billing defaults to API pricing, falls back on an invalid value and a file without the key loads as API pricing", async () => {
+  assert.equal(default_settings().claude_billing, "api");
+  assert.equal(normalize_settings({ billing: "chatgpt" }, default_settings()).claude_billing, "api");
+  assert.equal(normalize_settings({ claude_billing: "claude" }, default_settings()).claude_billing, "claude");
+  assert.equal(normalize_settings({ claude_billing: "max" }, default_settings()).claude_billing, "api");
+  assert.equal(normalize_settings({ claude_billing: 1 }, { ...default_settings(), claude_billing: "claude" }).claude_billing, "claude");
+  const files = await files_in("without-claude-key");
+  await fs.writeFile(files.settings, JSON.stringify({ model: "openai/gpt-6-luna", billing: "chatgpt", inactive_billing_model: "deepseek/deepseek-v4.1-flash-1017" }));
+  await init_settings({ files, codec, on_change: () => undefined });
+  assert.equal(get_settings().claude_billing, "api");
+  assert.equal(get_settings().billing, "chatgpt");
+  assert.equal(get_settings().model, "openai/gpt-6-luna");
+  assert.equal(get_settings().inactive_billing_model, "deepseek/deepseek-v4.1-flash-1017");
+  await update_settings({ claude_billing: "claude" });
+  const stored = JSON.parse(await fs.readFile(files.settings, "utf8"));
+  assert.equal(stored.claude_billing, "claude");
+  assert.equal(stored.billing, "chatgpt");
+  assert.equal(stored.model, "openai/gpt-6-luna");
+  assert.equal(stored.inactive_billing_model, "deepseek/deepseek-v4.1-flash-1017");
+});
+
+test("switching claude_billing leaves the model and the remembered model of the other GPT mode alone", () => {
+  const current = { ...default_settings(), billing: "chatgpt" as const, model: "openai/gpt-6-luna", inactive_billing_model: "deepseek/deepseek-v4.1-flash-1017" };
+  const on = merge_settings(current, { claude_billing: "claude" });
+  assert.equal(on.claude_billing, "claude");
+  assert.equal(on.billing, "chatgpt");
+  assert.equal(on.model, "openai/gpt-6-luna");
+  assert.equal(on.inactive_billing_model, "deepseek/deepseek-v4.1-flash-1017");
+  assert.deepEqual(merge_settings(on, { claude_billing: "plus" }), on);
+  assert.deepEqual(merge_settings(on, { claude_billing: "api" }), current);
+  const api = { ...default_settings(), model: "anthropic/claude-opus-5.5", inactive_billing_model: "openai/gpt-6-luna" };
+  const claude = merge_settings(api, { claude_billing: "claude" });
+  assert.equal(claude.model, "anthropic/claude-opus-5.5");
+  assert.equal(claude.inactive_billing_model, "openai/gpt-6-luna");
+  const both = merge_settings(api, { billing: "chatgpt", claude_billing: "claude" });
+  assert.equal(both.claude_billing, "claude");
+  assert.equal(both.billing, "chatgpt");
+  assert.equal(both.model, "openai/gpt-6-luna");
+  assert.equal(both.inactive_billing_model, "anthropic/claude-opus-5.5");
+});
+
 const entry = (id: string): ModelEntry => ({
   id,
   label: id,

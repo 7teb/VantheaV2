@@ -18,7 +18,7 @@ import type {
 import type { Attachment } from "../shared/chat.ts";
 import type { GitFileDiff } from "../shared/git-view.ts";
 import type { OpenQuestion, QuestionAnswer } from "../shared/questions.ts";
-import type { BillingMode } from "../shared/settings.ts";
+import type { BillingMode, ClaudeBillingMode } from "../shared/settings.ts";
 import type { DiffSummary } from "../shared/turn-diff.ts";
 import { events, type EventsOptions } from "./events.ts";
 import { error_text, request, VantheaxError, type ClientConfig } from "./http.ts";
@@ -45,6 +45,8 @@ export type Client = {
     set_billing: (billing: BillingMode, options?: CallOptions) => Promise<AccountInfo>;
     sign_in: (body?: SignInRequest, options?: CallOptions) => Promise<AccountInfo>;
     sign_out: (options?: CallOptions) => Promise<AccountInfo>;
+    set_claude_billing: (billing: ClaudeBillingMode, options?: CallOptions) => Promise<AccountInfo>;
+    refresh_claude: (options?: CallOptions) => Promise<AccountInfo>;
   };
   sessions: {
     create: (body: SessionCreate, options?: CallOptions) => Promise<SessionInfo>;
@@ -98,6 +100,8 @@ export const create_client = (config: ClientConfig): Client => {
       set_billing: (billing, options = {}) => request(config, "account.billing", {}, { body: { billing }, signal: options.signal }),
       sign_in: (body = {}, options = {}) => request(config, "account.sign_in", {}, { body, signal: options.signal }),
       sign_out: (options = {}) => request(config, "account.sign_out", {}, options),
+      set_claude_billing: (billing, options = {}) => request(config, "account.claude_billing", {}, { body: { billing }, signal: options.signal }),
+      refresh_claude: (options = {}) => request(config, "account.claude_refresh", {}, options),
     },
     sessions: {
       create: (body, options = {}) => request(config, "sessions.create", {}, { body, signal: options.signal }),

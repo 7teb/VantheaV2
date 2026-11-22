@@ -3,6 +3,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { match_agents } from "../../shared/agent-match.ts";
 import type { AgentRunStatus, AgentSummary } from "../../shared/ipc/work.ts";
+import { claude_runtime, type ClaudeSessionRef } from "../claude/runtime.ts";
 import type { ApiMessage } from "../model/types.ts";
 import { as_array, error_text, is_record } from "../storage/coerce.ts";
 import { keep_corrupt, read_json, write_json, write_json_sync } from "../storage/json-file.ts";
@@ -141,6 +142,16 @@ export const find_agent = (id: string, chat_id: string): AgentLookup => {
   return { agent: null, error: `No agent ${id} exists in this chat.` };
 };
 
+const drop_claude_session = (record: AgentRecord) => {
+  const ref = record.claude_session;
+  if (!ref) {
+    return;
+  }
+  claude_runtime()
+    .delete_session(ref.session_id, ref.cwd)
+    .catch((error: unknown) => console.error(`[agents] deleting Claude Code session ${ref.session_id} of agent ${record.agent_id} failed: ${error_text(error)}`));
+};
+
 export const remove_agents = async (agent_ids: string[]): Promise<void> => {
   for (const agent_id of agent_ids) {
     const record = agents.get(agent_id);
@@ -148,6 +159,7 @@ export const remove_agents = async (agent_ids: string[]): Promise<void> => {
       continue;
     }
     agents.delete(agent_id);
+    drop_claude_session(record);
     for (const run of record.runs) {
       drop_journal(run_file(agent_id, run.run_id));
     }
@@ -244,6 +256,22 @@ export const hold_message = (agent_id: string, entry: HeldEntry): boolean => {
   record.held = [...record.held, entry];
   save_index();
   return true;
+};
+
+export const set_agent_claude_session = (agent_id: string, ref: ClaudeSessionRef | null): void => {
+  const record = agents.get(agent_id);
+  if (!record) {
+    if (ref) {
+      throw new Error(`agent ${agent_id} no longer exists, so Claude Code session ${ref.session_id} is not stored with it`);
+    }
+    return;
+  }
+  if (ref) {
+    record.claude_session = ref;
+  } else {
+    delete record.claude_session;
+  }
+  save_index();
 };
 
 export const take_held = (agent_id: string): HeldEntry[] => {

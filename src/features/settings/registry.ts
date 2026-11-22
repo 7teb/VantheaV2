@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { BookOpenIcon, GlobeCheckIcon, HookIcon, ImageIcon, PlugIcon, ShieldCheckIcon, SlidersIcon, SmileIcon, type IconComponent } from "../../components/icons.tsx";
+import { BookOpenIcon, GlobeIcon, HookIcon, ImageIcon, PlugIcon, ShieldCheckIcon, SlidersIcon, SmileIcon, type IconComponent } from "../../components/icons.tsx";
 import type { MessageKey } from "../../i18n/translate.ts";
 import { GeneralPane } from "./GeneralPane.tsx";
 import { pane_search } from "./pane-keywords.ts";
@@ -35,6 +35,9 @@ export const settings_sections: SettingsSection[] = [
       "billing.mode_api",
       "billing.mode_plan",
       "billing.continue",
+      "billing.claude_mode",
+      "billing.claude_login",
+      "billing.mode_claude_plan",
       "settings.api_key",
       "settings.api_key_sub",
       "settings.balance",
@@ -45,7 +48,7 @@ export const settings_sections: SettingsSection[] = [
   },
   { id: "personalization", group: "app", icon: SmileIcon, Pane: PersonalizationPane, ...pane_search.personalization },
   { id: "privacy", group: "app", icon: ShieldCheckIcon, Pane: PrivacyPane, ...pane_search.privacy },
-  { id: "web_search", group: "integrations", icon: GlobeCheckIcon, Pane: WebSearchPane, ...pane_search.web_search },
+  { id: "web_search", group: "integrations", icon: GlobeIcon, Pane: WebSearchPane, ...pane_search.web_search },
   { id: "image_gen", group: "integrations", icon: ImageIcon, Pane: ImagePane, ...pane_search.image_gen },
   { id: "mcp", group: "integrations", icon: PlugIcon, Pane: McpPane, Action: McpAddAction, ...pane_search.mcp },
   { id: "hooks", group: "integrations", icon: HookIcon, Pane: HooksPane, Action: HooksAddAction, ...pane_search.hooks },

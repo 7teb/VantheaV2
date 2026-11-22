@@ -62,6 +62,31 @@ after(async () => {
   await fs.rm(root, { recursive: true, force: true });
 });
 
+const claude_ids = ["anthropic/claude-haiku-5.5", "anthropic/claude-sonnet-5.5", "anthropic/claude-opus-5.5", "anthropic/claude-fable-5.2"];
+
+const listed_rows = async (patch: Record<string, unknown>) => {
+  const tool = main.find_tool("list_models");
+  assert.ok(tool);
+  main.set_key_source(() => "");
+  await main.update_settings(patch);
+  const fetched = mock.method(globalThis, "fetch", async () => {
+    throw new Error("list_models must not reach the network without a key");
+  });
+  const warned = mock.method(console, "warn", () => undefined);
+  try {
+    const ctx = { signal: new AbortController().signal, project_root: root } as unknown as ToolContext;
+    const result = await tool.execute(ctx, {});
+    assert.equal(result.status, "done");
+    assert.equal(fetched.mock.callCount(), 0);
+    assert.ok(result.view && result.view.kind === "models");
+    return { text: result.text, rows: new Map<string, ModelPrice>(result.view.models.map((row) => [row.id, row])) };
+  } finally {
+    fetched.mock.restore();
+    warned.mock.restore();
+    await main.update_settings({ billing: "api", claude_billing: "api" });
+  }
+};
+
 test("list_models in plan billing marks the plan models and lists every other catalog model with the missing-key error", async () => {
   const tool = main.find_tool("list_models");
   assert.ok(tool);
@@ -97,4 +122,52 @@ test("list_models in plan billing marks the plan models and lists every other ca
     warned.mock.restore();
     await main.update_settings({ billing: "api" });
   }
+});
+
+test("list_models with the Claude plan marks the Claude models as included and lists every other model with the missing-key error", async () => {
+  const { text, rows } = await listed_rows({ claude_billing: "claude" });
+  for (const model of (await main.model_catalog()).models) {
+    assert.ok(rows.has(model.id), model.id);
+  }
+  for (const id of claude_ids) {
+    const row = rows.get(id);
+    assert.equal(row?.claude_plan, true, id);
+    assert.equal(row?.plan, undefined, id);
+    assert.equal(row?.error, "", id);
+    assert.equal(row?.input, null, id);
+    assert.equal(row?.endpoint, "", id);
+  }
+  for (const id of ["deepseek/deepseek-v4.1-flash-1017", "openai/gpt-6.2-sol", "openai/gpt-oss-120b"]) {
+    assert.equal(rows.get(id)?.claude_plan, undefined, id);
+    assert.equal(rows.get(id)?.plan, undefined, id);
+    assert.match(rows.get(id)?.error ?? "", /No OpenRouter API key/, id);
+  }
+  assert.match(text, /^Models \(prices in USD per 1M tokens, current OpenRouter pricing of the endpoint each model is routed to; models marked as included in the Claude plan have no per-token price\):\n/);
+  assert.match(text, /\nanthropic\/claude-opus-5\.5 \| Claude Opus 5\.5 \| Anthropic \| included in the Claude plan, no per-token price \| context 1000000 \| efforts low, medium, high, xhigh, max\n/);
+  assert.doesNotMatch(text, /ChatGPT plan/);
+});
+
+test("list_models with both plans keeps the ChatGPT rows as they are and names both plans in the header", async () => {
+  const { text, rows } = await listed_rows({ billing: "chatgpt", claude_billing: "claude" });
+  for (const id of ["openai/gpt-6.2-sol", "openai/gpt-6-luna"]) {
+    assert.equal(rows.get(id)?.plan, true, id);
+    assert.equal(rows.get(id)?.claude_plan, undefined, id);
+    assert.equal(rows.get(id)?.error, "", id);
+  }
+  for (const id of claude_ids) {
+    assert.equal(rows.get(id)?.claude_plan, true, id);
+    assert.equal(rows.get(id)?.plan, undefined, id);
+  }
+  for (const id of ["deepseek/deepseek-v4.1-flash-1017", "openai/gpt-oss-120b"]) {
+    assert.match(rows.get(id)?.error ?? "", /No OpenRouter API key/, id);
+  }
+  assert.match(text, /^Models \(prices in USD per 1M tokens, current OpenRouter pricing of the endpoint each model is routed to; models marked as included in the ChatGPT plan or the Claude plan have no per-token price\):\n/);
+  assert.match(text, /\nopenai\/gpt-6-luna \| [^\n]* \| included in the ChatGPT plan, no per-token price \| context /);
+  assert.match(text, /\nanthropic\/claude-haiku-5\.5 \| Claude Haiku 5\.5 \| Anthropic \| included in the Claude plan, no per-token price \| context /);
+});
+
+test("the list_models description keeps the ChatGPT sentence and adds the Claude plan sentence", () => {
+  const description = main.find_tool("list_models")?.spec.description ?? "";
+  assert.match(description, /When the app bills through a ChatGPT plan, the OpenAI models the plan serves are marked as included in the plan without a price, and every other model runs through OpenRouter at the listed price\./);
+  assert.match(description, /When the app bills Claude models through a Claude plan, those models are marked as included in the Claude plan without a price\.$/);
 });

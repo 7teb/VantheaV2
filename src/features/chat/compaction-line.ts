@@ -21,6 +21,11 @@ const reason_keys: Record<CompactionErrorKind, MessageKey> = {
   plan_limit: "context.reason_plan_limit",
   plan_blocked: "context.reason_plan_blocked",
   plan_model: "context.reason_plan_model",
+  claude_auth: "context.reason_claude_auth",
+  claude_limit: "context.reason_claude_limit",
+  claude_blocked: "context.reason_claude_blocked",
+  claude_model: "context.reason_claude_model",
+  claude_process: "context.reason_claude_process",
 };
 
 export const compaction_key = (step: CompactionStep): MessageKey => {

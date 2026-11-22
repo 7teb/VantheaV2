@@ -29,6 +29,7 @@ export type ApiContext = {
   is_active: (chat_id: string) => boolean;
   active_message: (chat_id: string) => string | null;
   turn_settled: (chat_id: string) => Promise<void>;
+  ended_turn_settled: (chat_id: string) => Promise<void>;
   chat_activity: (chat_id: string) => ChatActivity;
   chat_idle: (chat_id: string) => boolean;
   when_idle: (chat_id: string, signal: AbortSignal) => Promise<void>;

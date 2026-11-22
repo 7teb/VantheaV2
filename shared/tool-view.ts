@@ -33,6 +33,7 @@ export type ModelPrice = {
   note: string;
   error: string;
   plan?: true;
+  claude_plan?: true;
 };
 
 export type PeerOutcome = "queued" | "held" | "denied" | "declined" | "not_running" | "duplicate";

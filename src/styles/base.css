@@ -85,6 +85,10 @@
     color: var(--icon-ink);
   }
 
+  .claude-logo {
+    color: var(--claude-logo);
+  }
+
   .chevron-icon {
     margin-inline: -2px;
   }

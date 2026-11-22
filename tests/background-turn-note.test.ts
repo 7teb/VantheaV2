@@ -25,10 +25,18 @@ const assistant = (id: string, steps: Step[]): AssistantMessage => ({
   role: "assistant",
   model: model.id,
   effort: "high",
+  mode: "auto",
+  plan: false,
+  created_at: "2026-11-02T10:00:01.000Z",
+  ended_at: "2026-11-02T10:00:05.000Z",
   status: "done",
   steps,
-  created_at: "2026-11-02T10:00:01.000Z",
-} as AssistantMessage);
+  reasoning_details: [],
+  retry: null,
+  error: null,
+  context: null,
+  last_seq: 1,
+});
 
 test("a background task note taken mid-turn is replayed to the model in its place and never shows in the chat", async () => {
   const text = "[BACKGROUND TASK EVENT]\n\nThis is an internal app event, not a message written by the user. A long-running task you started earlier in this chat has finished.\n\nCommand: npm run build";

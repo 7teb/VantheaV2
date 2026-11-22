@@ -13,7 +13,7 @@ type RoomRole = "overseer" | "git_text";
 const plan_pick = async (role: PlanSideRole, lists: PlanLists): Promise<SidePick> => pick_plan_side(role, await plan_side_config(), lists.side_pool, lists.account);
 
 export const side_choice = async (role: SideModelRole): Promise<SideChoice> => {
-  if (role === "transcription" || get_settings().billing !== "chatgpt") {
+  if (role === "transcription" || role === "reasoning_status" || get_settings().billing !== "chatgpt") {
     return { model_id: (await model_catalog()).side[role], effort: null };
   }
   return plan_pick(role, await plan_lists());

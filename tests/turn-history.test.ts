@@ -8,6 +8,7 @@ import type { ModelEntry } from "../shared/models.ts";
 import { resume_text } from "../electron/context/compact-text.ts";
 import type { ApiAssistantMessage, ApiMessage, ApiUserMessage, ApiToolMessage } from "../electron/model/types.ts";
 import { init_media, media_path } from "../electron/media/files.ts";
+import { wrap_output } from "../electron/model/plan/input.ts";
 import { build_api_messages } from "../electron/turn/history.ts";
 import { api_call_id } from "../electron/turn/round.ts";
 import { steer_message, steer_prefix } from "../electron/turn/user-input.ts";
@@ -350,4 +351,17 @@ test("an ask_user call followed by an answer steer replays as the call, its resu
   assert.equal((out[4] as ApiUserMessage).content, `${steer_prefix}\n\n${answer}`);
   assert.equal((out[4] as ApiUserMessage).steer, true);
   assert.equal((out[5] as ApiAssistantMessage).content, "Using node --test.");
+});
+
+test("an earlier turn keeps the stored ChatGPT plan output of its round only for the same model, other reasoning stays out", async () => {
+  const plan_details = wrap_output([{ type: "reasoning", id: "rs_1", encrypted_content: "enc" }, { type: "message", id: "msg_1", role: "assistant", content: [] }]);
+  const earlier = { ...assistant("a1", "done", "content", "c1"), reasoning_details: [{ round: 0, details: plan_details }] };
+  const messages: Message[] = [user("u1", "go"), earlier, user("u2", "next")];
+  const same = await build_api_messages({ system: "sys", agent_tools: false, summary: null, messages, model: model(false) }, fake_image);
+  assert.deepEqual((same[2] as ApiAssistantMessage).reasoning_details, plan_details);
+  const other = await build_api_messages({ system: "sys", agent_tools: false, summary: null, messages, model: { ...model(false), id: "other" } }, fake_image);
+  assert.equal("reasoning_details" in (other[2] as ApiAssistantMessage), false);
+  const routed = { ...earlier, reasoning_details: [{ round: 0, details: [{ type: "reasoning.encrypted", data: "abc" }] }] };
+  const plain = await build_api_messages({ system: "sys", agent_tools: false, summary: null, messages: [user("u1", "go"), routed, user("u2", "next")], model: model(false) }, fake_image);
+  assert.equal("reasoning_details" in (plain[2] as ApiAssistantMessage), false);
 });

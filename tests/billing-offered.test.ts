@@ -39,7 +39,6 @@ const plan_side: PlanSide = {
   title: { model: "openai/gpt-6-luna", effort: "none" },
   overseer: { model: "openai/gpt-6-luna", effort: "low" },
   vision: { model: "openai/gpt-6-luna", effort: "none" },
-  reasoning_status: { model: "openai/gpt-6-luna", effort: "none" },
   git_text: { model: "openai/gpt-6-luna", effort: "none" },
 };
 
@@ -48,21 +47,28 @@ test("the side pool follows the order of the account list, not the catalog", () 
   assert.deepEqual(ids(side_pool), ["openai/gpt-6-astra", "openai/gpt-6.2-sol", "openai/gpt-6-luna"]);
 });
 
-test("plan entries keep their speed tiers and everything else, the tier is dropped per routed variant", () => {
-  const { models } = plan_models(catalog, [listed("gpt-6.2-sol")]);
+const without_pro = (model: ModelEntry): ModelEntry => {
+  const { pro, ...rest } = model;
+  return rest;
+};
+
+test("plan entries keep their speed tiers and everything else except a Pro the account does not list", () => {
+  const { models, pro_locked } = plan_models(catalog, [listed("gpt-6.2-sol")]);
   const plan_sol = models.find((model) => model.id === "openai/gpt-6.2-sol");
   assert.ok(plan_sol);
   assert.deepEqual(plan_sol.tiers, sol.tiers);
-  assert.deepEqual(plan_sol.pro, sol.pro);
-  assert.deepEqual({ ...plan_sol }, sol);
+  assert.equal(plan_sol.pro, undefined);
+  assert.deepEqual({ ...plan_sol }, without_pro(sol));
+  assert.deepEqual(pro_locked, ["openai/gpt-6.2-sol"]);
 });
 
-test("the pro variant is always kept and runs on the plan only when the account lists the pro slug", () => {
-  const { models, plan_ids } = plan_models(catalog, [listed("gpt-6.2-sol"), listed("gpt-6.2-sol-pro"), listed("gpt-6-luna")]);
+test("the pro variant stays and runs on the plan only when the account lists the pro slug, otherwise it is locked", () => {
+  const { models, plan_ids, pro_locked } = plan_models(catalog, [listed("gpt-6.2-sol"), listed("gpt-6.2-sol-pro"), listed("gpt-6-luna")]);
   const by_id = new Map(models.map((model) => [model.id, model]));
   assert.deepEqual(by_id.get("openai/gpt-6.2-sol")?.pro, sol.pro);
-  assert.deepEqual(by_id.get("openai/gpt-6-luna")?.pro, luna.pro);
+  assert.equal(by_id.get("openai/gpt-6-luna")?.pro, undefined);
   assert.deepEqual(plan_ids, ["openai/gpt-6.2-sol", "openai/gpt-6.2-sol-pro", "openai/gpt-6-luna"]);
+  assert.deepEqual(pro_locked, ["openai/gpt-6-luna"]);
 });
 
 test("the account context window caps the context length and never raises it", () => {
@@ -73,14 +79,14 @@ test("the account context window caps the context length and never raises it", (
   assert.equal(by_id.get("openai/gpt-6-astra"), 1050000);
 });
 
-test("an unknown account list runs every plan entry and its pro variant on the plan", () => {
-  const { models, plan_ids, side_pool } = plan_models(catalog, null);
-  assert.deepEqual(plan_ids, ["openai/gpt-6.2-sol", "openai/gpt-6.2-sol-pro", "openai/gpt-6-luna", "openai/gpt-6-luna-pro", "openai/gpt-6-astra"]);
+test("an unknown account list runs every plan entry on the plan and locks every Pro", () => {
+  const { models, plan_ids, pro_locked, side_pool } = plan_models(catalog, null);
+  assert.deepEqual(plan_ids, ["openai/gpt-6.2-sol", "openai/gpt-6-luna", "openai/gpt-6-astra"]);
   const plan = models.filter((model) => plan_ids.includes(model.id));
   assert.deepEqual(ids(plan), ["openai/gpt-6.2-sol", "openai/gpt-6-luna", "openai/gpt-6-astra"]);
   assert.ok(plan.every((model) => model.tiers === catalog.find((entry) => entry.id === model.id)?.tiers && model.context_length === 1050000));
-  assert.deepEqual(plan[0]?.pro, sol.pro);
-  assert.deepEqual(plan[1]?.pro, luna.pro);
+  assert.ok(plan.every((model) => model.pro === undefined));
+  assert.deepEqual(pro_locked, ["openai/gpt-6.2-sol", "openai/gpt-6-luna"]);
   assert.deepEqual(ids(side_pool), ["openai/gpt-6.2-sol", "openai/gpt-6-luna", "openai/gpt-6-astra"]);
 });
 
@@ -101,7 +107,7 @@ test("models keep every catalog entry in catalog order and leave entries off the
   assert.equal(models[1], sol);
   assert.ok(models[1]?.tiers && models[1].pro);
   assert.equal(models[4], oss);
-  assert.equal(models[2], luna);
+  assert.deepEqual(models[2], without_pro(luna));
   assert.deepEqual(models[2]?.tiers, luna.tiers);
   assert.equal(side_pool[0], models[2]);
 });
@@ -130,7 +136,7 @@ test("the configured side model is used when the account lists it or the list is
 test("a side model the account does not list falls back to the first offered model at its lowest effort", () => {
   const account = [listed("gpt-6-astra"), listed("gpt-6.2-sol")];
   const { side_pool } = plan_models(catalog, account);
-  for (const role of ["title", "overseer", "reasoning_status", "git_text"] as const) {
+  for (const role of ["title", "overseer", "git_text"] as const) {
     assert.deepEqual(pick_plan_side(role, plan_side, side_pool, account), { model_id: "openai/gpt-6-astra", effort: "low" }, role);
   }
 });
@@ -154,7 +160,7 @@ test("every plan side pick is a plan eligible catalog model, so the completion r
   const accounts = [null, [], [listed("gpt-oss-120b")], [listed("gpt-oss-120b"), listed("gpt-6-astra")], [listed("gpt-6.2-sol")], [listed("gpt-6-luna")]];
   for (const account of accounts) {
     const { side_pool } = plan_models(catalog, account);
-    for (const role of ["title", "overseer", "vision", "reasoning_status", "git_text"] as const) {
+    for (const role of ["title", "overseer", "vision", "git_text"] as const) {
       const pick = pick_plan_side(role, plan_side, side_pool, account);
       const picked = catalog.find((model) => model.id === pick.model_id);
       assert.ok(picked && plan_eligible(picked), `${role} with ${JSON.stringify(account)} picked ${pick.model_id}`);

@@ -55,6 +55,21 @@ test("the shipped catalog parses and holds no NVIDIA entry", () => {
   assert.equal(catalog.image_models.find((entry) => entry.quality)?.id, "openai/gpt-image-2");
 });
 
+test("the four Claude models carry their Claude Code id and no other model has one", () => {
+  const catalog = parse_catalog(shipped());
+  const claude_code = catalog.models.flatMap((model) => (model.claude_code === undefined ? [] : [[model.id, model.claude_code]]));
+  assert.deepEqual(claude_code, [
+    ["anthropic/claude-haiku-5.5", "claude-haiku-5-5"],
+    ["anthropic/claude-sonnet-5.5", "claude-sonnet-5-5"],
+    ["anthropic/claude-opus-5.5", "claude-opus-5-5"],
+    ["anthropic/claude-fable-5.2", "claude-fable-5-2"],
+  ]);
+  assert.equal(parse_catalog(minimal()).models[0]?.claude_code, undefined);
+  assert.equal(parse_catalog(minimal({ claude_code: "claude-x-1" })).models[0]?.claude_code, "claude-x-1");
+  assert.throws(() => parse_catalog(minimal({ claude_code: "" })), /models\[0\] \(a\/one\)\.claude_code: must be a non-empty string/);
+  assert.throws(() => parse_catalog(minimal({ claude_code: 5 })), /claude_code: must be a non-empty string/);
+});
+
 test("git_text is a required side role and its window comes from models or side_models", () => {
   const shipped_catalog = parse_catalog(shipped());
   assert.equal(shipped_catalog.side.git_text, "google/gemini-3.5-flash-lite");
@@ -217,13 +232,13 @@ test("the shipped plan_side names GPT 6 Luna for every role the ChatGPT plan ser
   const source = shipped();
   const plan_side = parse_plan_side(source, parse_catalog(source));
   assert.deepEqual(plan_side, {
-    title: { model: "openai/gpt-6-luna", effort: "none" },
+    title: { model: "openai/gpt-6-luna", effort: "low" },
     overseer: { model: "openai/gpt-6-luna", effort: "low" },
-    vision: { model: "openai/gpt-6-luna", effort: "none" },
-    reasoning_status: { model: "openai/gpt-6-luna", effort: "none" },
-    git_text: { model: "openai/gpt-6-luna", effort: "none" },
+    vision: { model: "openai/gpt-6-luna", effort: "low" },
+    git_text: { model: "openai/gpt-6-luna", effort: "low" },
   });
   assert.equal(parse_catalog(source).side.title, "google/gemini-3.1-flash-lite");
+  assert.equal(parse_catalog(source).side.reasoning_status, "google/gemini-3.5-flash-lite");
 });
 
 test("parse_plan_side refuses unknown and non-OpenAI models, unknown efforts and missing roles", () => {
@@ -259,9 +274,9 @@ test("parse_plan_side refuses unknown and non-OpenAI models, unknown efforts and
   );
   assert.throws(
     with_plan_side((plan_side) => {
-      plan_side.reasoning_status = { model: "openai/gpt-6-luna", effort: "" };
+      plan_side.git_text = { model: "openai/gpt-6-luna", effort: "" };
     }),
-    /plan_side\.reasoning_status\.effort: must be a non-empty string/,
+    /plan_side\.git_text\.effort: must be a non-empty string/,
   );
   assert.throws(
     with_plan_side((plan_side) => {
@@ -280,7 +295,7 @@ test("the plan_side vision role needs a model that takes images", () => {
   const source = (vision_model: string) => ({
     ...minimal(),
     models: [entry("openai/fixture-vision", true), entry("openai/fixture-text", false)],
-    plan_side: { title: role("openai/fixture-text"), overseer: role("openai/fixture-text"), vision: role(vision_model), reasoning_status: role("openai/fixture-text"), git_text: role("openai/fixture-text") },
+    plan_side: { title: role("openai/fixture-text"), overseer: role("openai/fixture-text"), vision: role(vision_model), git_text: role("openai/fixture-text") },
   });
   const blind = source("openai/fixture-text");
   assert.throws(() => parse_plan_side(blind, parse_catalog(blind)), /plan_side\.vision\.model: openai\/fixture-text has vision false/);

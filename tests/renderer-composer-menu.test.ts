@@ -49,6 +49,7 @@ const context = (patch: Partial<CommandContext> = {}): CommandContext => ({
   model: null,
   model_context: undefined,
   pro: false,
+  pro_locked: false,
   tier: null,
   t,
   report: () => {},

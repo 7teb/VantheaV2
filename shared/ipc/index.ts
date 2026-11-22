@@ -2,6 +2,7 @@ import { app_channels } from "./app.ts";
 import { browser_channels } from "./browser.ts";
 import type { Emit, Invoke, Send } from "./channel.ts";
 import { chatgpt_channels } from "./chatgpt.ts";
+import { claude_channels } from "./claude.ts";
 import { chats_channels } from "./chats.ts";
 import { computer_channels } from "./computer.ts";
 import { extensions_channels } from "./extensions.ts";
@@ -25,6 +26,7 @@ export const channels = {
   ...app_channels,
   ...settings_channels,
   ...chatgpt_channels,
+  ...claude_channels,
   ...chats_channels,
   ...media_channels,
   ...work_channels,

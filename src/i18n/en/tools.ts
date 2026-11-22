@@ -86,6 +86,7 @@ export const tools = {
   "tools.model_price_unit": "USD per 1M tokens",
   "tools.price_unavailable": "n/a",
   "tools.model_plan": "ChatGPT plan",
+  "tools.model_claude_plan": "Claude plan",
   "tools.created_file": "new file",
   "tools.no_output": "No output",
   "tools.command_success": "Success",

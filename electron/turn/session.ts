@@ -54,7 +54,7 @@ export type TurnSession = {
   resolve_tools: (profile: ToolProfile) => Tool[];
   without_tools?: string[];
   side_model: SideModelCall;
-  wait_decision: (call_id: string, request: ApprovalRequest, on_hold: () => void) => Promise<ApprovalDecision>;
+  wait_decision: (call_id: string, request: ApprovalRequest, on_hold: () => void, signal: AbortSignal) => Promise<ApprovalDecision>;
   review: ActorReview;
   human_decisions?: () => Promise<HumanDecision[]>;
   mirror_decision?: (decision: HumanDecision) => Promise<void>;
@@ -70,5 +70,6 @@ export type TurnSession = {
   stored_context?: StoredContext;
   reasoning_status?: ReasoningStatusCall;
   before_tools?: () => Promise<void>;
+  finished?: (reason: string) => void;
   hooks?: TurnHooks;
 };

@@ -5,10 +5,6 @@ export type IconProps = Omit<SVGProps<SVGSVGElement>, "children"> & { size?: num
 
 export type IconComponent = (props: IconProps) => ReactNode;
 
-const outline_px = 0.5;
-
-const view_width = (view_box: string) => Number(view_box.trim().split(/[\s,]+/)[2]);
-
 export const Icon = ({
   size = 16,
   viewBox = "0 0 16 16",
@@ -18,28 +14,24 @@ export const Icon = ({
   className,
   children,
   ...rest
-}: IconProps & { children: ReactNode }) => {
-  const outline = plain ? 0 : (outline_px * view_width(viewBox)) / size;
-  const filled = stroke === "none" && !plain;
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={viewBox}
-      fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-      {...rest}
-      stroke={filled ? "currentColor" : stroke}
-      strokeWidth={filled ? outline : Number(strokeWidth) + outline}
-      className={class_names(!plain && "icon", className)}
-    >
-      {children}
-    </svg>
-  );
-};
+}: IconProps & { children: ReactNode }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox={viewBox}
+    fill="none"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
+    {...rest}
+    stroke={stroke}
+    strokeWidth={strokeWidth}
+    className={class_names(!plain && "icon", className)}
+  >
+    {children}
+  </svg>
+);
 
 export const lucide = { viewBox: "0 0 24 24", strokeWidth: 1.75 } as const;
 

@@ -6,8 +6,9 @@ VantheaX can run without a window and take its work from another program. The sa
 2. [Client SDK](#client-sdk)
 3. [CLI](#cli)
 4. [ChatGPT plan](#chatgpt-plan)
-5. [Endpoints](#endpoints)
-6. [Events](#events)
+5. [Claude plan](#claude-plan)
+6. [Endpoints](#endpoints)
+7. [Events](#events)
 
 ## Run headless
 
@@ -33,7 +34,7 @@ Most programs do not start it by hand: `create_vantheax` in the SDK and the CLI 
 | Variable | Meaning |
 |---|---|
 | `VANTHEAX_API_TOKEN` | Required, at least 32 characters. Every API request has to send it as `Authorization: Bearer <token>`. VantheaX never prints it and does not make one up. |
-| `OPENROUTER_API_KEY` | The OpenRouter key for model calls. Headless mode reads the key only from here, never from the app's settings. Without it the API starts, but every turn fails with an `auth` error, except turns on OpenAI models the signed-in ChatGPT account offers while the data dir bills through the ChatGPT plan (see [ChatGPT plan](#chatgpt-plan)). |
+| `OPENROUTER_API_KEY` | The OpenRouter key for model calls. Headless mode reads the key only from here, never from the app's settings. Without it the API starts, but every turn fails with an `auth` error, except turns on OpenAI models the signed-in ChatGPT account offers while the data dir bills through the ChatGPT plan (see [ChatGPT plan](#chatgpt-plan)) and turns on Claude models while its Claude switch is on (see [Claude plan](#claude-plan)). |
 
 Both variables are removed from the process environment at start, so shells, scripts and MCP servers that the agent starts do not inherit them.
 
@@ -55,7 +56,7 @@ A headless instance never shares the app's folder. A data dir equal to `%APPDATA
 - `chromium\`: the Chromium profile of the instance.
 - `documents\`: the documents folder of the instance.
 
-A new data dir starts with the default settings. The API has no settings routes apart from the billing mode (see [ChatGPT plan](#chatgpt-plan)); the model, effort, permission mode and approval policy are chosen per session or per prompt. Only one process can use a data dir at a time. Per-chat scratchpads go to `%TEMP%\VantheaX\scratchpad\<random id>` as in the app.
+A new data dir starts with the default settings. The API has no settings routes apart from the two billing switches (see [ChatGPT plan](#chatgpt-plan) and [Claude plan](#claude-plan)); the model, effort, permission mode and approval policy are chosen per session or per prompt. Only one process can use a data dir at a time. Per-chat scratchpads go to `%TEMP%\VantheaX\scratchpad\<random id>` as in the app.
 
 ### Exit codes and failures
 
@@ -265,6 +266,8 @@ vantheax account [--format text|json] [--exe path] [--data-dir path] [--server u
 vantheax billing api|chatgpt [--format text|json] [--exe path] [--data-dir path] [--server url]
 vantheax sign-in [--fresh] [--consent] [--format text|json] [--exe path] [--data-dir path] [--server url]
 vantheax sign-out [--format text|json] [--exe path] [--data-dir path] [--server url]
+vantheax claude-billing api|claude [--format text|json] [--exe path] [--data-dir path] [--server url]
+vantheax claude [--format text|json] [--exe path] [--data-dir path] [--server url]
 vantheax --help
 ```
 
@@ -305,12 +308,12 @@ Values can also be written as `--flag=value`. Without `--server` the CLI starts 
 
 ### Account commands
 
-`vantheax account` prints the billing mode and the ChatGPT sign-in of the data dir (`billing: chatgpt`, `chatgpt: signed_in (you@example.com)`, plus a line for a sign-in without plan usage or the last error). `vantheax billing chatgpt` and `vantheax billing api` switch the billing mode. `vantheax sign-in` starts the ChatGPT sign-in, prints on stderr that the sign-in page was opened in the browser of the machine that runs VantheaX, follows the event stream until the sign-in has finished and prints `signed in to ChatGPT as <email>`, or the error code on stderr; `--fresh` signs in another account, `--consent` asks OpenAI again for plan usage. `vantheax sign-out` signs out and revokes the sign-in at OpenAI. Without `--server` each command starts a private instance on `--data-dir` (or the default data dir) and stops it afterwards, so the sign-in is stored in that data dir and later `vantheax run` calls on it use it. With `--format json` each command prints one line `{"type":"account","account":<AccountInfo>}`.
+`vantheax account` prints the billing mode and the ChatGPT sign-in of the data dir (`billing: chatgpt`, `chatgpt: signed_in (you@example.com)`, plus a line for a sign-in without plan usage or the last error), then the Claude switch and the host's Claude Code login (`claude billing: claude`, `claude: signed_in (you@example.com, max)`). `vantheax billing chatgpt` and `vantheax billing api` switch the billing mode. `vantheax sign-in` starts the ChatGPT sign-in, prints on stderr that the sign-in page was opened in the browser of the machine that runs VantheaX, follows the event stream until the sign-in has finished and prints `signed in to ChatGPT as <email>`, or the error code on stderr; `--fresh` signs in another account, `--consent` asks OpenAI again for plan usage. `vantheax sign-out` signs out and revokes the sign-in at OpenAI. `vantheax claude-billing claude` and `vantheax claude-billing api` switch the Claude models between the Claude plan and API pricing; when the plan is turned on without a signed-in Claude Code login, stderr says so and points to `vantheax claude`. `vantheax claude` reads the Claude Code login again and prints `claude: <status>` with the email and subscription; when it is not signed in, stderr carries the PowerShell login command to run on the machine that runs VantheaX (see [Claude plan](#claude-plan)). Without `--server` each command starts a private instance on `--data-dir` (or the default data dir) and stops it afterwards, so the sign-in is stored in that data dir and later `vantheax run` calls on it use it. With `--format json` each command prints one line `{"type":"account","account":<AccountInfo>}`.
 
 | Exit code | Meaning |
 |---|---|
-| 0 | Done; for `sign-in` the account is signed in. |
-| 1 | The sign-in did not finish (declined, cancelled, another error), the sign-out could not confirm the revocation, or a request failed. |
+| 0 | Done; for `sign-in` the account is signed in, for `claude` the Claude Code login is signed in. |
+| 1 | The sign-in did not finish (declined, cancelled, another error), the sign-out could not confirm the revocation, `claude` found no signed-in Claude Code login, or a request failed. |
 | 2 | Wrong usage or the instance did not start. |
 | 130 | Ctrl+C. |
 
@@ -329,7 +332,7 @@ Each job gets its own data dir. The run uses mode `auto` with the `reject` polic
 
 ## ChatGPT plan
 
-A data dir bills model calls one of two ways: `api` (the default, every call through OpenRouter with `OPENROUTER_API_KEY`) or `chatgpt` (calls for the OpenAI models the ChatGPT account signed in for this data dir offers go to OpenAI and count against that ChatGPT plan; every other model goes through OpenRouter with `OPENROUTER_API_KEY`). Each data dir has its own billing mode and its own sign-in, stored encrypted in the data dir; a headless instance never uses the desktop app's sign-in. Plan usage is OpenAI's sign-in for open-source tools and personal projects that run locally.
+A data dir bills the GPT models one of two ways (`billing`): `api` (the default, every call through OpenRouter with `OPENROUTER_API_KEY`, apart from the Claude models while the Claude plan is on, see [Claude plan](#claude-plan)) or `chatgpt` (calls for the OpenAI models the ChatGPT account signed in for this data dir offers go to OpenAI and count against that ChatGPT plan; every other model goes through OpenRouter with `OPENROUTER_API_KEY`). Each data dir has its own billing mode and its own sign-in, stored encrypted in the data dir; a headless instance never uses the desktop app's sign-in. Plan usage is OpenAI's sign-in for open-source tools and personal projects that run locally.
 
 ```ts
 await vx.client.account.set_billing("chatgpt");
@@ -347,7 +350,7 @@ await events.return();
 
 | Method | Route | Returns |
 |---|---|---|
-| `client.account.get()` | `GET /v1/account` | `AccountInfo`: `{ billing, chatgpt }` |
+| `client.account.get()` | `GET /v1/account` | `AccountInfo`: `{ billing, chatgpt, claude_billing, claude }` |
 | `client.account.set_billing(billing)` | `POST /v1/account/billing` | `AccountInfo` after the switch; `billing` is `api` or `chatgpt` |
 | `client.account.sign_in({ fresh?, consent? })` | `POST /v1/account/chatgpt/sign_in` | `AccountInfo` with status `signing_in` once the sign-in page is open |
 | `client.account.sign_out()` | `POST /v1/account/chatgpt/sign_out` | `AccountInfo` after the sign-out |
@@ -358,6 +361,29 @@ await events.return();
 
 With billing `chatgpt`, `GET /v1/models` lists the whole catalog as with `api`, and the default model stays the data dir's default. To run on the plan, name an OpenAI model the signed-in account offers in the prompt or at `sessions.create`: turns, sub-agents and compaction on that model run on the plan, and the side jobs and the review use the plan's own side models. While the account's model list is not loaded yet, every OpenAI model that routes to OpenAI goes to the plan and OpenAI's answer decides. An OpenAI model the account does not offer (or one that does not route to OpenAI, such as `openai/gpt-oss-120b`) and every model of another vendor run through OpenRouter with `OPENROUTER_API_KEY` and fail with the missing-key error without one. A plan error never falls back to OpenRouter; the turn ends `failed` with one of the error kinds `plan_auth` (no sign-in or an expired one), `plan_limit` (the plan's or this app's usage limit is reached, manage it at https://chatgpt.com/settings/usage), `plan_blocked` (the account or workspace may not use the plan here) or `plan_model` (the plan does not offer that model; the account's model list reloads, and once it no longer lists the model, the model runs through OpenRouter).
 
+## Claude plan
+
+A data dir also has its own Claude switch, `claude_billing`: `api` (the default, Claude models go through OpenRouter with `OPENROUTER_API_KEY` like every other model) or `claude` (turns, sub-agents and compaction on a Claude model run in Claude Code on the Claude subscription). The two switches are independent, so `billing: "chatgpt"` and `claude_billing: "claude"` can be on together. VantheaX ships Claude Code (the claude.exe of Anthropic's Claude Agent SDK) and runs each Claude-plan turn as a Claude Code session with VantheaX's own system prompt, tools, permission mode and approval policy; the events, run results and tool rows look the same as on the other routes, with token usage but no dollar cost.
+
+The Claude login is not per data dir: it is the host user's own Claude Code login, which Claude Code keeps in that user's Claude folder (`%USERPROFILE%\.claude`, or `CLAUDE_CONFIG_DIR` when set). VantheaX never reads, copies or stores Claude credentials and has no sign-in route for Claude. To sign in, run the account's `login_command` (`& '<path of the bundled claude.exe>' auth login --claudeai`) in PowerShell on the machine that runs VantheaX, finish Claude Code's sign-in in the browser there, then call `refresh_claude`.
+
+```ts
+const info = await vx.client.account.set_claude_billing("claude");
+const account = (await vx.client.account.refresh_claude()).claude;
+if (account.status !== "signed_in") {
+  console.log("run this in PowerShell on the host:", account.login_command);
+}
+```
+
+| Method | Route | Returns |
+|---|---|---|
+| `client.account.set_claude_billing(billing)` | `POST /v1/account/claude-billing` | `AccountInfo` after the switch; `billing` is `api` or `claude` |
+| `client.account.refresh_claude()` | `POST /v1/account/claude/refresh` | `AccountInfo` after the login state was read again |
+
+`claude` is a `ClaudeAccount`: `status` (`unknown` before the first read, `missing` when the app has no Claude Code, `signed_out`, `signed_in` with the subscription login, `other_login` when Claude Code is set up with an API key, a token or a cloud provider instead, or `error` when the state could not be read), `email`, `subscription`, `auth_method`, `login_command` and `detail` (the reason of an error). The instance reads the state by running the bundled Claude Code with `auth status --json`: at start while `claude_billing` is `claude`, when it switches to `claude`, on `refresh_claude` and after a turn ended with a login error. Each change arrives as a `claude.changed` event (only streams without `session_id` get it). A turn never waits for that state; Claude Code's own answer decides.
+
+With `claude_billing` `claude`, `GET /v1/models` lists the whole catalog as before and the default model stays the data dir's default; the switch never changes it. Name a Claude model (`anthropic/claude-haiku-5.5`, `anthropic/claude-sonnet-5.5`, `anthropic/claude-opus-5.5` or `anthropic/claude-fable-5.2`) in the prompt or at `sessions.create` to run on the plan. Side jobs and the review never run through Claude Code: they use the ChatGPT plan's side models while `billing` is `chatgpt`, otherwise OpenRouter with `OPENROUTER_API_KEY`. Consecutive Claude-plan turns of a session continue one Claude Code session; after a turn on another model, a different project folder or a session Claude Code no longer has, the next one starts a new Claude Code session that gets the stored conversation first. Claude Code keeps these sessions in the host user's Claude folder, where they also show in that user's own Claude Code; deleting a VantheaX session deletes its Claude Code session. A Claude plan error never falls back to OpenRouter; the turn ends `failed` with one of the error kinds `claude_auth` (no subscription login, or Claude Code would bill an API key), `claude_limit` (the subscription's usage limit is reached; the message names the limit and the reset time when Claude Code gives one), `claude_blocked` (the account may not use the plan right now), `claude_model` (the plan does not offer that model or effort) or `claude_process` (Claude Code did not start or exited early).
+
 ## Endpoints
 
 Base URL: the `url` of the ready line. Every request sends `Authorization: Bearer <token>`. JSON bodies use `Content-Type: application/json` and are at most 1 MiB. The API sends no CORS headers and refuses any request with an `Origin` header, so web pages cannot call it. `:id` is a session id.
@@ -366,10 +392,12 @@ Base URL: the `url` of the ready line. Every request sends `Authorization: Beare
 |---|---|---|
 | GET | `/v1/info` | Server name, version, API version and the defaults a prompt falls back to |
 | GET | `/v1/models` | Models a session can use, with their reasoning efforts |
-| GET | `/v1/account` | Billing mode and the ChatGPT account of the data dir |
+| GET | `/v1/account` | Billing modes, the ChatGPT account of the data dir and the Claude Code login of the host |
 | POST | `/v1/account/billing` | Switch model billing between API pricing and the ChatGPT plan |
 | POST | `/v1/account/chatgpt/sign_in` | Open the ChatGPT sign-in in the system browser of the host; the result arrives as account.changed |
 | POST | `/v1/account/chatgpt/sign_out` | Sign out of ChatGPT and revoke the stored refresh token |
+| POST | `/v1/account/claude-billing` | Switch Claude model billing between API pricing and the Claude plan |
+| POST | `/v1/account/claude/refresh` | Read the Claude Code login state of the host again |
 | GET | `/v1/sessions` | All sessions of the data dir |
 | POST | `/v1/sessions` | Create a session in an absolute, existing directory |
 | GET | `/v1/sessions/:id` | One session with all messages and question states |
@@ -391,10 +419,12 @@ Base URL: the `url` of the ready line. Every request sends `Authorization: Beare
 
 Bodies and answers:
 
-- `GET /v1/account`: answers `{ "billing": "api" | "chatgpt", "chatgpt": <ChatgptAccount> }`.
+- `GET /v1/account`: answers `{ "billing": "api" | "chatgpt", "chatgpt": <ChatgptAccount>, "claude_billing": "api" | "claude", "claude": <ClaudeAccount> }`.
 - `POST /v1/account/billing`: `{ "billing": "chatgpt" }` or `{ "billing": "api" }`, answers the account.
 - `POST /v1/account/chatgpt/sign_in`: no body, `{}` or `{ "fresh"?: true, "consent"?: true }`, answers the account with status `signing_in` (or the error when the sign-in could not start).
 - `POST /v1/account/chatgpt/sign_out`: no body, answers the account.
+- `POST /v1/account/claude-billing`: `{ "billing": "claude" }` or `{ "billing": "api" }`, answers the account.
+- `POST /v1/account/claude/refresh`: no body, answers the account after the Claude Code login was read again.
 - `POST /v1/sessions`: `{ "cwd": "D:/projects/app", "model"?, "effort"?, "mode"?, "approvals"? }`, answers the new session.
 - `POST .../prompt`: `{ "text": "...", "attachment_ids"?, "plan"?, "model"?, "effort"?, "mode"?, "approvals"? }`, answers `202 { "run_id", "user_message_id", "message_id" }`.
 - `GET .../runs/:run_id`: the `RunResult`. `?wait=idle` holds the answer until the run has settled, `?wait=turn` until its first turn has ended.
@@ -426,8 +456,9 @@ Bodies and answers:
 | `agent.approvals_changed` | The pending approvals of a session's sub-agents. |
 | `background.changed` | One background task of a session. |
 | `account.changed` | The `ChatgptAccount` whenever it changes: a sign-in starts or ends, a sign-out, an expired sign-in. Only streams without `?session=` get it. |
+| `claude.changed` | The `ClaudeAccount` whenever the host's Claude Code login state was read again. Only streams without `?session=` get it. |
 | `run.settled` | `{ session_id, run_id, status }`: a run has settled. |
 
 ## Testing
 
-`npm test` covers the contract, the API server, the SDK and the CLI without starting the app. `npm run test:headless` builds the app and the SDK, starts the development Electron binary headless with a temporary data dir and a local fake of OpenRouter, and checks the whole path: the ready line, a prompt through the SDK, events and resume, the reject policy, the token and origin checks, the CLI, the stdin lease and the data dir lock. It makes no real model calls and removes its temporary folder at the end. `npm run test:plan` does the same for the ChatGPT plan against local fakes of OpenAI and OpenRouter: the billing switch, the sign-in through a fake authorize page, the whole catalog in `GET /v1/models` once the account's model list has loaded, a tool turn over the Responses API with its request shape, the usage limit ending as `plan_limit` without any OpenRouter chat request, turns on DeepSeek and on an OpenAI model the account does not list going through OpenRouter, and the sign-out with its revocation. It never contacts OpenAI.
+`npm test` covers the contract, the API server, the SDK and the CLI without starting the app. `npm run test:headless` builds the app and the SDK, starts the development Electron binary headless with a temporary data dir and a local fake of OpenRouter, and checks the whole path: the ready line, a prompt through the SDK, events and resume, the reject policy, the token and origin checks, the CLI, the stdin lease and the data dir lock. It makes no real model calls and removes its temporary folder at the end. `npm run test:plan` does the same for the ChatGPT plan against local fakes of OpenAI and OpenRouter: the billing switch, the sign-in through a fake authorize page, the whole catalog in `GET /v1/models` once the account's model list has loaded, a tool turn over the Responses API with its request shape, the usage limit ending as `plan_limit` without any OpenRouter chat request, turns on DeepSeek and on an OpenAI model the account does not list going through OpenRouter, and the sign-out with its revocation. It never contacts OpenAI. `npm run test:claude` does the same for the Claude plan with a fake Claude Code in place of the bundled claude.exe and a fake OpenRouter: the Claude switch and the login state, a Claude-plan turn with a read_file call through VantheaX's tools with the model, system prompt and cleaned environment Claude Code receives, the next turn continuing that session, a turn on an OpenRouter model, the usage limit ending as `claude_limit` and a missing login as `claude_auth` without any Anthropic model request at OpenRouter, and the GPT switch still working. It never starts the real Claude Code.

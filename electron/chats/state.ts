@@ -1,7 +1,10 @@
 import type { ChatMeta, ChatSummary, Message } from "../../shared/chat.ts";
 import type { QuestionStates } from "../../shared/questions.ts";
+import type { ClaudeSessionRef } from "../claude/runtime.ts";
 
-export type ChatBody = { summary: ChatSummary | null; messages: Message[]; questions: QuestionStates };
+export type ChatBody = { summary: ChatSummary | null; messages: Message[]; questions: QuestionStates; claude_session?: ClaudeSessionRef };
+
+export type ChatRemovedListener = (chat_id: string, meta: ChatMeta, claude_session: ChatBody["claude_session"]) => void;
 
 export type ChatDirs = { index_file: string; data_dir: string; search_dir: string };
 

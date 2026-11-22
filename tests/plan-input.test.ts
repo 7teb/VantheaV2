@@ -119,7 +119,7 @@ test("a wrapper whose function call count differs from the tool calls is ignored
   ]);
 });
 
-test("OpenRouter reasoning details and reasoning text are dropped and older turns lose only the reasoning items of their wrapper", () => {
+test("OpenRouter reasoning details and reasoning text are dropped and an older wrapped turn replays verbatim with its reasoning", () => {
   const messages: ApiMessage[] = [
     { role: "user", content: "old question" },
     { role: "assistant", content: "old answer", reasoning_details: wrap_output([reasoning_item("rs_0", "old"), message_item("old answer", "msg_0")]) },
@@ -129,11 +129,19 @@ test("OpenRouter reasoning details and reasoning text are dropped and older turn
   ];
   assert.deepEqual(plan_input(messages, []), [
     { type: "message", role: "user", content: "old question" },
+    reasoning_item("rs_0", "old"),
     message_item("old answer", "msg_0"),
     { type: "message", role: "user", content: "new question" },
     { type: "message", role: "assistant", content: "thinking aloud" },
     { type: "message", role: "assistant", content: "plain" },
   ]);
+});
+
+test("an older wrapped turn replays exactly the items it sent during its own turn, so the prefix stays cacheable", () => {
+  const during = plan_input(wrapped_turn(), []);
+  const later = plan_input([...wrapped_turn(), { role: "user", content: "next question" }], []);
+  assert.deepEqual(later.slice(0, during.length), during);
+  assert.deepEqual(later.at(-1), { type: "message", role: "user", content: "next question" });
 });
 
 test("an older wrapped turn keeps its messages with their phase and its calls with the provider call ids", () => {
@@ -148,6 +156,7 @@ test("an older wrapped turn keeps its messages with their phase and its calls wi
     call_item("call_provider_b", "read_file", "fc_2", '{"path":"b"}'),
   ]);
   assert.deepEqual(plan_input(messages, []).slice(2), [
+    reasoning_item("rs_1", "plan the reads"),
     commentary,
     call_item("call_provider_a", "read_file", "fc_1", '{"path":"a"}'),
     call_item("call_provider_b", "read_file", "fc_2", "{}"),

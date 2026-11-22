@@ -1,28 +1,21 @@
 import type { PermissionMode } from "../../shared/chat.ts";
-import type { AgentProfile, AgentRunStatus, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
+import type { AgentProfile, AgentRunSummary, AgentSummary } from "../../shared/ipc/work.ts";
 import { listed_model, model_listing, type ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
 import { no_stored_context, type StoredContext } from "../context/calibration.ts";
 import type { ApiMessage } from "../model/types.ts";
-import { cancel_chat } from "../permissions/approvals.ts";
-import { clear_review_instance } from "../permissions/review-state.ts";
-import { build_system_prompt } from "../prompts/index.ts";
-import { error_text } from "../storage/coerce.ts";
 import type { ReviewModelCall, SideModelCall, Tool, ToolProfile } from "../tools/types.ts";
 import { without_images } from "../turn/carriers.ts";
-import { push_notes, run_turn_loop } from "../turn/loop.ts";
-import type { ReasoningStatusCall, StreamFn } from "../turn/session.ts";
-import { close_journal, flush_journals_sync } from "./journal.ts";
-import { app_closed_end, create_live, final_report, forget_live, last_text, live_run, live_runs, reachable_live, stored_agent_context, type LiveRun, type StopReason } from "./live.ts";
+import type { ClaudeTurnInput } from "../turn/claude/drive.ts";
+import type { ReasoningStatusCall, StreamFn, TurnSession } from "../turn/session.ts";
+import { flush_journals_sync } from "./journal.ts";
+import { app_closed_end, create_live, final_report, last_text, live_run, live_runs, reachable_live, stored_agent_context, type LiveRun, type StopReason } from "./live.ts";
 import { deliver_to, forget_chat_peers, on_peer_ended, return_undelivered } from "./peers.ts";
-import { agent_role_section, kept_instruction_note, peer_note } from "./prompt.ts";
-import { questions_asked_by, sync_open_questions } from "./questions.ts";
-import { current_run, is_running, public_run, public_summary, type AgentRecord, type RunRecord } from "./records.ts";
-import { label_of, profile_text, question_line } from "./roster.ts";
-import { write_report_file } from "./report-file.ts";
-import { deliver_report, drop_agent_notes, wake_idle } from "./reports.ts";
-import { agent_approval_key, agent_session, allowed_tools } from "./session.ts";
-import { workflow_role_section, workflow_agent_tools, type WorkflowAgentLink } from "./workflow-agent.ts";
+import { sync_open_questions } from "./questions.ts";
+import { current_run, is_running, public_run, public_summary, type AgentRecord } from "./records.ts";
+import { drop_agent_notes, wake_idle } from "./reports.ts";
+import { drive, with_open_questions } from "./run-drive.ts";
+import type { WorkflowAgentLink } from "./workflow-agent.ts";
 import {
   begin_run,
   chat_agents,
@@ -32,11 +25,8 @@ import {
   init_agent_store,
   load_context,
   remove_agents,
-  run_file,
   running_in_chat,
-  save_context,
   save_index_sync,
-  take_held,
 } from "./store.ts";
 
 export type AgentDeps = {
@@ -47,6 +37,7 @@ export type AgentDeps = {
   review_call: ReviewModelCall;
   models: () => Promise<ModelEntry[]>;
   reasoning_status?: ReasoningStatusCall;
+  claude_turn?: (session: TurnSession, input: ClaudeTurnInput) => Promise<void>;
 };
 
 export type RunContext = {
@@ -124,173 +115,11 @@ const stop_live = (live: LiveRun, reason: StopReason) => {
   live.controller.abort(new Error(`agent run ${live.run_id} stopped: ${reason}`));
 };
 
-const final_status = (live: LiveRun): Exclude<AgentRunStatus, "running"> => {
-  if (live.stop_reason === "cancelled") {
-    return "cancelled";
-  }
-  if (live.stop_reason) {
-    return "interrupted";
-  }
-  const status = live.transcript.status;
-  if (status === "done") {
-    return "completed";
-  }
-  if (status === "interrupted") {
-    return "interrupted";
-  }
-  return status === "stopped" ? "cancelled" : "failed";
-};
-
-const ending_note = (live: LiveRun, status: AgentRunStatus): string => {
-  if (status === "failed" || status === "interrupted") {
-    return `The run ended early: ${live.transcript.error?.message ?? "unknown error"}.`;
-  }
-  return "";
-};
-
-const ended_report = (live: LiveRun, status: AgentRunStatus): string => {
-  const text = final_report(live);
-  const note = ending_note(live, status);
-  if (!note) {
-    return text;
-  }
-  return text ? `${note}\n\nLast output:\n${text}` : note;
-};
-
-const with_open_questions = (agent: Pick<AgentRecord, "agent_id" | "name">, report: string): string => {
-  const open = questions_asked_by(agent.agent_id).map((question) => `- Open question ${question_line(question)}, still without an answer.`);
-  return open.length ? [report, `Open questions of ${label_of(agent)}:`, ...open].filter(Boolean).join("\n\n") : report;
-};
-
-const stop_reason_of = (live: LiveRun): string => {
-  const error = live.transcript.error;
-  if (error) {
-    return `error ${error.kind}: ${error.message.slice(0, 300)}`;
-  }
-  return live.finish_reason || "unknown";
-};
-
-const close_open_calls = (messages: ApiMessage[]): ApiMessage[] => {
-  const at = messages.findLastIndex((message) => message.role === "assistant" && Boolean(message.tool_calls?.length));
-  const assistant = messages[at];
-  if (!assistant || assistant.role !== "assistant" || !assistant.tool_calls) {
-    return messages;
-  }
-  const after = messages.slice(at + 1);
-  const answered = new Map(after.flatMap((message) => (message.role === "tool" ? [[message.tool_call_id, message] as const] : [])));
-  if (assistant.tool_calls.every((call) => answered.has(call.id))) {
-    return messages;
-  }
-  const results: ApiMessage[] = assistant.tool_calls.map((call) => answered.get(call.id) ?? { role: "tool", tool_call_id: call.id, content: "[not executed: the run stopped before this call ran]" });
-  return [...messages.slice(0, at + 1), ...results, ...after.filter((message) => message.role !== "tool")];
-};
-
-const settle_link = (link: WorkflowAgentLink, status: Exclude<AgentRunStatus, "running">, live: LiveRun) => {
-  try {
-    link.on_end({ status, report: final_report(live), error: live.transcript.error?.message ?? "" });
-  } catch (error) {
-    console.error(`[agents] handing the end of run ${live.run_id} to workflow ${link.run_id} failed:`, error);
-  }
-};
-
-const finish = async (agent: AgentRecord, run: RunRecord, live: LiveRun, api_messages: ApiMessage[], link: WorkflowAgentLink | undefined) => {
-  let status: Exclude<AgentRunStatus, "running"> = "failed";
-  try {
-    status = final_status(live);
-    const report = with_open_questions(agent, ended_report(live, status));
-    let report_path: string | null = null;
-    let report_error = "";
-    if (!live.removed) {
-      if (api_messages.length > 1) {
-        await save_context(agent.agent_id, close_open_calls(api_messages.slice(1)));
-      }
-      await close_journal(run_file(agent.agent_id, run.run_id));
-      try {
-        report_path = await write_report_file(agent.agent_id, run.run_id, report);
-      } catch (error) {
-        report_error = error_text(error);
-        console.error(`[agents] saving report for run ${run.run_id} of agent ${agent.agent_id} failed:`, error);
-      }
-    }
-    const ended = live.removed ? null : end_run(agent.agent_id, run.run_id, status, report);
-    cancel_chat(agent_approval_key(run.run_id));
-    clear_review_instance(agent.chat_id, agent.agent_id);
-    return_undelivered(live);
-    forget_live(run.run_id);
-    if (ended) {
-      on_peer_ended(agent);
-      status = ended.status === "running" ? status : ended.status;
-    }
-    if (link) {
-      wake_idle(agent.chat_id);
-      return;
-    }
-    if (!ended || live.stop_reason === "cancelled" || live.stop_reason === "app_closed") {
-      wake_idle(agent.chat_id);
-      return;
-    }
-    deliver_report({
-      chat_id: agent.chat_id,
-      agent_id: agent.agent_id,
-      run_id: run.run_id,
-      name: agent.name,
-      profile: profile_text(agent),
-      model: agent.model,
-      status: ended.status,
-      started_at: ended.started_at,
-      ended_at: ended.ended_at ?? new Date().toISOString(),
-      report_path,
-      report_error,
-      stop_reason: stop_reason_of(live),
-    });
-  } catch (error) {
-    console.error(`[agents] finishing run ${run.run_id} of agent ${agent.agent_id} failed:`, error);
-  } finally {
-    if (link) {
-      settle_link(link, status, live);
-    }
-  }
-};
-
-const drive = async (agent: AgentRecord, run: RunRecord, live: LiveRun, request: RunContext, model: ModelEntry, context: ApiMessage[], stored: StoredContext): Promise<void> => {
-  const api_messages: ApiMessage[] = [];
-  try {
-    const offered = allowed_tools(current_deps().resolve_tools(agent.profile, request.settings, model), agent);
-    const tools = request.workflow ? workflow_agent_tools(offered, request.workflow) : offered;
-    const role = request.workflow ? workflow_role_section(agent, request.workflow) : agent_role_section(agent);
-    const system = await build_system_prompt({
-      model,
-      settings: request.settings,
-      mode: request.mode,
-      plan: false,
-      personality: "pragmatic",
-      project_root: request.project_root,
-      chat_id: agent.chat_id,
-      user_text: request.prompt,
-      tools,
-      user_attachments: false,
-      effort: agent.effort,
-      deferred_mcp: [],
-      role,
-    });
-    const held = take_held(agent.agent_id).map((entry) => (entry.from === "main" ? kept_instruction_note(entry.text) : peer_note(entry)));
-    api_messages.push({ role: "system", content: system }, ...context);
-    push_notes(live.emit, held, 0, api_messages);
-    api_messages.push({ role: "user", instruction: true, content: request.prompt });
-    await run_turn_loop(agent_session(current_deps(), agent, run, live, request, model, stored), api_messages);
-  } catch (error) {
-    console.error(`[agents] run ${run.run_id} of agent ${agent.agent_id} failed to start:`, error);
-    live.emit({ type: "end", status: "failed", error: { kind: "internal", message: error_text(error) } });
-  } finally {
-    await finish(agent, run, live, api_messages, request.workflow);
-  }
-};
-
 const launch = (agent: AgentRecord, request: RunContext, model: ModelEntry, context: ApiMessage[], stored: StoredContext): StartedRun => {
   const run = begin_run(agent, request.prompt, request.parent_message_id, request.parent_call_id);
   sync_open_questions(agent.agent_id);
   const live = create_live(agent.agent_id, run.run_id, agent.chat_id, request.workflow?.run_id ?? null);
-  live.done = drive(agent, run, live, request, model, context, stored);
+  live.done = drive(current_deps, agent, run, live, request, model, context, stored);
   return { agent: public_summary(agent), run: public_run(run) };
 };
 
