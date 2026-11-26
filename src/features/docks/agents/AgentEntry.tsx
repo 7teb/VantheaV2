@@ -33,13 +33,13 @@ const RunRow = ({ agent_id, run, now }: RunRowProps) => {
     <li>
       <button type="button" className="agent-run" data-status={run.status} data-waiting={waiting} onClick={() => select_agent_run({ agent_id, run_id: run.run_id })}>
         {waiting ? (
-          <span className="agent-run-wait" title={t("agent.waiting_approval")}>
+          <span className="agent-run-wait">
             <span className="wait-dot" />
           </span>
         ) : (
           <StatusIcon className={class_names("agent-run-icon", run.status === "running" && "spin")} />
         )}
-        <span className="agent-run-prompt" title={run.prompt}>
+        <span className="agent-run-prompt">
           {first_line(run.prompt) || t("agent.untitled_run")}
         </span>
         <span className="agent-run-meta">{run_meta(t, run, waiting, now)}</span>
@@ -71,10 +71,10 @@ export const AgentEntry = ({ agent, now }: { agent: AgentSummary; now: number })
     <section className="agent-entry" data-running={running}>
       <header className="agent-entry-head">
         <CritterIcon name={agent.name} running={running} />
-        <span className="agent-entry-name" title={agent.description || agent.name}>
+        <span className="agent-entry-name">
           {agent.name}
         </span>
-        <span className="agent-entry-meta" title={meta}>
+        <span className="agent-entry-meta">
           {meta}
         </span>
         {running && (

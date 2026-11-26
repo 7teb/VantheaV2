@@ -79,7 +79,6 @@ const FileTile = ({ upload, leaving, on_left, on_remove }: TileProps) => (
     data-status={upload.status}
     data-leaving={leaving}
     inert={leaving}
-    title={upload.name}
     onAnimationEnd={leave_end(leaving, on_left)}
   >
     <span className="composer-media-frame">

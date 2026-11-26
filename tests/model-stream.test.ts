@@ -8,7 +8,7 @@ import { body_of, chunk, error_chunk, model, run, write_spec } from "./model-str
 set_key_source(() => "sk-or-test-key");
 
 test("a clean stream completes with content, finish reason and usage", async () => {
-  const usage = { prompt_tokens: 5, completion_tokens: 7, total_tokens: 12, completion_tokens_details: { reasoning_tokens: 2 } };
+  const usage = { prompt_tokens: 5, completion_tokens: 7, total_tokens: 12, prompt_tokens_details: { cached_tokens: 3, cache_write_tokens: 1 }, completion_tokens_details: { reasoning_tokens: 2 } };
   const done = await run([
     {
       frames: [
@@ -24,7 +24,7 @@ test("a clean stream completes with content, finish reason and usage", async () 
   assert.equal(done.result?.content, "hello world");
   assert.equal(done.result?.reasoning, "plan");
   assert.equal(done.result?.finish_reason, "stop");
-  assert.deepEqual(done.result?.usage, { prompt_tokens: 5, completion_tokens: 7, reasoning_tokens: 2 });
+  assert.deepEqual(done.result?.usage, { prompt_tokens: 5, completion_tokens: 7, reasoning_tokens: 2, cached_tokens: 3, cache_write_tokens: 1 });
   assert.deepEqual(done.log, ["reasoning:plan", "text:hello ", "text:world"]);
   assert.equal(done.posts, 1);
   assert.equal(done.headers[0]?.Authorization, "Bearer sk-or-test-key");

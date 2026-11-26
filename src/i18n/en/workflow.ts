@@ -28,13 +28,10 @@ export const workflow = {
   "workflow.agent_skipped": "Skipped",
   "workflow.status_stopped": "Stopped",
   "workflow.role_inline": "Own role",
-  "workflow.worktree": "Worktree {x}",
-  "workflow.worktree_kept": "Worktree {x}, kept",
   "workflow.return_value": "Return value",
   "workflow.stop": "Stop workflow",
   "workflow.skip_agent": "Skip agent",
   "workflow.load_failed": "Workflow progress could not be loaded",
   "workflow.note_result": "Result of workflow {x}",
   "workflow.kind": "Workflow",
-  "workflow.view": "Show in Background Tasks",
 };

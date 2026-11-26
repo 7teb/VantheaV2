@@ -31,24 +31,6 @@ const input = (names: string[]): SectionInput => ({
   deferred_mcp: [],
 });
 
-test("only the second context_budget sentence changes and system_reminders follows it", () => {
-  const original = context_budget().body;
-  const sentences = original.split(/(?<=\.)\s+/);
-  assert.equal(sentences.length, 7);
-  const expected = [sentences[0], summary_sentence, ...sentences.slice(2)].join(" ");
-  const composed = compose_sections(input(["run_command", "read_file", "write_file", "deploy_agent", "remember", "update_todos", "ask_user"]));
-  const changed = claude_plan_sections(composed);
-  const at = composed.findIndex((section) => section.title === "context_budget");
-  assert.ok(at > 0);
-  assert.deepEqual(changed.slice(0, at), composed.slice(0, at));
-  assert.deepEqual(changed[at], { title: "context_budget", body: expected });
-  assert.deepEqual(changed[at + 1], reminders);
-  assert.deepEqual(changed.slice(at + 2), composed.slice(at + 1));
-  assert.equal(changed.length, composed.length + 1);
-  assert.notEqual(expected, original);
-  assert.equal(expected.replace(summary_sentence, sentences[1]), original);
-});
-
 test("the plan-mode prompt gets the same two changes and nothing else", () => {
   const composed = compose_sections({ ...input(["present_plan", "read_file"]), plan: true });
   const changed = claude_plan_sections(composed);

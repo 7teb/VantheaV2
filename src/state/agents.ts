@@ -80,21 +80,20 @@ export const cancel_agent = async (agent_id: string): Promise<ActionResult> => {
   }
 };
 
-export const answer_agent_approval = async (ref: RunRef, call_id: string, decision: ApprovalDecision): Promise<ActionResult> => {
+export const answer_agent_approval = async (ref: RunRef, request_id: string, decision: ApprovalDecision): Promise<ActionResult | null> => {
   try {
-    await api.invoke("agents:approve", ref.agent_id, ref.run_id, call_id, decision);
-    return { ok: true };
+    return (await api.invoke("agents:approve", ref.agent_id, ref.run_id, request_id, decision)) ? { ok: true } : null;
   } catch (error) {
-    console.error(`[agents] agents:approve failed for agent ${ref.agent_id} run ${ref.run_id} call ${call_id}`, error);
+    console.error(`[agents] agents:approve failed for run ${ref.run_id} approval ${request_id}`, error);
     return failure(error);
   }
 };
 
-export const hold_agent_approval = async (ref: RunRef, call_id: string): Promise<void> => {
+export const hold_agent_approval = async (ref: RunRef, request_id: string): Promise<void> => {
   try {
-    await api.invoke("agents:hold_approval", ref.agent_id, ref.run_id, call_id);
+    await api.invoke("agents:hold_approval", ref.agent_id, ref.run_id, request_id);
   } catch (error) {
-    console.error(`[agents] agents:hold_approval failed for agent ${ref.agent_id} run ${ref.run_id} call ${call_id}`, error);
+    console.error(`[agents] agents:hold_approval failed for run ${ref.run_id} approval ${request_id}`, error);
   }
 };
 

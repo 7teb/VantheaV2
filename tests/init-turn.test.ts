@@ -7,7 +7,6 @@ import { open_questions } from "../shared/questions.ts";
 import type { ApiMessage } from "../electron/model/types.ts";
 import { clear_authorization, human_requests_of, set_authorization } from "../electron/permissions/context.ts";
 import { build_api_messages } from "../electron/turn/history.ts";
-import { git_init_request_text } from "../electron/turn/git-init-request.ts";
 import { init_request_text } from "../electron/turn/init-request.ts";
 import { review_request_text } from "../electron/turn/review-request.ts";
 import { counted_image } from "../electron/turn/user-input.ts";
@@ -51,31 +50,6 @@ const asked: ToolStep = {
   started_at: 1,
   ended_at: 2,
 };
-
-test("the init request asks for AGENTS.md with commands, layout, conventions and gotchas and nothing invented", () => {
-  const lines = init_request_text.split("\n");
-  assert.match(lines[0] ?? "", /create AGENTS\.md in the project root, or update it if it already exists/);
-  for (const topic of [/^- Commands: .*build.*test.*single test/, /^- Layout: /, /^- Conventions /, /^- Gotchas: /]) {
-    assert.ok(lines.some((line) => topic.test(line)), `missing ${topic}`);
-  }
-  assert.match(init_request_text, /never invent a command/);
-  assert.match(init_request_text, /keep the rules and instructions a person wrote there/);
-  assert.match(init_request_text, /Change no other file\./);
-  assert.doesNotMatch(init_request_text, /[–—]/);
-});
-
-test("the gitinit request asks name, visibility and collaborators through ask_user before it creates anything", () => {
-  const lines = git_init_request_text.split("\n");
-  assert.match(lines[1] ?? "", /^First call ask_user once with these three questions, then end your turn and wait for the answers\./);
-  assert.match(git_init_request_text, /1\. The repository name/);
-  assert.match(git_init_request_text, /2\. Private or public, with Private as the first option/);
-  assert.match(git_init_request_text, /3\. Whether to invite collaborators, with Nobody as the first option/);
-  assert.match(git_init_request_text, /gh auth status/);
-  assert.match(git_init_request_text, /gh repo create <name> --private \(or --public\) --source \. --remote origin --push/);
-  assert.match(git_init_request_text, /gh api --method PUT repos\/<owner>\/<name>\/collaborators\/<username>/);
-  assert.match(git_init_request_text, /\.env files and keys/);
-  assert.doesNotMatch(git_init_request_text, /[–—]/);
-});
 
 test("init and git_init are human origins like user, plan_accept and undo, and the automatic origins are not", () => {
   const human: UserOrigin[] = ["user", "plan_accept", "undo", "init", "git_init"];

@@ -59,8 +59,8 @@ test("run results list main and agent approvals with unified ids and refuse unkn
   assert.deepEqual(
     result.needs_input.approvals.map((entry) => [entry.approval_id, entry.source, entry.agent_id, entry.run_id, entry.call_id]),
     [
-      ["m:c2_1", "main", null, null, "c2_1"],
-      ["a:agent_1:run_1:c1_0", "agent", "agent_1", "run_1", "c1_0"],
+      ["m:main-request", "main", null, null, "c2_1"],
+      ["a:agent_1:run_1:agent-request", "agent", "agent_1", "run_1", "c1_0"],
     ],
   );
   await assert.rejects(run_result(context, "chat-1", "nope"), /run nope not found/);

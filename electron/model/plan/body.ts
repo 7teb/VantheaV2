@@ -21,6 +21,7 @@ export const round_plan_body = (request: RoundRequest): Record<string, unknown> 
     stream: true,
     ...(model.efforts.length ? { reasoning: reasoning_fields(model, request.effort) } : {}),
     ...(model.verbosity ? { text: { verbosity: model.verbosity } } : {}),
+    ...(model.service_tier ? { service_tier: model.service_tier } : {}),
     ...(request.tool_choice === "none" && request.tools.length ? { tool_choice: "none" } : {}),
   };
 };

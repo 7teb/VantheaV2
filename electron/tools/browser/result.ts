@@ -4,7 +4,14 @@ import { error_text } from "../../browser/state.ts";
 import { chat_tabs } from "../../browser/tabs.ts";
 import type { ToolContext, ToolResult } from "../types.ts";
 
-export const browser_view = (action: string, url: string, title: string, detail: string): ToolView => ({ kind: "browser", action, url, title, detail });
+export const browser_view = (action: string, url: string, title: string, detail: string, output?: string): ToolView => ({
+  kind: "browser",
+  action,
+  url,
+  title,
+  detail,
+  ...(output === undefined ? {} : { output }),
+});
 
 export const done = (text: string, view: ToolView): ToolResult => ({ status: "done", text, view });
 

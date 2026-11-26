@@ -99,7 +99,7 @@ const turn_model = async (stored: ModelChoice): Promise<ModelEntry> => {
   if (!listed) {
     throw new Error(`model ${choice.model} is not in the catalog`);
   }
-  return with_choice(context_model(listed), choice, catalog.plan_ids);
+  return with_choice(context_model(listed), choice, catalog);
 };
 
 const same_choice = (stored: ModelChoice | undefined, choice: ModelChoice) =>

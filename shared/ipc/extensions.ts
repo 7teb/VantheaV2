@@ -6,6 +6,7 @@ export type McpToolStatus = { name: string; description: string; tier: McpTier; 
 
 export type McpServerStatus = {
   name: string;
+  config_id: string;
   config: McpServerConfig;
   state: "stopped" | "starting" | "ready" | "error";
   error: string;
@@ -26,7 +27,7 @@ export const extensions_channels = {
   "mcp:remove": invoke<[name: string], McpServerStatus[]>(),
   "mcp:reconnect": invoke<[name: string], McpServerStatus[]>(),
   "mcp:set_tool": invoke<[server: string, tool: string, patch: { risk?: McpTier | null; enabled?: boolean }], McpServerStatus[]>(),
-  "mcp:set_trust": invoke<[server: string, trusted: boolean], McpServerStatus[]>(),
+  "mcp:set_trust": invoke<[server: string, config_id: string, trusted: boolean], McpServerStatus[]>(),
   "mcp:detect_folder": invoke<[], { name: string; config: McpServerConfig } | null>(),
   "mcp:changed": emit<McpServerStatus[]>(),
   "skills:list": invoke<[], SkillEntry[]>(),

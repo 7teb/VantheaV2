@@ -70,21 +70,20 @@ export const init_turn = async (chat_id: string, command: CommandOrigin, argumen
   }
 };
 
-export const answer_approval = async (chat_id: string, call_id: string, decision: ApprovalDecision): Promise<ActionResult> => {
+export const answer_approval = async (chat_id: string, request_id: string, decision: ApprovalDecision): Promise<ActionResult | null> => {
   try {
-    await api.invoke("turn:approve", chat_id, call_id, decision);
-    return ok;
+    return (await api.invoke("turn:approve", chat_id, request_id, decision)) ? ok : null;
   } catch (error) {
-    console.error(`[chat] turn:approve failed for chat ${chat_id} call ${call_id}`, error);
+    console.error(`[chat] turn:approve failed for chat ${chat_id} approval ${request_id}`, error);
     return failure(error);
   }
 };
 
-export const hold_approval = async (chat_id: string, call_id: string): Promise<void> => {
+export const hold_approval = async (chat_id: string, request_id: string): Promise<void> => {
   try {
-    await api.invoke("turn:hold_approval", chat_id, call_id);
+    await api.invoke("turn:hold_approval", chat_id, request_id);
   } catch (error) {
-    console.error(`[chat] turn:hold_approval failed for chat ${chat_id} call ${call_id}`, error);
+    console.error(`[chat] turn:hold_approval failed for chat ${chat_id} approval ${request_id}`, error);
   }
 };
 

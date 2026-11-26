@@ -7,9 +7,9 @@ import type { ToolView, ToolViewKind } from "../shared/tool-view.ts";
 import { question_key_action, type QuestionKeySource } from "../src/components/question-keys.ts";
 import { grant_options } from "../src/features/tools/approval-options.ts";
 import { live_draft } from "../src/features/tools/live-draft.ts";
-import { has_body } from "../src/features/tools/tool-body.ts";
+import { has_body, opens_by_itself } from "../src/features/tools/tool-body.ts";
 import { kind_meta, tool_label, tool_meta, view_kinds, view_kinds_complete } from "../src/features/tools/tool-meta.ts";
-import { format_duration, group_label, step_detail } from "../src/features/tools/tool-summary.ts";
+import { format_duration, group_label, step_detail, todo_count } from "../src/features/tools/tool-summary.ts";
 import { translate, type Translate } from "../src/i18n/translate.ts";
 
 const t: Translate = (key, vars) => translate("en", key, vars);
@@ -334,59 +334,25 @@ test("durations carry hours past sixty minutes", () => {
   assert.equal(format_duration(90_061_000), "1d 1h 1m 1s");
 });
 
-test("ask_user rows name the first question and work groups count the questions asked", () => {
+test("ask_user rows say that questions were asked without quoting them and work groups count the questions asked", () => {
   const view = views.questions;
-  assert.equal(tool_label(t, step("ask_user", view)), "Asked: Which runner?");
-  assert.equal(tool_label(t, step("ask_user", null, "running", { questions: [{ title: "Which port?" }] })), "Asking: Which port?");
+  assert.equal(tool_label(t, step("ask_user", view)), "Asked a question");
+  assert.equal(tool_label(t, step("ask_user", null, "running", { questions: [{ title: "Which port?" }] })), "Asking a question");
+  assert.equal(tool_label(t, step("ask_user", null, "running", { questions: [{ title: "A?" }, { title: "B?" }] })), "Asking 2 questions");
   assert.equal(tool_meta(step("ask_user", view)).icon, "question");
   assert.equal(group_label(t, [step("ask_user", view), step("read_file", views.read)]), "Asked a question, read a file");
   const two = { kind: "questions", questions: [{ title: "A?", options: [] }, { title: "B?", options: [] }] } as ToolView;
   assert.equal(group_label(t, [step("ask_user", two), step("ask_user", view)]), "Asked questions");
 });
 
-test("screenshot, click point and page check rows have their own labels", () => {
-  assert.equal(tool_label(t, step("browser_screenshot", null, "running")), "Taking a screenshot of the browser page");
-  assert.equal(tool_label(t, step("browser_screenshot", views.browser)), "Took a screenshot of the browser page");
-  assert.equal(tool_label(t, step("browser_console", null, "running")), "Reading the browser console");
-  assert.equal(tool_label(t, step("browser_console", views.browser)), "Read the browser console");
-  assert.equal(tool_label(t, step("browser_eval", null, "running", { expression: "document.title" })), "Evaluating JavaScript in the page");
-  assert.equal(tool_label(t, step("browser_eval", views.browser)), "Evaluated JavaScript in the page");
-  assert.equal(tool_label(t, step("browser_click_point", null, "running", { snapshot_id: "tab-1:2:3", x: 512, y: 300 })), "Clicking 512, 300");
-  assert.equal(tool_label(t, step("browser_click_point", views.browser, "done", { snapshot_id: "tab-1:2:3", x: 512, y: 300 })), "Clicked 512, 300");
-  assert.equal(tool_label(t, step("check_page", null, "running", { path: "out/particles" })), "Checking page particles");
-  assert.equal(tool_label(t, step("check_page", views.text, "done", { path: "out\\ad\\index.html" })), "Checked page index.html");
-  assert.equal(tool_meta(step("browser_screenshot", null)).category, "browser");
-  assert.equal(tool_meta(step("check_page", null)).icon, "page_check");
-});
-
-test("browser rows show an icon for their action", () => {
-  const icons: Record<string, string> = {
-    browser_tabs: "browser_tabs",
-    browser_tab: "browser_tabs",
-    browser_navigate: "browser_navigate",
-    browser_snapshot: "browser_snapshot",
-    browser_console: "browser_console",
-    browser_eval: "browser_eval",
-    browser_click: "browser_click",
-    browser_click_point: "browser_click",
-    browser_visual_click: "browser_click",
-    browser_type: "browser_type",
-    browser_key: "browser_key",
-    browser_scroll: "browser_scroll",
-    browser_wait: "browser_wait",
-    browser_screenshot: "browser_screenshot",
-    browser_visual_analyze: "browser_look",
-  };
-  for (const [name, icon] of Object.entries(icons)) {
-    assert.equal(tool_meta(step(name, null)).icon, icon, name);
-  }
-  assert.equal(tool_meta(step("unknown_browser_action", views.browser)).icon, "browser");
-});
-
-test("a todo update row has no body to open, running or done, unless it failed", () => {
-  assert.equal(has_body(t, step("update_todos", views.todos)), false);
+test("a done todo update row opens to its list without opening by itself and counts the done items", () => {
+  assert.equal(has_body(t, step("update_todos", views.todos)), true);
   assert.equal(has_body(t, step("update_todos", null, "running")), false);
   assert.equal(has_body(t, { ...step("update_todos", null, "failed"), error: "todos must be a list" }), true);
+  assert.equal(opens_by_itself(step("update_todos", views.todos), true), false);
+  assert.equal(todo_count(step("update_todos", views.todos)), "1/2");
+  assert.equal(todo_count(step("update_todos", { kind: "todos", todos: [] })), "");
+  assert.equal(todo_count(step("read_file", views.read)), "");
 });
 
 test("a page read row names only the pages that were read when some of them failed", () => {

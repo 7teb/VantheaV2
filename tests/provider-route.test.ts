@@ -61,7 +61,7 @@ const claude: ModelEntry = { ...plan_model, id: "anthropic/claude-opus-5.5", lab
 
 const sol_pro: ModelEntry = { ...plan_model, id: "openai/gpt-6.2-sol-pro", label: "GPT-6.2 Sol Pro" };
 
-const listed = (...slugs: string[]): AccountModel[] => slugs.map((slug) => ({ slug, display_name: slug, context_window: null }));
+const listed = (...slugs: string[]): AccountModel[] => slugs.map((slug) => ({ slug, display_name: slug, context_window: null, service_tiers: [] }));
 
 const plan_tokens = ["plan-token-1", "plan-token-2"];
 

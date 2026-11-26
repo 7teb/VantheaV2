@@ -30,13 +30,10 @@ export const workflow: Record<keyof typeof en, string> = {
   "workflow.agent_skipped": "Übersprungen",
   "workflow.status_stopped": "Gestoppt",
   "workflow.role_inline": "Eigene Rolle",
-  "workflow.worktree": "Worktree {x}",
-  "workflow.worktree_kept": "Worktree {x}, behalten",
   "workflow.return_value": "Rückgabewert",
   "workflow.stop": "Workflow stoppen",
   "workflow.skip_agent": "Agent überspringen",
   "workflow.load_failed": "Der Workflow-Fortschritt konnte nicht geladen werden",
   "workflow.note_result": "Ergebnis von Workflow {x}",
   "workflow.kind": "Workflow",
-  "workflow.view": "In Background Tasks anzeigen",
 };

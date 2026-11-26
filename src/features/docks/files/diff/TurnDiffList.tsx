@@ -7,7 +7,7 @@ import { set_diff_range, type DiffRange } from "../../../../state/turn-diff-ui.t
 import { DockEmpty } from "../../DockPanel.tsx";
 import { ChangeCounts, ChangesSkeleton } from "../git/ChangesList.tsx";
 import { ViewerNote } from "../git/ViewerDiff.tsx";
-import { clock_label, full_clock_label, short_clock_label, totals } from "./diff-rows.ts";
+import { clock_label, short_clock_label, totals } from "./diff-rows.ts";
 import { note_texts, type ReadySummary } from "./turn-diff-notes.ts";
 import { TurnDiffRow } from "./TurnDiffRow.tsx";
 import type { TurnDiffModel } from "./use-turn-diff.ts";
@@ -18,8 +18,6 @@ type Clock = (iso: string) => string;
 
 type OpenEntry = (entry: DiffEntry) => void;
 
-type HeadTime = { text: string; title: string };
-
 const head_iso = (model: TurnDiffModel): string | null => {
   if (model.range === "turn") {
     return model.started_at;
@@ -28,14 +26,13 @@ const head_iso = (model: TurnDiffModel): string | null => {
   return summary?.kind === "ready" ? summary.base_at : null;
 };
 
-const head_time = (t: Translate, model: TurnDiffModel, language: string): HeadTime | null => {
+const head_time = (t: Translate, model: TurnDiffModel, language: string): string | null => {
   const iso = head_iso(model);
   if (iso === null) {
     return null;
   }
   const text = short_clock_label(language, iso, new Date());
-  const title = full_clock_label(language, iso);
-  return model.range === "turn" ? { text, title } : { text: t("turn_diff.since", { time: text }), title: t("turn_diff.since", { time: title }) };
+  return model.range === "turn" ? text : t("turn_diff.since", { time: text });
 };
 
 type ReadyListProps = { summary: ReadySummary; range: DiffRange; selected: DiffEntry | null; clock: Clock; on_open: OpenEntry };
@@ -110,11 +107,7 @@ export const TurnDiffList = ({ model, on_open }: TurnDiffListProps) => {
             { id: "chat", label: t("turn_diff.range_chat") },
           ]}
         />
-        {time && (
-          <span className="turn-diff-time" title={time.title}>
-            {time.text}
-          </span>
-        )}
+        {time && <span className="turn-diff-time">{time}</span>}
       </div>
       <ListBody model={model} clock={clock} on_open={on_open} />
     </div>

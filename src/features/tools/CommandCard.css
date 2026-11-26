@@ -155,7 +155,12 @@
     animation-timeline: scroll(self y);
   }
 
-  .mcp-card .output-block-pre {
+  .command-card-shell[data-kind="path"] {
+    user-select: text;
+  }
+
+  .mcp-card .output-block-pre,
+  .command-card .output-block-wrap .output-block-pre {
     display: block;
     white-space: pre-wrap;
     overflow-wrap: anywhere;

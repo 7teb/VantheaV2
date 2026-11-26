@@ -71,7 +71,7 @@ test("a first sign-in stores the issued client id, loads the model list and leak
   assert.equal(exchange?.headers["content-type"], "application/x-www-form-urlencoded");
   assert.equal(exchange?.form.get("redirect_uri"), new URL(kit.opened[0] ?? "").searchParams.get("redirect_uri"));
   await kit.wait_models(1);
-  assert.deepEqual(account_models(), [{ slug: "gpt-6-luna", display_name: "GPT-6 Luna", context_window: 400000 }]);
+  assert.deepEqual(account_models(), [{ slug: "gpt-6-luna", display_name: "GPT-6 Luna", context_window: 400000, service_tiers: [] }]);
   assert.ok(kit.models_changed >= 1);
   assert.ok(logged.includes("[chatgpt] opened the ChatGPT sign-in page at https://auth.openai.com/api/accounts/authorize"));
   await assert_no_secrets(kit);

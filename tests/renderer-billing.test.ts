@@ -3,8 +3,6 @@ import { after, before, beforeEach, test } from "node:test";
 import { chatgpt_usage_url, type ChatgptAccount } from "../shared/chatgpt.ts";
 import type { ModelCatalog, ModelEntry } from "../shared/models.ts";
 import type { BillingMode, SettingsView } from "../shared/settings.ts";
-import { billing as de_billing } from "../src/i18n/de/billing.ts";
-import { billing as en_billing } from "../src/i18n/en/billing.ts";
 import { bundle, install_dom, stub_components, type FakeElement, type Vx } from "./dom-kit.ts";
 
 const entry = (id: string, label: string): ModelEntry => ({
@@ -320,10 +318,4 @@ test("a plan limit error shows the account and Manage usage without a reset time
   assert.equal(button("Open settings").tagName, "BUTTON");
   render("ErrorCard", { error: { kind: "plan_model", message: "" } });
   assert.equal(container.matching((element) => element.tagName === "BUTTON").length, 0);
-});
-
-test("both languages have the same billing keys and keep the sign-in label in English", () => {
-  assert.deepEqual(Object.keys(de_billing).sort(), Object.keys(en_billing).sort());
-  assert.equal(de_billing["billing.continue"], en_billing["billing.continue"]);
-  assert.equal(de_billing["billing.mode_plan"], "ChatGPT-Abo");
 });

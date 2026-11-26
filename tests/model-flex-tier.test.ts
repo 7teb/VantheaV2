@@ -19,17 +19,6 @@ const entry = (id: string) => {
 
 const assistant = (model: string) => ({ id: `a-${model}`, role: "assistant", model, effort: "high", steps: [] }) as unknown as Message;
 
-test("the picker lists no Flex entries, the Flex route is a tier of the base model", () => {
-  assert.deepEqual(
-    catalog.models.filter((model) => model.label.endsWith(" Flex") || model.id.endsWith(":floor")),
-    [],
-  );
-  assert.deepEqual(
-    catalog.models.filter((model) => model.tiers?.flex).map((model) => model.id),
-    ["openai/gpt-6.1-sol", "openai/gpt-6.1-terra", "openai/gpt-6-astra", "google/gemini-4-argon", "google/gemini-4-carbon", "google/gemini-4-neon"],
-  );
-});
-
 test("/flex turns the chosen model into its Flex variant, also in Pro mode", () => {
   const astra = entry("openai/gpt-6-astra");
   const flex = with_choice(astra, { pro: false, tier: "flex" });

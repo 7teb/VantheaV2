@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { approval_skip_ms, skips_unanswered } from "../../shared/approval.ts";
 import type { StepImage, ToolProgress } from "../../shared/chat.ts";
 import type { ToolEndStatus } from "../../shared/events.ts";
@@ -81,9 +82,18 @@ const build_context = (session: TurnSession, call_id: string, profile: ToolProfi
   signal: session.signal,
   progress: throttled_progress(session.emit, call_id),
   approve: async (request) => {
-    const shown = skips_unanswered(request) ? { ...request, expires_at: Date.now() + approval_skip_ms } : request;
-    session.emit({ type: "tool_approval", call_id, request: shown });
-    const decision = await session.wait_decision(call_id, shown, () => session.emit({ type: "tool_approval", call_id, request }), session.signal);
+    const pending = {
+      ...request,
+      request_id: randomUUID(),
+      ...(skips_unanswered(request) ? { expires_at: Date.now() + approval_skip_ms } : {}),
+    };
+    session.emit({ type: "tool_approval", call_id, request: pending });
+    const decision = await session.wait_decision(
+      call_id,
+      pending,
+      (held) => session.emit({ type: "tool_approval", call_id, request: held }),
+      session.signal,
+    );
     session.signal.throwIfAborted();
     const record = human_decision(request, decision, session.review.actor, last_human_id(session.chat_id));
     session.emit({ type: "tool_decision", call_id, decision: record });

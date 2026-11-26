@@ -9,7 +9,7 @@ export type ChoiceView = { model: ModelEntry | null; effort: string };
 export const choice_view = (catalog: ModelCatalog, stored: ModelChoice): ChoiceView => {
   const choice = catalog_choice(catalog.models, stored);
   const base = catalog.models.find((entry) => entry.id === choice.model) ?? null;
-  return { model: base ? with_choice(base, choice, catalog.plan_ids) : null, effort: base ? effective_effort(base, choice.effort) : choice.effort };
+  return { model: base ? with_choice(base, choice, catalog) : null, effort: base ? effective_effort(base, choice.effort) : choice.effort };
 };
 
 export const with_model = (choice: ModelChoice, entry: ModelEntry): ModelChoice => ({ ...choice, model: entry.id, effort: effective_effort(entry, choice.effort) });

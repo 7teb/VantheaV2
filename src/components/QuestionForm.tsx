@@ -250,7 +250,7 @@ export const QuestionForm = ({
           {subtitle ? <div className="question-subtitle">{subtitle}</div> : null}
         </div>
         <div className="question-head-side">
-          <button type="button" className="question-icon-button" aria-label={dismiss_label} title={dismiss_label} onClick={dismiss}>
+          <button type="button" className="question-icon-button" aria-label={dismiss_label} onClick={dismiss}>
             <CloseIcon />
           </button>
         </div>

@@ -51,7 +51,11 @@ test("a batch where one call fails, one throws, one is denied and one succeeds a
       return done("works result");
     }),
   ];
-  void until(ended("c0_3")).then(() => resolve_decision("chat-mixed", "c0_2", { approved: false, grant: "once", feedback: "not now" }));
+  void until(ended("c0_3")).then(() => {
+    const approval = h.events.find(asked("c0_2"));
+    assert.ok(approval);
+    assert.equal(resolve_decision("chat-mixed", approval.request.request_id, { approved: false, grant: "once", feedback: "not now" }), true);
+  });
   await run_turn_loop(h.session, h.messages);
   assert.deepEqual(
     ["c0_0", "c0_1", "c0_2", "c0_3"].map((call_id) => end_status(h.events, call_id)),
@@ -97,7 +101,9 @@ test("Stop while one call waits for approval and another still runs cancels both
     h.messages.flatMap((message) => (message.role === "tool" ? [message.tool_call_id] : [])),
     [api_call_id("m", "c0_0")],
   );
-  assert.equal(resolve_decision("chat-stop", "c0_1", { approved: true, grant: "once", feedback: "" }), false);
+  const approval = h.events.find(asked("c0_1"));
+  assert.ok(approval);
+  assert.equal(resolve_decision("chat-stop", approval.request.request_id, { approved: true, grant: "once", feedback: "" }), false);
   let chat_marks: ChatMarks = {};
   const pending: string[][] = [];
   for (const event of turn_events(h)) {

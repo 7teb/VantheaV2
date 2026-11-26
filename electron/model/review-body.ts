@@ -16,7 +16,7 @@ export const review_request = (model_id: string, call: ReviewCall): CompleteRequ
       { role: "user", content },
     ],
     schema: { name: call.schema.name, schema: call.schema.schema, strict: true },
-    reasoning_effort: "low",
+    reasoning_effort: "medium",
     session_id: call.session_id,
     ...review_routing(model_id),
   };

@@ -24,7 +24,7 @@ export const ModelsBody = ({ view }: BodyProps<"models">) => {
         <span className="model-prices-head model-prices-amount">{t("tools.model_input")}</span>
         <span className="model-prices-head model-prices-amount">{t("tools.model_output")}</span>
         {view.models.map((model) => (
-          <div key={model.id} className="model-prices-row" title={model.error || model.note || model.endpoint}>
+          <div key={model.id} className="model-prices-row">
             <span className="model-prices-model">
               <span className="model-prices-name">{model.label}</span>
               <span className="model-prices-slug">{model.id}</span>

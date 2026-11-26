@@ -107,6 +107,10 @@ const parse_model = (value: unknown, index: number): ModelEntry => {
   if (efforts.length ? !efforts.includes(default_effort) : default_effort !== "") {
     fail(`${named}.default_effort`, efforts.length ? "must be one of the model's efforts" : "must be empty when the model has no efforts");
   }
+  const major = raw.major === undefined ? null : as_text(raw.major, `${named}.major`);
+  if (major !== null && !efforts.includes(major)) {
+    fail(`${named}.major`, "must be one of the model's efforts");
+  }
   return {
     id,
     label: as_text(raw.label, `${named}.label`),
@@ -114,6 +118,7 @@ const parse_model = (value: unknown, index: number): ModelEntry => {
     provider_order: as_texts(raw.provider_order, `${named}.provider_order`),
     efforts: efforts.length ? [...efforts, major_effort] : efforts,
     default_effort,
+    ...(major === null ? {} : { major }),
     vision: as_flag(raw.vision, `${named}.vision`),
     context_length,
     max_output: as_count(raw.max_output, `${named}.max_output`),
@@ -220,7 +225,7 @@ export const api_effort = (model: ModelEntry, effort: string): string => {
   if (chosen !== major_effort) {
     return chosen;
   }
-  return model.efforts.filter((item) => item !== major_effort).at(-1) ?? model.default_effort;
+  return model.major ?? model.efforts.filter((item) => item !== major_effort).at(-1) ?? model.default_effort;
 };
 
 export const routes_to_openai = (model: Pick<ModelEntry, "provider_order">): boolean =>

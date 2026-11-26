@@ -36,7 +36,7 @@ export const ArtifactCard = ({ artifact, renaming, on_rename, on_open }: Artifac
             }}
           />
         ) : (
-          <span className="artifact-title" title={label} onDoubleClick={() => on_rename(artifact.id)}>
+          <span className="artifact-title" onDoubleClick={() => on_rename(artifact.id)}>
             {label}
           </span>
         )}

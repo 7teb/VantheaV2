@@ -1,12 +1,13 @@
+import "./support/isolated-home.ts";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { inline_result_chars, parse_workflow_notice, workflow_notice_text } from "../shared/workflow-notes.ts";
 import type { WorkflowSummary } from "../shared/workflow.ts";
 import { events } from "./agents-runner-harness.ts";
-import { live_runs, waiting_approvals } from "../electron/agents/live.ts";
+import { agent_approval_key, live_runs, waiting_approvals } from "../electron/agents/live.ts";
 import { parse_index, public_summary } from "../electron/agents/records.ts";
-import { deploy_agent, max_running_agents } from "../electron/agents/runner.ts";
-import { agent_approval_key } from "../electron/agents/session.ts";
+import { deploy_agent } from "../electron/agents/runner.ts";
+import { max_running_agents } from "../electron/settings/user-config.ts";
 import { get_agent } from "../electron/agents/store.ts";
 import { resolve_decision } from "../electron/permissions/approvals.ts";
 import { mark_interrupted, parse_state } from "../electron/workflows/records.ts";
@@ -60,15 +61,16 @@ test("a workflow agent's tool call waits for the normal approval keyed by its ru
   const run_id = (await launch("chat-wf-approve", "return await agent('wf ask first')")).summary.run_id;
   await wait_until(() => waiting_approvals("chat-wf-approve").length === 1, "the approval");
   const [waiting] = waiting_approvals("chat-wf-approve");
-  assert.equal(waiting?.agent_id, summary(run_id).agents[0]?.agent_id);
-  assert.equal(resolve_decision(agent_approval_key(waiting?.run_id ?? ""), waiting?.call_id ?? "", { approved: true, grant: "once", feedback: "" }), true);
+  assert.ok(waiting);
+  assert.equal(waiting.agent_id, summary(run_id).agents[0]?.agent_id);
+  assert.equal(resolve_decision(agent_approval_key(waiting.run_id), waiting.request.request_id, { approved: true, grant: "once", feedback: "" }), true);
   const done = await ended(run_id);
   assert.equal(done.result_preview, '"approved"');
   tools.pop();
 });
 
 test("a workflow runs more agents at once than deploy_agent allows and does not use up that limit", async () => {
-  const count = max_running_agents + 5;
+  const count = max_running_agents() + 5;
   for (let index = 0; index < count; index += 1) {
     scripts.set(`wf wide ${index}`, block_until_abort);
   }

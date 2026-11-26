@@ -5,7 +5,8 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { collect_arg_strings, shell_candidates } from "../electron/mcp/risk.ts";
-import { clear_mcp_chat, decide, record_grant, set_command_gate, type McpCall } from "../electron/tools/mcp/decide.ts";
+import { clear_mcp_chat, record_grant } from "../electron/mcp/grants.ts";
+import { decide, set_command_gate, type McpCall } from "../electron/tools/mcp/decide.ts";
 import { sync_servers, server_runtime } from "../electron/mcp/client.ts";
 import type { ToolContext } from "../electron/tools/types.ts";
 

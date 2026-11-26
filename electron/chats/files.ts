@@ -120,9 +120,18 @@ const parse_step = (step: Step, chat_id: string): Step => {
 
 const usage_count = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;
 
+const optional_count = (value: unknown): number => (usage_count(value) ? value : 0);
+
 const coerce_message_usage = (value: unknown): MessageUsage | null =>
   is_record(value) && usage_count(value.prompt_tokens) && usage_count(value.completion_tokens) && usage_count(value.reasoning_tokens) && usage_count(value.rounds)
-    ? { prompt_tokens: value.prompt_tokens, completion_tokens: value.completion_tokens, reasoning_tokens: value.reasoning_tokens, rounds: value.rounds }
+    ? {
+        prompt_tokens: value.prompt_tokens,
+        completion_tokens: value.completion_tokens,
+        reasoning_tokens: value.reasoning_tokens,
+        cached_tokens: optional_count(value.cached_tokens),
+        cache_write_tokens: optional_count(value.cache_write_tokens),
+        rounds: value.rounds,
+      }
     : null;
 
 const parse_assistant = (message: AssistantMessage, chat_id: string): AssistantMessage => {

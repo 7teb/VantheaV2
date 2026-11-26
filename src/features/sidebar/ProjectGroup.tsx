@@ -55,7 +55,7 @@ export const ProjectGroup = ({ group, chat_total, collapsed, selected, children 
             }}
           />
         ) : (
-          <button type="button" className="sidebar-row-main" title={project.path} onClick={() => start_new_chat(project.path)}>
+          <button type="button" className="sidebar-row-main" onClick={() => start_new_chat(project.path)}>
             <span className="sidebar-row-label">{label}</span>
             {project.pinned && <PinIcon className="project-pin" />}
             {status && <StatusMark status={status} />}

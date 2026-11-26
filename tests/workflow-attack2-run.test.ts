@@ -1,10 +1,12 @@
+import "./support/isolated-home.ts";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { after, before, test } from "node:test";
 import { live_runs } from "../electron/agents/live.ts";
 import { take_agent_notes } from "../electron/agents/reports.ts";
-import { continue_agent, deploy_agent, max_running_agents } from "../electron/agents/runner.ts";
+import { continue_agent, deploy_agent } from "../electron/agents/runner.ts";
+import { max_running_agents } from "../electron/settings/user-config.ts";
 import { get_agent } from "../electron/agents/store.ts";
 import { live_workflow } from "../electron/workflows/live.ts";
 import { stop_chat_workflows, stop_workflow_run } from "../electron/workflows/runtime.ts";
@@ -105,7 +107,7 @@ test("continuing a finished workflow agent counts against the 20-agent limit of 
   const first = await ended((await launch(chat_id, "return await parallel([() => agent('wf atk2 cap first'), () => agent('wf atk2 cap second')])")).summary.run_id);
   const records = first.agents.map((entry) => get_agent(entry.agent_id ?? ""));
   assert.ok(records.every((record) => record?.workflow));
-  for (let index = 0; index < max_running_agents - 1; index += 1) {
+  for (let index = 0; index < max_running_agents() - 1; index += 1) {
     scripts.set(`plain atk2 cap ${index}`, block_until_abort);
     deploy_agent(request(`plain atk2 cap ${index}`, { chat_id }));
   }

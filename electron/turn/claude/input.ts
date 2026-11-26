@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { ApiMessage } from "../../model/types.ts";
-import { deliver_input } from "../loop.ts";
+import { deliver_input, inject_steers } from "../loop.ts";
 import type { TurnSession } from "../session.ts";
 import { message_blocks, type UserBlock } from "./content.ts";
 import type { Rounds } from "./rounds.ts";
@@ -18,6 +18,7 @@ export type InputChannel = {
 export type Feeder = {
   push: (messages: ApiMessage[]) => void;
   poll: (round: number) => Promise<boolean>;
+  steers: (round: number) => Promise<boolean>;
   serial: <T>(work: () => Promise<T>) => Promise<T>;
 };
 
@@ -121,18 +122,21 @@ export const create_feeder = (session: TurnSession, channel: InputChannel, round
     rounds.hold(messages);
   };
 
+  const feed = (collect: (scratch: ApiMessage[]) => Promise<unknown>) =>
+    serial(async () => {
+      if (closing()) {
+        return false;
+      }
+      const scratch: ApiMessage[] = [];
+      await collect(scratch);
+      push(scratch);
+      return scratch.length > 0;
+    });
+
   return {
     push,
-    poll: (round) =>
-      serial(async () => {
-        if (closing()) {
-          return false;
-        }
-        const scratch: ApiMessage[] = [];
-        await deliver_input(session, round, scratch);
-        push(scratch);
-        return scratch.length > 0;
-      }),
+    poll: (round) => feed((scratch) => deliver_input(session, round, scratch)),
+    steers: (round) => feed((scratch) => inject_steers(session, round, scratch)),
     serial,
   };
 };

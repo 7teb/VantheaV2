@@ -9,7 +9,7 @@ import { agent_review } from "../permissions/review-records.ts";
 import type { Tool } from "../tools/types.ts";
 import { reject_feedback, run_options } from "../turn/run-options.ts";
 import type { TurnNote, TurnSession } from "../turn/session.ts";
-import { keep_report, type LiveRun } from "./live.ts";
+import { agent_approval_key, keep_report, type LiveRun } from "./live.ts";
 import { send_peer } from "./peers.ts";
 import { inbox_note, peer_note, peer_status_note, reminder_note, roster_note } from "./prompt.ts";
 import type { AgentRecord, RunRecord } from "./records.ts";
@@ -19,8 +19,6 @@ import type { AgentDeps, RunContext } from "./runner.ts";
 import { result_reminder, wants_result, workflow_agent_tools, type WorkflowAgentLink } from "./workflow-agent.ts";
 
 export const reminder_interval = 10;
-
-export const agent_approval_key = (run_id: string) => `agent:${run_id}`;
 
 export const allowed_tools = (tools: Tool[], agent: Pick<AgentRecord, "without_tools">): Tool[] => tools.filter((tool) => !agent.without_tools.includes(tool.spec.name));
 
@@ -136,6 +134,7 @@ export const agent_session = (deps: AgentDeps, agent: AgentRecord, run: RunRecor
     mirror_decision: (decision) => mirror_decision(agent.chat_id, request.parent_message_id, request.parent_call_id, decision),
     profile: agent.profile,
     call_scope: run.run_id,
+    cache_key: `${agent.chat_id}:${agent.agent_id}`,
     take_notes: () => (request.workflow ? workflow_notes(live, request.workflow) : take_notes(agent, live)),
     idle: async () => {
       if (live.inbox.length) {

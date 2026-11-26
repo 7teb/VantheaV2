@@ -51,7 +51,7 @@ export type ComputerView =
 
 export type ToolView =
   | { kind: "files"; root: string; files: string[]; directories: number; truncated: boolean }
-  | { kind: "read"; path: string; start_line: number; end_line: number; total_lines: number; truncated: boolean }
+  | { kind: "read"; path: string; start_line: number; end_line: number; total_lines: number; truncated: boolean; content?: string }
   | { kind: "grep"; query: string; matches: GrepMatch[]; total: number; truncated: boolean; incomplete?: boolean }
   | { kind: "outline"; path: string; symbols: OutlineSymbol[] }
   | { kind: "edit"; path: string; created: boolean; added: number; removed: number; diff: DiffLine[] }
@@ -75,7 +75,7 @@ export type ToolView =
   | { kind: "image"; images: GeneratedImage[] }
   | { kind: "generated_images"; images: GeneratedImage[] }
   | { kind: "shown_images"; images: ShownImage[] }
-  | { kind: "browser"; action: string; url: string; title: string; detail: string }
+  | { kind: "browser"; action: string; url: string; title: string; detail: string; output?: string }
   | ComputerView
   | { kind: "mcp"; server: string; tool: string; text: string; is_error: boolean }
   | { kind: "tool_load"; names: string[] }

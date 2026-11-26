@@ -87,7 +87,7 @@ test("tool_start after an approval clears the card and keeps the first start tim
   const state = apply_events(message(), [
     ev({ type: "tool_call", round: 0, index: 0, call_id: "c0", name: "write_file", args: {} }),
     ev({ type: "tool_start", call_id: "c0" }),
-    ev({ type: "tool_approval", call_id: "c0", request: { kind: "memory", action: "remember", text: "x" } }),
+    ev({ type: "tool_approval", call_id: "c0", request: { kind: "memory", action: "remember", text: "x", request_id: "approval-1" } }),
     ev({ type: "tool_start", call_id: "c0" }),
   ]);
   const step = state.steps[0];
@@ -235,7 +235,11 @@ test("tool_approval clears the review phase even when its clear was throttled aw
   seq = 0;
   const state = apply_events(message(), [
     ...reviewing_command(),
-    ev({ type: "tool_approval", call_id: "c0", request: { kind: "command", command: "npm test", cwd: "C:/p", background: false, review: null, grant_prefix: null } }),
+    ev({
+      type: "tool_approval",
+      call_id: "c0",
+      request: { kind: "command", command: "npm test", cwd: "C:/p", background: false, review: null, grant_prefix: null, request_id: "approval-1" },
+    }),
   ]);
   assert.equal(progress_of(state)?.status, "awaiting_approval");
   assert.equal(progress_of(state)?.progress, null);

@@ -165,9 +165,3 @@ test("list_models with both plans keeps the ChatGPT rows as they are and names b
   assert.match(text, /\nopenai\/gpt-6-luna \| [^\n]* \| included in the ChatGPT plan, no per-token price \| context /);
   assert.match(text, /\nanthropic\/claude-haiku-5\.5 \| Claude Haiku 5\.5 \| Anthropic \| included in the Claude plan, no per-token price \| context /);
 });
-
-test("the list_models description keeps the ChatGPT sentence and adds the Claude plan sentence", () => {
-  const description = main.find_tool("list_models")?.spec.description ?? "";
-  assert.match(description, /When the app bills through a ChatGPT plan, the OpenAI models the plan serves are marked as included in the plan without a price, and every other model runs through OpenRouter at the listed price\./);
-  assert.match(description, /When the app bills Claude models through a Claude plan, those models are marked as included in the Claude plan without a price\.$/);
-});

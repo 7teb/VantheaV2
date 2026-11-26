@@ -45,7 +45,7 @@ export const HookRow = ({ hook }: { hook: ScopedHook }) => {
         </div>
         <div className="pane-item-meta hook-row-meta">
           <span className="hook-row-shell">{`${shell_labels[hook.shell]} · ${seconds_text(t, hook.timeout_s)}`}</span>
-          <span className="hook-row-command" title={hook.command}>
+          <span className="hook-row-command">
             {hook.command}
           </span>
         </div>

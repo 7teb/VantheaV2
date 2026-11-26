@@ -74,7 +74,7 @@ test("every check measures exactly the request that goes out, steers, agent note
       callbacks.on_text("teil zwei");
       return completed({ content: "teil zwei", finish_reason: "length", usage: null });
     }
-    return completed({ content: "fertig", usage: { prompt_tokens: 0, completion_tokens: 5, reasoning_tokens: 0 } });
+    return completed({ content: "fertig", usage: { prompt_tokens: 0, completion_tokens: 5, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0 } });
   };
   h.messages.push({ role: "user", instruction: true, content: "erkläre es" });
   await run_turn_loop(h.session, h.messages);

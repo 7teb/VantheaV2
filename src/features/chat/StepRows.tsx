@@ -97,7 +97,7 @@ export const CompactionRow = memo(({ step }: { step: CompactionStep }) => {
   const text = compaction_text(t, step);
   const live = step.status === "running" || step.status === "waiting";
   return (
-    <div className="compaction-row enter-fade-up" data-status={step.status} title={step.error?.message}>
+    <div className="compaction-row enter-fade-up" data-status={step.status}>
       <TextSelectIcon />
       {live ? (
         <span className="compaction-text is-working">

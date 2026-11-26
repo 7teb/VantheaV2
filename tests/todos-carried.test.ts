@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { AssistantMessage, Message, Step, Todo, UserMessage } from "../shared/chat.ts";
 import type { ModelEntry } from "../shared/models.ts";
-import { latest_todos, newly_done, open_todos } from "../shared/todos.ts";
+import { latest_todos, open_todos } from "../shared/todos.ts";
 import { carried_todos_content, carried_todos_note } from "../electron/turn/carried-todos.ts";
 import { build_api_messages } from "../electron/turn/history.ts";
 import { build_blocks } from "../src/features/chat/assistant-blocks.ts";
@@ -74,13 +74,6 @@ test("the newest todo list wins and says whether its turn still streams", () => 
     open_todos(list).map((todo) => todo.id),
     ["todo-2", "todo-3"],
   );
-});
-
-test("only items that just turned done count as finished, never on a first look", () => {
-  const next: Todo[] = list.map((todo) => (todo.id === "todo-2" ? { ...todo, status: "done" } : todo));
-  assert.deepEqual([...newly_done(list, next)], ["todo-2"]);
-  assert.deepEqual([...newly_done(next, next)], []);
-  assert.deepEqual([...newly_done([], next)], []);
 });
 
 test("open todos of an earlier turn become one todos_carried note with the open items", () => {

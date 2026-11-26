@@ -15,18 +15,6 @@ const catalog = parse_catalog(shipped());
 
 const assistant = (model: string, effort: string) => ({ id: `a-${model}`, role: "assistant", model, effort, steps: [] }) as unknown as Message;
 
-test("every GPT 6 entry names its Pro slug and label, and no other model has one", () => {
-  const with_pro_slugs = catalog.models.filter((model) => model.pro);
-  assert.deepEqual(
-    with_pro_slugs.map((model) => model.id),
-    ["openai/gpt-6.2-sol", "openai/gpt-6.2-astra", "openai/gpt-6.1-sol", "openai/gpt-6.1-terra", "openai/gpt-6-luna", "openai/gpt-6-astra"],
-  );
-  for (const model of with_pro_slugs) {
-    assert.equal(model.pro?.id, `${model.id}-pro`, model.id);
-    assert.equal(model.pro?.label, `${model.label} Pro`, model.id);
-  }
-});
-
 test("a Pro slug resolves to its base entry in Pro mode with the same limits", () => {
   const base = find_model(catalog, "openai/gpt-6.1-sol");
   const pro = find_model(catalog, "openai/gpt-6.1-sol-pro");

@@ -23,11 +23,6 @@ after(async () => {
   await fs.rm(root, { recursive: true, force: true });
 });
 
-test("one constant of 25000 characters bounds a memory text", () => {
-  assert.equal(memory_text_chars, 25000);
-  assert.equal(long_text(memory_text_chars).length, memory_text_chars);
-});
-
 test("remember refuses a longer text with its length and the limit instead of cutting it", async () => {
   const remember = memory_tools.find((tool) => tool.spec.name === "remember");
   assert.ok(remember);

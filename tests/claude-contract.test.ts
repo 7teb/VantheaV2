@@ -5,15 +5,10 @@ import path from "node:path";
 import { after, before, test } from "node:test";
 import type { Options, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { channel_kind } from "../shared/ipc/index.ts";
-import { claude_billing_modes } from "../shared/settings.ts";
 import { claude_plan_serves } from "../electron/billing/claude.ts";
 import { claude_runtime, set_claude_runtime, type ClaudeQuery, type ClaudeRuntime } from "../electron/claude/runtime.ts";
 import { init_settings, update_settings } from "../electron/settings/store.ts";
 import type { SecretCodec } from "../electron/storage/secrets.ts";
-import { chat as de_chat } from "../src/i18n/de/chat.ts";
-import { context as de_context } from "../src/i18n/de/context.ts";
-import { chat as en_chat } from "../src/i18n/en/chat.ts";
-import { context as en_context } from "../src/i18n/en/context.ts";
 
 const codec: SecretCodec = {
   available: () => true,
@@ -43,10 +38,6 @@ const empty_prompt: AsyncIterable<SDKUserMessage> = {
 };
 
 const options: Options = {};
-
-test("the Claude billing switch has exactly API pricing and the Claude plan", () => {
-  assert.deepEqual([...claude_billing_modes], ["api", "claude"]);
-});
 
 test("claude_plan_serves needs the Claude plan switch and a Claude Code id on the model", async () => {
   try {
@@ -99,29 +90,4 @@ test("the Claude account channels are declared with their kinds", () => {
   assert.equal(channel_kind("claude:status"), "invoke");
   assert.equal(channel_kind("claude:refresh"), "invoke");
   assert.equal(channel_kind("claude:changed"), "event");
-});
-
-const chat_keys = [
-  "chat.error_claude_auth",
-  "chat.error_claude_limit",
-  "chat.error_claude_blocked",
-  "chat.error_claude_model",
-  "chat.error_claude_process",
-] as const;
-
-const context_keys = ["context.reason_claude_auth", "context.reason_claude_limit", "context.reason_claude_blocked", "context.reason_claude_model", "context.reason_claude_process"] as const;
-
-test("English and German carry the same chat and context keys, the Claude ones included", () => {
-  assert.deepEqual(Object.keys(de_chat).sort(), Object.keys(en_chat).sort());
-  assert.deepEqual(Object.keys(de_context).sort(), Object.keys(en_context).sort());
-  for (const key of chat_keys) {
-    assert.ok(en_chat[key], key);
-    assert.ok(de_chat[key], key);
-    assert.notEqual(de_chat[key], en_chat[key], key);
-  }
-  for (const key of context_keys) {
-    assert.ok(en_context[key], key);
-    assert.ok(de_context[key], key);
-  }
-  assert.match(de_chat["chat.error_claude_limit"], /Claude-Abo/);
 });

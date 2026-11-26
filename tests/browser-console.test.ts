@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { handle_debugger_message } from "../electron/browser/cdp.ts";
 import { console_buffer, console_capacity, console_line, console_report, record_console, select_console, type ConsoleBuffer } from "../electron/browser/console.ts";
 import { console_args_text, console_message, exception_text, remote_object_text } from "../electron/browser/console-text.ts";
-import { eval_outcome, evaluate_safely } from "../electron/browser/evaluate.ts";
+import { eval_outcome, evaluate_expression } from "../electron/browser/evaluate.ts";
 import type { BrowserTab } from "../electron/browser/state.ts";
 
 const logged = (type: string, args: unknown[], extra: Record<string, unknown> = {}) => ({ type, args, executionContextId: 1, timestamp: 1, ...extra });
@@ -169,11 +169,11 @@ const eval_tab = (answer: (method: string, params: Record<string, unknown>) => u
   return { sent, tab: { tab_id: "t", debugger_attached: true, guest } as unknown as BrowserTab };
 };
 
-test("browser_eval sends a side-effect-free, silent, time-limited evaluate and always releases its objects", async () => {
+test("browser_eval sends a silent, time-limited evaluate in the page context and always releases its objects", async () => {
   const ok = eval_tab((method) => (method === "Runtime.evaluate" ? { result: { type: "number", value: 2, description: "2" } } : {}));
-  assert.deepEqual(await evaluate_safely(ok.tab, "document.links.length", new AbortController().signal), { thrown: false, kind: "number", text: "2", isolated: false });
+  assert.deepEqual(await evaluate_expression(ok.tab, "document.links.length", new AbortController().signal), { thrown: false, kind: "number", text: "2" });
   assert.deepEqual(ok.sent, [
-    { method: "Runtime.evaluate", params: { expression: "document.links.length", objectGroup: "vx-eval", generatePreview: true, throwOnSideEffect: true, timeout: 10000, silent: true } },
+    { method: "Runtime.evaluate", params: { expression: "document.links.length", objectGroup: "vx-eval", generatePreview: true, timeout: 10000, silent: true } },
     { method: "Runtime.releaseObjectGroup", params: { objectGroup: "vx-eval" } },
   ]);
   const slow = eval_tab((method) => {
@@ -182,7 +182,7 @@ test("browser_eval sends a side-effect-free, silent, time-limited evaluate and a
     }
     return {};
   });
-  assert.deepEqual(await evaluate_safely(slow.tab, "while(true){}", new AbortController().signal), { thrown: true, kind: "timed out", text: "The expression ran longer than 10 s and was stopped.", isolated: false });
+  assert.deepEqual(await evaluate_expression(slow.tab, "while(true){}", new AbortController().signal), { thrown: true, kind: "timed out", text: "The expression ran longer than 10 s and was stopped." });
   assert.equal(slow.sent.at(-1)?.method, "Runtime.releaseObjectGroup");
   const broken = eval_tab((method) => {
     if (method === "Runtime.evaluate") {
@@ -190,21 +190,14 @@ test("browser_eval sends a side-effect-free, silent, time-limited evaluate and a
     }
     return {};
   });
-  await assert.rejects(evaluate_safely(broken.tab, "1", new AbortController().signal), /Cannot find context/);
+  await assert.rejects(evaluate_expression(broken.tab, "1", new AbortController().signal), /Cannot find context/);
 });
 
-test("eval outcomes name the value kind, render the value and explain side-effect refusals", () => {
+test("eval outcomes name the value kind, render the value and return thrown errors as text", () => {
   assert.deepEqual(eval_outcome({ result: { type: "number", value: 42, description: "42" } }), { thrown: false, kind: "number", text: "42" });
   assert.deepEqual(eval_outcome({ result: str("line1\nline2") }), { thrown: false, kind: "string", text: "line1\nline2" });
   assert.equal(eval_outcome({ result: { type: "object", subtype: "array", description: "Array(0)", preview: { type: "object", subtype: "array", description: "Array(0)", overflow: false, properties: [] } } }).kind, "array");
   assert.equal(eval_outcome({ result: { type: "object", className: "Window", description: "Window" } }).kind, "Window");
-  const refused = eval_outcome({
-    result: { type: "object", subtype: "error" },
-    exceptionDetails: { exceptionId: 1, text: "Uncaught", lineNumber: 0, columnNumber: 0, exception: { type: "object", subtype: "error", className: "EvalError", description: "EvalError: Possible side-effect in debug-evaluate" } },
-  });
-  assert.equal(refused.thrown, true);
-  assert.equal(refused.kind, "side effect");
-  assert.match(refused.text, /^Uncaught EvalError: Possible side-effect in debug-evaluate\nbrowser_eval runs only side-effect-free JavaScript/);
   const threw = eval_outcome({ exceptionDetails: { text: "Uncaught", exception: { type: "object", subtype: "error", description: "TypeError: a is null" } } });
   assert.deepEqual(threw, { thrown: true, kind: "threw", text: "Uncaught TypeError: a is null" });
 });

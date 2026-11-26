@@ -60,11 +60,13 @@ const collect_files = async (root: string, max_files = 4000, max_depth = 5) => {
   return { files, interpreter: interpreters[0] ?? null };
 };
 
+const json_window = 20000;
+
 export const balanced_json = (text: string, start: number): string | null => {
   let depth = 0;
   let in_string = false;
   let escaped = false;
-  for (let index = start; index < text.length && index - start <= 20000; index += 1) {
+  for (let index = start; index < text.length && index - start <= json_window; index += 1) {
     const char = text[index];
     if (in_string) {
       if (escaped) {
@@ -121,7 +123,7 @@ const json_candidates = (text: string) => {
   const candidates = [...text.matchAll(/```[a-zA-Z0-9]*\s*\n([\s\S]*?)```/g)].map((match) => match[1]);
   for (const anchor of ['"mcpServers"', '"command"']) {
     for (let index = text.indexOf(anchor); index !== -1; index = text.indexOf(anchor, index + anchor.length)) {
-      for (let start = text.lastIndexOf("{", index); start !== -1; start = text.lastIndexOf("{", start - 1)) {
+      for (let start = text.lastIndexOf("{", index); start !== -1 && index - start <= json_window; start = start === 0 ? -1 : text.lastIndexOf("{", start - 1)) {
         const slice = balanced_json(text, start);
         if (slice && start + slice.length > index) {
           candidates.push(slice);

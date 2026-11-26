@@ -9,7 +9,7 @@ export const speed_tiers = ["fast", "ultrafast", "flex"] as const;
 
 export type SpeedTier = (typeof speed_tiers)[number];
 
-export type SpeedRoute = { provider_order: string[]; id?: string; max_output?: number };
+export type SpeedRoute = { provider_order: string[]; id?: string; max_output?: number; service_tier?: string };
 
 export type ModelChoice = { model: string; effort: string; pro: boolean; tier?: SpeedTier };
 
@@ -24,6 +24,7 @@ export type ModelEntry = {
   provider_order: string[];
   efforts: string[];
   default_effort: string;
+  major?: string;
   vision: boolean;
   context_length: number;
   max_output: number;
@@ -34,6 +35,7 @@ export type ModelEntry = {
   fallback?: ModelRoute;
   pro?: ProVariant;
   tiers?: Partial<Record<SpeedTier, SpeedRoute>>;
+  service_tier?: string;
   default_context?: ModelContext;
   claude_code?: string;
 };
@@ -66,6 +68,7 @@ export type ModelCatalog = {
   side_models: SideModelEntry[];
   image_models: ImageModelEntry[];
   plan_ids?: string[];
+  plan_tiers?: Record<string, SpeedTier[]>;
   pro_locked?: string[];
   claude_plan_ids?: string[];
 };
@@ -91,6 +94,7 @@ export const with_tier = (model: ModelEntry, tier: SpeedTier | undefined): Model
     label: `${model.label} ${tier_names[tier]}`,
     provider_order: route.provider_order,
     max_output: route.max_output ?? model.max_output,
+    ...(route.service_tier ? { service_tier: route.service_tier } : {}),
   };
 };
 
@@ -100,14 +104,21 @@ export const flex_base = (id: string): string | null => (id.endsWith(flex_suffix
 
 export const flex_id = (id: string): string => `${id}${flex_suffix}`;
 
-export const with_choice = (model: ModelEntry, choice: Pick<ModelChoice, "pro" | "tier">, plan_ids?: readonly string[]): ModelEntry => {
+export type PlanServing = Pick<ModelCatalog, "plan_ids" | "plan_tiers">;
+
+const plan_service_tiers: Partial<Record<SpeedTier, string>> = { fast: "priority", ultrafast: "ultrafast" };
+
+const plan_routes = (tiers: readonly SpeedTier[], provider_order: string[]): Partial<Record<SpeedTier, SpeedRoute>> =>
+  Object.fromEntries(tiers.flatMap((tier) => (plan_service_tiers[tier] ? [[tier, { provider_order, service_tier: plan_service_tiers[tier] }]] : [])));
+
+export const with_choice = (model: ModelEntry, choice: Pick<ModelChoice, "pro" | "tier">, plan?: PlanServing | null): ModelEntry => {
   const variant = with_pro(model, choice.pro);
-  if (!plan_ids?.includes(variant.id)) {
+  if (!plan?.plan_ids?.includes(variant.id)) {
     return with_tier(variant, choice.tier);
   }
-
   const { tiers, ...plan_variant } = variant;
-  return plan_variant;
+  const offered = plan.plan_tiers?.[variant.id] ?? [];
+  return with_tier(offered.length ? { ...plan_variant, tiers: plan_routes(offered, plan_variant.provider_order) } : plan_variant, choice.tier);
 };
 
 export type ModelListing = { entry: ModelEntry; pro: boolean; tier?: SpeedTier };
@@ -138,7 +149,7 @@ export const model_listing = (models: readonly ModelEntry[], id: string): ModelL
   return { entry, pro: entry.id !== wanted, ...(base ? { tier: "flex" as const } : {}) };
 };
 
-export const listed_model = (listed: ModelListing, plan_ids?: readonly string[]): ModelEntry => with_choice(listed.entry, listed, plan_ids);
+export const listed_model = (listed: ModelListing, plan?: PlanServing | null): ModelEntry => with_choice(listed.entry, listed, plan);
 
 export const catalog_choice = (models: readonly ModelEntry[], choice: ModelChoice): ModelChoice => {
   if (models.some((entry) => entry.id === choice.model)) {
@@ -155,7 +166,7 @@ export const catalog_choice = (models: readonly ModelEntry[], choice: ModelChoic
 
 export const find_model = (catalog: ModelCatalog | null, id: string): ModelEntry | null => {
   const listed = model_listing(catalog?.models ?? [], id);
-  return listed ? listed_model(listed, catalog?.plan_ids) : null;
+  return listed ? listed_model(listed, catalog) : null;
 };
 
 export const default_model_id = "deepseek/deepseek-v4.1-flash-1017";

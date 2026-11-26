@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { compact_percent_of, with_compact_percent, with_context_limit, with_context_setting, type ModelEntry } from "../shared/models.ts";
 import { min_context_limit } from "../shared/settings.ts";
@@ -21,8 +20,6 @@ const model = (context_length: number): ModelEntry => ({
   max_output: 4096,
   reasoning_passback: false,
 });
-
-const read = (file: string) => readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
 
 test("auto-compact offers fixed percentages, marks the default 70 and hints the token point", () => {
   const options = auto_compact_options(t, model(200_000), undefined);
@@ -98,13 +95,4 @@ test("token counts read as k and M", () => {
   assert.equal(compact_tokens(272_000), "272k");
   assert.equal(compact_tokens(1_000_000), "1.0M");
   assert.equal(compact_tokens(12_000_000), "12M");
-});
-
-test("the context ring popup no longer holds the limit and auto-compact fields", () => {
-  const ring = read("components/ContextRing.tsx");
-  const composer = read("features/composer/Composer.tsx");
-  assert.doesNotMatch(ring, /children/);
-  assert.doesNotMatch(composer, /ContextLimitFields|set_model_context/);
-  assert.match(ring, /context\.compact_now/);
-  assert.match(ring, /context-popover-usage/);
 });

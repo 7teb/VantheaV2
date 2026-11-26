@@ -22,6 +22,7 @@ export const approval = {
   "approval.skip": "Skip",
   "approval.submit": "Submit",
   "approval.dismiss": "Dismiss",
+  "approval.no_longer_pending": "This approval is no longer pending.",
   "approval.prefix": "Yes, and don't ask again for commands starting with: {x}",
   "approval.allow_readonly": "Yes, and allow read-only tools from {x}",
   "approval.allow_chat": "Yes, and allow this tool for this chat",

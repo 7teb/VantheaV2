@@ -57,7 +57,7 @@ test("a clean round posts the Responses body with the plan token and returns tex
   assert.equal(done.result?.content, "hello world");
   assert.equal(done.result?.reasoning, "plan");
   assert.equal(done.result?.finish_reason, "stop");
-  assert.deepEqual(done.result?.usage, { prompt_tokens: 120, completion_tokens: 30, reasoning_tokens: 12 });
+  assert.deepEqual(done.result?.usage, { prompt_tokens: 120, completion_tokens: 30, reasoning_tokens: 12, cached_tokens: 64, cache_write_tokens: 8 });
   assert.deepEqual(done.result?.reasoning_details, [{ type: output_wrapper_type, items: [reasoning_item("rs_1", "plan"), message_item("hello world")] }]);
   assert.deepEqual(done.log, ["reasoning:plan", "text:hello ", "text:world"]);
   const sent = done.sent[0];
@@ -153,6 +153,15 @@ test("a 401 renews the token once and resends, a second 401 is plan_auth", async
     renewed.sent.map((sent) => sent.headers.Authorization),
     ["Bearer plan-token-1", "Bearer plan-token-2"],
   );
+  const keyed = await plan_run([unauthorized, { frames: answer_frames("ok") }], { cache_key: "chat-1" });
+  assert.deepEqual(
+    keyed.sent.map((sent) => [sent.headers["session-id"], sent.headers["thread-id"]]),
+    [
+      ["chat-1", "chat-1"],
+      ["chat-1", "chat-1"],
+    ],
+  );
+  assert.equal("prompt_cache_key" in (keyed.sent[0]?.body ?? {}), false);
   const refused = await plan_run([unauthorized, unauthorized, { frames: answer_frames("never") }]);
   assert.equal(refused.error?.kind, "plan_auth");
   assert.equal(refused.error?.message, "ChatGPT plan 401: Unauthorized");

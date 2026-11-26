@@ -12,9 +12,9 @@ before(start_runner);
 
 after(stop_runner);
 
-const first: RoundUsage = { prompt_tokens: 1200, completion_tokens: 80, reasoning_tokens: 30 };
+const first: RoundUsage = { prompt_tokens: 1200, completion_tokens: 80, reasoning_tokens: 30, cached_tokens: 1024, cache_write_tokens: 176 };
 
-const second: RoundUsage = { prompt_tokens: 1400, completion_tokens: 40, reasoning_tokens: 0 };
+const second: RoundUsage = { prompt_tokens: 1400, completion_tokens: 40, reasoning_tokens: 0, cached_tokens: 1200, cache_write_tokens: 0 };
 
 test("every round with provider usage emits one usage event before the end and the message sums them", async () => {
   let round = 0;
@@ -36,7 +36,7 @@ test("every round with provider usage emits one usage event before the end and t
   ]);
   assert.equal(ends(h.events).length, 1);
   assert.equal(h.events.at(-1)?.type, "end");
-  assert.deepEqual(transcript(h.events).usage, { prompt_tokens: 2600, completion_tokens: 120, reasoning_tokens: 30, rounds: 2 });
+  assert.deepEqual(transcript(h.events).usage, { prompt_tokens: 2600, completion_tokens: 120, reasoning_tokens: 30, cached_tokens: 2224, cache_write_tokens: 176, rounds: 2 });
 });
 
 test("a round without usage emits no usage event", async () => {
@@ -52,7 +52,7 @@ test("a sub-agent round emits its usage on the agent's own events", async () => 
   await wait_for(() => reports.some((report) => report.run_id === started.run.run_id));
   const own = agent_events.filter((event) => event.run_id === started.run.run_id);
   assert.deepEqual(
-    own.flatMap((event) => (event.type === "usage" ? [{ round: event.round, prompt_tokens: event.prompt_tokens, completion_tokens: event.completion_tokens, reasoning_tokens: event.reasoning_tokens }] : [])),
+    own.flatMap((event) => (event.type === "usage" ? [{ round: event.round, prompt_tokens: event.prompt_tokens, completion_tokens: event.completion_tokens, reasoning_tokens: event.reasoning_tokens, cached_tokens: event.cached_tokens, cache_write_tokens: event.cache_write_tokens }] : [])),
     [{ round: 0, ...first }],
   );
   const end_at = own.findIndex((event) => event.type === "end");

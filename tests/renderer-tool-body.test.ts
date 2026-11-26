@@ -6,7 +6,7 @@ import type { ToolView } from "../shared/tool-view.ts";
 import { build_blocks } from "../src/features/chat/assistant-blocks.ts";
 import { denial_note, has_body, shown_error } from "../src/features/tools/tool-body.ts";
 import { tool_label } from "../src/features/tools/tool-meta.ts";
-import { step_detail, step_hint } from "../src/features/tools/tool-summary.ts";
+import { step_detail } from "../src/features/tools/tool-summary.ts";
 import { translate, type Translate } from "../src/i18n/translate.ts";
 
 const t: Translate = (key, vars) => translate("en", key, vars);
@@ -60,13 +60,6 @@ test("finished browser actions never expand and show no descriptive row detail",
   for (const [item, label] of cases) {
     assert.deepEqual(row(item), { label, detail: "", expandable: false }, item.name);
   }
-});
-
-test("browser rows keep page title and URL in the hover hint, once each", () => {
-  assert.equal(step_hint(step("browser_wait", page("wait", "load"))), "Example\nhttps://example.com/");
-  assert.equal(step_hint(step("browser_wait", page("wait", "load", "https://e.com/", "https://e.com/"))), "https://e.com/");
-  assert.equal(step_hint(step("web_search", { kind: "web_search", query: "rust async", depth: "basic", answer: "", sources: [] })), "rust async");
-  assert.equal(step_hint(step("read_file", { kind: "read", path: "a.ts", start_line: 1, end_line: 2, total_lines: 2, truncated: false })), "");
 });
 
 test("a failed browser action shows its error once and labels in command form without the raw ref", () => {
@@ -208,14 +201,14 @@ test("an MCP call in progress has no repeated detail", () => {
   assert.deepEqual(row(running), { label: "ida · decompile", detail: "", expandable: false });
 });
 
-test("url reads are labeled with the page address and show failed urls in the body instead of the raw error", () => {
+test("url reads are labeled with the page address and a failed url read stays a plain row without the raw error", () => {
   const url_view = (failed: { url: string; error: string }[]): ToolView => ({ kind: "web_search", query: "q", depth: "basic", answer: "", sources: [], urls: ["https://nodejs.org/api/test.html"], failed });
   assert.equal(tool_label(t, step("web_search", null, "running", { query: "q", urls: ["https://nodejs.org/api/test.html"] })), "Reading nodejs.org/api/test.html");
   assert.equal(tool_label(t, step("web_search", url_view([]))), "Read nodejs.org/api/test.html");
   assert.equal(tool_label(t, step("web_search", null, "running", { query: "q", urls: ["https://a.example/", "b.example"] })), "Reading 2 pages");
   assert.equal(tool_label(t, step("web_search", null, "running", { query: "q" })), "Searching the web");
   const failed = step("web_search", url_view([{ url: "https://nodejs.org/api/test.html", error: "404 page not found" }]), "failed", {}, { error: "Could not read https://nodejs.org/api/test.html: 404 page not found" });
-  assert.equal(has_body(t, failed), true);
+  assert.equal(has_body(t, failed), false);
   assert.equal(shown_error(t, failed), null);
   const network = step("web_search", url_view([]), "failed", {}, { error: "Reading https://nodejs.org/api/test.html failed: Tavily 401" });
   assert.equal(shown_error(t, network), "Reading https://nodejs.org/api/test.html failed: Tavily 401");

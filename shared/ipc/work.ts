@@ -1,4 +1,4 @@
-import type { ApprovalDecision, ApprovalRequest } from "../approval.ts";
+import type { ApprovalDecision, PendingApprovalRequest } from "../approval.ts";
 import type { AssistantMessage } from "../chat.ts";
 import type { AgentEvent } from "../events.ts";
 import type { ShellKind } from "../shell.ts";
@@ -37,7 +37,7 @@ export type AgentSummary = {
 export type AgentRun = AgentRunSummary &
   Pick<AssistantMessage, "steps" | "retry" | "error" | "context" | "last_seq"> & { agent_id: string; name: string };
 
-export type AgentApproval = { agent_id: string; run_id: string; call_id: string; name: string; request: ApprovalRequest };
+export type AgentApproval = { agent_id: string; run_id: string; call_id: string; name: string; request: PendingApprovalRequest };
 
 export type AgentApprovals = { chat_id: string; approvals: AgentApproval[] };
 
@@ -63,8 +63,8 @@ export const work_channels = {
   "agents:list": invoke<[chat_id: string], AgentSummary[]>(),
   "agents:run": invoke<[agent_id: string, run_id: string], AgentRun | null>(),
   "agents:cancel": invoke<[agent_id: string], void>(),
-  "agents:approve": invoke<[agent_id: string, run_id: string, call_id: string, decision: ApprovalDecision], void>(),
-  "agents:hold_approval": invoke<[agent_id: string, run_id: string, call_id: string], void>(),
+  "agents:approve": invoke<[agent_id: string, run_id: string, request_id: string, decision: ApprovalDecision], boolean>(),
+  "agents:hold_approval": invoke<[agent_id: string, run_id: string, request_id: string], boolean>(),
   "agents:approvals": invoke<[chat_id: string], AgentApprovals>(),
   "agents:approvals_changed": emit<AgentApprovals>(),
   "agents:changed": emit<AgentSummary>(),

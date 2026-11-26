@@ -2,6 +2,8 @@ import type { review as en } from "../en/review.ts";
 
 export const review: Record<keyof typeof en, string> = {
   "review.reason": "Automatische Prüfung: {x}",
+  "review.pending_title": "Automatische Prüfung",
+  "review.pending_detail": "Ein sorgfältig instruierter Prüf-Agent prüft diese Anfrage, bevor VantheaX sie ausführt.",
   "review.no_reason": "Keine Begründung angegeben.",
   "review.rule": "{source}: „{x}“",
   "review.source_custom_instructions": "Individuelle Anweisungen",

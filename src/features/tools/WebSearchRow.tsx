@@ -20,10 +20,10 @@ export const WebSearchRow = ({ chat_id, step }: WebSearchRowProps) => {
   const working = is_active_status(step.status) && step.status !== "queued";
   const query = read_urls(step).length > 0 ? "" : web_query(step);
   const label = query ? t(working ? "tool_label.web_search" : "web.searched_web") : tool_label(t, step);
-  const settled = step.status === "done" && view && (view.sources.length > 0 || (view.failed?.length ?? 0) > 0 || view.answer !== "") ? view : null;
+  const settled = step.status === "done" && view && (view.sources.length > 0 || view.answer !== "") ? view : null;
   return (
     <div className="tool-row web-row" data-status={step.status}>
-      <div className="web-row-head" title={query || undefined}>
+      <div className="web-row-head">
         <span className="tool-row-icon">
           <Icon plain />
         </span>

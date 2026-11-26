@@ -13,31 +13,24 @@ const page = `<!doctype html>
 <script>
 window.page_state = 3;
 document.getElementById("out").expando = "set by the page";
-document.getElementById("host").attachShadow({ mode: "open" }).innerHTML = '<span id="inner">shadow</span>';
 </script>`;
 
 const expressions = {
-  by_id_text: "document.getElementById('out').textContent",
-  by_id_value: "document.getElementById('field').value",
-  by_id_missing: "document.getElementById('missing')",
-  by_id_empty: "document.getElementById('')",
-  by_id_shadow: "document.getElementById('host').shadowRoot.getElementById('inner').textContent",
-  by_id_expando: "document.getElementById('out').expando",
-  by_id_text_write: "document.getElementById('out').textContent = 'changed'",
-  by_id_value_write: "document.getElementById('field').value = 'changed'",
-  by_id_remove: "document.getElementById('out').remove()",
-  query_text: "document.querySelector('#out').textContent",
   page_global: "window.page_state",
-  dom_write: "document.body.appendChild(document.createElement('div'))",
+  expando: "document.getElementById('out').expando",
+  text_write: "document.getElementById('out').textContent = 'changed'",
+  text_after: "document.getElementById('out').textContent",
+  resources: "Array.isArray(performance.getEntriesByType('resource'))",
+  dom_write: "document.body.appendChild(document.createElement('div')).nodeName",
+  threw: "null.x",
 };
 
-const main_world_probe =
-  "[document.getElementById.toString().includes('[native code]'), DocumentFragment.prototype.getElementById.toString().includes('[native code]'), document.querySelector('#out').textContent, document.querySelector('#field').value, document.body.children.length].join('|')";
+const page_probe = "[document.querySelector('#out').textContent, document.body.children.length].join('|')";
 
 const main_script = (page_url: string): string => `
 const { app, BrowserWindow } = require("electron");
 const path = require("node:path");
-const { evaluate_safely } = require("./evaluate.cjs");
+const { evaluate_expression } = require("./evaluate.cjs");
 app.setPath("userData", path.join(__dirname, "profile"));
 app.whenReady().then(async () => {
   const win = new BrowserWindow({ show: false, webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
@@ -46,9 +39,9 @@ app.whenReady().then(async () => {
     const tab = { tab_id: "probe", guest: win.webContents, debugger_attached: false };
     const results = {};
     for (const [name, expression] of Object.entries(${JSON.stringify(expressions)})) {
-      results[name] = await evaluate_safely(tab, expression, new AbortController().signal);
+      results[name] = await evaluate_expression(tab, expression, new AbortController().signal);
     }
-    results.main_world = await win.webContents.executeJavaScript(${JSON.stringify(main_world_probe)});
+    results.page = await win.webContents.executeJavaScript(${JSON.stringify(page_probe)});
     console.log("VX_RESULT " + JSON.stringify(results));
     win.destroy();
     app.quit();
@@ -58,8 +51,8 @@ app.whenReady().then(async () => {
   }
 });`;
 
-test("browser_eval runs getElementById reads in an isolated world, refuses writes and leaves the page and its own world untouched", { skip: process.platform !== "win32", timeout: 40000 }, async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "vx-eval-world-"));
+test("browser_eval runs reads, writes, page globals and Web APIs in the page's own context", { skip: process.platform !== "win32", timeout: 40000 }, async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "vx-eval-native-"));
   try {
     await fs.mkdir(path.join(dir, "profile"));
     await build({
@@ -93,20 +86,15 @@ test("browser_eval runs getElementById reads in an isolated world, refuses write
     const line = output.split(/\r?\n/).find((entry) => entry.startsWith("VX_RESULT "));
     assert.ok(line, errors.slice(-1000));
     const results = JSON.parse(line.slice("VX_RESULT ".length));
-    assert.deepEqual(results.by_id_text, { thrown: false, kind: "string", text: "hello", isolated: true });
-    assert.deepEqual(results.by_id_value, { thrown: false, kind: "string", text: "typed", isolated: true });
-    assert.deepEqual(results.by_id_missing, { thrown: false, kind: "null", text: "null", isolated: true });
-    assert.deepEqual(results.by_id_empty, { thrown: false, kind: "null", text: "null", isolated: true });
-    assert.deepEqual(results.by_id_shadow, { thrown: false, kind: "string", text: "shadow", isolated: true });
-    assert.deepEqual(results.by_id_expando, { thrown: false, kind: "undefined", text: "undefined", isolated: true });
-    for (const name of ["by_id_text_write", "by_id_value_write", "by_id_remove", "dom_write"]) {
-      assert.equal(results[name].kind, "side effect", name);
-      assert.equal(results[name].isolated, false, name);
-    }
-
-    assert.deepEqual(results.query_text, { thrown: false, kind: "string", text: "hello", isolated: false });
-    assert.deepEqual(results.page_global, { thrown: false, kind: "number", text: "3", isolated: false });
-    assert.equal(results.main_world, "true|true|hello|typed|4");
+    assert.deepEqual(results.page_global, { thrown: false, kind: "number", text: "3" });
+    assert.deepEqual(results.expando, { thrown: false, kind: "string", text: "set by the page" });
+    assert.deepEqual(results.text_write, { thrown: false, kind: "string", text: "changed" });
+    assert.deepEqual(results.text_after, { thrown: false, kind: "string", text: "changed" });
+    assert.deepEqual(results.resources, { thrown: false, kind: "boolean", text: "true" });
+    assert.deepEqual(results.dom_write, { thrown: false, kind: "string", text: "DIV" });
+    assert.equal(results.threw.thrown, true);
+    assert.equal(results.threw.kind, "threw");
+    assert.equal(results.page, "changed|5");
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

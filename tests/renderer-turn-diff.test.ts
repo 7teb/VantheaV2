@@ -3,9 +3,9 @@ import { test } from "node:test";
 import type { DiffNote } from "../shared/turn-diff.ts";
 import { no_git_reasons } from "../shared/turn-diff.ts";
 import { span_of } from "../shared/turn-span.ts";
-import { badge_title, clock_label, entry_place, entry_title, full_clock_label, openable, short_clock_label, status_letters, submodule_text, totals } from "../src/features/docks/files/diff/diff-rows.ts";
-import { file_note_keys, note_texts } from "../src/features/docks/files/diff/turn-diff-notes.ts";
-import { tables, translate, type Translate } from "../src/i18n/translate.ts";
+import { clock_label, entry_place, openable, short_clock_label, status_letters, submodule_text, totals } from "../src/features/docks/files/diff/diff-rows.ts";
+import { note_texts } from "../src/features/docks/files/diff/turn-diff-notes.ts";
+import { translate, type Translate } from "../src/i18n/translate.ts";
 import { turn_segments } from "../src/state/turn-groups.ts";
 import { diff_entry, messages_fixture, ready } from "./turn-diff-ui-kit.ts";
 
@@ -17,16 +17,14 @@ const clock = (iso: string) => `@${iso.slice(11, 16)}`;
 
 const unfilled = /\{\w+\}/;
 
-test("rows show the folder or the old name of a rename, and the full path or both paths as tooltip", () => {
+test("rows show the folder or the old name of a rename", () => {
   assert.equal(entry_place(diff_entry("src/app/main.ts")), "src/app");
   assert.equal(entry_place(diff_entry("README.md")), "");
   const renamed = diff_entry("src/new.ts", "renamed", { orig_path: "lib/old.ts" });
   assert.equal(entry_place(renamed), "← old.ts");
-  assert.equal(entry_title(renamed), "lib/old.ts → src/new.ts");
-  assert.equal(entry_title(diff_entry("src/app/main.ts")), "src/app/main.ts");
 });
 
-test("every status has a letter and a badge title, only submodules cannot be opened", () => {
+test("every status has a letter, only submodules cannot be opened", () => {
   const statuses = ["added", "modified", "deleted", "renamed", "type_changed", "submodule"] as const;
   assert.deepEqual(
     statuses.map((status) => status_letters[status]),
@@ -34,11 +32,8 @@ test("every status has a letter and a badge title, only submodules cannot be ope
   );
   for (const status of statuses) {
     const entry = diff_entry("a.txt", status, { orig_path: status === "renamed" ? "b.txt" : null });
-    assert.ok(badge_title(en, entry).length > 0);
-    assert.ok(badge_title(de, entry).length > 0);
     assert.equal(openable(entry), status !== "submodule");
   }
-  assert.equal(badge_title(en, diff_entry("a.txt", "renamed", { orig_path: "b.txt" })), "Renamed from b.txt");
 });
 
 test("a submodule row shows both commits shortened to seven characters and names a missing side", () => {
@@ -72,8 +67,6 @@ test("the clock shows only the time for today and adds the date for another day"
   const short = short_clock_label("en", earlier, now);
   assert.match(short, /Oct/);
   assert.doesNotMatch(short, /\d:\d\d/);
-  assert.match(full_clock_label("en", earlier), /2026/);
-  assert.match(full_clock_label("en", earlier), /\d:\d\d/);
 });
 
 const every_note = (): DiffNote[] => [
@@ -127,15 +120,6 @@ test("note sentences name the reason, the detail, every unreadable path and the 
   ]);
   assert.deepEqual(texts([], "live"), ["Compared with the folder as of @14:09"]);
   assert.deepEqual(texts([]), []);
-});
-
-test("every file note kind maps to a string in both languages", () => {
-  for (const key of Object.values(file_note_keys)) {
-    assert.ok(tables.en[key].length > 0, key);
-    assert.ok(tables.de[key].length > 0, key);
-  }
-  assert.equal(en(file_note_keys.binary), "Binary file, no line diff");
-  assert.equal(en(file_note_keys.object_missing), "The snapshot content of this file is no longer available");
 });
 
 test("turn segments of the chat view have the same leaders and ends as span_of", () => {

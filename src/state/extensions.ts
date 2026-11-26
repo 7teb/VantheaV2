@@ -47,8 +47,8 @@ export const set_mcp_tool = async (server: string, tool: string, patch: { risk?:
   mcp_store.set(ready(await api.invoke("mcp:set_tool", server, tool, patch)));
 };
 
-export const set_mcp_trust = async (server: string, trusted: boolean) => {
-  mcp_store.set(ready(await api.invoke("mcp:set_trust", server, trusted)));
+export const set_mcp_trust = async (server: McpServerStatus, trusted: boolean) => {
+  mcp_store.set(ready(await api.invoke("mcp:set_trust", server.name, server.config_id, trusted)));
 };
 
 export const detect_mcp_folder = () => api.invoke("mcp:detect_folder");

@@ -49,25 +49,29 @@ import {
 import { use_t } from "../../i18n/index.ts";
 import { ComputerBody } from "./bodies-computer.tsx";
 import { AgentBody, BackgroundBody, CommandBody } from "./bodies-run.tsx";
-import { EditBody, FilesBody, GrepBody, OutlineBody } from "./bodies-files.tsx";
+import { BrowserBody } from "./bodies-browser.tsx";
+import { EditBody, FilesBody, GrepBody, OutlineBody, ReadBody } from "./bodies-files.tsx";
 import { HooksBody } from "./bodies-hooks.tsx";
 import { ModelsBody } from "./bodies-models.tsx";
 import { ScheduledBody } from "./bodies-scheduled.tsx";
 import { ImageBody, WebSearchBody } from "./bodies-web.tsx";
-import { McpBody, MemoryBody, PeerMessageBody, PlanBody, TextBody } from "./bodies-work.tsx";
+import { McpBody, MemoryBody, PeerMessageBody, PlanBody, TextBody, TodosBody } from "./bodies-work.tsx";
 import type { ChatBodyProps } from "./body-types.ts";
 import { DraftCode } from "./DraftCode.tsx";
+import { FailedCard } from "./FailedCard.tsx";
 import { hook_blocked, step_hooks } from "./hook-runs.ts";
 import { BlockedCall, HookRuns } from "./HookRuns.tsx";
+import { ViewedImageBody } from "./ViewedImage.tsx";
 import { live_draft } from "./live-draft.ts";
 import { LiveCommand } from "./LiveCommand.tsx";
 import { OutputBlock } from "./OutputBlock.tsx";
 import { is_reviewing } from "./review-phase.ts";
 import { ReviewNotice } from "./ReviewNote.tsx";
 import { ReviewBody } from "./ReviewPending.tsx";
-import { denial_note, live_command, shown_error, view_content } from "./tool-body.ts";
+import { denial_note, error_card, live_command, shown_error, view_content } from "./tool-body.ts";
 import { tool_meta } from "./tool-meta.ts";
 import type { ToolIconName } from "./tool-meta-types.ts";
+import { viewed_image } from "./work-steps.ts";
 
 export const tool_icons: Record<ToolIconName, IconComponent> = {
   terminal: SquareTerminalToolIcon,
@@ -125,6 +129,7 @@ type Bodies = { [K in ToolViewKind]?: ComponentType<ChatBodyProps<K>> };
 
 export const view_bodies: Bodies = {
   files: FilesBody,
+  read: ReadBody,
   grep: GrepBody,
   outline: OutlineBody,
   edit: EditBody,
@@ -133,6 +138,7 @@ export const view_bodies: Bodies = {
   agent: AgentBody,
   peer_message: PeerMessageBody,
   plan: PlanBody,
+  todos: TodosBody,
   web_search: WebSearchBody,
   image: ImageBody,
   mcp: McpBody,
@@ -141,6 +147,7 @@ export const view_bodies: Bodies = {
   scheduled_tasks: ScheduledBody,
   models: ModelsBody,
   computer: ComputerBody,
+  browser: BrowserBody,
   text: TextBody,
 };
 
@@ -156,21 +163,24 @@ const ViewBody = ({ view, step, chat_id }: { view: ToolView; step: ToolStep; cha
   return Body ? <Body view={view} step={step} chat_id={chat_id} /> : null;
 };
 
-export const ToolBody = ({ step, chat_id }: { step: ToolStep; chat_id: string }) => {
+export const ToolBody = ({ step, open, chat_id }: { step: ToolStep; open: boolean; chat_id: string }) => {
   const t = use_t();
   const live = step.progress?.output_tail ?? null;
   const draft = live_draft(step);
   const error = shown_error(t, step);
   const note = denial_note(t, step);
   const runs = step_hooks(step);
+  const image = viewed_image(step);
+  const card = error_card(t, step);
   return (
     <div className="tool-body">
       {hook_blocked(step) && <BlockedCall step={step} />}
-      {is_reviewing(step) && <ReviewBody step={step} />}
+      {is_reviewing(step) && <ReviewBody step={step} row_open={open} />}
       {error && <div className="tool-body-error">{error}</div>}
+      {card && <FailedCard card={card} />}
       {draft && <DraftCode draft={draft} />}
       {(live || live_command(step)) && <LiveBody step={step} live={live} chat_id={chat_id} />}
-      {step.view && view_content(t, step, step.view) && <ViewBody view={step.view} step={step} chat_id={chat_id} />}
+      {image ? <ViewedImageBody image={image} /> : step.view && view_content(t, step, step.view) && <ViewBody view={step.view} step={step} chat_id={chat_id} />}
       {note && <ReviewNotice note={note} />}
       {!step.view && !live && !error && step.status !== "denied" && step.result_text && <OutputBlock text={step.result_text} />}
       {runs.length > 0 && <HookRuns runs={runs} />}

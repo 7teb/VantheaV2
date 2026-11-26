@@ -32,7 +32,7 @@ const MoveToBackground = ({ chat_id, call_id }: { chat_id: string; call_id: stri
   return (
     <>
       {problem && (
-        <span className="command-card-problem" title={t(problem)}>
+        <span className="command-card-problem">
           {t(problem)}
         </span>
       )}

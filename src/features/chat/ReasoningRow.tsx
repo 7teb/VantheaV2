@@ -16,7 +16,7 @@ export const ReasoningRow = memo(({ step, live }: ReasoningRowProps) => {
   const t = use_t();
   const [open, set_open] = useState(false);
   const [seen, set_seen] = useState(false);
-  const { label, status, expandable, working } = reasoning_head(t, step, live);
+  const { label, expandable, working } = reasoning_head(t, step, live);
   return (
     <div className="reasoning-row" data-open={expandable && open}>
       <button
@@ -30,7 +30,7 @@ export const ReasoningRow = memo(({ step, live }: ReasoningRowProps) => {
         }}
       >
         {expandable && <ChevronRightIcon className="reasoning-chevron" />}
-        <span className="reasoning-label" title={status}>
+        <span className="reasoning-label">
           <span className={class_names("reasoning-label-text", working && "is-working")}>
             <LabelMorph morph_key={`${working}:${label}`}>
               <WorkingLetters text={label} active={working} />

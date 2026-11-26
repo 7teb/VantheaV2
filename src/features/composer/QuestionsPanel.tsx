@@ -66,11 +66,11 @@ const QuestionsCard = ({ chat_id, open }: QuestionsCardProps) => {
       <span>{t("questions.header")}</span>
       {open.length > 1 && (
         <span className="questions-nav">
-          <button type="button" className="questions-nav-button" aria-label={previous_label} title={previous_label} disabled={index === 0} onClick={() => go(-1)}>
+          <button type="button" className="questions-nav-button" aria-label={previous_label} disabled={index === 0} onClick={() => go(-1)}>
             <NavLeftIcon />
           </button>
           <span className="questions-count">{t("questions.count", { n: index + 1, total: open.length })}</span>
-          <button type="button" className="questions-nav-button" aria-label={next_label} title={next_label} disabled={last} onClick={() => go(1)}>
+          <button type="button" className="questions-nav-button" aria-label={next_label} disabled={last} onClick={() => go(1)}>
             <NavRightIcon />
           </button>
         </span>

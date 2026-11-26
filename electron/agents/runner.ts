@@ -3,6 +3,7 @@ import type { AgentProfile, AgentRunSummary, AgentSummary } from "../../shared/i
 import { listed_model, model_listing, type ModelEntry } from "../../shared/models.ts";
 import type { Settings } from "../../shared/settings.ts";
 import { no_stored_context, type StoredContext } from "../context/calibration.ts";
+import { max_running_agents, user_config_file } from "../settings/user-config.ts";
 import type { ApiMessage } from "../model/types.ts";
 import type { ReviewModelCall, SideModelCall, Tool, ToolProfile } from "../tools/types.ts";
 import { without_images } from "../turn/carriers.ts";
@@ -56,7 +57,6 @@ export type DeployRequest = RunContext & Pick<AgentRecord, "name" | "description
 
 export type StartedRun = { agent: AgentSummary; run: AgentRunSummary };
 
-export const max_running_agents = 20;
 
 let deps: AgentDeps | null = null;
 
@@ -102,8 +102,9 @@ const in_workflow_run = (agent: AgentRecord): boolean => {
 };
 
 export const ensure_capacity = (chat_id: string): void => {
-  if (running_in_chat(chat_id) - chat_agents(chat_id).filter(in_workflow_run).length >= max_running_agents) {
-    throw new Error(`At most ${max_running_agents} agents can run at once in this chat; wait for one to finish or cancel one.`);
+  const limit = max_running_agents();
+  if (running_in_chat(chat_id) - chat_agents(chat_id).filter(in_workflow_run).length >= limit) {
+    throw new Error(`At most ${limit} agents can run at once in this chat; wait for one to finish or cancel one. The limit is max_running_agents in ${user_config_file()}.`);
   }
 };
 

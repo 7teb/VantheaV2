@@ -52,6 +52,7 @@ test("hidden events are declared events and include the pairing status", () => {
   }
   assert.ok(remote_hidden_events.has("remote:changed"));
   assert.ok(remote_hidden_events.has("window:changed"));
+  assert.ok(remote_hidden_events.has("browser:show"));
   assert.equal(remote_hidden_events.has("turn:event"), false);
 });
 

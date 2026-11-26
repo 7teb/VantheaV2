@@ -9,7 +9,6 @@ import { group_head } from "../src/features/tools/group-head.ts";
 import { tool_label, tool_meta } from "../src/features/tools/tool-meta.ts";
 import { group_label } from "../src/features/tools/tool-summary.ts";
 import {
-  agent_hint,
   agent_meta,
   agent_ms,
   agent_time,
@@ -66,7 +65,7 @@ test("tool rows name the workflow from the view, the approval, the args or the s
   assert.equal(tool_label(t, tool_step("run_workflow", null, "running", { script: "return 1" })), "Starting workflow");
   const waiting = {
     ...tool_step("run_workflow", null, "awaiting_approval", { script }),
-    approval: { kind: "agent_message" as const, tool: "run_workflow" as const, to_name: "from-approval", to_id: null, about: "d", text: script },
+    approval: { kind: "agent_message" as const, tool: "run_workflow" as const, to_name: "from-approval", to_id: null, about: "d", text: script, request_id: "approval-1" },
   };
   assert.equal(tool_label(t, waiting), "Starting workflow from-approval");
   assert.equal(tool_label(t, tool_step("run_workflow", null, "drafting", { script })), "Preparing tool call");
@@ -147,10 +146,8 @@ test("only live agents can be skipped and only started agents open a transcript"
   assert.equal(agent_transcript(agent_entry(4, "starting", { agent_run_id: null })), null);
 });
 
-test("agent hints and errors carry model, effort, worktree and the reason it ended", () => {
+test("agent errors carry the reason it ended, except for finished agents", () => {
   const isolated = agent_entry(1, "failed", { worktree: { path: "C:/wt/a", branch: "vx/fix-a", kept: true }, error: "provider error 500" });
-  assert.equal(agent_hint(t, isolated, "Model A"), "agent 1\nModel A · high\nWorktree vx/fix-a, kept\nprovider error 500");
-  assert.equal(agent_hint(t, agent_entry(1, "running", { worktree: { path: "C:/wt/b", branch: "vx/b", kept: false }, effort: "" }), "Model A"), "agent 1\nModel A\nWorktree vx/b");
   assert.equal(shown_error(isolated), "provider error 500");
   assert.equal(shown_error(agent_entry(1, "completed", { error: "stale" })), "");
   assert.equal(shown_error(agent_entry(1, "skipped", { error: "Skipped by the user." })), "Skipped by the user.");

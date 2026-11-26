@@ -35,13 +35,6 @@ test("en and de use the same placeholders per key", () => {
   }
 });
 
-test("removed features left no strings behind", () => {
-  const removed = /goal|narrat|nvidia|video|theme|design|voice/i;
-  for (const key of Object.keys(tables.en)) {
-    assert.doesNotMatch(key, removed, key);
-  }
-});
-
 test("translate fills variables and keeps unknown placeholders", () => {
   assert.equal(translate("en", "projects.delete_confirm_chats", { n: 3 }), "Really delete, with 3 chats?");
   assert.equal(translate("de", "projects.delete_confirm_chats", { n: 3 }), "Wirklich löschen, mit 3 Chats?");

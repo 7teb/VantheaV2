@@ -98,8 +98,18 @@ const start_run = (session, body) => {
     turn_event(session, run_id, { type: "tool_call", round: 1, index: 0, call_id: "c1_0", name: "read_file", args: { path: "a.ts" } });
     turn_event(session, run_id, { type: "tool_start", call_id: "c1_0" });
     if (body.text.includes("approve")) {
-      const request = { kind: "command", command: "npm test", cwd: session.meta.project_path, background: false, review: null, grant_prefix: null };
-      pending.set("m:c1_0", { session, run, info: { approval_id: "m:c1_0", source: "main", agent_id: null, run_id: null, call_id: "c1_0", request } });
+      const request_id = next_id("request");
+      const request = {
+        kind: "command",
+        command: "npm test",
+        cwd: session.meta.project_path,
+        background: false,
+        review: null,
+        grant_prefix: null,
+        request_id,
+      };
+      const approval_id = `m:${request_id}`;
+      pending.set(approval_id, { session, run, info: { approval_id, source: "main", agent_id: null, run_id: null, call_id: "c1_0", request } });
       turn_event(session, run_id, { type: "tool_approval", call_id: "c1_0", request });
       return;
     }

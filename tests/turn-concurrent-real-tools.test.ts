@@ -51,8 +51,16 @@ test("real file tools of one response: parallel reads feed the read ledger, the 
   const until = watch(h);
   void until(asked("c0_1"))
     .then(() => until(ended("c0_3")))
-    .then(() => resolve_decision("chat-real-tools", "c0_1", { approved: false, grant: "once", feedback: "" }));
-  void until(asked("c0_4")).then(() => resolve_decision("chat-real-tools", "c0_4", { approved: true, grant: "once", feedback: "" }));
+    .then(() => {
+      const approval = h.events.find(asked("c0_1"));
+      assert.ok(approval);
+      assert.equal(resolve_decision("chat-real-tools", approval.request.request_id, { approved: false, grant: "once", feedback: "" }), true);
+    });
+  void until(asked("c0_4")).then(() => {
+    const approval = h.events.find(asked("c0_4"));
+    assert.ok(approval);
+    assert.equal(resolve_decision("chat-real-tools", approval.request.request_id, { approved: true, grant: "once", feedback: "" }), true);
+  });
   await run_turn_loop(h.session, h.messages);
   assert.deepEqual(
     ["c0_0", "c0_1", "c0_2", "c0_3", "c0_4", "c0_5", "c0_6"].map((call_id) => end_status(h.events, call_id)),

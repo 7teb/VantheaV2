@@ -109,7 +109,7 @@ const settle_step = (step: Step, at: number): Step => {
   return step;
 };
 
-const no_usage: MessageUsage = { prompt_tokens: 0, completion_tokens: 0, reasoning_tokens: 0, rounds: 0 };
+const no_usage: MessageUsage = { prompt_tokens: 0, completion_tokens: 0, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0, rounds: 0 };
 
 const add_usage = (usage: MessageUsage | undefined, event: Extract<Event, { type: "usage" }>): MessageUsage => {
   const before = usage ?? no_usage;
@@ -117,6 +117,8 @@ const add_usage = (usage: MessageUsage | undefined, event: Extract<Event, { type
     prompt_tokens: before.prompt_tokens + event.prompt_tokens,
     completion_tokens: before.completion_tokens + event.completion_tokens,
     reasoning_tokens: before.reasoning_tokens + event.reasoning_tokens,
+    cached_tokens: before.cached_tokens + event.cached_tokens,
+    cache_write_tokens: before.cache_write_tokens + event.cache_write_tokens,
     rounds: before.rounds + 1,
   };
 };
@@ -171,6 +173,7 @@ const apply_body = <T extends TranscriptState>(state: T, event: Event): T => {
           call_id: event.call_id,
           name: event.name,
           args: event.args,
+          ...(event.arguments === undefined ? {} : { arguments: event.arguments }),
           status: "queued",
           progress: null,
         })),

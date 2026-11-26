@@ -111,13 +111,9 @@ const titled = (plain: MessageKey, named_key: MessageKey): Label => (t, step) =>
   return title ? t(named_key, { x: title }) : t(plain);
 };
 
-const first_question = (step: ToolStep): string => {
-  const view = view_of(step, "questions");
-  if (view) {
-    return view.questions[0]?.title ?? "";
-  }
-  const first: unknown = Array.isArray(step.args.questions) ? step.args.questions[0] : null;
-  return first && typeof first === "object" && "title" in first && typeof first.title === "string" ? first.title : "";
+const question_label = (one: MessageKey, many: MessageKey): Label => (t, step) => {
+  const count = view_of(step, "questions")?.questions.length ?? (Array.isArray(step.args.questions) ? step.args.questions.length : 0);
+  return count > 1 ? t(many, { n: count }) : t(one);
 };
 
 type ShellLabelKeys = { ask: MessageKey; running: MessageKey; moved: MessageKey; ran: MessageKey };
@@ -210,7 +206,7 @@ const named: Record<string, ToolMeta> = {
   replace_in_file: entry("edit", "edits", edit_active, edit_done, with_x("tool_label.edit_attempt", file_name)),
   update_todos: entry("todos", "todos", fixed("tool_label.update_todos"), fixed("tool_label.todos")),
   present_plan: entry("plan", "other", fixed("tool_label.planning"), fixed("tool_label.planned")),
-  ask_user: entry("question", "questions", with_x("tool_label.asking", first_question), with_x("tool_label.asked", first_question)),
+  ask_user: entry("question", "questions", question_label("tool_label.asking", "tool_label.asking_many"), question_label("tool_label.asked", "tool_label.asked_many")),
   web_search: entry(
     "web",
     "web",

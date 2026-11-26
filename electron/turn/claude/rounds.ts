@@ -187,7 +187,7 @@ export const create_rounds = (session: TurnSession, api_messages: ApiMessage[], 
       const { input, output, cache_read, cache_creation } = current.tokens;
       const prompt = input + cache_read + cache_creation;
       used = prompt + output;
-      session.emit({ type: "usage", round: current.number, prompt_tokens: prompt, completion_tokens: output, reasoning_tokens: 0 });
+      session.emit({ type: "usage", round: current.number, prompt_tokens: prompt, completion_tokens: output, reasoning_tokens: 0, cached_tokens: cache_read, cache_write_tokens: cache_creation });
       session.emit({ type: "context", usage: context_usage(used, session.model, null, 0) });
     },
     retry: (round, attempt, max, reason, wait_ms) => {

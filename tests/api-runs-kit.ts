@@ -81,7 +81,10 @@ const invoke = async (name: string, ...args: unknown[]): Promise<unknown> => {
     return state.chats.get(String(args[0])) ?? null;
   }
   if (name === "agents:approvals") {
-    return { chat_id: args[0], approvals: [{ agent_id: "agent_1", run_id: "run_1", call_id: "c1_0", name: "helper", request: command }] };
+    return {
+      chat_id: args[0],
+      approvals: [{ agent_id: "agent_1", run_id: "run_1", call_id: "c1_0", name: "helper", request: { ...command, request_id: "agent-request" } }],
+    };
   }
   if (name === "questions:answer") {
     if (state.active.has("chat-1")) {
@@ -126,8 +129,8 @@ export const context: ApiContext = {
     });
   },
   pending_approvals: (chat_id) => [
-    { key: chat_id, call_id: "c2_1", request: command },
-    { key: "agent:run_1", call_id: "c1_0", request: command },
+    { key: chat_id, call_id: "c2_1", request: { ...command, request_id: "main-request" } },
+    { key: "agent:run_1", call_id: "c1_0", request: { ...command, request_id: "agent-request" } },
   ],
   uploaded: () => [],
   protected_dirs: [],

@@ -24,6 +24,7 @@
 !/scripts/
 /scripts/*
 !/scripts/build-main.mjs
+!/scripts/dev.mjs
 !/scripts/test.mjs
 !/scripts/build-sdk.mjs
 !/scripts/headless-smoke.mjs
@@ -59,4 +60,3 @@ __tests__/
 fixtures/
 !/tests/**
 /tests/classifier-audit.test.ts
-/tests/workflow-attack2-build.test.ts

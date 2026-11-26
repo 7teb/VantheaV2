@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { error_code } from "../storage/coerce.ts";
 import { write_file_atomic } from "../storage/json-file.ts";
 import { decode_text, encode_text, looks_binary, plain_utf8, type TextEncoding } from "../storage/text-codec.ts";
@@ -89,12 +90,49 @@ export const prepare_replace = async (
   };
 };
 
-export const commit_edit = async (prepared: PreparedEdit): Promise<string> => {
+const dir_queues = new Map<string, Promise<void>>();
+
+export const with_dir_lock = async <T>(dir: string, work: () => Promise<T>): Promise<T> => {
+  const key = await fs.realpath(dir);
+  const turn = (dir_queues.get(key) ?? Promise.resolve()).then(work);
+  const tail = turn.then(
+    () => undefined,
+    () => undefined,
+  );
+  dir_queues.set(key, tail);
+  try {
+    return await turn;
+  } finally {
+    if (dir_queues.get(key) === tail) {
+      dir_queues.delete(key);
+    }
+  }
+};
+
+const stale_edit = (prepared: PreparedEdit, cause?: unknown) =>
+  new Error(`${prepared.target.relative} changed on disk after this edit was prepared; read it again and redo the edit`, { cause });
+
+const publish_edit = async (prepared: PreparedEdit): Promise<string> => {
   const current = await read_text(prepared.target.target);
-  if ((current?.text ?? null) !== prepared.previous) {
-    throw new Error(`${prepared.target.relative} changed on disk after this edit was prepared; read it again and redo the edit`);
+  if ((current?.sha256 ?? null) !== prepared.previous_sha256) {
+    throw stale_edit(prepared);
   }
   await write_file_atomic(prepared.target.target, prepared.bytes);
   invalidate_index(prepared.project_root);
   return sha256_of(prepared.bytes);
+};
+
+export const commit_edit = async (prepared: PreparedEdit): Promise<string> => {
+  const dir = path.dirname(prepared.target.target);
+  if (prepared.previous_sha256 === null) {
+    await fs.mkdir(dir, { recursive: true });
+  }
+  try {
+    return await with_dir_lock(dir, () => publish_edit(prepared));
+  } catch (error) {
+    if (error_code(error) === "ENOENT") {
+      throw stale_edit(prepared, error);
+    }
+    throw error;
+  }
 };

@@ -61,6 +61,15 @@
     }
   }
 
+  @keyframes rail-sweep {
+    from {
+      background-position: 0 -56px;
+    }
+    to {
+      background-position: 0 calc(100% + 56px);
+    }
+  }
+
   @keyframes spin {
     to {
       transform: rotate(360deg);

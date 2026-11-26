@@ -190,7 +190,7 @@ const replay_round = async (message: AssistantMessage, round: number, steps: Ste
     assistant.tool_calls = tools.map((step) => ({
       id: api_call_id(message.id, step.call_id),
       type: "function",
-      function: { name: step.name, arguments: JSON.stringify(step.args) },
+      function: { name: step.name, arguments: step.arguments ?? JSON.stringify(step.args) },
     }));
   }
   if (content || tools.length) {

@@ -41,13 +41,14 @@ test("run opens the event stream before prompting and resolves on run.settled of
 test("run answers each pending approval once through on_approval", async () => {
   const { stub, client, close } = await start_stub();
   const approval: ApprovalInfo = {
-    approval_id: "m:c1_0",
+    approval_id: "m:request-1",
     source: "main",
     agent_id: null,
     run_id: null,
     call_id: "c1_0",
-    request: { kind: "command", command: "npm test", cwd: "D:/proj", background: false, review: null, grant_prefix: null },
+    request: { kind: "command", command: "npm test", cwd: "D:/proj", background: false, review: null, grant_prefix: null, request_id: "request-1" },
   };
+  const approval_path = `/v1/sessions/s1/approvals/${encodeURIComponent(approval.approval_id)}`;
   stub.replies.set("POST /v1/sessions/s1/prompt", { status: 202, body: { run_id: "m1", user_message_id: "u1", message_id: "m1" } });
   stub.replies.set("GET /v1/sessions/s1/approvals", { status: 200, body: [] });
   stub.replies.set("GET /v1/sessions/s1/runs/m1", { status: 200, body: result_of("m1", "done") });
@@ -57,11 +58,11 @@ test("run answers each pending approval once through on_approval", async () => {
       stub.push("turn.event", turn_event("m1", { type: "tool_approval", call_id: "c1_0", request: approval.request }, 1), "b.1");
       stub.push("agent.approvals_changed", { chat_id: "s1", approvals: [] }, "b.2");
     }
-    if (seen.path === "/v1/sessions/s1/approvals/m%3Ac1_0") {
+    if (seen.path === approval_path) {
       stub.push("run.settled", { session_id: "s1", run_id: "m1", status: "done" }, "b.3");
     }
   };
-  stub.replies.set("POST /v1/sessions/s1/approvals/m%3Ac1_0", { status: 204 });
+  stub.replies.set(`POST ${approval_path}`, { status: 204 });
   try {
     const asked: ApprovalInfo[] = [];
     const result = await client.run(
@@ -76,7 +77,7 @@ test("run answers each pending approval once through on_approval", async () => {
     );
     assert.equal(result.status, "done");
     assert.deepEqual(asked, [approval]);
-    const replies = stub.seen.filter((entry) => entry.path === "/v1/sessions/s1/approvals/m%3Ac1_0");
+    const replies = stub.seen.filter((entry) => entry.path === approval_path);
     assert.equal(replies.length, 1);
     assert.deepEqual(json_body(replies[0]), { approved: true, grant: "once" });
   } finally {
@@ -174,18 +175,19 @@ test("aborting a run rejects it and closes the event stream", async () => {
 test("wait answers pending approvals through on_approval like run", async () => {
   const { stub, client, close } = await start_stub();
   const approval: ApprovalInfo = {
-    approval_id: "a:agent_1:run_1:c0_2",
+    approval_id: "a:agent_1:run_1:request-2",
     source: "agent",
     agent_id: "agent_1",
     run_id: "run_1",
     call_id: "c0_2",
-    request: { kind: "command", command: "npm run build", cwd: "D:/proj", background: false, review: null, grant_prefix: null },
+    request: { kind: "command", command: "npm run build", cwd: "D:/proj", background: false, review: null, grant_prefix: null, request_id: "request-2" },
   };
+  const approval_path = `/v1/sessions/s1/approvals/${encodeURIComponent(approval.approval_id)}`;
   stub.replies.set("GET /v1/sessions/s1/runs/m4", { status: 200, body: result_of("m4", "running") });
   stub.replies.set("GET /v1/sessions/s1/approvals", { status: 200, body: [approval] });
-  stub.replies.set("POST /v1/sessions/s1/approvals/a%3Aagent_1%3Arun_1%3Ac0_2", { status: 204 });
+  stub.replies.set(`POST ${approval_path}`, { status: 204 });
   stub.on_request = (seen) => {
-    if (seen.path === "/v1/sessions/s1/approvals/a%3Aagent_1%3Arun_1%3Ac0_2") {
+    if (seen.path === approval_path) {
       stub.replies.set("GET /v1/sessions/s1/runs/m4", { status: 200, body: result_of("m4", "done") });
       stub.push("run.settled", { session_id: "s1", run_id: "m4", status: "done" }, "b.1");
     }
@@ -203,7 +205,7 @@ test("wait answers pending approvals through on_approval like run", async () => 
     assert.equal(result.status, "done");
     assert.deepEqual(asked, [approval.approval_id]);
     assert.deepEqual(seen, ["hello", "run.settled"]);
-    const reply = stub.seen.find((entry) => entry.path === "/v1/sessions/s1/approvals/a%3Aagent_1%3Arun_1%3Ac0_2");
+    const reply = stub.seen.find((entry) => entry.path === approval_path);
     assert.deepEqual(json_body(reply), { approved: false, feedback: "not now" });
   } finally {
     await close();

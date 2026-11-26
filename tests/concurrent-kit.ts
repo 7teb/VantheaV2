@@ -30,7 +30,8 @@ export const scripted = (first: RoundToolCall[]) => {
 
 export const ended = (call_id: string) => (event: StreamEventBody) => event.type === "tool_end" && event.call_id === call_id;
 
-export const asked = (call_id: string) => (event: StreamEventBody) => event.type === "tool_approval" && event.call_id === call_id;
+export const asked = (call_id: string) => (event: StreamEventBody): event is Extract<StreamEventBody, { type: "tool_approval" }> =>
+  event.type === "tool_approval" && event.call_id === call_id;
 
 export const watch = (h: Harness) => {
   const waiters: { check: (event: StreamEventBody) => boolean; resolve: () => void }[] = [];

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { review_statuses, type ReviewStatus } from "../electron/permissions/review-prompt.ts";
-import { approved_note, deny_text, earlier_line, not_approved_text, scripts_changed_text, stopped_text, user_denied_text, workaround_text } from "../electron/permissions/verdict-text.ts";
+import { deny_text, earlier_line, not_approved_text, user_denied_text, workaround_text } from "../electron/permissions/verdict-text.ts";
 
 const ruled = { reason: "Deletes dist with a raw PowerShell command.", rule_source: "custom_instructions" as const, rule: "Never delete files with raw PowerShell commands." };
 
@@ -13,6 +13,11 @@ test("deny carries the reason, the rule and the allowed-way sentence", () => {
   const bare = deny_text("tool call", { reason: "", rule_source: "none", rule: "" });
   assert.match(bare, /The tool call did not run\.\nReason: none given\.\nDo not run it again/);
   assert.doesNotMatch(bare, /Rule \(/);
+});
+
+test("a review or user denial allows the same action again once a newer user message asks for it or approves it", () => {
+  assert.match(deny_text("command", ruled), /This holds until a newer user message asks for this action or approves it: then run it again as it is, and the automatic review checks it once more with that message\./);
+  assert.match(user_denied_text("command", "not now", null), /This holds until a newer user message asks for it or approves it: then run it again as it is\./);
 });
 
 test("user denial shows the automatic review line only with a model reason", () => {
@@ -46,12 +51,6 @@ test("the workaround text names the earlier action by status", () => {
   const long = earlier_line("x".repeat(400), review_statuses.repeat_denied, "tests#1a2b3c4d");
   assert.deepEqual({ ...long, action: long.action.length }, { action: 301, status: "user_denied", agent: "tests#1a2b3c4d" });
   assert.match(workaround_text("command", ruled, long), /x{300}… \(by tests#1a2b3c4d\)/);
-});
-
-test("approved, stopped and scripts-changed texts", () => {
-  assert.equal(approved_note("tool call"), "The user approved this tool call. The approval covers this exact tool call only.");
-  assert.match(stopped_text("command"), /^Not run: the turn was stopped while this command waited/);
-  assert.match(scripts_changed_text(["a.ps1", "b.py"]), /three times \(a\.ps1, b\.py\)\. The command was not executed\./);
 });
 
 test("a denial ends the one action, not the turn, the rest of the task or running sub-agents", () => {

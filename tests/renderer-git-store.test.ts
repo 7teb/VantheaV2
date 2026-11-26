@@ -188,6 +188,9 @@ test("states without a branch show one notice row with at most one action", asyn
   assert.equal(container.matching((element) => element.getAttribute("aria-busy") === "true").length, 1);
 });
 
+const tree_row = (name: string) =>
+  container.matching((element) => element.nodeName === "BUTTON" && element.matching((child) => child.className === "files-row-label")[0]?.textContent === name)[0];
+
 test("tree rows carry the letter, the folder dot and the dimmed state of ignored entries", async () => {
   listing = {
     path: "",
@@ -215,22 +218,18 @@ test("tree rows carry the letter, the folder dot and the dimmed state of ignored
     }),
   );
   render("FileTree");
-  const row = (path: string) => container.matching((element) => element.nodeName === "BUTTON" && element.getAttribute("title")?.split("\n")[0] === path)[0];
-  const badge = (path: string) => row(path)?.matching((element) => element.className === "git-badge")[0];
-  assert.equal(row("src")?.getAttribute("data-git"), null);
+  const badge = (path: string) => tree_row(path)?.matching((element) => element.className === "git-badge")[0];
+  assert.equal(tree_row("src")?.getAttribute("data-git"), null);
   assert.equal(badge("src")?.getAttribute("data-git"), "modified");
-  assert.equal(badge("src")?.getAttribute("title"), "Contains changes");
   assert.equal(badge("src")?.textContent, "");
-  assert.equal(row("a.ts")?.getAttribute("data-git"), "modified");
+  assert.equal(tree_row("a.ts")?.getAttribute("data-git"), "modified");
   assert.equal(badge("a.ts")?.textContent, "M");
-  assert.equal(badge("a.ts")?.getAttribute("title"), "Modified, staged");
   assert.equal(badge("b.ts")?.textContent, "!");
-  assert.equal(badge("b.ts")?.getAttribute("title"), "Conflict: both modified");
   assert.equal(badge("new.ts")?.textContent, "U");
-  assert.equal(row("node_modules")?.getAttribute("data-git"), "ignored");
+  assert.equal(tree_row("node_modules")?.getAttribute("data-git"), "ignored");
   assert.equal(badge("node_modules"), undefined);
+  assert.ok(tree_row("vendor"));
   assert.equal(badge("vendor"), undefined);
-  assert.equal(row("vendor")?.getAttribute("title"), "vendor\nOwn repository");
 });
 
 test("during a rebase the local row names the rebased branch, not the detached commit", async () => {
@@ -264,13 +263,8 @@ test("a submodule shows S from its gitlink, also when it is only added or bumped
     }),
   );
   render("FileTree");
-  const badge = (path: string) =>
-    container
-      .matching((element) => element.nodeName === "BUTTON" && element.getAttribute("title")?.split("\n")[0] === path)[0]
-      ?.matching((element) => element.className === "git-badge")[0];
-  assert.deepEqual([badge("added")?.textContent, badge("added")?.getAttribute("title")], ["S", "Submodule: Added, staged"]);
-  assert.deepEqual([badge("bumped")?.textContent, badge("bumped")?.getAttribute("title")], ["S", "Submodule: Modified, staged"]);
-  assert.deepEqual([badge("dirty")?.textContent, badge("dirty")?.getAttribute("title")], ["S", "Submodule: new commit, modified files"]);
+  const badge = (path: string) => tree_row(path)?.matching((element) => element.className === "git-badge")[0];
+  assert.deepEqual(["added", "bumped", "dirty"].map((path) => badge(path)?.textContent), ["S", "S", "S"]);
 });
 
 test("the chosen view, the viewer modes and the chosen commit belong to the chat, a new chat keeps them and a deleted chat drops them", async () => {

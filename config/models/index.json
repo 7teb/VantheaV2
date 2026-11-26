@@ -22,7 +22,7 @@
   },
   "plan_side": {
     "title": { "model": "openai/gpt-6-luna", "effort": "low" },
-    "overseer": { "model": "openai/gpt-6-luna", "effort": "low" },
+    "overseer": { "model": "openai/gpt-6-luna", "effort": "medium" },
     "vision": { "model": "openai/gpt-6-luna", "effort": "low" },
     "git_text": { "model": "openai/gpt-6-luna", "effort": "low" }
   },

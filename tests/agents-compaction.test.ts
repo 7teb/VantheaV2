@@ -52,7 +52,7 @@ const stream: StreamFn = async (request, callbacks) => {
     return completed({ content: note });
   }
   if (!request.messages.some((message) => message.role === "tool")) {
-    return completed({ tool_calls: [{ index: 0, id: "p0", name: "read_file", arguments: "{}" }], finish_reason: "tool_calls", usage: { prompt_tokens: 75_000, completion_tokens: 20, reasoning_tokens: 0 } });
+    return completed({ tool_calls: [{ index: 0, id: "p0", name: "read_file", arguments: "{}" }], finish_reason: "tool_calls", usage: { prompt_tokens: 75_000, completion_tokens: 20, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0 } });
   }
   callbacks.on_text("Report: src/a.ts:3 divides by zero.");
   return completed({ content: "Report: src/a.ts:3 divides by zero." });

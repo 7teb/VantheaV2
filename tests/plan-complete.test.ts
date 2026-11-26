@@ -35,10 +35,12 @@ test("a completion with a schema sends text.format and drops every OpenRouter fi
   );
   assert.deepEqual(result, {
     text: '{"ok":true}',
-    usage: { prompt_tokens: 120, completion_tokens: 30, reasoning_tokens: 12 },
+    usage: { prompt_tokens: 120, completion_tokens: 30, reasoning_tokens: 12, cached_tokens: 64, cache_write_tokens: 8 },
     meta: { id: "resp_1", finish_reason: "stop", cached_tokens: 64, cache_write_tokens: 8, cost: null },
   });
   assert.equal(fake.sent[0]?.url, plan_responses_url);
+  assert.equal(fake.sent[0]?.headers["session-id"], "vx-review:chat-1");
+  assert.equal(fake.sent[0]?.headers["thread-id"], "vx-review:chat-1");
   const body = fake.sent[0]?.body ?? {};
   assert.deepEqual(body, {
     model: "gpt-6-luna",

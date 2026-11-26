@@ -1,9 +1,11 @@
+import "./support/isolated-home.ts";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { after, before, test } from "node:test";
 import { live_run } from "../electron/agents/live.ts";
 import { overlaps, roster_entries } from "../electron/agents/roster.ts";
-import { deploy_agent, max_running_agents, type StartedRun } from "../electron/agents/runner.ts";
+import { deploy_agent, type StartedRun } from "../electron/agents/runner.ts";
+import { max_running_agents } from "../electron/settings/user-config.ts";
 import { get_agent } from "../electron/agents/store.ts";
 import { deploy_agent_tool } from "../electron/tools/agents/start.ts";
 import type { Tool } from "../electron/tools/types.ts";
@@ -83,7 +85,7 @@ test("a scope that names the whole project overlaps with a peer's write anywhere
 
 test("twenty agents run at once, see each other in the roster, message each other in a ring and all finish; a twenty-first is refused", async () => {
   const chat_id = "pf-twenty";
-  const count = max_running_agents;
+  const count = max_running_agents();
   assert.equal(count, 20);
   const started: StartedRun[] = [];
   for (let index = 0; index < count; index += 1) {
@@ -130,7 +132,7 @@ test("twenty agents run at once, see each other in the roster, message each othe
 
 test("a deploy over the running-agent limit is refused before the review is asked", async () => {
   const chat_id = "pf-cap";
-  const started = Array.from({ length: max_running_agents }, (_, index) => deploy_agent(request("pf scope owner", { chat_id, name: `Cap${index}`, topic: "cap" })));
+  const started = Array.from({ length: max_running_agents() }, (_, index) => deploy_agent(request("pf scope owner", { chat_id, name: `Cap${index}`, topic: "cap" })));
   register_active(chat_id, `turn-${chat_id}`, () => undefined, model, "");
   try {
     await wait_for(() => started.every((entry) => live_run(entry.run.run_id) !== null));

@@ -1,11 +1,12 @@
+import "./support/isolated-home.ts";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { after, before, test } from "node:test";
-import { live_run, read_agent_run, waiting_approvals } from "../electron/agents/live.ts";
-import { cancel_agent, deploy_agent, find_agent_model, max_running_agents, message_agent } from "../electron/agents/runner.ts";
+import { agent_approval_key, live_run, read_agent_run, waiting_approvals } from "../electron/agents/live.ts";
+import { cancel_agent, deploy_agent, find_agent_model, message_agent } from "../electron/agents/runner.ts";
+import { max_running_agents } from "../electron/settings/user-config.ts";
 import { flex_id } from "../shared/models.ts";
-import { agent_approval_key } from "../electron/agents/session.ts";
 import { get_agent_status_tool } from "../electron/tools/agents/manage.ts";
 import { get_agent, init_agent_store, list_agents, save_index_sync } from "../electron/agents/store.ts";
 import type { ApiMessage } from "../electron/model/types.ts";
@@ -98,16 +99,17 @@ test("an approval inside a run is keyed by agent:<run_id> and the tool context p
   const started = deploy_agent(request("ask first"));
   await wait_for(() => events.some((event) => event.run_id === started.run.run_id && event.type === "tool_approval"));
   const approval = events.find((event) => event.run_id === started.run.run_id && event.type === "tool_approval");
-  const call_id = approval?.type === "tool_approval" ? approval.call_id : "";
+  assert.ok(approval?.type === "tool_approval");
+  const { request_id } = approval.request;
   const decision = { approved: true, grant: "once", feedback: "" } as const;
   const waiting = waiting_approvals("chat-runner");
   assert.deepEqual(
-    waiting.map((entry) => [entry.agent_id, entry.run_id, entry.call_id, entry.name, entry.request.kind]),
-    [[started.agent.agent_id, started.run.run_id, call_id, started.agent.name, "memory"]],
+    waiting.map((entry) => [entry.agent_id, entry.run_id, entry.call_id, entry.name, entry.request.kind, entry.request.request_id]),
+    [[started.agent.agent_id, started.run.run_id, approval.call_id, started.agent.name, "memory", request_id]],
   );
   assert.deepEqual(waiting_approvals("another-chat"), []);
-  assert.equal(resolve_decision("chat-runner", call_id, { ...decision }), false);
-  assert.equal(resolve_decision(agent_approval_key(started.run.run_id), call_id, { ...decision }), true);
+  assert.equal(resolve_decision("chat-runner", request_id, { ...decision }), false);
+  assert.equal(resolve_decision(agent_approval_key(started.run.run_id), request_id, { ...decision }), true);
   await wait_for(() => waiting_approvals("chat-runner").length === 0);
   await wait_for(() => reports.some((report) => report.run_id === started.run.run_id));
   assert.equal(await fs.readFile(reports.find((report) => report.run_id === started.run.run_id)?.report_path ?? "", "utf8"), "approved and done");
@@ -189,10 +191,14 @@ test("message_agent reaches the agent at its next round", async () => {
   tools.pop();
 });
 
-test("at most eight agents run at once per chat", async () => {
+test("at most the configured number of agents run at once per chat and the error names the config file", async () => {
   scripts.set("park", block_until_abort);
-  const running = Array.from({ length: max_running_agents }, () => deploy_agent(request("park", { chat_id: "chat-cap" })));
-  assert.throws(() => deploy_agent(request("park", { chat_id: "chat-cap" })), /At most 20 agents can run at once in this chat/);
+  const limit = max_running_agents();
+  const running = Array.from({ length: limit }, () => deploy_agent(request("park", { chat_id: "chat-cap" })));
+  assert.throws(() => deploy_agent(request("park", { chat_id: "chat-cap" })), (error: unknown) => {
+    const text = error instanceof Error ? error.message : "";
+    return text.startsWith(`At most ${limit} agents can run at once in this chat`) && text.includes(".VantheaX");
+  });
   running.push(deploy_agent(request("park", { chat_id: "chat-cap-other" })));
   for (const started of running) {
     const agent = get_agent(started.agent.agent_id);

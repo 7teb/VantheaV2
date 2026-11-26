@@ -150,7 +150,13 @@ test("Full mode and the open 10-minute window never settle a hook card", async (
   const controller = new AbortController();
   open_chat_window(project_chat);
   let settled = false;
-  const waiting = wait_for_decision({ key: project_chat, chat_id: project_chat, call_id: "wait-1", request, signal: controller.signal }).then((decision) => {
+  const waiting = wait_for_decision({
+    key: project_chat,
+    chat_id: project_chat,
+    call_id: "c0_0",
+    request: { ...request, request_id: "wait-1" },
+    signal: controller.signal,
+  }).then((decision) => {
     settled = true;
     return decision;
   });

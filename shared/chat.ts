@@ -1,4 +1,4 @@
-import type { ApprovalRequest, HumanDecision } from "./approval.ts";
+import type { HumanDecision, PendingApprovalRequest } from "./approval.ts";
 import type { HookRun } from "./hook-notes.ts";
 import type { ModelChoice } from "./models.ts";
 import type { QuestionStates } from "./questions.ts";
@@ -83,9 +83,10 @@ export type ToolStep = {
   call_id: string;
   name: string;
   args: Record<string, unknown>;
+  arguments?: string;
   status: ToolStatus;
   progress: ToolProgress | null;
-  approval: ApprovalRequest | null;
+  approval: PendingApprovalRequest | null;
   decisions?: HumanDecision[];
   reviews?: ReviewRecord[];
   view: ToolView | null;
@@ -185,7 +186,7 @@ export const compact_fraction = 0.7;
 
 export type RoundReasoning = { round: number; details: unknown[] };
 
-export type MessageUsage = { prompt_tokens: number; completion_tokens: number; reasoning_tokens: number; rounds: number };
+export type MessageUsage = { prompt_tokens: number; completion_tokens: number; reasoning_tokens: number; cached_tokens: number; cache_write_tokens: number; rounds: number };
 
 export type AssistantMessage = {
   id: string;

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
 import type { ClaudeRun } from "../electron/claude/process.ts";
-import { claude_login_command, probe_claude_account, unknown_claude_account } from "../electron/claude/status.ts";
+import { claude_login_command, probe_claude_account } from "../electron/claude/status.ts";
 
 const exe = "C:\\Program Files\\VantheaX\\resources\\app.asar.unpacked\\node_modules\\@anthropic-ai\\claude-agent-sdk-win32-x64\\claude.exe";
 
@@ -124,8 +124,4 @@ test("a missing executable or a spawn error is missing without a login command",
 test("the login command quotes the path for PowerShell and doubles single quotes", () => {
   assert.equal(claude_login_command("C:\\Users\\O'Brien\\claude.exe"), "& 'C:\\Users\\O''Brien\\claude.exe' auth login --claudeai");
   assert.equal(claude_login_command("D:\\a b\\claude.exe"), "& 'D:\\a b\\claude.exe' auth login --claudeai");
-});
-
-test("the account before the first probe is unknown", () => {
-  assert.deepEqual(unknown_claude_account, { status: "unknown", email: null, subscription: null, auth_method: null, login_command: "", detail: "" });
 });

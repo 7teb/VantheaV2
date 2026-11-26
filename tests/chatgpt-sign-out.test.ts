@@ -31,7 +31,7 @@ const signed_in_with_models = async (name: string) => {
   kit.fake.models = [{ slug: "gpt-6-luna", display_name: "GPT-6 Luna", visibility: "list" }];
   await init_chatgpt(kit.deps);
   await sign_in_with(kit);
-  assert.deepEqual(account_models(), [{ slug: "gpt-6-luna", display_name: "GPT-6 Luna", context_window: null }]);
+  assert.deepEqual(account_models(), [{ slug: "gpt-6-luna", display_name: "GPT-6 Luna", context_window: null, service_tiers: [] }]);
   return kit;
 };
 

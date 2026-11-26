@@ -193,6 +193,21 @@ test("overrides disable tools and cannot lower shell tools", async () => {
   assert.equal(Object.hasOwn(settings.mcp_tools, "fixture/ping"), false);
 });
 
+test("a tool disabled while its approval waits does not run after the yes", async () => {
+  const ctx = context("ask");
+  ctx.approve = async () => {
+    await set_tool_override("fixture", "set_label", { enabled: false });
+    return { approved: true, grant: "once", feedback: "" };
+  };
+  try {
+    const result = await tool("mcp__fixture__set_label").execute(ctx, { label: "late" });
+    assert.equal(result.status, "failed");
+    assert.match(result.text, /It did not run/);
+  } finally {
+    await set_tool_override("fixture", "set_label", { enabled: true });
+  }
+});
+
 test("reconnect replaces the process and a dying server turns into an error", async () => {
   await reconnect_mcp_server("fixture");
   assert.equal(status()?.state, "ready");

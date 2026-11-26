@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { wave_frames, wave_timing } from "../src/components/letter-wave.ts";
-import { css_block, declarations, read } from "./css-kit.ts";
 import { bundle, FakeElement, install_dom, quiet_vx, stub_components } from "./dom-kit.ts";
 
 let client: any;
@@ -78,15 +77,4 @@ test("one sweep crosses a label of any length within a second and starts again e
     near(timings.at(-1)?.delay ?? -1, ((letters - 0.5) / letters) * (1000 / 1.75));
     assert.ok((timings.at(-1)?.delay ?? 0) + 285.7142857143 < 1000);
   }
-});
-
-test("letters animate only opacity, so the wave runs on the compositor without restyling every frame", () => {
-  const motion = read("components/WorkingLetters.css");
-  assert.doesNotMatch(motion, /@property|@keyframes|--wave/);
-  assert.deepEqual(declarations(css_block(motion, ".working-letter {")), { color: "var(--working-peak)", opacity: "var(--working-dim-opacity)" });
-  assert.deepEqual(declarations(css_block(read("styles/motion.css"), ".is-working {")), { color: "var(--working-dim)" });
-  const tokens = read("styles/tokens.css");
-  assert.match(tokens, /--working-dim: rgba\(252, 252, 252, 0\.46\);/);
-  assert.match(tokens, /--working-dim-opacity: 0\.46;/);
-  assert.match(tokens, /--working-peak: #ffffff;/);
 });

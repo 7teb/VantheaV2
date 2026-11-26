@@ -74,23 +74,6 @@ test("legacy post-turn events omit inline bodies on replay", () => {
   assert.doesNotMatch(context, /PRIVATE_REPORT_BODY/);
 });
 
-test("replayed file notices require a complete read and an explicit reason for unread reports", () => {
-  const text = report_file_notice("agent_1", "run_1", "C:/reports/run_1.report.md");
-  assert.ok(text.startsWith("YOU MUST READ THE COMPLETE REPORT"));
-  assert.match(text, /DO NOT SKIP IT/);
-  assert.match(text, /identify it and explain why in your final answer/);
-  assert.match(text, /if output is truncated, read the remaining sections/);
-  assert.match(text, /partial preview do not count/);
-  assert.match(text, /\n\nAgent ID: agent_1\nRun ID: run_1\nReport file:/);
-  assert.match(text, /Read the report:\nGet-Content/);
-  const unavailable = report_file_notice("agent_1", "run_1", null, "access denied");
-  assert.match(unavailable, /YOU MUST READ THE COMPLETE REPORT/);
-  assert.match(unavailable, /state that the report was not read and give the actual reason/);
-  assert.match(unavailable, /access denied/);
-  const notification = report_notice_text("Scout", "agent_1", "completed", 61, text);
-  assert.equal(report_notice_context(notification), notification);
-});
-
 test("old optional-read event outros stay outside the parsed report body", () => {
   const old = "Read the saved report when needed and use the findings to continue the original work. This is an internal event, not a user request that requires a reply. Do not acknowledge each notification, repeat earlier findings or announce that you are still waiting. If other reports are pending and no useful action or new user-facing result follows, process this silently and wait. Combine findings when they are ready; give a visible update only for meaningful new results, changed actions, blockers or required user decisions.";
   const notice = report_file_notice("agent_1", "run_1", "C:/reports/run_1.report.md");

@@ -43,7 +43,7 @@ test("complete sends the documented body and returns trimmed text with usage", a
   const result = await complete({ model_id: "side/model", messages: [{ role: "user", content: "hi" }], max_tokens: 50, temperature: 0, json: true }, undefined, overrides);
   assert.deepEqual(result, {
     text: "Short title",
-    usage: { prompt_tokens: 3, completion_tokens: 4, reasoning_tokens: 0 },
+    usage: { prompt_tokens: 3, completion_tokens: 4, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0 },
     meta: { id: "gen-1", finish_reason: "stop", cached_tokens: 0, cache_write_tokens: 0, cost: null },
   });
   assert.equal(seen[0]?.url, "https://openrouter.ai/api/v1/chat/completions");

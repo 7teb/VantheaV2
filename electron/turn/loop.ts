@@ -136,8 +136,7 @@ export const run_turn_loop = async (session: TurnSession, api_messages: ApiMessa
       }
       const outcome = await run_round(session, round, api_messages, calibration, floor);
       if (outcome.usage) {
-        const { prompt_tokens, completion_tokens, reasoning_tokens } = outcome.usage;
-        session.emit({ type: "usage", round, prompt_tokens, completion_tokens, reasoning_tokens });
+        session.emit({ type: "usage", round, ...outcome.usage });
       }
       const next = calibrate(outcome.usage, outcome.estimate) ?? calibration;
       const rescale = calibration_scale(next) / calibration_scale(calibration);

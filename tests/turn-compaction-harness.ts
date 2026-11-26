@@ -11,6 +11,8 @@ export const counted = (request: RoundRequest, ratio: number): RoundUsage => ({
   prompt_tokens: Math.round(sent_estimate(request.messages, request.tools, request.model) * ratio),
   completion_tokens: 50,
   reasoning_tokens: 0,
+  cached_tokens: 0,
+  cache_write_tokens: 0,
 });
 
 export type Recorded = { request: RoundRequest; messages: ApiMessage[] };

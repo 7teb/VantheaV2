@@ -60,7 +60,7 @@ export const McpServerCard = ({ server }: { server: McpServerStatus }) => {
       <div className="settings-row mcp-head">
         <div className="settings-row-text">
           <div className="settings-row-label">{title}</div>
-          <div className="settings-row-hint mcp-command" title={command_line(server)}>
+          <div className="settings-row-hint mcp-command">
             {command_line(server)}
           </div>
         </div>
@@ -94,7 +94,7 @@ export const McpServerCard = ({ server }: { server: McpServerStatus }) => {
           <Toggle
             checked={server.trusted}
             label={t("mcp.trust_dangerous")}
-            on_change={(trusted) => void run("mcp:set_trust", () => set_mcp_trust(server.name, trusted))}
+            on_change={(trusted) => void run("mcp:set_trust", () => set_mcp_trust(server, trusted))}
           />
         </SettingsRow>
       )}

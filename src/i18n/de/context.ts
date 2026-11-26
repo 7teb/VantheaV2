@@ -40,7 +40,6 @@ export const context: Record<keyof typeof en, string> = {
   "context.auto_compact": "Auto-Komprimierung",
   "context.compact_percent": "{percent} %",
   "context.compact_hint": "bei {tokens} Tokens",
-  "context.compact_mark": "Automatische Komprimierung",
   "context.part_system": "Systemprompt",
   "context.part_tools": "Tools",
   "context.part_messages": "Nachrichten",

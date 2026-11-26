@@ -41,7 +41,7 @@ const follow = (event: MouseEvent<HTMLAnchorElement>, href: string | undefined) 
 const MarkdownLink = ({ href, children }: { href?: string; children?: ReactNode }) => {
   const target = href && is_external_url(href) ? href : null;
   return (
-    <a className={class_names("md-link", !target && "md-file-link")} href={target ?? undefined} title={target ?? undefined} onClick={(event) => follow(event, href)}>
+    <a className={class_names("md-link", !target && "md-file-link")} href={target ?? undefined} onClick={(event) => follow(event, href)}>
       {!target && <FileIcon />}
       {children}
     </a>

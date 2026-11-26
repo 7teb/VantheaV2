@@ -45,7 +45,7 @@ export const WorkflowEntry = ({ summary, now }: { summary: WorkflowSummary; now:
     <section className="agent-entry workflow-entry" data-running={running}>
       <header className="agent-entry-head">
         <WorkflowIcon />
-        <span className="agent-entry-name" title={summary.description || summary.name}>
+        <span className="agent-entry-name">
           {summary.name}
         </span>
         <span className="agent-entry-meta">{t("workflow.kind")}</span>
@@ -60,7 +60,7 @@ export const WorkflowEntry = ({ summary, now }: { summary: WorkflowSummary; now:
         <li>
           <button type="button" className="agent-run" data-status={tone} onClick={() => open_workflow(summary.run_id)}>
             <StatusIcon className={class_names("agent-run-icon", running && "spin")} />
-            <span className="agent-run-prompt" title={activity(summary)}>
+            <span className="agent-run-prompt">
               {activity(summary)}
             </span>
             <span className="agent-run-meta">{running ? agents_line(t, summary) : run_duration(summary, now)}</span>

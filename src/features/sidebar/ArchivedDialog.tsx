@@ -65,7 +65,7 @@ export const ArchivedDialog = ({ open, chats, projects, active_chat_id, now, on_
                 <MessageSquareIcon className="archived-icon" />
                 <span className="archived-text">
                   <span className="archived-name">{chat_label(t, chat.title)}</span>
-                  <span className="archived-detail" title={chat.project_path || undefined}>
+                  <span className="archived-detail">
                     {chat.project_path ? project_path_label(projects, chat.project_path) : t("search.no_project")}
                   </span>
                 </span>

@@ -8,6 +8,7 @@ const globals = ["window", "localStorage"];
 const descriptors = new Map(globals.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
 const calls: { name: string; args: unknown[] }[] = [];
 const main_tabs: Record<string, BrowserChatTabs> = {};
+const listeners = new Map<string, (payload: unknown) => void>();
 let client: any;
 
 const tab = (tab_id: string, url: string): BrowserTabInfo => ({ tab_id, url, title: "", loading: false, can_back: false, can_forward: false, error: "", crashed: false });
@@ -34,17 +35,21 @@ before(async () => {
       innerWidth: 1440,
       setTimeout,
       clearTimeout,
+      matchMedia: () => ({ matches: false, addEventListener: () => undefined, removeEventListener: () => undefined }),
       vx: {
         invoke: async (name: string, ...args: unknown[]) => {
           calls.push({ name, args });
           return answer(name, args);
         },
-        on: () => () => undefined,
+        on: (name: string, listener: (payload: unknown) => void) => {
+          listeners.set(name, listener);
+          return () => listeners.delete(name);
+        },
         send: (name: string, ...args: unknown[]) => calls.push({ name, args }),
       },
     },
   });
-  const entry = 'export * from "./src/state/browser.ts";';
+  const entry = 'export * from "./src/state/browser.ts";\nexport { close_dock, open_chat, ui_store } from "./src/state/ui.ts";';
   const result = await build({ stdin: { contents: entry, resolveDir: process.cwd(), loader: "ts" }, bundle: true, platform: "browser", format: "esm", write: false, legalComments: "none", logLevel: "silent" });
   client = await import("data:text/javascript;base64," + Buffer.from(result.outputFiles[0].contents).toString("base64"));
 });
@@ -92,6 +97,28 @@ test("a typed address survives updates until the page navigates while the field 
   client.set_browser_draft("b1", "other chat");
   client.apply_browser_tabs({ chat_id: "chat-a", tabs: [], active_id: "" });
   assert.equal(client.browser_store.get().drafts.b1, "other chat");
+});
+
+test("a shown browser opens the dock in its chat at once, or once the user switches to that chat", () => {
+  const stop = client.init_browser();
+  const show = (chat_id: string) => listeners.get("browser:show")?.({ chat_id });
+  const dock = () => client.ui_store.get().dock.kind;
+  try {
+    client.open_chat("chat-a", "D:/project");
+    show("chat-a");
+    assert.equal(dock(), "browser");
+    client.close_dock();
+    show("chat-b");
+    assert.equal(dock(), null);
+    client.open_chat("chat-b", "D:/project");
+    assert.equal(dock(), "browser");
+    client.close_dock();
+    client.open_chat("chat-a", "D:/project");
+    client.open_chat("chat-b", "D:/project");
+    assert.equal(dock(), null);
+  } finally {
+    stop();
+  }
 });
 
 test("viewport messages carry the chat they belong to", () => {

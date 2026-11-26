@@ -160,12 +160,13 @@ export const create_plan_accumulator = (): PlanAccumulator => {
     }
     const input_tokens = as_number(raw.input_tokens);
     const output_tokens = as_number(raw.output_tokens);
-    if (input_tokens !== null && output_tokens !== null) {
-      usage = { prompt_tokens: input_tokens, completion_tokens: output_tokens, reasoning_tokens: as_number(as_record(raw.output_tokens_details)?.reasoning_tokens) ?? 0 };
-    }
     const input_details = as_record(raw.input_tokens_details);
     cached_tokens = as_number(input_details?.cached_tokens) ?? 0;
     cache_write_tokens = as_number(input_details?.cache_write_tokens) ?? 0;
+    if (input_tokens !== null && output_tokens !== null) {
+      const reasoning_tokens = as_number(as_record(raw.output_tokens_details)?.reasoning_tokens) ?? 0;
+      usage = { prompt_tokens: input_tokens, completion_tokens: output_tokens, reasoning_tokens, cached_tokens, cache_write_tokens };
+    }
     return response;
   };
 

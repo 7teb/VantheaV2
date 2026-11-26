@@ -18,6 +18,7 @@ const first_load_timeout_ms = 20000;
 const tabs = new Map<string, BrowserTab>();
 const active_ids = new Map<string, string>();
 const changed_chats = new Set<string>();
+const shown_chats = new Set<string>();
 const change_listeners = new Set<() => void>();
 let flush_pending = false;
 
@@ -51,9 +52,14 @@ export const list_tabs = (chat_id: string): TabInfo[] => {
 const flush = () => {
   flush_pending = false;
   const chats = [...changed_chats];
+  const shown = [...shown_chats];
   changed_chats.clear();
+  shown_chats.clear();
   for (const chat_id of chats) {
     emit("browser:changed", chat_state(chat_id));
+  }
+  for (const chat_id of shown) {
+    emit("browser:show", { chat_id });
   }
   for (const listener of [...change_listeners]) {
     listener();
@@ -226,6 +232,13 @@ export const select_tab = (chat_id: string, tab_id: string | null): BrowserTab =
     active_ids.set(chat_id, tab.tab_id);
     publish(chat_id);
   }
+  return tab;
+};
+
+export const show_tab = (chat_id: string, tab_id: string | null): BrowserTab => {
+  const tab = select_tab(chat_id, tab_id);
+  shown_chats.add(chat_id);
+  publish(chat_id);
   return tab;
 };
 

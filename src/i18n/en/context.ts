@@ -39,7 +39,6 @@ export const context = {
   "context.auto_compact": "Auto-compact",
   "context.compact_percent": "{percent}%",
   "context.compact_hint": "at {tokens} tokens",
-  "context.compact_mark": "Automatic compaction",
   "context.part_system": "System prompt",
   "context.part_tools": "Tools",
   "context.part_messages": "Messages",

@@ -4,6 +4,7 @@ import path from "node:path";
 import type { SecretName } from "../../shared/settings.ts";
 import { main_window } from "../app/window.ts";
 import { delete_chat, project_chat_ids } from "../chats/store.ts";
+import { sync_mcp } from "../mcp/servers.ts";
 import { create_project_folder } from "../project/create.ts";
 import { read_folder_id } from "../project/folder.ts";
 import { known_project_dir } from "../project/follow.ts";
@@ -71,7 +72,15 @@ const create_project = async (name: string, folder: string | null) => {
 
 export const register_settings_ipc = () => {
   handle("settings:get", () => settings_view());
-  handle("settings:update", (patch) => update_settings(require_record(patch, "settings patch")));
+  handle("settings:update", async (patch) => {
+    const raw = require_record(patch, "settings patch");
+    const view = await update_settings(raw);
+    if (Object.hasOwn(raw, "mcp_servers")) {
+      await sync_mcp();
+    }
+
+    return view;
+  });
   handle("settings:set_secret", (name, value) => set_secret(secret_name(name), require_string(value, "secret value", 4000)));
   handle("projects:choose", async () => {
     const result = await open_dialog({ title: texts().choose, properties: ["openDirectory"] });

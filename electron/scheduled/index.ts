@@ -28,7 +28,7 @@ export const start_scheduled_tasks = (tools_ready: Promise<void>): void => {
       }
       const live = live_run(event.run_id);
       if (live) {
-        notify_run_waiting(live.chat_id, `${event.run_id}:${event.call_id}`);
+        notify_run_waiting(live.chat_id, event.request.request_id);
       }
     }),
   ];

@@ -17,8 +17,6 @@ export const commands: Record<keyof typeof en, string> = {
   "commands.manage_skills": "Skills verwalten",
   "commands.manage_mcp": "MCP-Server verwalten",
   "commands.added": "Zu dieser Nachricht hinzugefügt",
-  "commands.skill_chip": "Skill {name}",
-  "commands.mcp_chip": "MCP-Server {name}",
   "commands.visualize": "Visualisieren",
   "commands.menu": "Befehle",
   "commands.back": "Zurück",

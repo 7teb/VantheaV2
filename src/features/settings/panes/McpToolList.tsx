@@ -41,7 +41,7 @@ const ToolRow = ({ server, tool, on_error }: { server: string; tool: McpToolStat
       <div className="mcp-tool-text">
         <div className="mcp-tool-name">{tool.name}</div>
         {tool.description && (
-          <div className="mcp-tool-description" title={tool.description}>
+          <div className="mcp-tool-description">
             {tool.description}
           </div>
         )}

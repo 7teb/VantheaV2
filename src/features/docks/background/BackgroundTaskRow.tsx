@@ -44,7 +44,7 @@ export const BackgroundTaskRow = ({ task, now }: BackgroundTaskRowProps) => {
     <article className="bg-task" data-status={task.status}>
       <div className="bg-task-head">
         <StatusIcon className={running ? "bg-task-icon spin" : "bg-task-icon"} />
-        <code className="bg-task-command" title={task.command}>
+        <code className="bg-task-command">
           {task.command}
         </code>
         <span className="bg-task-time">{time}</span>

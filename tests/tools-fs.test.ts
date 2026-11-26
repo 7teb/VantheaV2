@@ -88,7 +88,7 @@ test("list_files lists project files and secret file names and skips dependencie
 test("read_file returns numbered lines and states windows and limits", async () => {
   const { result } = await call("read_file", { path: "src/main.ts", start_line: 2, limit: 2 });
   assert.equal(result.text, "src/main.ts lines 2-3 of 4\n2: export function greet(name: string) {\n3:   return name;\n[File continues: 4 lines in total.]");
-  assert.deepEqual(result.view, { kind: "read", path: "src/main.ts", start_line: 2, end_line: 3, total_lines: 4, truncated: false });
+  assert.deepEqual(result.view, { kind: "read", path: "src/main.ts", start_line: 2, end_line: 3, total_lines: 4, truncated: false, content: "export function greet(name: string) {\n  return name;" });
   assert.equal((await call("read_file", { path: "src/main.ts", start_line: 9 })).result.status, "failed");
   const secret = await call("read_file", { path: ".env" }, "ask", { approved: false, grant: "once", feedback: "" });
   assert.equal(secret.result.status, "denied");

@@ -117,13 +117,17 @@ const reset_stop_state = (attempt: Attempt) => {
   }
 };
 
-const delivered = async (attempt: Attempt, round: number): Promise<boolean> => {
-  if (!(await attempt.feeder.poll(round + 1))) {
+const continued = async (fed: Promise<boolean>, attempt: Attempt): Promise<boolean> => {
+  if (!(await fed)) {
     return false;
   }
   attempt.shared.stop_state.active = false;
   return true;
 };
+
+const delivered = (attempt: Attempt, round: number): Promise<boolean> => continued(attempt.feeder.poll(round + 1), attempt);
+
+const steered = (attempt: Attempt, round: number): Promise<boolean> => continued(attempt.feeder.steers(round + 1), attempt);
 
 export const on_result = async (attempt: Attempt, result: SDKResultMessage): Promise<ResultOutcome> => {
   const { session, shared, rounds, feeder } = attempt;
@@ -152,7 +156,7 @@ export const on_result = async (attempt: Attempt, result: SDKResultMessage): Pro
     feeder.push([{ role: "user", content: continuation_text }]);
     return null;
   }
-  if (await delivered(attempt, round)) {
+  if (await steered(attempt, round)) {
     return null;
   }
   while (session.idle && (await session.idle())) {

@@ -92,7 +92,7 @@ const partial_result = (accumulator: PlanAccumulator | null): RoundResult => ({
   usage: null,
 });
 
-const run_attempt = async (body: string, accumulator: PlanAccumulator, callbacks: RoundCallbacks, signal: AbortSignal, transport: Transport): Promise<RoundResult> => {
+const run_attempt = async (body: string, cache_key: string | undefined, accumulator: PlanAccumulator, callbacks: RoundCallbacks, signal: AbortSignal, transport: Transport): Promise<RoundResult> => {
   const watchdog = create_watchdog(signal);
   const drafts = create_draft_reporter(accumulator, callbacks, transport.now);
   const on_push = (outcome: PlanPush) => {
@@ -110,7 +110,7 @@ const run_attempt = async (body: string, accumulator: PlanAccumulator, callbacks
   let terminal = false;
   watchdog.arm(transport.first_byte_ms, "first_byte");
   try {
-    const reply = await send_plan(body, watchdog, transport);
+    const reply = await send_plan(body, cache_key, watchdog, transport);
     terminal = await read_plan_stream(reply, accumulator, watchdog, { idle_ms: transport.idle_ms, on_push, after_chunk: () => drafts.flush(false) });
   } catch (error) {
     if (signal.aborted) {
@@ -154,7 +154,7 @@ export const stream_plan_round = async (
       signal,
       run: () => {
         current = create_plan_accumulator();
-        return run_attempt(body, current, callbacks, signal, transport);
+        return run_attempt(body, request.cache_key, current, callbacks, signal, transport);
       },
       cancelled: () => partial_result(current),
       on_retry: (attempt, max, reason, wait_ms) => {

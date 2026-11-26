@@ -137,7 +137,7 @@ const SearchPanel = () => {
               {hit.archived ? <ArchiveIcon className="search-hit-icon" /> : <MessageSquareIcon className="search-hit-icon" />}
               <span className="search-hit-text">
                 <span className="search-hit-title">{chat_label(t, hit.title)}</span>
-                <span className="search-hit-detail" title={hit.project_path || undefined}>
+                <span className="search-hit-detail">
                   {hit.snippet || (hit.project_path ? project_path_label(projects ?? [], hit.project_path) : t("search.no_project"))}
                 </span>
               </span>

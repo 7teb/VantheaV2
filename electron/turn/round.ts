@@ -88,7 +88,13 @@ const stream_with_status = async (session: TurnSession, round: number, request: 
 export const run_round = async (session: TurnSession, round: number, api_messages: ApiMessage[], calibration: ContextCalibration | null, floor: number): Promise<RoundOutcome> => {
   const profile = round_profile(session);
   const tools = session.resolve_tools(profile);
-  const request: RoundRequest = { model: session.model, effort: session.effort, messages: api_messages, tools: tools.map((tool) => tool.spec) };
+  const request: RoundRequest = {
+    model: session.model,
+    effort: session.effort,
+    messages: api_messages,
+    tools: tools.map((tool) => tool.spec),
+    ...(session.cache_key ? { cache_key: session.cache_key } : {}),
+  };
   await fit_request(request);
   const estimate = sent_estimate(request.messages, request.tools, session.model);
   request.max_tokens = output_budget(request.messages, request.tools, session.model, calibration);
@@ -117,8 +123,10 @@ export const run_round = async (session: TurnSession, round: number, api_message
     function: { name: call.name, arguments: call.args && call.arguments.trim() ? call.arguments : "{}" },
   }));
   assistant.tool_calls = api_calls;
-  for (const call of calls) {
-    session.emit({ type: "tool_call", round, index: call.index, call_id: call.engine_id, name: call.name, args: call.args ?? {} });
+  for (const [position, call] of calls.entries()) {
+    const args = call.args ?? {};
+    const sent = api_calls[position].function.arguments;
+    session.emit({ type: "tool_call", round, index: call.index, call_id: call.engine_id, name: call.name, args, ...(sent === JSON.stringify(args) ? {} : { arguments: sent }) });
   }
   try {
     await session.before_tools?.();

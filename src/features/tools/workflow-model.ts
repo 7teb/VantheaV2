@@ -133,11 +133,6 @@ const status_word = (t: Translate, agent: WorkflowAgentEntry, waiting: boolean):
 export const agent_meta = (t: Translate, agent: WorkflowAgentEntry, now: number, waiting: boolean): string =>
   [role_label(t, agent.role), status_word(t, agent, waiting), agent_time(agent, now)].filter(Boolean).join(" · ");
 
-export const agent_hint = (t: Translate, agent: WorkflowAgentEntry, model: string): string => {
-  const tree = agent.worktree ? t(agent.worktree.kept ? "workflow.worktree_kept" : "workflow.worktree", { x: agent.worktree.branch }) : "";
-  return [agent.label, [model, agent.effort].filter(Boolean).join(" · "), tree, agent.error].filter(Boolean).join("\n");
-};
-
 export const shown_error = (agent: WorkflowAgentEntry): string => (agent.status === "completed" || agent.status === "cached" ? "" : agent.error);
 
 export type ApprovalScript = { script: string; args: string | null };

@@ -1,4 +1,4 @@
-import type { ApprovalRequest, HumanDecision } from "./approval.ts";
+import type { HumanDecision, PendingApprovalRequest } from "./approval.ts";
 import type { HookRun } from "./hook-notes.ts";
 import type { ReviewRecord } from "./review.ts";
 import type {
@@ -29,10 +29,10 @@ export type StreamEventBody =
   | { type: "reasoning_details"; round: number; details: unknown[] }
   | { type: "retry"; round: number; attempt: number; max: number; reason: string; wait_ms: number }
   | { type: "tool_draft"; round: number; index: number; name: string; lines: number | null; delta?: string; path?: string; old_text?: string }
-  | { type: "tool_call"; round: number; index: number; call_id: string; name: string; args: Record<string, unknown> }
+  | { type: "tool_call"; round: number; index: number; call_id: string; name: string; args: Record<string, unknown>; arguments?: string }
   | { type: "tool_start"; call_id: string }
   | { type: "tool_progress"; call_id: string; progress: ToolProgress }
-  | { type: "tool_approval"; call_id: string; request: ApprovalRequest }
+  | { type: "tool_approval"; call_id: string; request: PendingApprovalRequest }
   | { type: "tool_decision"; call_id: string; decision: HumanDecision }
   | { type: "tool_review"; call_id: string; review: ReviewRecord }
   | {
@@ -59,7 +59,7 @@ export type StreamEventBody =
       wait_ms?: number;
     }
   | { type: "context"; usage: ContextUsage }
-  | { type: "usage"; round: number; prompt_tokens: number; completion_tokens: number; reasoning_tokens: number }
+  | { type: "usage"; round: number; prompt_tokens: number; completion_tokens: number; reasoning_tokens: number; cached_tokens: number; cache_write_tokens: number }
   | { type: "end"; status: FinalStatus; error: TurnError | null; quiet?: true };
 
 export type Sequenced = { seq: number; at: number };

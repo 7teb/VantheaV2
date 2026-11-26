@@ -4,8 +4,9 @@ import type { McpServerConfig } from "../../shared/settings.ts";
 import { main_window } from "../app/window.ts";
 import { detect_server } from "../mcp/detect.ts";
 import { mcp_tiers } from "../mcp/risk.ts";
-import { configured_servers, mcp_status, on_mcp_changed, reconnect_mcp_server, remove_server, set_server_trust, set_tool_override, upsert_server } from "../mcp/servers.ts";
+import { configured_servers, mcp_status, on_mcp_changed, reconnect_mcp_server, remove_server, set_config_trust, set_tool_override, upsert_server } from "../mcp/servers.ts";
 import { sanitize_server_name } from "../mcp/specs.ts";
+import { require_boolean, require_string } from "../storage/coerce.ts";
 import { emit, handle } from "./handle.ts";
 
 const server_name = (value: unknown) => {
@@ -90,8 +91,8 @@ export const register_mcp_ipc = () => {
     await set_tool_override(known_server(server), tool_name(tool), valid_patch(patch ?? {}));
     return mcp_status();
   });
-  handle("mcp:set_trust", (server, trusted) => {
-    set_server_trust(known_server(server), trusted === true);
+  handle("mcp:set_trust", (server, config_id, trusted) => {
+    set_config_trust(known_server(server), require_string(config_id, "server configuration ID", 36), require_boolean(trusted, "trusted"));
     return mcp_status();
   });
   handle("mcp:detect_folder", async () => {

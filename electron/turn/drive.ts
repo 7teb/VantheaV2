@@ -198,6 +198,7 @@ export const drive = async (plan: TurnPlan, turn: ActiveTurn): Promise<void> => 
     const session: TurnSession = {
       chat_id: plan.chat_id,
       message_id: plan.message_id,
+      cache_key: plan.chat_id,
       user_request: plan.user_request,
       project_root: plan.project_root,
       settings,

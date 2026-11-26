@@ -60,6 +60,13 @@
     overflow: hidden;
   }
 
+  @keyframes todos-title-fade {
+    from,
+    to {
+      mask-image: linear-gradient(to right, var(--mask) calc(100% - var(--space-6)), transparent);
+    }
+  }
+
   .todos-panel-head {
     display: flex;
     align-items: center;
@@ -70,23 +77,26 @@
     font-size: var(--font-size-ui);
     color: var(--text-secondary);
     text-align: left;
-    transition: color var(--duration-fast) var(--ease-out);
   }
 
-  .todos-panel-head:hover {
-    color: var(--text-primary);
+  .todos-panel-icon {
+    flex: none;
+    color: var(--text-tertiary);
   }
 
   .todos-panel-title {
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
-    mask: linear-gradient(to right, var(--mask) calc(100% - var(--space-6)), transparent);
+    transition: color var(--duration-fast) var(--ease-out);
+    animation: todos-title-fade linear both;
+    animation-timeline: scroll(self inline);
   }
 
   .todos-panel-count {
     flex: none;
+    margin-left: auto;
     font-variant-numeric: tabular-nums;
     color: var(--text-detail);
   }
@@ -94,7 +104,13 @@
   .todos-panel-chevron {
     flex: none;
     color: var(--text-tertiary);
-    transition: transform var(--duration-chevron) var(--ease-out);
+    transition:
+      transform var(--duration-chevron) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .todos-panel-head:hover :is(.todos-panel-title, .todos-panel-chevron) {
+    color: var(--text-primary);
   }
 
   .todos-panel[data-open="true"] .todos-panel-chevron {
@@ -104,35 +120,16 @@
   .todos-panel-body {
     max-height: min(200px, calc(var(--composer-card-cap, 240px) - 40px));
     overflow-y: auto;
+    padding: 0 12px 8px;
   }
 
   .todos-panel .todo-list {
-    gap: 0;
-  }
-
-  .todos-panel .todo-item {
-    min-height: 0;
-    margin: 0 4px;
-    padding: 5px 8px;
-    border-radius: var(--radius-full);
-    animation: fade-up var(--duration-enter) var(--ease-out) backwards;
-    transition:
-      background var(--duration-base) var(--ease-out),
-      box-shadow var(--duration-base) var(--ease-out);
-  }
-
-  .todos-panel .todo-item[data-status="in_progress"] {
-    background: var(--surface-on-raised);
-    box-shadow: inset 0 0 0 1px var(--ring-on-raised);
+    --todo-ground: var(--surface-dock-card);
   }
 
   .todos-panel .is-working {
     --working-dim: var(--text-secondary);
     --working-dim-opacity: 0.65;
-  }
-
-  .todos-panel-ring .progress-ring-track {
-    stroke: var(--ring-strong);
   }
 
   @media (hover: none) and (pointer: coarse) {

@@ -33,8 +33,8 @@ type ApprovalsProps = { chat_id: string; steps: ToolStep[]; run?: RunRef };
 const Approvals = ({ chat_id, steps, run }: ApprovalsProps) => (
   <>
     {steps.map((step) =>
-      step.status === "awaiting_approval" && step.approval ? (
-        <ApprovalCard key={step.id} chat_id={chat_id} call_id={step.call_id} request={step.approval} run={run} />
+      step.status === "awaiting_approval" && step.approval?.request_id ? (
+        <ApprovalCard key={step.approval.request_id} chat_id={chat_id} request={step.approval} run={run} />
       ) : null,
     )}
   </>

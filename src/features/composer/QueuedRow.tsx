@@ -105,7 +105,7 @@ export const QueuedRow = ({ chat_id, entry, busy, leaving, on_left, on_edited }:
         <span className="queued-lead">
           <RowIcon entry={entry} />
           {images[0] && <img className="queued-thumb" src={attachment_thumb_src(images[0])} alt="" />}
-          <span className="queued-text" title={text}>
+          <span className="queued-text">
             {text}
           </span>
           {files > 0 && (

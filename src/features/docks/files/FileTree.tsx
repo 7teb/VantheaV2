@@ -33,7 +33,6 @@ const row_git = (decoration: GitDecoration | null, dir: boolean): string | undef
 type EntryRowProps = { entry: DirEntry; depth: number; open: boolean; active: boolean; decoration: GitDecoration | null; on_open: (path: string) => void };
 
 const EntryRow = ({ entry, depth, open, active, decoration, on_open }: EntryRowProps) => {
-  const t = use_t();
   const dir = entry.kind === "dir";
   const nested_repo = decoration?.entry?.nested_repo === true;
   const activate = () => {
@@ -51,7 +50,6 @@ const EntryRow = ({ entry, depth, open, active, decoration, on_open }: EntryRowP
       data-active={active}
       data-git={row_git(decoration, dir)}
       aria-expanded={dir ? open : undefined}
-      title={nested_repo ? `${entry.path}\n${t("git.nested_repo")}` : entry.path}
       onClick={activate}
     >
       <span className="files-row-chevron" data-open={open}>
@@ -134,7 +132,6 @@ const MatchRows = ({ active, on_open }: { active: string | null; on_open: (path:
             className="files-row files-match"
             data-active={path === active}
             data-git={row_git(decoration, false)}
-            title={path}
             onClick={() => on_open(path)}
           >
             <span className="files-row-icon">

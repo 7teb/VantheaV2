@@ -87,7 +87,7 @@ export const FileChanges = memo(({ chat_id, steps, from_id, to_id, undo_id, busy
       <ul className="file-changes-list">
         {shown.map((row) => (
           <li key={row.path}>
-            <button type="button" className="file-changes-row" data-deleted={row.deleted} title={row.path} onClick={() => open_row(row)}>
+            <button type="button" className="file-changes-row" data-deleted={row.deleted} onClick={() => open_row(row)}>
               <span className="file-changes-path">{row.path}</span>
               <RowStats row={row} />
             </button>

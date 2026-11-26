@@ -9,7 +9,7 @@ import { build_system_prompt } from "../prompts/index.ts";
 import { error_text } from "../storage/coerce.ts";
 import { push_notes, run_turn_loop } from "../turn/loop.ts";
 import { close_journal } from "./journal.ts";
-import { final_report, forget_live, type LiveRun } from "./live.ts";
+import { agent_approval_key, final_report, forget_live, type LiveRun } from "./live.ts";
 import { on_peer_ended, return_undelivered } from "./peers.ts";
 import { agent_role_section, kept_instruction_note, peer_note } from "./prompt.ts";
 import { questions_asked_by } from "./questions.ts";
@@ -18,7 +18,7 @@ import { write_report_file } from "./report-file.ts";
 import { deliver_report, wake_idle } from "./reports.ts";
 import { label_of, profile_text, question_line } from "./roster.ts";
 import type { AgentDeps, RunContext } from "./runner.ts";
-import { agent_approval_key, agent_session, allowed_tools } from "./session.ts";
+import { agent_session, allowed_tools } from "./session.ts";
 import { end_run, run_file, save_context, set_agent_claude_session, take_held } from "./store.ts";
 import { workflow_agent_tools, workflow_role_section, type WorkflowAgentLink } from "./workflow-agent.ts";
 

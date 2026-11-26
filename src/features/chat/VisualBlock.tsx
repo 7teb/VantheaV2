@@ -62,7 +62,7 @@ export const VisualBlock = memo(({ view }: VisualBlockProps) => {
     <figure className="visual-block" data-measured={height !== null}>
       <iframe ref={frame} className="visual-frame" title={view.title} sandbox="allow-scripts" src={visual_frame_file} style={{ height: height ?? 0 }} />
       {error && (
-        <figcaption className="visual-error" title={error}>
+        <figcaption className="visual-error">
           {t("chat.visual_error", { error })}
         </figcaption>
       )}

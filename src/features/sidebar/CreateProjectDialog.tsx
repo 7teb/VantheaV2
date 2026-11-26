@@ -141,7 +141,7 @@ export const CreateProjectDialog = ({ open, on_close }: CreateProjectDialogProps
           {folder ? (
             <div className="create-project-chosen">
               <FolderIcon />
-              <span className="create-project-path" title={folder}>
+              <span className="create-project-path">
                 {folder}
               </span>
               <IconButton size="sm" label={t("projects.folder_remove")} onClick={() => set_folder(null)}>

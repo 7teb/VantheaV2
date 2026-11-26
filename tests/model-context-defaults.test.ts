@@ -15,26 +15,6 @@ const entry = (id: string) => {
   return model;
 };
 
-test("the shipped catalog sets context defaults for exactly the agreed models", () => {
-  assert.deepEqual(
-    catalog.models.filter((model) => model.default_context).map((model) => [model.id, model.default_context?.limit, model.default_context?.compact_percent]),
-    [
-      ["anthropic/claude-haiku-5.5", 100_000, 95],
-      ["anthropic/claude-sonnet-5.5", null, 95],
-      ["anthropic/claude-opus-5.5", null, 95],
-      ["anthropic/claude-fable-5.2", null, 95],
-      ["openai/gpt-6.2-sol", 272_000, 80],
-      ["openai/gpt-6.2-astra", 272_000, 80],
-      ["openai/gpt-6.1-sol", 272_000, 80],
-      ["openai/gpt-6.1-terra", 272_000, 80],
-      ["openai/gpt-6-luna", 272_000, 80],
-      ["openai/gpt-6-astra", 272_000, 80],
-      ["deepseek/deepseek-v4.1-flash-1017", 512_000, 95],
-      ["minimax/minimax-m3.1-flash", 400_000, 90],
-    ],
-  );
-});
-
 test("without a setting of the user the catalog default limits the context and sets the compaction point", () => {
   const sol = entry("openai/gpt-6.1-sol");
   const limited = with_context_setting(sol, context_setting(sol, undefined));

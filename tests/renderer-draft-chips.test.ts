@@ -31,11 +31,6 @@ test("a new draft has no chips and toggling adds a chip once and removes it agai
   assert.deepEqual(draft_of(state, "c2").chips, []);
 });
 
-test("each chip becomes one explicit English instruction line", () => {
-  assert.equal(chip_line(skill), 'Use the skill "frontend-design" for this request: load it with read_skill first and follow it.');
-  assert.equal(chip_line(server), 'Use the tools of the MCP server "blender" for this request.');
-});
-
 test("the message puts chip lines above the typed text and leaves plain drafts untouched", () => {
   const draft = { ...draft_of(empty_composer, "c1"), text: "  build the menu  ", chips: [skill, server] };
   assert.equal(message_text(draft), `${chip_line(skill)}\n${chip_line(server)}\n\nbuild the menu`);

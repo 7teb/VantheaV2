@@ -14,8 +14,8 @@ const mcp_shell: ApprovalRequest = { kind: "mcp", server: "ce", tool: "run", tie
 
 const memory: ApprovalRequest = { kind: "memory", action: "remember", text: "x" };
 
-const wait = (key: string, call_id: string, signal: AbortSignal, request: ApprovalRequest = command, chat_id = key) =>
-  wait_for_decision({ key, chat_id, call_id, request, signal });
+const wait = (key: string, request_id: string, signal: AbortSignal, request: ApprovalRequest = command, chat_id = key) =>
+  wait_for_decision({ key, chat_id, call_id: "c0_0", request: { ...request, request_id }, signal });
 
 test("resolve_decision settles a pending wait and only once", async () => {
   const controller = new AbortController();
@@ -98,22 +98,39 @@ test("answering a card never opens the full window, also when the review was una
 
 test("a reviewed card without an answer is skipped as expired at its deadline", async () => {
   const signal = new AbortController().signal;
-  const decision = await wait_for_decision({ key: "chat-x", chat_id: "chat-x", call_id: "call-1", request: { ...reviewer_down, expires_at: Date.now() + 20 }, signal });
+  const decision = await wait_for_decision({
+    key: "chat-x",
+    chat_id: "chat-x",
+    call_id: "c0_0",
+    request: { ...reviewer_down, request_id: "request-1", expires_at: Date.now() + 20 },
+    signal,
+  });
   assert.deepEqual(decision, { approved: false, grant: "once", feedback: "", expired: true });
-  assert.equal(resolve_decision("chat-x", "call-1", { ...approve }), false);
+  assert.equal(resolve_decision("chat-x", "request-1", { ...approve }), false);
 });
 
 test("holding a card stops its deadline once and keeps it waiting for the human", async () => {
   const signal = new AbortController().signal;
   let holds = 0;
-  const pending = wait_for_decision({ key: "chat-y", chat_id: "chat-y", call_id: "call-1", request: { ...reviewer_down, expires_at: Date.now() + 30 }, signal, on_hold: () => (holds += 1) });
-  assert.equal(hold_decision("chat-y", "call-1"), true);
-  assert.equal(hold_decision("chat-y", "call-1"), true);
+  const pending = wait_for_decision({
+    key: "chat-y",
+    chat_id: "chat-y",
+    call_id: "c0_0",
+    request: { ...reviewer_down, request_id: "request-1", expires_at: Date.now() + 30 },
+    signal,
+    on_hold: (held) => {
+      assert.equal(held.request_id, "request-1");
+      assert.equal(held.expires_at, undefined);
+      holds += 1;
+    },
+  });
+  assert.equal(hold_decision("chat-y", "request-1"), true);
+  assert.equal(hold_decision("chat-y", "request-1"), true);
   assert.equal(holds, 1);
   await new Promise((resolve) => setTimeout(resolve, 60));
-  assert.equal(resolve_decision("chat-y", "call-1", { ...approve }), true);
+  assert.equal(resolve_decision("chat-y", "request-1", { ...approve }), true);
   assert.deepEqual(await pending, { approved: true, grant: "chat", feedback: "" });
-  assert.equal(hold_decision("chat-y", "call-1"), false);
+  assert.equal(hold_decision("chat-y", "request-1"), false);
 });
 
 test("only cards the review raised skip themselves", () => {

@@ -35,6 +35,8 @@ export type HookCardScope = { kind: "global" } | { kind: "project"; path: string
 
 export type ApprovalRequest = ApprovalAsk & { expires_at?: number };
 
+export type PendingApprovalRequest = ApprovalRequest & { request_id: string };
+
 export type AgentTextTool = "message_peer" | "message_agent" | "deploy_agent" | "continue_agent" | "run_workflow";
 
 export type SecretReadTool = "read_file" | "grep_files" | "list_files" | "get_file_outline" | "view_image";

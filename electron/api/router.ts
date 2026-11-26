@@ -1,11 +1,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ChatActivity } from "../../shared/api/contract.ts";
 import { api_routes, type RouteId } from "../../shared/api/routes.ts";
-import type { ApprovalRequest } from "../../shared/approval.ts";
 import type { Attachment, ChatMeta } from "../../shared/chat.ts";
 import type { InvokeArgs, InvokeName, InvokeResult } from "../../shared/ipc/index.ts";
 import type { ModelCatalog } from "../../shared/models.ts";
 import type { EventTap } from "../ipc/handle.ts";
+import type { PendingApproval } from "../permissions/approvals.ts";
 import { error_text } from "../storage/coerce.ts";
 import type { RunOptions } from "../turn/run-options.ts";
 import { check_request } from "./auth.ts";
@@ -17,8 +17,6 @@ import { session_routes } from "./routes-sessions.ts";
 import { turn_routes } from "./routes-turn.ts";
 
 type ApiInvoke = <K extends InvokeName>(name: K, ...args: InvokeArgs<K>) => Promise<InvokeResult<K>>;
-
-type PendingApproval = { key: string; call_id: string; request: ApprovalRequest };
 
 export type ApiContext = {
   token: string;

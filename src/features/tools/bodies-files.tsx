@@ -2,6 +2,7 @@ import type { DiffLine } from "../../../shared/tool-view.ts";
 import { use_t } from "../../i18n/index.ts";
 import { DiffView } from "./DiffView.tsx";
 import type { BodyProps } from "./body-types.ts";
+import "./CommandCard.css";
 import "./bodies-files.css";
 
 const max_listed = 200;
@@ -51,7 +52,33 @@ export const OutlineBody = ({ view }: BodyProps<"outline">) => (
   </div>
 );
 
-type EditCardProps = { path: string; created: boolean; added: number; removed: number; diff: DiffLine[] };
+export const ReadBody = ({ view }: BodyProps<"read">) => {
+  const t = use_t();
+  const text = view.content ?? "";
+  const numbers = text
+    .split("\n")
+    .map((_, index) => view.start_line + index)
+    .join("\n");
+  const whole = view.start_line === 1 && view.end_line === view.total_lines;
+  return (
+    <div className="command-card read-card">
+      <div className="command-card-shell" data-kind="path">
+        {view.path}
+      </div>
+      <div className="read-card-code" tabIndex={0}>
+        <pre className="read-card-gutter" aria-hidden="true">
+          {numbers}
+        </pre>
+        <pre className="read-card-text">{text}</pre>
+      </div>
+      <div className="command-card-footer">
+        <span>{whole ? t("tools.read_lines_all", { n: view.total_lines }) : t("tools.read_lines", { from: view.start_line, to: view.end_line, total: view.total_lines })}</span>
+      </div>
+    </div>
+  );
+};
+
+type EditCardProps ={ path: string; created: boolean; added: number; removed: number; diff: DiffLine[] };
 
 export const EditCard = ({ path, created, added, removed, diff }: EditCardProps) => {
   const t = use_t();

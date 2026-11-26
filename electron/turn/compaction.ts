@@ -81,6 +81,7 @@ const write_note = async (session: TurnSession, note: NoteRequest, tools: ToolSp
     messages: note.messages,
     tools,
     ...(note.tool_choice ? { tool_choice: note.tool_choice } : {}),
+    ...(session.cache_key ? { cache_key: session.cache_key } : {}),
   };
   await fit_request(request);
   request.max_tokens = output_budget(request.messages, request.tools, session.model, calibration);

@@ -74,6 +74,7 @@ const added = {
   CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS: "0",
   CLAUDE_CODE_DISABLE_AUTO_MEMORY: "1",
   CLAUDE_CODE_DISABLE_CLAUDE_MDS: "1",
+  CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK: "1",
   CLAUDE_CODE_STARTUP_FAILURE_RESULTS: "1",
   ENABLE_CLAUDEAI_MCP_SERVERS: "false",
   CLAUDE_CODE_AUTO_CONNECT_IDE: "false",
@@ -96,7 +97,7 @@ test("claude_env drops every inherited session and credential variable in any le
 });
 
 test("claude_env sets the added variables, overriding inherited spellings of them", () => {
-  const env = claude_env({ claude_code_disable_auto_memory: "0", Enable_ClaudeAI_MCP_Servers: "true", CLAUDE_CODE_AUTO_CONNECT_IDE: "true" });
+  const env = claude_env({ claude_code_disable_auto_memory: "0", claude_code_disable_refusal_fallback: "0", Enable_ClaudeAI_MCP_Servers: "true", CLAUDE_CODE_AUTO_CONNECT_IDE: "true" });
   for (const [name, value] of Object.entries(added)) {
     assert.equal(env[name], value, name);
     assert.deepEqual(Object.keys(env).filter((key) => key.toUpperCase() === name), [name]);

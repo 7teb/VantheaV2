@@ -1,4 +1,4 @@
-import type { ApprovalRequest } from "../approval.ts";
+import type { PendingApprovalRequest } from "../approval.ts";
 import type { AssistantMessage, Chat, ChatMeta, MessageUsage, PermissionMode, TurnError } from "../chat.ts";
 import type { ChatgptAccount } from "../chatgpt.ts";
 import type { ClaudeAccount } from "../claude.ts";
@@ -64,7 +64,7 @@ export type ApprovalInfo = {
   agent_id: string | null;
   run_id: string | null;
   call_id: string;
-  request: ApprovalRequest;
+  request: PendingApprovalRequest;
 };
 
 export type ApprovalReply = { approved: boolean; grant?: "once" | "prefix" | "chat" | "session"; feedback?: string };

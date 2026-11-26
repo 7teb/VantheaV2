@@ -23,11 +23,13 @@ set_key_source(() => "sk-or-test-key");
 
 const catalog = parse_catalog(await read_catalog_source(fileURLToPath(new URL("../config/models", import.meta.url))));
 
-const listed = (...slugs: string[]): AccountModel[] => slugs.map((slug) => ({ slug, display_name: slug, context_window: null }));
+const listed = (...slugs: string[]): AccountModel[] => slugs.map((slug) => ({ slug, display_name: slug, context_window: null, service_tiers: [] }));
+
+const with_tiers = (slug: string, service_tiers: string[]): AccountModel => ({ slug, display_name: slug, context_window: null, service_tiers });
 
 const plan_catalog = (account: readonly AccountModel[]): ModelCatalog => {
-  const { models, plan_ids, pro_locked } = plan_models(catalog.models, account);
-  return { ...catalog, models, plan_ids, pro_locked };
+  const { models, plan_ids, plan_tiers, pro_locked } = plan_models(catalog.models, account);
+  return { ...catalog, models, plan_ids, plan_tiers, pro_locked };
 };
 
 const entry_of = (models: readonly ModelEntry[], id: string): ModelEntry => {
@@ -94,7 +96,7 @@ test("plan billing with the base model listed and Pro not: Pro is locked and a s
   const api_sol = entry_of(catalog.models, "openai/gpt-6.2-sol");
   assert.equal(plan_sol.pro, undefined);
   assert.ok(plan.pro_locked?.includes("openai/gpt-6.2-sol"));
-  const pro_fast = with_choice(plan_sol, { pro: true, tier: "fast" }, plan.plan_ids);
+  const pro_fast = with_choice(plan_sol, { pro: true, tier: "fast" }, plan);
   assert.deepEqual([pro_fast.id, pro_fast.label, pro_fast.provider_order, pro_fast.tiers], ["openai/gpt-6.2-sol", "GPT 6.2 Sol", ["openai"], undefined]);
   const api_pro_fast = with_choice(api_sol, { pro: true, tier: "fast" });
   assert.deepEqual([api_pro_fast.id, api_pro_fast.label, api_pro_fast.provider_order], ["openai/gpt-6.2-sol-pro", "GPT 6.2 Sol Pro Fast", ["openai/fast"]]);
@@ -103,6 +105,21 @@ test("plan billing with the base model listed and Pro not: Pro is locked and a s
       (await routed_seen(pro_fast)).map((seen) => seen.url),
       [plan_responses_url],
     );
+  });
+});
+
+test("a plan model with Fast listed by the account sends the priority tier to the plan, an unlisted tier is dropped", async () => {
+  const account = [with_tiers("gpt-6.2-sol", ["priority"])];
+  const plan = plan_catalog(account);
+  const plan_sol = entry_of(plan.models, "openai/gpt-6.2-sol");
+  const fast = with_choice(plan_sol, { pro: false, tier: "fast" }, plan);
+  assert.deepEqual([fast.id, fast.label, fast.service_tier], ["openai/gpt-6.2-sol", "GPT 6.2 Sol Fast", "priority"]);
+  const ultrafast = with_choice(plan_sol, { pro: false, tier: "ultrafast" }, plan);
+  assert.deepEqual([ultrafast.label, ultrafast.service_tier], ["GPT 6.2 Sol", undefined]);
+  await with_source(fake_source("chatgpt", ["plan-token-1"], account).source, async () => {
+    const [seen] = await routed_seen(fast);
+    assert.equal(seen?.url, plan_responses_url);
+    assert.equal(JSON.parse(seen?.body ?? "{}").service_tier, "priority");
   });
 });
 

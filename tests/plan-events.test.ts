@@ -49,7 +49,7 @@ test("text deltas, usage and the wrapper of finished items in output order", () 
   assert.equal(assembly.content, "hello world");
   assert.equal(assembly.reasoning, "think");
   assert.equal(assembly.finish_reason, "stop");
-  assert.deepEqual(assembly.usage, { prompt_tokens: 120, completion_tokens: 30, reasoning_tokens: 12 });
+  assert.deepEqual(assembly.usage, { prompt_tokens: 120, completion_tokens: 30, reasoning_tokens: 12, cached_tokens: 64, cache_write_tokens: 8 });
   assert.equal(assembly.response_id, "resp_9");
   assert.equal(assembly.cached_tokens, 64);
   assert.equal(assembly.cache_write_tokens, 8);
@@ -168,7 +168,7 @@ test("incomplete responses map their reason to a finish or a bad request", () =>
   const length = reason("max_output_tokens").finish(ids());
   assert.equal(length.finish_reason, "length");
   assert.deepEqual(length.reasoning_details, []);
-  assert.deepEqual(length.usage, { prompt_tokens: 120, completion_tokens: 30, reasoning_tokens: 12 });
+  assert.deepEqual(length.usage, { prompt_tokens: 120, completion_tokens: 30, reasoning_tokens: 12, cached_tokens: 64, cache_write_tokens: 8 });
   assert.equal(reason("content_filter").finish(ids()).finish_reason, "content_filter");
   assert.throws(
     () => reason("steered").finish(ids()),

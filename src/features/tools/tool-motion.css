@@ -33,7 +33,15 @@
     color: var(--text-secondary);
   }
 
-  .chat-column .work-single .tool-row:not([data-status="denied"]) .tool-row-icon,
+  .tool-row:not(.agent-note)[data-status="failed"] .tool-row-icon {
+    color: var(--text-danger);
+  }
+
+  .tool-row[data-status="awaiting_approval"] .tool-row-status {
+    color: var(--text-waiting);
+  }
+
+  .chat-column .work-single .tool-row:not([data-status="denied"], [data-status="failed"]) .tool-row-icon,
   .chat-column .work-group > .work-group-head .tool-row-icon {
     color: var(--text-primary);
   }

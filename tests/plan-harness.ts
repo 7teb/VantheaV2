@@ -183,6 +183,7 @@ export type PlanRunOptions = {
   signal?: AbortSignal;
   abort_after_text?: AbortController;
   tokens?: string[];
+  cache_key?: string;
 };
 
 export const plan_run = async (replies: Reply[], options: PlanRunOptions = {}): Promise<PlanRun> => {
@@ -212,6 +213,7 @@ export const plan_run = async (replies: Reply[], options: PlanRunOptions = {}): 
     tools: options.tools ?? [],
     ...(options.tool_choice ? { tool_choice: options.tool_choice } : {}),
     ...(options.max_tokens ? { max_tokens: options.max_tokens } : {}),
+    ...(options.cache_key ? { cache_key: options.cache_key } : {}),
   };
   const signal = options.signal ?? options.abort_after_text?.signal ?? new AbortController().signal;
   return with_source(source, async () => {

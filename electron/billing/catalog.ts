@@ -47,6 +47,12 @@ export const billing_catalog = async (): Promise<ModelCatalog> => {
   if (get_settings().billing !== "chatgpt") {
     return with_claude_plan(catalog);
   }
-  const { models, plan_ids, pro_locked } = await plan_lists();
-  return with_claude_plan({ ...catalog, models, plan_ids, ...(pro_locked.length ? { pro_locked } : {}) });
+  const { models, plan_ids, plan_tiers, pro_locked } = await plan_lists();
+  return with_claude_plan({
+    ...catalog,
+    models,
+    plan_ids,
+    ...(Object.keys(plan_tiers).length ? { plan_tiers } : {}),
+    ...(pro_locked.length ? { pro_locked } : {}),
+  });
 };

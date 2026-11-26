@@ -128,6 +128,11 @@ test("folder detection reads mcpServers blocks from a readme", () => {
   assert.equal(launch_from_readme("no config here"), null);
 });
 
+test("an unbalanced config at the very start of a readme ends the search instead of looping", () => {
+  assert.equal(launch_from_readme('{ "command": "node", "args": [ "x.js" '), null);
+  assert.equal(launch_from_readme('{ "mcpServers": [ "a"'), null);
+});
+
 test("config shapes and balanced json slices", () => {
   assert.deepEqual(launch_from_config({ ce: { command: "node", args: ["x.js"] } }), { name: "ce", command: "node", args: ["x.js"], env: {} });
   assert.equal(launch_from_config({ a: 1, b: 2 }), null);

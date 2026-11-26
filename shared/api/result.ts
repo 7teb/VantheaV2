@@ -34,10 +34,12 @@ export const sum_usage = (messages: readonly AssistantMessage[]): RunUsage =>
             prompt_tokens: total.prompt_tokens + message.usage.prompt_tokens,
             completion_tokens: total.completion_tokens + message.usage.completion_tokens,
             reasoning_tokens: total.reasoning_tokens + message.usage.reasoning_tokens,
+            cached_tokens: total.cached_tokens + message.usage.cached_tokens,
+            cache_write_tokens: total.cache_write_tokens + message.usage.cache_write_tokens,
             rounds: total.rounds + message.usage.rounds,
           }
         : total,
-    { prompt_tokens: 0, completion_tokens: 0, reasoning_tokens: 0, rounds: 0 },
+    { prompt_tokens: 0, completion_tokens: 0, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0, rounds: 0 },
   );
 
 const presented_plan = (message: AssistantMessage): boolean =>

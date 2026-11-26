@@ -119,7 +119,6 @@ test("a workflow is one compact row in the chat, and a click opens its run in Ba
     const head = one("tool-row-head");
     assert.equal(head.hasAttribute("aria-expanded"), false);
     assert.equal(head.hasAttribute("disabled"), false);
-    assert.equal(head.getAttribute("title"), "Review changed files and verify each finding\nShow in Background Tasks");
     assert.equal(one("tool-row-label", head).textContent, "Running workflow review-changes");
     assert.ok(one("tool-row-label", head).className.includes("is-working"));
     assert.equal(with_class("tool-row-detail", head).length, 0);
@@ -183,7 +182,6 @@ test("a started agent opens its transcript in the dock, a cached or unstarted on
   await settle();
   assert.deepEqual(calls, [["agents:run", ["agent_1", "run_1"]]]);
   assert.equal(client.ui_store.get().dock.kind, "background");
-  assert.equal(mains[1]?.getAttribute("title"), "review:perf\ntest/model · high");
   clear();
 });
 

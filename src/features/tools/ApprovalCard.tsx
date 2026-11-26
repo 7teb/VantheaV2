@@ -1,5 +1,5 @@
 import { memo, useRef } from "react";
-import type { ApprovalDecision, ApprovalRequest } from "../../../shared/approval.ts";
+import type { ApprovalDecision, PendingApprovalRequest } from "../../../shared/approval.ts";
 import { QuestionForm } from "../../components/QuestionForm.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { answer_agent_approval, hold_agent_approval } from "../../state/agents.ts";
@@ -11,21 +11,25 @@ import { approval_lines } from "./review-notes.ts";
 import { ReviewLines } from "./ReviewNote.tsx";
 import "./approval.css";
 
-type ApprovalCardProps = { chat_id: string; call_id: string; request: ApprovalRequest; run?: RunRef; actor?: string };
+type ApprovalCardProps = { chat_id: string; request: PendingApprovalRequest; run?: RunRef; actor?: string };
 
-export const ApprovalCard = memo(({ chat_id, call_id, request, run, actor = "" }: ApprovalCardProps) => {
+export const ApprovalCard = memo(({ chat_id, request, run, actor = "" }: ApprovalCardProps) => {
   const t = use_t();
   const options = grant_options(request);
   const question = approval_question(request);
   const lines = approval_lines(t, request);
   const held = useRef(false);
-  const answer = (decision: ApprovalDecision) => (run ? answer_agent_approval(run, call_id, decision) : answer_approval(chat_id, call_id, decision));
+  const { request_id } = request;
+  const answer = async (decision: ApprovalDecision) => {
+    const result = run ? await answer_agent_approval(run, request_id, decision) : await answer_approval(chat_id, request_id, decision);
+    return result ?? { ok: false, error: t("approval.no_longer_pending") };
+  };
   const hold = (text: string) => {
     if (held.current || request.expires_at === undefined || !text.trim()) {
       return;
     }
     held.current = true;
-    void (run ? hold_agent_approval(run, call_id) : hold_approval(chat_id, call_id));
+    void (run ? hold_agent_approval(run, request_id) : hold_approval(chat_id, request_id));
   };
   const has_head = actor !== "" || request.kind === "mcp";
   const has_preview = request.kind !== "mcp" || Boolean(request.args_preview || request.scope);

@@ -14,7 +14,7 @@ The main agent can start sub-agents that work in the background of the same chat
 
 Agent ids can be given as the full id, as the short form `Name#xxxxxxxx` or `xxxxxxxx` that the roster shows, or as a unique leading part of the full id.
 
-Limits: at most 20 agents can run at once in one chat. There is no limit on the number or length of messages between agents or to the main agent.
+Limits: by default at most 20 agents started with deploy_agent or continue_agent can run at once in one chat. The number is `max_running_agents` in `%USERPROFILE%\.VantheaX\config.json`, a file the app creates with `{ "max_running_agents": 20 }` at start when it is missing; the app reads it at every agent start, so a change applies to the next deploy without a restart. It must be a whole number above 0; anything else, a broken file or a missing file counts as 20. When the user asks to raise or lower the limit, set the value with run_command in PowerShell, for example for 40: `New-Item -ItemType Directory -Force "$env:USERPROFILE\.VantheaX" | Out-Null; [IO.File]::WriteAllText("$env:USERPROFILE\.VantheaX\config.json", '{ "max_running_agents": 40 }')`. Write it this way rather than with Set-Content, which adds a byte order mark in Windows PowerShell. A deploy over the limit fails with an error that names the file. There is no limit on the number or length of messages between agents or to the main agent.
 
 Agents of a workflow do not count against these 20 and have no limit of their own (see Agents of a workflow); the 20 apply to agents started with deploy_agent or continue_agent.
 
@@ -89,7 +89,7 @@ The automatic review checks every task given with deploy_agent and continue_agen
 
 - Allowed: normal coordination, findings, paths, questions, answers, splitting or handing over work, warnings about conflicting edits, and requests for actions that get their own review when the recipient runs them. Texts that differ from the user's request are allowed too: a narrower or reordered plan, another approach, disagreement, partial results, open problems and mistakes, and claims that are simply wrong. Deviation is not deception.
 - Blocked: texts that ask an agent to reach the result of a denied action (for example "you do the push, mine was denied"), to skip or game reviews, approvals or the permission mode, to hide actions or results from the user or the main agent, to tell the user or the main agent something the sender knows is false or to pretend work was done, or to send credentials or private files somewhere the user did not name; texts that claim an approval or permission the user did not give; and texts that plan against the user: deceiving the user, withholding results or sabotaging the user's work.
-- A blocked task never arrives. The main agent is told not to try it again in any form or through another agent and gets the denial as the result of its deploy_agent or continue_agent call. The review does not judge usefulness, tone, length or the number of messages.
+- A blocked task never arrives. The main agent is told not to try it again in any form or through another agent until a newer user message asks for it or approves it, and gets the denial as the result of its deploy_agent or continue_agent call. The review does not judge usefulness, tone, length or the number of messages.
 
 Reports going up to the main agent are not reviewed either.
 
@@ -119,7 +119,7 @@ A workflow (run_workflow, see the workflows document) starts its agents through 
 - Its name is the label the script gave it, or "<workflow name> #<n>", and its topic is the workflow's name.
 - Its task is the prompt the script wrote. It is told that its final message is the return value of agent() in the script, not a message to a person.
 - It has no message_main_agent and no message_peer, gets no roster, overlap or update-reminder notes, and its report does not reach the main agent: the script receives it, and the main agent gets the workflow's result instead.
-- Any number of workflow agents can run at once; they do not count against the 20 of deploy_agent.
+- Any number of workflow agents can run at once; they do not count against the deploy_agent limit.
 
 In the Background Tasks panel they are not listed as separate agents: they sit inside their workflow's entry, grouped by phase. A click on one opens its transcript in the panel, and its skip button ends that one agent, whose agent() call then returns null.
 

@@ -45,7 +45,7 @@ const stream: StreamFn = async (request, callbacks) => {
     return completed({ content: "TASK: t\nFINDINGS: none" });
   }
   callbacks.on_text("Report: done.");
-  return completed({ content: "Report: done.", usage: { prompt_tokens: Math.round(estimate * 1.15), completion_tokens: 10, reasoning_tokens: 0 } });
+  return completed({ content: "Report: done.", usage: { prompt_tokens: Math.round(estimate * 1.15), completion_tokens: 10, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0 } });
 };
 
 before(async () => {

@@ -45,7 +45,10 @@ export const read_usage = (value: unknown): RoundUsage | null => {
     return null;
   }
   const reasoning_tokens = as_number(as_record(usage?.completion_tokens_details)?.reasoning_tokens) ?? 0;
-  return { prompt_tokens, completion_tokens, reasoning_tokens };
+  const prompt = as_record(usage?.prompt_tokens_details);
+  const cached_tokens = as_number(prompt?.cached_tokens) ?? 0;
+  const cache_write_tokens = as_number(prompt?.cache_write_tokens) ?? 0;
+  return { prompt_tokens, completion_tokens, reasoning_tokens, cached_tokens, cache_write_tokens };
 };
 
 const merge_name = (current: string, incoming: string): string => (!current || incoming.startsWith(current) ? incoming : current + incoming);

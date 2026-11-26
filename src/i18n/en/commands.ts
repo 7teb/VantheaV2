@@ -15,8 +15,6 @@ export const commands = {
   "commands.manage_skills": "Manage skills",
   "commands.manage_mcp": "Manage MCP servers",
   "commands.added": "Added to this message",
-  "commands.skill_chip": "Skill {name}",
-  "commands.mcp_chip": "MCP server {name}",
   "commands.visualize": "Visualize",
   "commands.menu": "Commands",
   "commands.back": "Back",

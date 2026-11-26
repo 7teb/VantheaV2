@@ -115,12 +115,12 @@ export const register_turn_ipc = () => {
       require_string(steer_id, "steer id", 200),
     ),
   );
-  handle("turn:approve", (chat_id, call_id, decision) => {
-    resolve_decision(chat_id_of(chat_id), require_string(call_id, "call id", 200), parse_decision(decision));
-  });
-  handle("turn:hold_approval", (chat_id, call_id) => {
-    hold_decision(chat_id_of(chat_id), require_string(call_id, "call id", 200));
-  });
+  handle("turn:approve", (chat_id, request_id, decision) =>
+    resolve_decision(chat_id_of(chat_id), require_string(request_id, "approval request id", 200), parse_decision(decision)),
+  );
+  handle("turn:hold_approval", (chat_id, request_id) =>
+    hold_decision(chat_id_of(chat_id), require_string(request_id, "approval request id", 200)),
+  );
   handle("turn:full_window", (chat_id) => {
     const id = chat_id_of(chat_id);
     return { chat_id: id, until: full_window_until(id) };

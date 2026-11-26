@@ -17,12 +17,3 @@ export const latest_todos = (messages: Message[]): TodoSource | null => {
 };
 
 export const open_todos = (todos: Todo[]): Todo[] => todos.filter((todo) => todo.status !== "done");
-
-export const newly_done = (previous: Todo[], next: Todo[]): Set<string> => {
-  const before = new Map(previous.map((todo) => [todo.id, todo.status]));
-  const finished = (todo: Todo) => {
-    const status = before.get(todo.id);
-    return todo.status === "done" && status !== undefined && status !== "done";
-  };
-  return new Set(next.filter(finished).map((todo) => todo.id));
-};

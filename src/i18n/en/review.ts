@@ -1,5 +1,7 @@
 export const review = {
   "review.reason": "Automatic review: {x}",
+  "review.pending_title": "Automatic review",
+  "review.pending_detail": "A carefully instructed review agent checks this request before VantheaX runs it.",
   "review.no_reason": "No reason given.",
   "review.rule": "{source}: “{x}”",
   "review.source_custom_instructions": "Custom instructions",

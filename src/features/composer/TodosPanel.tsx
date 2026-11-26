@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { latest_todos } from "../../../shared/todos.ts";
 import { class_names } from "../../components/class-names.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon, ListChecksIcon } from "../../components/icons.tsx";
 import { LabelMorph } from "../../components/LabelMorph.tsx";
-import { ProgressRing } from "../../components/ProgressRing.tsx";
 import { use_t } from "../../i18n/index.ts";
 import { chat_view_store } from "../../state/chat-view.ts";
 import { set_todos_hidden, todos_hidden_store } from "../../state/todos-hidden.ts";
@@ -60,16 +59,16 @@ export const TodosPanel = ({ chat_id }: { chat_id: string }) => {
     >
       <div className="todos-panel-inner">
         <button type="button" className="todos-panel-head" aria-expanded={open} onClick={() => set_open(!open)}>
-          <ProgressRing ratio={done / next.todos.length} size={16} className="todos-panel-ring" />
+          <ListChecksIcon className="todos-panel-icon" />
           <span className={class_names("todos-panel-title", current && live && "is-working")}>
             <LabelMorph morph_key={current ? current.id : "tasks"}>
               <WorkingLetters text={current ? current.text : t("tools.todo_tasks")} active={Boolean(current && live)} />
             </LabelMorph>
           </span>
+          <ChevronRightIcon className="todos-panel-chevron" />
           <span className="todos-panel-count">
             {done}/{next.todos.length}
           </span>
-          <ChevronRightIcon className="todos-panel-chevron" />
         </button>
         <CollapsibleBody open={open}>
           <div className="todos-panel-body">

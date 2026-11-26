@@ -13,11 +13,17 @@ import { admit_with_options, session_approvals, tracked_run } from "./runs.ts";
 
 const grants: readonly Exclude<GrantScope, "full_window">[] = ["once", "prefix", "chat", "session"];
 
+const approval_missing = (session_id: string, approval_id: string) =>
+  new RequestError(404, "not_found", `approval ${approval_id} is not pending in session ${session_id}`);
+
 const pending_approval = async (context: ApiContext, session_id: string, approval_id: string) => {
   const parsed = parse_approval_id(approval_id);
+  if (!parsed) {
+    throw approval_missing(session_id, approval_id);
+  }
   const pending = await session_approvals(context, session_id);
-  if (!parsed || !pending.some((entry) => entry.approval_id === approval_id)) {
-    throw new RequestError(404, "not_found", `approval ${approval_id} is not pending in session ${session_id}`);
+  if (!pending.some((entry) => entry.approval_id === approval_id)) {
+    throw approval_missing(session_id, approval_id);
   }
   return parsed;
 };
@@ -71,20 +77,22 @@ export const input_routes = {
     require_session(context, params.id);
     const decision = parse_decision(await read_json(request));
     const target = await pending_approval(context, params.id, params.approval_id);
-    if (target.source === "main") {
-      await context.invoke("turn:approve", params.id, target.call_id, decision);
-    } else {
-      await context.invoke("agents:approve", target.agent_id, target.run_id, target.call_id, decision);
+    const replied = target.source === "main"
+      ? await context.invoke("turn:approve", params.id, target.request_id, decision)
+      : await context.invoke("agents:approve", target.agent_id, target.run_id, target.request_id, decision);
+    if (!replied) {
+      throw approval_missing(params.id, params.approval_id);
     }
     return empty_reply(204);
   },
   "approvals.hold": async ({ context, params }) => {
     require_session(context, params.id);
     const target = await pending_approval(context, params.id, params.approval_id);
-    if (target.source === "main") {
-      await context.invoke("turn:hold_approval", params.id, target.call_id);
-    } else {
-      await context.invoke("agents:hold_approval", target.agent_id, target.run_id, target.call_id);
+    const held = target.source === "main"
+      ? await context.invoke("turn:hold_approval", params.id, target.request_id)
+      : await context.invoke("agents:hold_approval", target.agent_id, target.run_id, target.request_id);
+    if (!held) {
+      throw approval_missing(params.id, params.approval_id);
     }
     return empty_reply(204);
   },

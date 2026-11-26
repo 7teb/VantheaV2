@@ -7,7 +7,7 @@ import { approval_question, grant_options } from "../src/features/tools/approval
 import { computer_marks, shot_frame } from "../src/features/tools/computer-shots.ts";
 import { approval_lines } from "../src/features/tools/review-notes.ts";
 import { has_body } from "../src/features/tools/tool-body.ts";
-import { tool_label, tool_meta } from "../src/features/tools/tool-meta.ts";
+import { tool_label } from "../src/features/tools/tool-meta.ts";
 import { group_label } from "../src/features/tools/tool-summary.ts";
 import { translate, type Translate } from "../src/i18n/translate.ts";
 
@@ -71,24 +71,6 @@ const assistant = (id: string, steps: ToolStep[]): AssistantMessage => ({
   last_seq: 0,
 });
 
-test("every computer action has its own icon and the computer category", () => {
-  const icons: Record<string, string> = {
-    computer_screenshot: "computer_screenshot",
-    computer_click: "computer_click",
-    computer_move: "computer_move",
-    computer_drag: "computer_drag",
-    computer_scroll: "computer_scroll",
-    computer_type: "computer_type",
-    computer_key: "computer_key",
-    computer_wait: "computer_wait",
-  };
-  for (const [name, icon] of Object.entries(icons)) {
-    assert.equal(tool_meta(step(name, {})).icon, icon, name);
-    assert.equal(tool_meta(step(name, {})).category, "computer", name);
-  }
-  assert.equal(tool_meta(step("unknown_computer_action", {}, click_view(1, 2))).icon, "computer");
-});
-
 test("computer rows name the action and its point while running and when done", () => {
   const cases: [string, Record<string, unknown>, string, string][] = [
     ["computer_screenshot", {}, "Taking a screenshot", "Took a screenshot"],
@@ -137,13 +119,6 @@ test("failed and denied computer rows read as an attempt and as denied computer 
   assert.equal(tool_label(t, step("computer_key", { keys: "alt+f4" }, null, "failed")), "Press alt+f4");
   assert.equal(tool_label(t, step("computer_click", { x: 1, y: 2 }, null, "denied")), "Denied computer use");
   assert.equal(tool_label(de, step("computer_click", { x: 1, y: 2 }, null, "denied")), "Computersteuerung abgelehnt");
-});
-
-test("German computer rows use the app's verb forms", () => {
-  assert.equal(tool_label(de, step("computer_click", { x: 412, y: 230 }, null, "running")), "Klickt 412, 230");
-  assert.equal(tool_label(de, step("computer_click", { x: 412, y: 230 })), "412, 230 geklickt");
-  assert.equal(tool_label(de, step("computer_screenshot", {})), "Screenshot gemacht");
-  assert.equal(tool_label(de, step("computer_scroll", { direction: "up" })), "Nach oben gescrollt");
 });
 
 test("a group of computer actions counts them in one part of the group label", () => {
@@ -234,10 +209,4 @@ test("the computer use card asks once and allows the chat for the rest of the ap
 
 test("the computer use card never answers itself after a timeout", () => {
   assert.equal(skips_unanswered(computer_request), false);
-});
-
-test("the computer use card states plainly that screenshots go to the model provider", () => {
-  assert.equal(t("approval.computer_screens"), "While I work, screenshots of your screen are sent to the model provider.");
-  assert.equal(de("approval.computer_screens"), "Während ich arbeite, werden Screenshots deines Bildschirms an den Modellanbieter gesendet.");
-  assert.equal(t("approval.computer_display", { x: "1", w: 2560, h: 1440 }), "Display 1 · 2560 × 1440");
 });

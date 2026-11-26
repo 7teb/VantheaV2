@@ -1,27 +1,31 @@
+import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import type { Tool as ListedTool } from "@modelcontextprotocol/sdk/types.js";
 import package_json from "../../package.json" with { type: "json" };
 import type { McpTier } from "../../shared/approval.ts";
 import type { McpServerConfig } from "../../shared/settings.ts";
 import { kill_tree_sync } from "../shell/process.ts";
+import { clear_server_grants } from "./grants.ts";
 import { classify_risk } from "./risk.ts";
 import { build_spec_name, format_result, type McpResultText } from "./specs.ts";
 import { TreeTransport } from "./transport.ts";
 
 export type ServerState = "starting" | "ready" | "error";
 
-export type McpToolInfo = { name: string; spec_name: string; description: string; input_schema: unknown; heuristic: McpTier };
+export type McpToolInfo = { name: string; spec_name: string; description: string; input_schema: unknown; heuristic: McpTier; descriptor: ListedTool };
 
 export type ServerRuntime = { state: ServerState; error: string; tools: McpToolInfo[]; stderr_tail: string };
 
 export type CallOptions = { signal: AbortSignal; timeout_ms: number; on_progress: (message: string) => void };
 
-type ListedTool = { name: string; description?: string; inputSchema?: unknown };
-
 type Entry = {
   name: string;
-  signature: string;
-  state: ServerState | "stopped";
+  config: McpServerConfig;
+  list_revision: number;
+  listing: boolean;
+  state: ServerState;
   error: string;
   client: Client | null;
   transport: StdioClientTransport | null;
@@ -60,7 +64,47 @@ const serialize = <T>(work: () => Promise<T>): Promise<T> => {
 
 const error_text = (error: unknown) => (error instanceof Error ? error.message : String(error)).slice(0, 500);
 
-const config_signature = (config: McpServerConfig) => JSON.stringify([config.command, config.args, config.cwd, config.env]);
+type Binding = { config: McpServerConfig; id: string };
+
+const desired = new Map<string, Binding>();
+
+export const server_config_id = (name: string): string => {
+  const binding = desired.get(name);
+  if (!binding) {
+    throw new Error(`MCP server ${name} is no longer configured.`);
+  }
+  return binding.id;
+};
+
+const same_launch = (left: McpServerConfig, right: McpServerConfig) => {
+  if (left.command !== right.command || left.cwd !== right.cwd) {
+    return false;
+  }
+  return isDeepStrictEqual(left.args, right.args) && isDeepStrictEqual(left.env, right.env);
+};
+
+export const observe_servers = (configs: Record<string, McpServerConfig | undefined>) => {
+  for (const name of desired.keys()) {
+    if (!Object.hasOwn(configs, name) || !configs[name]) {
+      desired.delete(name);
+      clear_server_grants(name);
+    }
+  }
+  for (const [name, config] of Object.entries(configs)) {
+    if (!config) {
+      continue;
+    }
+    const previous = desired.get(name);
+    const same = previous && same_launch(previous.config, config);
+    if (same && previous.config.enabled === config.enabled) {
+      continue;
+    }
+    desired.set(name, { config: structuredClone(config), id: same ? previous.id : randomUUID() });
+    if (previous && !same) {
+      clear_server_grants(name);
+    }
+  }
+};
 
 const inherited_env = () => Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
 
@@ -80,25 +124,34 @@ const append_stderr = (entry: Entry, chunk: unknown) => {
   entry.stderr = `${entry.stderr}${String(chunk)}`.slice(-stderr_limit);
 };
 
-const build_tool_infos = (server: string, tools: ListedTool[]): McpToolInfo[] => {
-  const used = new Set<string>();
+const build_tool_infos = (server: string, tools: ListedTool[], previous: McpToolInfo[]): McpToolInfo[] => {
+  const by_name = new Map(previous.map((tool) => [tool.name, tool]));
+  const names = new Set(tools.map((tool) => tool.name));
+  const used = new Set(previous.filter((tool) => names.has(tool.name)).map((tool) => tool.spec_name));
   return tools.map((tool) => {
+    const prior = by_name.get(tool.name);
+    by_name.delete(tool.name);
+    const spec_name = prior?.spec_name ?? build_spec_name(server, tool.name, used);
+    if (prior && isDeepStrictEqual(prior.descriptor, tool)) {
+      return prior;
+    }
     const description = tool.description ?? "";
     return {
       name: tool.name,
-      spec_name: build_spec_name(server, tool.name, used),
+      spec_name,
+      descriptor: tool,
       description,
-      input_schema: tool.inputSchema ?? null,
+      input_schema: tool.inputSchema,
       heuristic: classify_risk({ name: tool.name, description, input_schema: tool.inputSchema }),
     };
   });
 };
 
-const list_all_tools = async (client: Client): Promise<ListedTool[]> => {
+const list_all_tools = async (client: Client, signal: AbortSignal): Promise<ListedTool[]> => {
   const tools: ListedTool[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < max_tool_pages; page += 1) {
-    const listed = await client.listTools(cursor ? { cursor } : undefined, { timeout: start_timeout_ms });
+    const listed = await client.listTools(cursor ? { cursor } : undefined, { timeout: start_timeout_ms, signal });
     tools.push(...listed.tools);
     cursor = listed.nextCursor;
     if (!cursor) {
@@ -108,7 +161,12 @@ const list_all_tools = async (client: Client): Promise<ListedTool[]> => {
   return tools;
 };
 
-const is_current = (entry: Entry) => entries.get(entry.name) === entry && entry.state !== "stopped";
+const is_current = (entry: Entry) => {
+  if (shut_down || entries.get(entry.name) !== entry) {
+    return false;
+  }
+  return desired.get(entry.name)?.config === entry.config;
+};
 
 const on_closed = (entry: Entry) => {
   if (!is_current(entry) || entry.state !== "ready") {
@@ -122,23 +180,46 @@ const on_closed = (entry: Entry) => {
   changed();
 };
 
-const on_tools_changed = (entry: Entry, error: Error | null, tools: ListedTool[] | null) => {
-  if (!is_current(entry) || entry.state !== "ready") {
+const refresh_tools = async (entry: Entry, client: Client) => {
+  const signal = AbortSignal.timeout(start_timeout_ms * max_tool_pages);
+  entry.listing = true;
+  try {
+    while (is_current(entry)) {
+      const revision = entry.list_revision;
+      const tools = await list_all_tools(client, signal);
+      if (!is_current(entry) || entry.client !== client) {
+        return;
+      }
+      if (revision !== entry.list_revision) {
+        continue;
+      }
+      entry.tools = build_tool_infos(entry.name, tools, entry.tools);
+      entry.state = "ready";
+      return;
+    }
+  } catch (error) {
+    entry.tools = [];
+    throw error;
+  } finally {
+    entry.listing = false;
+  }
+};
+
+const on_tools_changed = (entry: Entry) => {
+  entry.list_revision += 1;
+  if (!ready(entry) || !entry.client) {
     return;
   }
-  if (error) {
-    console.warn(`[mcp] refreshing tools of ${entry.name} failed: ${error.message}`);
-    return;
-  }
-  entry.tools = build_tool_infos(entry.name, tools ?? []);
-  changed();
+  void refresh_tools(entry, entry.client)
+    .catch((error: unknown) => console.warn(`[mcp] refreshing tools of ${entry.name} failed: ${error_text(error)}`))
+    .then(changed);
 };
 
 const start_server = async (name: string, config: McpServerConfig) => {
-  if (shut_down) {
+  if (shut_down || desired.get(name)?.config !== config) {
     return;
   }
-  const entry: Entry = { name, signature: config_signature(config), state: "starting", error: "", client: null, transport: null, tools: [], stderr: "" };
+  const entry: Entry = { name, config, list_revision: 0, listing: false, state: "starting", error: "", client: null, transport: null, tools: [], stderr: "" };
   entries.set(name, entry);
   changed();
   const transport = new TreeTransport({
@@ -151,7 +232,7 @@ const start_server = async (name: string, config: McpServerConfig) => {
   transport.stderr?.on("data", (chunk) => append_stderr(entry, chunk));
   const client = new Client(
     { name: "VantheaX", version: package_json.version },
-    { capabilities: {}, listChanged: { tools: { onChanged: (error, tools) => on_tools_changed(entry, error, tools) } } },
+    { capabilities: {}, listChanged: { tools: { autoRefresh: false, debounceMs: 0, onChanged: () => on_tools_changed(entry) } } },
   );
   client.onclose = () => on_closed(entry);
   client.onerror = (error) => console.warn(`[mcp] server ${name} transport error: ${error.message}`);
@@ -159,12 +240,7 @@ const start_server = async (name: string, config: McpServerConfig) => {
   entry.transport = transport;
   try {
     await client.connect(transport, { timeout: start_timeout_ms });
-    const tools = await list_all_tools(client);
-    if (!is_current(entry)) {
-      return;
-    }
-    entry.tools = build_tool_infos(name, tools);
-    entry.state = "ready";
+    await refresh_tools(entry, client);
   } catch (error) {
     console.warn(`[mcp] starting server ${name} (${config.command}) failed: ${error_text(error)}`);
     entry.state = "error";
@@ -180,44 +256,49 @@ const stop_server = async (name: string) => {
   if (!entry) {
     return;
   }
-  entry.state = "stopped";
   entries.delete(name);
   await close_handles(entry);
   changed();
 };
 
-export const sync_servers = (configs: Record<string, McpServerConfig | undefined>) =>
-  serialize(async () => {
-    for (const name of [...entries.keys()]) {
-      if (!configs[name]?.enabled) {
-        await stop_server(name);
-      }
-    }
-    for (const [name, config] of Object.entries(configs)) {
-      if (!config?.enabled) {
-        continue;
-      }
-      const entry = entries.get(name);
-      if (entry && entry.state !== "error" && entry.signature === config_signature(config)) {
-        continue;
-      }
-      await stop_server(name);
-      await start_server(name, config);
-    }
-  });
+const reconcile = async (name: string, config: McpServerConfig | undefined) => {
+  if (config !== desired.get(name)?.config) {
+    return;
+  }
+  const entry = entries.get(name);
+  if (entry && entry.config === config && entry.state !== "error") {
+    return;
+  }
 
-export const reconnect_server = (name: string, config: McpServerConfig | undefined) =>
-  serialize(async () => {
-    await stop_server(name);
-    if (config?.enabled) {
-      await start_server(name, config);
+  await stop_server(name);
+  if (config?.enabled) {
+    await start_server(name, config);
+  }
+};
+
+export const sync_servers = (configs: Record<string, McpServerConfig | undefined>) => {
+  observe_servers(configs);
+  const snapshot = new Map(desired);
+  const names = new Set([...entries.keys(), ...snapshot.keys()]);
+  return serialize(async () => {
+    for (const name of names) {
+      await reconcile(name, snapshot.get(name)?.config);
     }
   });
+};
+
+export const reconnect_server = (name: string) => {
+  const binding = desired.get(name);
+  const next = binding && { ...binding, config: { ...binding.config } };
+  if (next) {
+    desired.set(name, next);
+  }
+  return serialize(() => reconcile(name, next?.config));
+};
 
 export const kill_all_servers_sync = () => {
   shut_down = true;
   for (const entry of entries.values()) {
-    entry.state = "stopped";
     kill_tree_sync(entry.transport?.pid);
   }
   entries.clear();
@@ -225,20 +306,40 @@ export const kill_all_servers_sync = () => {
 
 export const server_runtime = (name: string): ServerRuntime | null => {
   const entry = entries.get(name);
-  if (!entry || entry.state === "stopped") {
+  if (!entry || !is_current(entry)) {
     return null;
   }
-  return { state: entry.state, error: entry.error, tools: entry.tools, stderr_tail: entry.stderr };
+  return { state: entry.state, error: entry.error, tools: entry.listing ? [] : entry.tools, stderr_tail: entry.stderr };
 };
 
-export const ready_servers = () => [...entries.values()].filter((entry) => entry.state === "ready").map((entry) => ({ name: entry.name, tools: entry.tools }));
+const ready = (entry: Entry) => is_current(entry) && entry.state === "ready" && !entry.listing;
+
+export const ready_servers = () => [...entries.values()].filter(ready).map((entry) => ({ name: entry.name, tools: entry.tools }));
+
+export const invalidate_tools = (changed: (server: string, info: McpToolInfo) => boolean) => {
+  for (const entry of entries.values()) {
+    for (const [index, info] of entry.tools.entries()) {
+      if (changed(entry.name, info)) {
+        entry.tools[index] = { ...info };
+      }
+    }
+  }
+};
+
+export const tool_is_current = (server: string, info: McpToolInfo, config: McpServerConfig) => {
+  const entry = entries.get(server);
+  if (!entry || !ready(entry)) {
+    return false;
+  }
+  return entry.tools.includes(info) && same_launch(entry.config, config);
+};
 
 const progress_text = (progress: { progress: number; total?: number; message?: string }) =>
   [progress.total ? `${progress.progress}/${progress.total}` : String(progress.progress), progress.message ?? ""].filter(Boolean).join(" ");
 
 export const call_tool = async (server: string, tool: string, args: Record<string, unknown>, options: CallOptions): Promise<McpResultText> => {
   const entry = entries.get(server);
-  if (!entry || entry.state !== "ready" || !entry.client) {
+  if (!entry || !ready(entry) || !entry.client) {
     throw new Error(`MCP server ${server} is not connected.`);
   }
   const result = await entry.client.callTool({ name: tool, arguments: args }, undefined, {

@@ -53,7 +53,7 @@ export const user_denied_text = (subject: Subject, feedback: string, review_reas
     `The user denied this ${subject}. It did not run.`,
     review_reason ? `Automatic review: ${review_reason}` : null,
     `User feedback: ${feedback.trim() || "none."}`,
-    "Do not run it again and do not reach its result another way; that counts as deliberately working around the user's decision and is denied. Follow the feedback, or continue without this step and say in your reply if you still need it.",
+    "Do not run it again and do not reach its result another way; that counts as deliberately working around the user's decision and is denied. This holds until a newer user message asks for it or approves it: then run it again as it is. Follow the feedback, or continue without this step and say in your reply if you still need it.",
   );
 
 export const note_reason = (note: ReviewNote | null | undefined): string | null => (note?.source === "model" && note.reason ? note.reason : null);
@@ -73,7 +73,7 @@ export const deny_text = (subject: Subject, review: ReviewedReason): string =>
     `Denied by the automatic review. The ${subject} did not run.`,
     reason_line(review.reason),
     rule_line(review),
-    "Do not run it again and do not get around this denial with another command, script, tool or agent; that counts as deliberately working around the review and is denied. If the reason or the rule names an allowed way, use that way. Otherwise leave this step out, continue with the rest of the task, and say in your reply what you need and why, so the user can decide. This covers this action only: it does not end your turn and does not stop sub-agents or other work.",
+    "Do not run it again and do not get around this denial with another command, script, tool or agent; that counts as deliberately working around the review and is denied. This holds until a newer user message asks for this action or approves it: then run it again as it is, and the automatic review checks it once more with that message. If the reason or the rule names an allowed way, use that way. Otherwise leave this step out, continue with the rest of the task, and say in your reply what you need and why, so the user can decide. This covers this action only: it does not end your turn and does not stop sub-agents or other work.",
   );
 
 export const workaround_text = (subject: Subject, review: ReviewedReason, earlier: ReviewEarlier): string =>

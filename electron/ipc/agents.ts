@@ -1,10 +1,8 @@
-import type { AgentEvent } from "../../shared/events.ts";
-import { live_run, on_agent_event, read_agent_run, waiting_approvals } from "../agents/live.ts";
+import { agent_approval_key, on_agent_event, read_agent_run, waiting_approvals } from "../agents/live.ts";
 import type { AgentRecord } from "../agents/records.ts";
 import { cancel_agent } from "../agents/runner.ts";
-import { agent_approval_key } from "../agents/session.ts";
 import { get_agent, list_agents, on_agents_changed } from "../agents/store.ts";
-import { hold_decision, resolve_decision } from "../permissions/approvals.ts";
+import { hold_decision, on_approval_changed, resolve_decision } from "../permissions/approvals.ts";
 import { require_string } from "../storage/coerce.ts";
 import { emit, handle } from "./handle.ts";
 import { parse_decision } from "./turn.ts";
@@ -20,44 +18,18 @@ const agent_of = (value: unknown): AgentRecord => {
   return agent;
 };
 
-const approval_events = new Set<AgentEvent["type"]>(["tool_approval", "tool_start", "tool_end", "end"]);
-
-const published = new Map<string, string>();
-
-const publish_approvals = (chat_id: string) => {
-  const approvals = waiting_approvals(chat_id);
-  const signature = approvals.map((entry) => `${entry.run_id}/${entry.call_id}/${entry.request.expires_at ?? ""}`).join("|");
-  if ((published.get(chat_id) ?? "") === signature) {
-    return;
-  }
-  if (signature) {
-    published.set(chat_id, signature);
-  } else {
-    published.delete(chat_id);
-  }
-  emit("agents:approvals_changed", { chat_id, approvals });
-};
-
-export const forget_chat_approvals = (chat_id: string): void => {
-  published.delete(chat_id);
-};
-
-const run_approval_key = (agent_id: unknown, run_id: unknown): string => {
-  const agent = agent_of(agent_id);
+const run_approval_key = (agent_id: unknown, run_id: unknown): string | null => {
+  const agent = get_agent(id_of(agent_id, "agent id"));
   const wanted = id_of(run_id, "run id");
-  if (!agent.runs.some((entry) => entry.run_id === wanted)) {
-    throw new Error(`run ${wanted} does not belong to agent ${agent.agent_id}`);
-  }
-  return agent_approval_key(wanted);
+  return agent?.runs.some((entry) => entry.run_id === wanted) ? agent_approval_key(wanted) : null;
 };
 
 export const register_agents_ipc = () => {
   on_agents_changed((summary) => emit("agents:changed", summary));
-  on_agent_event((event) => {
-    emit("agent:event", event);
-    const chat_id = approval_events.has(event.type) ? live_run(event.run_id)?.chat_id : undefined;
-    if (chat_id) {
-      publish_approvals(chat_id);
+  on_agent_event((event) => emit("agent:event", event));
+  on_approval_changed((chat_id, key) => {
+    if (key !== chat_id) {
+      emit("agents:approvals_changed", { chat_id, approvals: waiting_approvals(chat_id) });
     }
   });
   handle("agents:approvals", (chat_id) => {
@@ -74,10 +46,12 @@ export const register_agents_ipc = () => {
   handle("agents:cancel", (agent_id) => {
     cancel_agent(agent_of(agent_id));
   });
-  handle("agents:approve", (agent_id, run_id, call_id, decision) => {
-    resolve_decision(run_approval_key(agent_id, run_id), id_of(call_id, "call id"), parse_decision(decision));
+  handle("agents:approve", (agent_id, run_id, request_id, decision) => {
+    const key = run_approval_key(agent_id, run_id);
+    return key !== null && resolve_decision(key, id_of(request_id, "approval request id"), parse_decision(decision));
   });
-  handle("agents:hold_approval", (agent_id, run_id, call_id) => {
-    hold_decision(run_approval_key(agent_id, run_id), id_of(call_id, "call id"));
+  handle("agents:hold_approval", (agent_id, run_id, request_id) => {
+    const key = run_approval_key(agent_id, run_id);
+    return key !== null && hold_decision(key, id_of(request_id, "approval request id"));
   });
 };

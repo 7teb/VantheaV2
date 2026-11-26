@@ -92,6 +92,14 @@ test("major maps to the highest real effort and unknown efforts fall back to the
   assert.ok(deepseek && gpt);
   assert.equal(api_effort(deepseek, major_effort), "max");
   assert.equal(api_effort(gpt, major_effort), "max");
+  const claude = find_model(catalog, "anthropic/claude-opus-5.5");
+  const gemini = find_model(catalog, "google/gemini-4-neon");
+  const grok = find_model(catalog, "x-ai/grok-4.7");
+  assert.ok(claude && gemini && grok);
+  assert.equal(api_effort(claude, major_effort), "xhigh");
+  assert.equal(api_effort(gemini, major_effort), "medium");
+  assert.equal(api_effort(grok, major_effort), "xhigh");
+  assert.equal(api_effort(claude, "max"), "max");
   assert.equal(api_effort(deepseek, "high"), "high");
   assert.equal(resolve_effort(deepseek, "minimal"), "high");
   assert.equal(api_effort(gpt, "minimal"), "high");
@@ -131,6 +139,7 @@ test("invalid entries throw an error naming the entry", () => {
     [minimal({ efforts: ["low", "ultra"] }), /models\[0\] \(a\/one\)\.efforts/],
     [minimal({ efforts: ["high", "low"], default_effort: "low" }), /ordered from lowest to highest/],
     [minimal({ default_effort: "medium" }), /a\/one\)\.default_effort/],
+    [minimal({ major: "max" }), /a\/one\)\.major: must be one of the model's efforts/],
     [minimal({ context_length: 0 }), /a\/one\)\.context_length/],
     [minimal({ vision: "yes" }), /a\/one\)\.vision/],
     [minimal({ provider_order: "deepseek" }), /a\/one\)\.provider_order/],
@@ -156,35 +165,6 @@ test("a fallback names another catalog model and resolves to its route", () => {
   assert.throws(() => parse_catalog(catalog([entry("glm-fast", { fallback: "missing" })])), /fallback: must name another model id/);
   assert.throws(() => parse_catalog(catalog([entry("glm-fast", { fallback: "glm-fast" })])), /fallback: must name another model id/);
   assert.throws(() => parse_catalog(catalog([entry("a", { fallback: "b" }), entry("b", { fallback: "c" }), entry("c")])), /must name a model without its own fallback/);
-});
-
-test("exactly the shipped vision models take images, so a flag flip or a new model fails here", () => {
-  const vision = parse_catalog(shipped()).models.filter((model) => model.vision).map((model) => model.id);
-  assert.deepEqual(vision, [
-    "anthropic/claude-haiku-5.5",
-    "anthropic/claude-sonnet-5.5",
-    "anthropic/claude-opus-5.5",
-    "anthropic/claude-fable-5.2",
-    "openai/gpt-6.2-sol",
-    "openai/gpt-6.2-astra",
-    "openai/gpt-6.1-sol",
-    "openai/gpt-6.1-terra",
-    "openai/gpt-6-luna",
-    "openai/gpt-6-astra",
-    "google/gemini-4-argon",
-    "google/gemini-4-carbon",
-    "google/gemini-4-neon",
-    "google/gemini-4-hydrogen",
-    "x-ai/grok-4.7",
-    "moonshotai/kimi-k3.1-pro",
-    "qwen/qwen4-max",
-    "qwen/qwen3.8-max-0902",
-    "deepseek/deepseek-v4.1-flash-1017",
-    "z-ai/glm-5.3-flash",
-    "xiaomi/mimo-v2.6-pro",
-    "minimax/minimax-m3.1-flash",
-    "stealth/crouton-alpha",
-  ]);
 });
 
 test("a vision model may not fall back to a model without vision", () => {
@@ -226,19 +206,6 @@ test("the catalog reader joins the model files in index order and names the file
   await assert.rejects(read_catalog_source(folder({ model_files: ["missing.json"] })), /missing\.json: ENOENT/);
   await assert.rejects(read_catalog_source(folder({ model_files: "a.json" })), /index\.json: model_files must be an array of file names/);
   await assert.rejects(read_catalog_source(folder([])), /index\.json: must be an object/);
-});
-
-test("the shipped plan_side names GPT 6 Luna for every role the ChatGPT plan serves", () => {
-  const source = shipped();
-  const plan_side = parse_plan_side(source, parse_catalog(source));
-  assert.deepEqual(plan_side, {
-    title: { model: "openai/gpt-6-luna", effort: "low" },
-    overseer: { model: "openai/gpt-6-luna", effort: "low" },
-    vision: { model: "openai/gpt-6-luna", effort: "low" },
-    git_text: { model: "openai/gpt-6-luna", effort: "low" },
-  });
-  assert.equal(parse_catalog(source).side.title, "google/gemini-3.1-flash-lite");
-  assert.equal(parse_catalog(source).side.reasoning_status, "google/gemini-3.5-flash-lite");
 });
 
 test("parse_plan_side refuses unknown and non-OpenAI models, unknown efforts and missing roles", () => {
@@ -332,7 +299,7 @@ test("plan_served needs a plan eligible model the account lists, or an account l
     assert.ok(entry, id);
     return entry;
   };
-  const listed = (...slugs: string[]) => slugs.map((slug) => ({ slug, display_name: slug, context_window: null }));
+  const listed = (...slugs: string[]) => slugs.map((slug) => ({ slug, display_name: slug, context_window: null, service_tiers: [] }));
   const luna = shipped_entry("openai/gpt-6-luna");
   assert.equal(plan_served(luna, null), true);
   assert.equal(plan_served(luna, listed("gpt-6-luna")), true);

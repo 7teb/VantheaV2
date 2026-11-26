@@ -84,13 +84,10 @@
     border-radius: var(--radius-md);
     font-size: var(--font-size-body);
     color: var(--text-secondary);
-    transition:
-      background var(--duration-fast) var(--ease-out),
-      color var(--duration-fast) var(--ease-out);
+    transition: color var(--duration-fast) var(--ease-out);
   }
 
   .reasoning-head:hover:not(:disabled) {
-    background: var(--fill-hover);
     color: var(--text-primary);
   }
 

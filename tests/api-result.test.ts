@@ -53,6 +53,8 @@ const usage = (prompt_tokens: number, completion_tokens: number, reasoning_token
   prompt_tokens,
   completion_tokens,
   reasoning_tokens,
+  cached_tokens: 0,
+  cache_write_tokens: 0,
   rounds,
 });
 
@@ -156,12 +158,12 @@ test("a run whose last message presented a plan names it in needs_input", () => 
 
 test("pending approvals and open questions pass through to needs_input", () => {
   const approval: ApprovalInfo = {
-    approval_id: "m:c0_0",
+    approval_id: "m:request-1",
     source: "main",
     agent_id: null,
     run_id: null,
     call_id: "c0_0",
-    request: { kind: "command", command: "npm test", cwd: "D:/proj", background: false, review: null, grant_prefix: "npm test" },
+    request: { kind: "command", command: "npm test", cwd: "D:/proj", background: false, review: null, grant_prefix: "npm test", request_id: "request-1" },
   };
   const question = { id: "m1:c0_1:0", message_id: "m1", call_id: "c0_1", index: 0, title: "Which file?", options: ["a", "b"] };
   const result = build_run_result({

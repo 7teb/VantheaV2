@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { ApprovalDecision, ApprovalRequest } from "../shared/approval.ts";
+import type { ApprovalDecision } from "../shared/approval.ts";
 import type { SteerMessage } from "../shared/chat.ts";
 import { set_claude_runtime } from "../electron/claude/runtime.ts";
 import type { Tool } from "../electron/tools/types.ts";
@@ -284,7 +284,7 @@ test("an approval card still open when Claude Code crashes is withdrawn through 
     return { status: "done", text: "approved", view: null };
   });
   let waiting = false;
-  const wait_decision = (_call_id: string, _request: ApprovalRequest, _on_hold: () => void, signal: AbortSignal): Promise<ApprovalDecision> => {
+  const wait_decision: TurnSession["wait_decision"] = (_call_id, _request, _on_hold, signal): Promise<ApprovalDecision> => {
     waiting = true;
     return new Promise((resolve) => signal.addEventListener("abort", () => resolve({ approved: false, grant: "once", feedback: "" }), { once: true }));
   };

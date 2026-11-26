@@ -54,7 +54,7 @@ test("the review body carries the explicit cache layout, the pin and the strict 
   assert.equal(body.session_id, "vx-review:chat-1");
   assert.deepEqual(body.provider, { order: ["openai"] });
   assert.deepEqual(body.prompt_cache_options, { mode: "explicit" });
-  assert.deepEqual(body.reasoning, { effort: "low" });
+  assert.deepEqual(body.reasoning, { effort: "medium" });
   assert.equal("max_completion_tokens" in body, false);
   assert.equal("max_tokens" in body, false);
   assert.deepEqual(body.response_format, { type: "json_schema", json_schema: { name: "command_review", strict: true, schema: call.schema.schema } });

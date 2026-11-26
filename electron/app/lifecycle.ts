@@ -18,11 +18,11 @@ import { clear_computer, close_computer } from "../computer/service.ts";
 import { git_service, init_git, shutdown_git } from "../git/index.ts";
 import { entry_kind } from "../git/repo.ts";
 import { init_github, shutdown_github } from "../github/index.ts";
-import { forget_chat_approvals } from "../ipc/agents.ts";
 import { init_extensions } from "../ipc/extensions.ts";
 import { stop_chat_files_watch, stop_files_watch } from "../ipc/files.ts";
 import { close_chat_terminals, kill_all_terminals } from "../ipc/terminal.ts";
-import { init_mcp, set_settings_access, shutdown_mcp } from "../mcp/servers.ts";
+import { clear_mcp_chat } from "../mcp/grants.ts";
+import { init_mcp, observe_mcp_settings, set_settings_access, shutdown_mcp } from "../mcp/servers.ts";
 import { sweep_attachments } from "../media/sweep.ts";
 import { memory_prompt_section } from "../memory/prompt.ts";
 import { set_key_source } from "../model/key.ts";
@@ -34,7 +34,8 @@ import { set_prompt_sections } from "../prompts/index.ts";
 import { shutdown_remote } from "../remote/server.ts";
 import { close_scratchpads, remove_scratchpad } from "../scratchpad/index.ts";
 import { forget_answers, settle_answers } from "../questions/answers.ts";
-import { get_secret, get_settings, update_settings } from "../settings/store.ts";
+import { get_secret, get_settings, on_settings_changed, update_settings } from "../settings/store.ts";
+import { ensure_user_config } from "../settings/user-config.ts";
 import { side_model } from "../side/model.ts";
 import { context_model } from "../settings/model-context.ts";
 import { reasoning_status_call } from "../side/reasoning-status.ts";
@@ -54,7 +55,7 @@ import { flush_pending_sync } from "../storage/json-file.ts";
 import { remove_retired_snapshots, storage_paths } from "../storage/paths.ts";
 import { load_scheduled_tasks, stop_scheduled_tasks } from "../scheduled/index.ts";
 import { forget_scheduled_chat } from "../scheduled/store.ts";
-import { clear_mcp_chat, set_command_gate } from "../tools/mcp/decide.ts";
+import { set_command_gate } from "../tools/mcp/decide.ts";
 import { tools_for } from "../tools/registry.ts";
 import { active_turn, active_turns, forget_user_stop, on_active_turns_changed, turn_settled } from "../turn/active.ts";
 import { init_turn_diffs, turn_diffs } from "../turn-diff/index.ts";
@@ -98,6 +99,7 @@ const wire_hooks = () => {
   set_vision_analyzer(vision_analyzer);
   set_command_gate(mcp_command_gate);
   set_settings_access({ get: get_settings, update: update_settings });
+  on_settings_changed(observe_mcp_settings);
   set_prompt_sections(async ({ chat_id, user_text, tool_names }) => {
     const sections = await Promise.all([memory_prompt_section(await chat_home_of(chat_id), user_text, tool_names), skills_prompt_section(), saved_workflows_section(chat_id, tool_names)]);
     return sections.filter((section) => section !== null);
@@ -138,7 +140,6 @@ const wire_hooks = () => {
     forget_chat_writes(chat_id);
     forget_chat_reads(chat_id).catch((error) => console.error(`[reads] removing the read ledger of the deleted chat ${chat_id} failed:`, error));
     close_full_window(chat_id);
-    forget_chat_approvals(chat_id);
     clear_mcp_chat(chat_id);
     clear_computer(chat_id);
     remove_chat_background(chat_id);
@@ -168,6 +169,7 @@ export type StartedServices = { mcp_settled: Promise<void> };
 
 export const init_services = async (options: { storage_root?: string } = {}): Promise<StartedServices> => {
   wire_hooks();
+  ensure_user_config();
   await run_step("storage", () => init_persistence(options.storage_root ?? path.join(app.getPath("appData"), "VantheaX")));
   await run_step("chatgpt account", init_billing);
   await run_step("scheduled tasks", load_scheduled_tasks);

@@ -1,67 +1,330 @@
 @layer components {
-  @keyframes todo-check {
+  @keyframes todo-rail-grow {
     from {
-      stroke-dashoffset: 10;
+      transform: scaleY(0);
+    }
+  }
+
+  @keyframes todo-walk {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+  @keyframes todo-knob-in {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
     }
   }
 
   .todo-list {
+    --todo-ground: var(--surface-main);
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    interpolate-size: allow-keywords;
+  }
+
+  .tool-body > .todo-list {
+    margin-left: -24px;
+  }
+
+  .todo-rows {
+    display: flex;
+    flex-direction: column;
   }
 
   .todo-item {
     display: flex;
-    align-items: flex-start;
-    gap: var(--space-2);
-    min-height: 26px;
-    padding: 3px 0;
+    align-items: stretch;
+    gap: 10px;
+    padding: 6px 0;
     font-size: var(--font-size-ui);
     line-height: 20px;
-    color: var(--text-secondary);
+    animation: fade-up var(--duration-enter) var(--ease-out) backwards;
+    transition:
+      height var(--duration-height-open) var(--ease-height),
+      padding-block var(--duration-height-open) var(--ease-height),
+      opacity var(--duration-base) var(--ease-out),
+      overflow-y 0s allow-discrete var(--duration-height-open);
+  }
+
+  .todo-item[data-folded] {
+    height: 0;
+    padding-block: 0;
+    overflow-y: clip;
+    opacity: 0;
+    transition:
+      height var(--duration-height-close) var(--ease-height),
+      padding-block var(--duration-height-close) var(--ease-height),
+      opacity var(--duration-fast) var(--ease-out),
+      overflow-y 0s allow-discrete;
   }
 
   .todo-mark {
-    display: inline-grid;
+    position: relative;
     flex: none;
-    place-items: center;
-    width: 16px;
-    height: 20px;
-    color: var(--text-tertiary);
-    transition: color var(--duration-base) var(--ease-out);
+    width: 20px;
   }
 
-  .todo-item[data-status="in_progress"] {
-    color: var(--text-primary);
+  .todo-rail {
+    position: absolute;
+    top: -6px;
+    bottom: -6px;
+    left: 9px;
+    width: 2px;
+    background: var(--fill-track);
+    transform-origin: top;
   }
 
-  .todo-item[data-status="in_progress"] .todo-mark {
-    color: var(--text-primary);
+  .todo-rail[data-grow] {
+    animation: todo-rail-grow var(--duration-slow) var(--ease-out) backwards;
   }
 
-  .todo-item[data-finished] .todo-mark path {
-    stroke-dasharray: 10;
-    animation: todo-check var(--duration-slow) var(--ease-out) backwards;
+  .todo-item[data-first] .todo-rail {
+    top: 0;
+  }
+
+  .todo-item[data-last] .todo-rail {
+    bottom: 0;
+  }
+
+  .todo-list[data-complete] .todo-item[data-last] .todo-rail {
+    bottom: auto;
+    height: 16px;
+  }
+
+  .todo-list[data-complete] .todo-item[data-first][data-last] .todo-rail {
+    height: 10px;
+  }
+
+  .todo-walk {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--rail-lit);
+    transform-origin: top;
+    transition: height var(--duration-slow) var(--ease-height);
+  }
+
+  .todo-walk[data-grow] {
+    animation: todo-walk var(--duration-slow) var(--ease-height) backwards;
+  }
+
+  .todo-walk[data-to-knob] {
+    height: 16px;
+  }
+
+  .todo-item[data-first] .todo-walk[data-to-knob] {
+    height: 10px;
+  }
+
+  .todo-knob {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(var(--text-secondary), var(--text-secondary)) var(--todo-ground);
+    box-shadow: 0 0 0 2px var(--todo-ground);
+    animation: todo-knob-in var(--duration-base) var(--ease-out) backwards;
+  }
+
+  .todo-knob[data-live] {
+    background: var(--todo-ground);
+  }
+
+  .todo-knob[data-live]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--accent);
+    --pulse-dim: 0.7;
+    animation: pulse 1.6s var(--ease-in-out) infinite;
+  }
+
+  .todo-done-mark {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    border-radius: var(--radius-full);
+    background: var(--todo-ground);
+    box-shadow: 0 0 0 2px var(--todo-ground);
+    color: var(--text-secondary);
+    animation: todo-knob-in var(--duration-base) var(--ease-out) backwards;
   }
 
   .todo-text {
     min-width: 0;
     overflow-wrap: anywhere;
-    text-decoration: line-through;
-    text-decoration-color: transparent;
-    transition:
-      color var(--duration-base) var(--ease-out),
-      text-decoration-color var(--duration-base) var(--ease-out);
-  }
-
-  .todo-text.is-working {
-    text-decoration-line: none;
+    color: var(--text-secondary);
+    transition: color var(--duration-base) var(--ease-out);
   }
 
   .todo-item[data-status="done"] .todo-text {
+    color: var(--text-todo-done);
+  }
+
+  .todo-list[data-complete] .todo-text {
+    color: var(--text-secondary);
+  }
+
+  .todo-list[data-building]::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 9px;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent 0, var(--rail-lit) 50%, transparent 100%) no-repeat;
+    background-position: 0 -56px;
+    background-size: 2px 56px;
+    animation: rail-sweep 1.6s var(--ease-in-out) infinite;
+    pointer-events: none;
+  }
+
+  .todo-fold {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 25px;
+    margin: 4px -4px;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-caption);
+    line-height: 17px;
     color: var(--text-tertiary);
-    text-decoration-color: var(--text-quaternary);
+    text-align: left;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .todo-fold[data-grow] {
+    interpolate-size: allow-keywords;
+    transition:
+      color var(--duration-fast) var(--ease-out),
+      height var(--duration-slow) var(--ease-height),
+      min-height var(--duration-slow) var(--ease-height),
+      margin-block var(--duration-slow) var(--ease-height),
+      padding-block var(--duration-slow) var(--ease-height),
+      opacity var(--duration-enter) var(--ease-out),
+      overflow-y 0s allow-discrete var(--duration-slow);
+  }
+
+  @starting-style {
+    .todo-fold[data-grow] {
+      height: 0;
+      min-height: 0;
+      margin-block: 0;
+      padding-block: 0;
+      overflow-y: clip;
+      opacity: 0;
+    }
+  }
+
+  .todo-fold:is(:hover, :focus-visible) {
+    color: var(--text-secondary);
+  }
+
+  .todo-fold-stubs {
+    position: relative;
+    flex: none;
+    align-self: stretch;
+    width: 20px;
+    margin-block: -4px;
+  }
+
+  .todo-fold-stubs::before,
+  .todo-fold-stubs > i {
+    position: absolute;
+    left: 9px;
+    width: 2px;
+    background: var(--fill-track);
+    transition:
+      opacity var(--duration-base) var(--ease-out),
+      translate var(--duration-fast) var(--ease-out);
+  }
+
+  .todo-fold-stubs[data-walked]::before,
+  .todo-fold-stubs[data-walked] > i {
+    background-image: linear-gradient(var(--rail-lit), var(--rail-lit));
+  }
+
+  .todo-fold-stubs::before {
+    content: "";
+    top: 12px;
+    bottom: -4px;
+    opacity: 0;
+  }
+
+  .todo-fold-stubs > i:nth-child(1) {
+    bottom: 2px;
+    height: 6px;
+  }
+
+  .todo-fold-stubs > i:nth-child(2) {
+    bottom: 10px;
+    height: 4px;
+    opacity: 0.7;
+  }
+
+  .todo-fold-stubs > i:nth-child(3) {
+    bottom: 16px;
+    height: 3px;
+    opacity: 0.45;
+  }
+
+  .todo-fold-stubs > i:nth-child(4) {
+    bottom: 21px;
+    height: 2px;
+    opacity: 0.25;
+  }
+
+  .todo-fold-stubs[data-more] > i:nth-child(4) {
+    opacity: 0.1;
+  }
+
+  .todo-fold:hover .todo-fold-stubs > i:nth-child(2) {
+    translate: 0 -1px;
+  }
+
+  .todo-fold:hover .todo-fold-stubs > i:nth-child(n + 3) {
+    translate: 0 -2px;
+  }
+
+  .todo-fold[aria-expanded="true"] .todo-fold-stubs > i {
+    opacity: 0;
+  }
+
+  .todo-fold[aria-expanded="true"] .todo-fold-stubs::before {
+    opacity: 1;
+  }
+
+  .todo-fold-chevron {
+    flex: none;
+    color: var(--text-tertiary);
+    transition:
+      opacity var(--duration-fast) var(--ease-out),
+      rotate var(--duration-chevron) var(--ease-out);
+  }
+
+  @media (hover: hover) {
+    .todo-fold-chevron {
+      opacity: 0;
+    }
+
+    .todo-fold:is(:hover, :focus-visible) .todo-fold-chevron,
+    .todo-fold[aria-expanded="true"] .todo-fold-chevron {
+      opacity: 1;
+    }
+  }
+
+  .todo-fold[aria-expanded="true"] .todo-fold-chevron {
+    rotate: 180deg;
   }
 
   .todo-empty {

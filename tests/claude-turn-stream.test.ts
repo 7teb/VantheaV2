@@ -47,7 +47,7 @@ test("a text answer maps to text, usage and context events and ends done without
   const types = h.events.map((event) => event.type);
   assert.deepEqual(types, ["text", "usage", "context", "end"]);
   assert.deepEqual(h.events[0], { type: "text", round: 0, delta: "Hello there" });
-  assert.deepEqual(h.events[1], { type: "usage", round: 0, prompt_tokens: 125, completion_tokens: 40, reasoning_tokens: 0 });
+  assert.deepEqual(h.events[1], { type: "usage", round: 0, prompt_tokens: 125, completion_tokens: 40, reasoning_tokens: 0, cached_tokens: 20, cache_write_tokens: 5 });
   assert.deepEqual(h.events[2], { type: "context", usage: { used: 165, limit: 1_000_000, floor: 0 } });
   assert.deepEqual(h.events[3], { type: "end", status: "done", error: null });
   assert.equal(h.stream_calls(), 0);

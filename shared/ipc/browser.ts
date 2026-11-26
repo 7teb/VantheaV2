@@ -31,4 +31,5 @@ export const browser_channels = {
   "browser:freeze": invoke<[chat_id: string], string | null>(),
   "browser:viewport": send<[viewport: BrowserViewport]>(),
   "browser:changed": emit<BrowserChatTabs>(),
+  "browser:show": emit<{ chat_id: string }>(),
 } as const;

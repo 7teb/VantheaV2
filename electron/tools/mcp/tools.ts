@@ -1,13 +1,15 @@
 import path from "node:path";
+import type { GrantScope } from "../../../shared/approval.ts";
 import type { ToolView } from "../../../shared/tool-view.ts";
 import { call_tool, default_call_timeout_ms, ready_servers, type McpToolInfo } from "../../mcp/client.ts";
+import { is_trusted, record_grant } from "../../mcp/grants.ts";
 import { target_scope } from "../../mcp/risk.ts";
-import { effective_tier, is_trusted, tool_enabled } from "../../mcp/servers.ts";
+import { current_tool_config, effective_tier, tool_enabled } from "../../mcp/servers.ts";
 import { build_description, build_parameters, mcp_error_marker, type McpResultText } from "../../mcp/specs.ts";
 import { changed_pins, type PinChange } from "../../permissions/source-read.ts";
 import { approved_note, not_approved_text, scripts_changed_text } from "../../permissions/verdict-text.ts";
 import { define_tool, type Tool, type ToolContext, type ToolResult } from "../types.ts";
-import { decide, record_grant, type McpCall } from "./decide.ts";
+import { decide, type McpCall } from "./decide.ts";
 import { mcp_images } from "./images.ts";
 import { mcp_review } from "./overseer.ts";
 
@@ -21,11 +23,30 @@ const mcp_view = (server: string, tool: string, text: string, is_error: boolean)
 
 const server_text = (result: McpResultText) => (result.is_error ? result.text.slice(mcp_error_marker.length) : result.text);
 
-const invoke = async (ctx: ToolContext, call: McpCall, note: string | null): Promise<ToolResult> => {
+const stale = (server: string, tool: string): ToolResult => {
+  const text = `MCP tool ${server}/${tool} is disabled, disconnected, refreshing, or changed since it was selected. It did not run. Load the current tool definition and try again.`;
+  return { status: "failed", text, view: mcp_view(server, tool, text, true) };
+};
+
+const current = (call: McpCall, info: McpToolInfo) => {
+  if (!current_tool_config(call.server, info)) {
+    return false;
+  }
+  return effective_tier(call.server, info) === call.tier && is_trusted(call.server) === call.trusted;
+};
+
+const invoke = async (ctx: ToolContext, call: McpCall, info: McpToolInfo, grant: GrantScope | null): Promise<ToolResult> => {
   const label = `${call.server} ${call.tool}`;
   ctx.progress({ label: "", lines: null, output_tail: null });
   let result: McpResultText;
   try {
+    ctx.signal.throwIfAborted();
+    if (!current(call, info)) {
+      return stale(call.server, call.tool);
+    }
+    if (grant !== null) {
+      record_grant(ctx.chat_id, call, grant);
+    }
     result = await call_tool(call.server, call.tool, call.args, {
       signal: ctx.signal,
       timeout_ms: default_call_timeout_ms,
@@ -42,16 +63,20 @@ const invoke = async (ctx: ToolContext, call: McpCall, note: string | null): Pro
   const media = await mcp_images(ctx, call.server, call.tool, result.images);
   return {
     status: result.is_error ? "failed" : "done",
-    text: [...(note ? [note] : []), ...media.notes, result.text].join("\n"),
+    text: [...(grant !== null ? [approved_note("tool call")] : []), ...media.notes, result.text].join("\n"),
     view: mcp_view(call.server, call.tool, server_text(result), result.is_error),
     ...(media.images.length ? { images: media.images } : {}),
   };
 };
 
 const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args: Record<string, unknown>): Promise<ToolResult> => {
+  const config = current_tool_config(server, info);
+  if (!config) {
+    return stale(server, info.name);
+  }
   const tier = effective_tier(server, info);
   const call: McpCall = { server, tool: info.name, tier, args, scope: tier === "dangerous" ? target_scope(args) : null, trusted: is_trusted(server) };
-  const server_cwd = path.resolve(ctx.settings.mcp_servers[server]?.cwd || process.cwd());
+  const server_cwd = path.resolve(config.cwd || process.cwd());
   ctx.execution_cwd = typeof args.cwd === "string" ? path.resolve(server_cwd, args.cwd) : server_cwd;
   let changed: PinChange[] = [];
   for (let pass = 1; ; pass += 1) {
@@ -60,8 +85,11 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
       const denied = verdict.kind === "denied";
       return { status: denied ? "denied" : "failed", text: verdict.reason, view: mcp_view(server, info.name, denied ? "" : verdict.reason, true) };
     }
-    let note: string | null = null;
+    let grant: GrantScope | null = null;
     if (verdict.kind === "ask") {
+      if (!current(call, info)) {
+        return stale(server, info.name);
+      }
       const decision = await ctx.approve({
         kind: "mcp",
         server,
@@ -79,13 +107,15 @@ const run_mcp = async (ctx: ToolContext, server: string, info: McpToolInfo, args
         const text = not_approved_text("tool call", decision, model_reason);
         return { status: "denied", text, view: mcp_view(server, info.name, "", true) };
       }
-      record_grant(ctx.chat_id, call, decision.grant);
-      note = approved_note("tool call");
+      grant = decision.grant;
     }
     const now = await changed_pins(verdict.pins);
     ctx.signal.throwIfAborted();
     if (!now.length) {
-      return invoke(ctx, call, note);
+      return invoke(ctx, call, info, grant);
+    }
+    if (!current(call, info)) {
+      return stale(server, info.name);
     }
     if (verdict.record) {
       await ctx.review.record({ ...verdict.record, superseded: "scripts_changed" });

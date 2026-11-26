@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import type { AssistantMessage, CompactionStep, Message, Step, ToolStep } from "../shared/chat.ts";
 import { build_blocks } from "../src/features/chat/assistant-blocks.ts";
-import { compaction_key, compaction_text, compaction_wait_text, slow_notice_delay, slow_notice_ms, stepless_summary_after } from "../src/features/chat/compaction-line.ts";
+import { compaction_text, compaction_wait_text, slow_notice_delay, slow_notice_ms, stepless_summary_after } from "../src/features/chat/compaction-line.ts";
 import { translate, type Translate } from "../src/i18n/translate.ts";
 
 const line = (status: CompactionStep["status"], source?: CompactionStep["source"]): CompactionStep => ({
@@ -13,23 +12,6 @@ const line = (status: CompactionStep["status"], source?: CompactionStep["source"
   status,
   ...(source ? { source } : {}),
   started_at: 1000,
-});
-
-test("the compaction line names each state in English and German", () => {
-  const cases: [CompactionStep, string, string][] = [
-    [line("running", "auto"), "Compacting context", "Kontext wird komprimiert"],
-    [line("done", "auto"), "Context automatically compacted", "Kontext automatisch komprimiert"],
-    [line("done", "manual"), "Context compacted", "Kontext komprimiert"],
-    [line("done"), "Context automatically compacted", "Kontext automatisch komprimiert"],
-    [line("failed", "auto"), "Context compaction failed", "Kontext-Komprimierung fehlgeschlagen"],
-    [line("interrupted", "manual"), "Compaction interrupted", "Komprimierung unterbrochen"],
-  ];
-  for (const [step, en, de] of cases) {
-    assert.equal(translate("en", compaction_key(step)), en);
-    assert.equal(translate("de", compaction_key(step)), de);
-  }
-  assert.equal(translate("en", "context.compacting_slow"), "This can take a few minutes");
-  assert.equal(translate("de", "context.compacting_slow"), "Das kann einige Minuten dauern");
 });
 
 test("the slow notice appears ten seconds after the compaction started, also when the line mounts later", () => {
@@ -88,31 +70,6 @@ test("the retry, waiting and final failure states name the attempt, the reason a
   assert.equal(compaction_text(in_language("en"), failed), "Context compaction failed: empty note");
   assert.equal(compaction_text(in_language("de"), failed), "Kontext-Komprimierung fehlgeschlagen: leere Notiz");
   assert.equal(compaction_text(in_language("en"), line("failed", "auto")), "Context compaction failed");
-});
-
-const css_block = (text: string, head: string): string => {
-  const start = text.indexOf(head);
-  assert.ok(start >= 0, head);
-  let depth = 0;
-  for (let index = text.indexOf("{", start); index < text.length; index += 1) {
-    depth += text[index] === "{" ? 1 : text[index] === "}" ? -1 : 0;
-    if (depth === 0) {
-      return text.slice(start, index + 1);
-    }
-  }
-  return text.slice(start);
-};
-
-test("the slow notice keeps its 10 s delay with reduced motion, in the same layer as the rule that zeroes delays", () => {
-  const motion = readFileSync(new URL("../src/styles/motion.css", import.meta.url), "utf8");
-  assert.match(motion.trimStart(), /^@layer motion \{/);
-  const reduced = css_block(motion, "@media (prefers-reduced-motion: reduce)");
-  assert.match(reduced, /animation-delay: 0ms !important/);
-  assert.match(css_block(reduced, ".delayed-reveal"), /animation-delay: var\(--reveal-delay, 0s\) !important/);
-  assert.match(css_block(motion, ".delayed-reveal {"), /animation: delayed-reveal 0s var\(--reveal-delay, 0s\) both/);
-  const row = readFileSync(new URL("../src/features/chat/StepRows.tsx", import.meta.url), "utf8");
-  assert.match(row, /const \[delay\] = useState\(\(\) => slow_notice_delay\(step, Date\.now\(\)\)\);/);
-  assert.match(row, /className="delayed-reveal" style=\{\{ "--reveal-delay": `\$\{delay\}ms` \}/);
 });
 
 const reply = (id: string, steps: Step[]): AssistantMessage => ({

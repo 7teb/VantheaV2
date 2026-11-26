@@ -1,7 +1,7 @@
 import type { ReasoningStep } from "../../../shared/chat.ts";
 import type { Translate } from "../../i18n/translate.ts";
 
-export type ReasoningHead = { label: string; status: string | undefined; expandable: boolean; working: boolean };
+export type ReasoningHead = { label: string; expandable: boolean; working: boolean };
 
 const description_cap = 120;
 
@@ -51,10 +51,9 @@ export const thought_description = (step: ReasoningStep): string | null => {
 
 export const reasoning_head = (t: Translate, step: ReasoningStep, live: boolean): ReasoningHead => {
   const working = live && step.ended_at === null;
-  const status = working ? step.status_line : undefined;
   const expandable = step.text.trim().length > 0;
   if (working) {
-    return { label: status || t("chat.thinking"), status, expandable, working };
+    return { label: step.status_line || t("chat.thinking"), expandable, working };
   }
-  return { label: thought_description(step) ?? t("chat.thought"), status, expandable, working };
+  return { label: thought_description(step) ?? t("chat.thought"), expandable, working };
 };

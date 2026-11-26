@@ -111,10 +111,9 @@ const CommitFileRow = ({ root, hash, file, counted, open, scroller }: CommitFile
     set_shown(true);
   }
   const place = file.orig_path === null ? parent_dir(file.path) : `← ${base_name(file.orig_path)}`;
-  const title = file.orig_path === null ? file.path : `${file.orig_path} → ${file.path}`;
   return (
     <>
-      <button type="button" className="git-change" data-git={file.status} aria-expanded={open} title={title} onClick={() => toggle_commit_file(hash, file.path)}>
+      <button type="button" className="git-change" data-git={file.status} aria-expanded={open} onClick={() => toggle_commit_file(hash, file.path)}>
         <ChevronRightIcon className="commit-file-chevron" />
         <GitBadge decoration={{ status: file.status, entry: file_entry(file), rollup: false }} dir={false} />
         <span className="git-change-name">{base_name(file.path)}</span>

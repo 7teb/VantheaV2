@@ -60,6 +60,17 @@ test("an edit fails when the file changed after it was prepared", async () => {
   assert.equal(await read("race.txt"), "edited by the user");
 });
 
+test("two edits prepared from the same file content commit one after the other and the later one is refused", async () => {
+  await write("both.txt", "start\n");
+  const edits = [await prepare_replace(root, "both.txt", "start", "first", 1), await prepare_replace(root, "both.txt", "start", "second", 1)];
+  const results = await Promise.allSettled(edits.map((edit) => commit_edit(edit)));
+  const won = results.findIndex((result) => result.status === "fulfilled");
+  const lost = results.find((result) => result.status === "rejected");
+  assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+  assert.match(String(lost?.status === "rejected" && lost.reason), /changed on disk/);
+  assert.equal(await read("both.txt"), edits[won].next);
+});
+
 test("replace_in_file replaces exact matches and checks the count", async () => {
   await write("app.ts", "const a = 1;\nconst b = 1;\n");
   const single = await prepare_replace(root, "app.ts", "const a = 1;", "const a = 2;", 1);

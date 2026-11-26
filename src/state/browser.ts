@@ -1,6 +1,7 @@
 import { draft_browser_chat, type BrowserChatTabs, type BrowserHistoryAction, type BrowserTabInfo, type BrowserViewport } from "../../shared/ipc/browser.ts";
 import { api } from "../api/bridge.ts";
 import { create_store } from "./create-store.ts";
+import { on_active_chat, open_dock, ui_store } from "./ui.ts";
 
 export type BrowserState = { chats: Record<string, BrowserChatTabs>; drafts: Record<string, string> };
 
@@ -115,4 +116,27 @@ export const freeze_browser = async (chat_key: string): Promise<string | null> =
   }
 };
 
-export const init_browser = (): (() => void) => api.on("browser:changed", apply_browser_tabs);
+const shown_chats = new Set<string>();
+
+const show_browser = (chat_id: string) => {
+  if (ui_store.get().active_chat_id === chat_id) {
+    open_dock("browser");
+    return;
+  }
+  shown_chats.add(chat_id);
+};
+
+export const init_browser = (): (() => void) => {
+  const stop_changes = api.on("browser:changed", apply_browser_tabs);
+  const stop_show = api.on("browser:show", ({ chat_id }) => show_browser(chat_id));
+  const stop_active = on_active_chat((chat_id) => {
+    if (chat_id !== null && shown_chats.delete(chat_id)) {
+      open_dock("browser");
+    }
+  });
+  return () => {
+    stop_changes();
+    stop_show();
+    stop_active();
+  };
+};

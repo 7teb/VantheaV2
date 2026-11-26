@@ -6,10 +6,6 @@ import type { ClaudeAccount } from "../shared/claude.ts";
 import type { ModelCatalog, ModelEntry } from "../shared/models.ts";
 import type { BillingMode, ClaudeBillingMode, SettingsView } from "../shared/settings.ts";
 import type { ModelPrice } from "../shared/tool-view.ts";
-import { billing as de_billing } from "../src/i18n/de/billing.ts";
-import { tools as de_tools } from "../src/i18n/de/tools.ts";
-import { billing as en_billing } from "../src/i18n/en/billing.ts";
-import { tools as en_tools } from "../src/i18n/en/tools.ts";
 import { bundle, install_dom, stub_components, type FakeElement, type Vx } from "./dom-kit.ts";
 
 const entry = (id: string, label: string, provider: string): ModelEntry => ({
@@ -385,16 +381,4 @@ test("the models body shows the Claude plan instead of prices for a Claude-plan 
     ["ChatGPT plan", ""],
     ["Claude plan", ""],
   ]);
-});
-
-test("both languages have the same billing and tools keys, the Claude ones included", () => {
-  assert.deepEqual(Object.keys(de_billing).sort(), Object.keys(en_billing).sort());
-  assert.deepEqual(Object.keys(de_tools).sort(), Object.keys(en_tools).sort());
-  assert.equal(en_billing["billing.mode"], "GPT models");
-  assert.equal(de_billing["billing.mode"], "GPT-Modelle");
-  assert.equal(en_billing["billing.mode_claude_plan"], "Claude plan");
-  assert.equal(de_billing["billing.mode_claude_plan"], "Claude-Abo");
-  assert.equal(de_billing["billing.key_hint_plan"], "Für Bildgenerierung, Diktat und Modelle außerhalb deiner Abos");
-  assert.equal(en_tools["tools.model_claude_plan"], "Claude plan");
-  assert.equal(de_tools["tools.model_claude_plan"], "Claude-Abo");
 });

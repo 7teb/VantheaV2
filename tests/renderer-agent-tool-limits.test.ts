@@ -74,7 +74,6 @@ after(() => {
 test("the agent panel names the tools removed from the profile next to the profile", () => {
   show(agent(["run_command", "run_bash"]));
   assert.equal(meta()?.textContent, "parser · Worker · without run_command, run_bash · test/model · High");
-  assert.equal(meta()?.getAttribute("title"), "parser · Worker · without run_command, run_bash · test/model · High");
 });
 
 test("an agent without removed tools shows the meta line as before", () => {

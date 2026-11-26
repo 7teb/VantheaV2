@@ -123,7 +123,7 @@ const InterruptedRow = ({ chat_id, error, can_continue }: InterruptedRowProps) =
     set_pending(false);
   };
   return (
-    <div className="interrupted-row enter-fade-up" title={error?.message || undefined}>
+    <div className="interrupted-row enter-fade-up">
       <CloudAlertIcon />
       <span className="interrupted-text">{t(error?.kind === "app_closed" ? "chat.interrupted_restart" : "chat.interrupted_note_once")}</span>
       {can_continue && (

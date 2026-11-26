@@ -80,23 +80,6 @@ test("a row without a specific agent gets the neutral critter in the row color",
   assert.equal(neutral?.getAttribute("viewBox"), "0 0 5 5");
 });
 
-test("the pool holds the 5x5 critters, the 7x7 critters and the blooms, each bloom with a tint and a spin while running", () => {
-  const shapes = new Map<string, { view: string | null; tint: string | null }>();
-  for (let index = 0; index < 400 && shapes.size < 24; index += 1) {
-    render(client.createElement(client.CritterIcon, { name: `agent ${index}`, running: true }));
-    const [icon] = critters();
-    shapes.set(icon?.getAttribute("data-glyph") ?? "", { view: icon?.getAttribute("viewBox") ?? null, tint: icon?.getAttribute("data-tint") ?? null });
-  }
-  assert.equal(shapes.size, 24);
-  const views = [...shapes.values()].map((shape) => shape.view);
-  assert.equal(views.filter((view) => view === "0 0 5 5").length, 8);
-  assert.equal(views.filter((view) => view === "0 0 7 7").length, 8);
-  assert.equal(views.filter((view) => view === "0 0 24 24").length, 8);
-  assert.ok([...shapes.values()].every((shape) => shape.tint !== null));
-  render(client.createElement(client.CritterIcon, { name: "agent 0", running: true }));
-  assert.ok(critters()[0]?.className.split(" ").includes("is-running"));
-});
-
 const message_path = (element: { tagName: string; getAttribute: (name: string) => string | null }) => element.tagName.toLowerCase() === "path" && element.getAttribute("d") === "M10.15 4.02A7 7 0 0 1 19.98 13.86";
 
 test("a message from the main agent shows as a closed row with the agent message icon instead of a critter", () => {

@@ -103,7 +103,6 @@ export const ApprovalDetail = ({ request }: { request: ApprovalRequest }) => {
           hook={request.hook}
           previous={request.action === "change" ? request.previous : null}
           scope={request.scope.kind === "global" ? t("hooks.scope_global") : request.scope.name}
-          scope_title={request.scope.kind === "project" ? request.scope.path : ""}
         />
       );
     case "scheduled_task":

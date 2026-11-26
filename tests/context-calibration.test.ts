@@ -34,7 +34,7 @@ const user = (id: string): Message => ({ id, role: "user", text: "q", attachment
 const measured = (prompt_tokens: number, estimate: number, floor = 0): ContextUsage => ({ used: 1, limit: 10_000, calibration: { prompt_tokens, estimate }, floor });
 
 test("the measure is the provider count of the calibrated request scaled onto the next request", () => {
-  const calibration = calibrate({ prompt_tokens: 1100, completion_tokens: 900, reasoning_tokens: 800 }, 1000);
+  const calibration = calibrate({ prompt_tokens: 1100, completion_tokens: 900, reasoning_tokens: 800, cached_tokens: 0, cache_write_tokens: 0 }, 1000);
   assert.deepEqual(calibration, { prompt_tokens: 1100, estimate: 1000 });
   const next: ApiMessage[] = [{ role: "user", content: "x".repeat(20_000) }];
   assert.equal(sent_estimate(next, [], model), 5000);
@@ -44,8 +44,8 @@ test("the measure is the provider count of the calibrated request scaled onto th
 
 test("a round without usage, a zero prompt count or a zero estimate yields no calibration", () => {
   assert.equal(calibrate(null, 1000), null);
-  assert.equal(calibrate({ prompt_tokens: 0, completion_tokens: 10, reasoning_tokens: 0 }, 1000), null);
-  assert.equal(calibrate({ prompt_tokens: 500, completion_tokens: 10, reasoning_tokens: 0 }, 0), null);
+  assert.equal(calibrate({ prompt_tokens: 0, completion_tokens: 10, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0 }, 1000), null);
+  assert.equal(calibrate({ prompt_tokens: 500, completion_tokens: 10, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0 }, 0), null);
   assert.equal(calibration_scale(null), 1);
 });
 

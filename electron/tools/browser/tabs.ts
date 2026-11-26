@@ -1,9 +1,9 @@
 import { normalize_browser_page } from "../../browser/guest-policy.ts";
 import { navigate, type NavigateAction } from "../../browser/navigate.ts";
 import { tab_title, tab_url } from "../../browser/state.ts";
-import { close_tab, list_tabs, open_tab, owned_tab, run_on_tab, select_tab } from "../../browser/tabs.ts";
+import { close_tab, list_tabs, open_tab, owned_tab, run_on_tab, select_tab, show_tab } from "../../browser/tabs.ts";
 import { define_tool, ToolArgumentError } from "../types.ts";
-import { read_choice, read_string } from "./common.ts";
+import { read_boolean, read_choice, read_string } from "./common.ts";
 import { browser_view, done, guarded } from "./result.ts";
 
 const tab_lines = (chat_id: string) => {
@@ -32,35 +32,49 @@ export const browser_tabs_tool = define_tool<Record<string, never>>({
     }),
 });
 
-type TabArgs = { action: "new"; url: string } | { action: "select" | "close"; tab_id: string | null };
+type TabArgs = { action: "new"; url: string; show: boolean } | { action: "select"; tab_id: string | null; show: boolean } | { action: "close"; tab_id: string | null };
 
 const page_refusal =
   "only http and https URLs and local .html, .htm, .xhtml or .svg files given by an absolute Windows path (C:\\...) or a file:/// URL can be opened; secret files and network paths are refused";
 
 const parse_tab_args = (raw: Record<string, unknown>): TabArgs => {
   const action = read_choice(raw, "action", ["new", "select", "close"] as const, null);
-  if (action !== "new") {
+  const show = read_boolean(raw, "show", false);
+  if (action === "close") {
+    if (show) {
+      throw new ToolArgumentError("show applies only to new and select");
+    }
     return { action, tab_id: read_string(raw, "tab_id") };
+  }
+  if (action === "select") {
+    return { action, tab_id: read_string(raw, "tab_id"), show };
   }
   const target = read_string(raw, "url");
   const url = target === null ? "about:blank" : normalize_browser_page(target);
   if (!url) {
     throw new ToolArgumentError(page_refusal);
   }
-  return { action, url };
+  return { action, url, show };
 };
+
+const shown_note = " The browser panel opens on it for the user in this chat.";
 
 export const browser_tab_tool = define_tool<TabArgs>({
   spec: {
     name: "browser_tab",
     description:
-      "Open a new in-app browser tab for this chat (optionally at a URL), switch this chat's active tab, or close one of its tabs. The tabs run in the background without opening the browser panel; the user sees them live when they open the browser panel in this chat. Other browser tools act on the active tab unless they take a tab_id.",
+      "Open a new in-app browser tab for this chat (optionally at a URL), switch this chat's active tab, or close one of its tabs. Tabs run in the background; the user sees them live when they open the browser panel in this chat. Other browser tools act on the active tab unless they take a tab_id.",
     parameters: {
       type: "object",
       properties: {
         action: { type: "string", enum: ["new", "select", "close"] },
         url: { type: "string", description: "For new: http or https URL, a bare host, search words, or the absolute path of a local .html file (C:\\...\\page.html or file:///C:/.../page.html)." },
         tab_id: { type: "string", description: "For select and close. Defaults to the active tab." },
+        show: {
+          type: "boolean",
+          description:
+            "For new and select: also open the browser panel in this chat on this tab. Off by default. Set it only when the user explicitly asks to see the page or has to act in it themselves, such as signing in, solving a check or confirming something; never just to show your own browsing.",
+        },
       },
       required: ["action"],
       additionalProperties: false,
@@ -72,13 +86,16 @@ export const browser_tab_tool = define_tool<TabArgs>({
     guarded(ctx, `tab ${args.action}`, async () => {
       if (args.action === "new") {
         const tab = await open_tab(ctx.chat_id, args.url, ctx.signal);
+        if (args.show) {
+          show_tab(ctx.chat_id, tab.tab_id);
+        }
         const pending = args.url !== "about:blank" && (tab.loading || tab_url(tab) === "about:blank");
         const at = pending ? `${args.url}, still loading` : tab_url(tab);
-        return done(`Opened tab ${tab.tab_id} at ${at}.`, browser_view("new tab", tab_url(tab), tab_title(tab), tab.tab_id));
+        return done(`Opened tab ${tab.tab_id} at ${at}.${args.show ? shown_note : ""}`, browser_view("new tab", tab_url(tab), tab_title(tab), tab.tab_id));
       }
       if (args.action === "select") {
-        const tab = select_tab(ctx.chat_id, args.tab_id);
-        return done(`Tab ${tab.tab_id} is active: ${tab_url(tab)}`, browser_view("select tab", tab_url(tab), tab_title(tab), tab.tab_id));
+        const tab = args.show ? show_tab(ctx.chat_id, args.tab_id) : select_tab(ctx.chat_id, args.tab_id);
+        return done(`Tab ${tab.tab_id} is active: ${tab_url(tab)}${args.show ? `.${shown_note}` : ""}`, browser_view("select tab", tab_url(tab), tab_title(tab), tab.tab_id));
       }
       const tab = owned_tab(ctx.chat_id, args.tab_id);
       const url = tab_url(tab);

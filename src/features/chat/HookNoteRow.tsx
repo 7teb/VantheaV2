@@ -45,7 +45,7 @@ export const HookNoteRow = memo(({ note }: { note: HookNote }) => {
         <span className="tool-row-icon">{blocked_message ? <ShieldTerminalIcon plain /> : <HookIcon plain />}</span>
         <span className="tool-row-label">{t(labels[note.event][outcome])}</span>
         {failed && (
-          <span className="tool-row-status is-failed" title={t("tools.status_failed")}>
+          <span className="tool-row-status is-failed">
             <CircleAlertIcon />
           </span>
         )}

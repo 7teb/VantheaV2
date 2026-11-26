@@ -54,8 +54,10 @@ const wait_token = async (pending: Promise<string>, watchdog: Watchdog): Promise
 
 const request_id_of = (response: Response): string => response.headers.get("x-request-id") ?? response.headers.get("openai-request-id") ?? "";
 
-const post = async (sent: Payload, token: string, watchdog: Watchdog, transport: Transport): Promise<Response> => {
-  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "text/event-stream", ...sent.headers };
+const session_headers = (cache_key: string | undefined): Record<string, string> => (cache_key ? { "session-id": cache_key, "thread-id": cache_key } : {});
+
+const post = async (sent: Payload, token: string, cache_key: string | undefined, watchdog: Watchdog, transport: Transport): Promise<Response> => {
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "text/event-stream", ...session_headers(cache_key), ...sent.headers };
   try {
     return await transport.fetch(plan_responses_url, { method: "POST", headers, body: sent.body, signal: watchdog.signal, redirect: "error" });
   } catch (error) {
@@ -85,16 +87,16 @@ const discard = async (response: Response) => {
   }
 };
 
-export const send_plan = async (body: string, watchdog: Watchdog, transport: Transport): Promise<PlanReply> => {
+export const send_plan = async (body: string, cache_key: string | undefined, watchdog: Watchdog, transport: Transport): Promise<PlanReply> => {
   const source = plan_source();
   const sent = await payload(body);
   let token = await wait_token(source.access_token(), watchdog);
-  let response = await post(sent, token, watchdog, transport);
+  let response = await post(sent, token, cache_key, watchdog, transport);
   if (response.status === 401) {
     console.warn(`[plan] POST /v1/responses returned 401 (request ${request_id_of(response) || "without id"}), renewing the access token once`);
     await discard(response);
     token = await wait_token(source.renewed_token(token), watchdog);
-    response = await post(sent, token, watchdog, transport);
+    response = await post(sent, token, cache_key, watchdog, transport);
   }
   if (!response.ok) {
     throw await failure(response, token);

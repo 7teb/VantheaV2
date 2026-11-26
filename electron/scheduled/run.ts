@@ -104,7 +104,7 @@ export const start_task_run = async (task_id: string, kind: RunKind): Promise<Ru
       quiet_end: (message, end) => scheduled_task(task.id) !== null && silent_end(run_outcome(end.status, end.error, message.steps), previous),
       watch: (body) => {
         if (body.type === "tool_approval") {
-          notify_run_waiting(task.chat_id, `main:${body.call_id}`);
+          notify_run_waiting(task.chat_id, body.request.request_id);
         }
       },
     });

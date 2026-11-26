@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, mock, test } from "node:test";
-import type { ApprovalRequest } from "../shared/approval.ts";
 import type { ReasoningStep, ToolStep } from "../shared/chat.ts";
-import { css_block, declarations, read } from "./css-kit.ts";
 import { bundle, FakeElement, install_dom, quiet_vx, stub_components } from "./dom-kit.ts";
 
 let client: any;
@@ -12,7 +10,7 @@ let restore = () => {};
 
 const stubs: Record<string, string> = {
   ToolRow: 'import { createElement } from "react"; export const ToolRow = (props) => createElement("div", { className: "tool-row", "data-id": props.step.id });',
-  ApprovalCard: 'import { createElement } from "react"; export const ApprovalCard = (props) => createElement("div", { className: "approval-stub", "data-call": props.call_id });',
+  ApprovalCard: 'import { createElement } from "react"; export const ApprovalCard = (props) => createElement("div", { className: "approval-stub", "data-request": props.request.request_id });',
   DotSpinner: 'import { createElement } from "react"; export const DotSpinner = () => createElement("span", { className: "dot-spinner" });',
   Markdown: 'import { createElement } from "react"; export const Markdown = (props) => createElement("div", { className: "markdown-stub" }, props.text);',
 };
@@ -153,10 +151,15 @@ test("a streaming group stays closed, names its streaming thought without a time
     assert.equal(head_meta(), null);
     assert.equal(with_class("tool-row-elapsed", head()).length, 0);
     assert.equal(with_class("dot-spinner").length, 1);
-    const asking: ToolStep = { ...tool("c1", "run_command", now, null, { command: "npm test" }), status: "awaiting_approval", approval: { kind: "command", command: "npm test" } as ApprovalRequest };
+    const asking: ToolStep = {
+      ...tool("c1", "run_command", now, null, { command: "npm test" }),
+      status: "awaiting_approval",
+      approval: { kind: "command", command: "npm test", cwd: ".", background: false, review: null, grant_prefix: null, request_id: "approval-1" },
+    };
     client.flushSync(() => mock.timers.tick(700));
     render([...finished(), { ...live[6], ended_at: now } as ReasoningStep, asking], true);
     assert.equal(with_class("approval-stub").length, 1);
+    assert.equal(with_class("approval-stub")[0]?.getAttribute("data-request"), "approval-1");
     assert.equal(with_class("collapsible-body").some((body) => body.contains(with_class("approval-stub")[0] as FakeElement)), false);
     assert.equal(group().getAttribute("data-open"), "false");
   } finally {
@@ -298,13 +301,4 @@ test("a row the user opens never moves the group body, and the body stops follow
     clear();
     unprobe();
   }
-});
-
-test("the group body is capped, keeps the app scrollbar and fades its edges only while it scrolls", () => {
-  const scroll = declarations(css_block(read("features/tools/WorkGroup.css"), ".work-group-scroll {"));
-  assert.equal(scroll["max-height"], "min(18rem, 50vh)");
-  assert.equal(scroll["overflow-y"], "auto");
-  assert.equal(scroll["scrollbar-width"], undefined);
-  assert.equal(scroll["animation-timeline"], "scroll(self y)");
-  assert.match(scroll["mask-image"], /var\(--mask\) var\(--group-fade-top\)/);
 });

@@ -24,4 +24,4 @@ export type ChatgptAccount = {
 
 export type ChatgptSignIn = { fresh: boolean; consent: boolean };
 
-export type AccountModel = { slug: string; display_name: string; context_window: number | null };
+export type AccountModel = { slug: string; display_name: string; context_window: number | null; service_tiers: string[] };

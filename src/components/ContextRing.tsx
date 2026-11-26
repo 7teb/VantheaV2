@@ -62,7 +62,7 @@ export const ContextRing = ({ usage, compact, mark, placement = "top-end" }: Con
         <div className="context-popover-usage">{label}</div>
         <div className="context-popover-bar" aria-hidden="true">
           <span style={{ width: `${percent}%` }} data-level={ratio >= 0.9 ? "high" : "normal"} />
-          {mark !== undefined && <i className="context-popover-mark" style={{ left: `${mark * 100}%` }} title={t("context.compact_mark")} />}
+          {mark !== undefined && <i className="context-popover-mark" style={{ left: `${mark * 100}%` }} />}
         </div>
         {result && (
           <p className="context-popover-result" data-status={result}>

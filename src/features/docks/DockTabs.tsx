@@ -23,7 +23,6 @@ export const DockTabs = ({ tabs, active_id, label, close_label, on_select, on_cl
             role="tab"
             aria-selected={active}
             className="dock-tab-button"
-            title={tab.label}
             onClick={() => on_select(tab.id)}
             onAuxClick={(event) => {
               if (event.button === 1) {

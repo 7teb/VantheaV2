@@ -79,4 +79,42 @@
   .edit-card .diff-empty {
     padding: 4px var(--space-2) var(--space-2);
   }
+
+  .read-card-code {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: auto minmax(max-content, 1fr);
+    align-items: start;
+    max-height: 420px;
+    overflow: auto;
+    padding: 4px 0 var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-code);
+    line-height: 19.5px;
+    --scrollbar: var(--scrollbar-command);
+    --scrollbar-hover: var(--scrollbar-command);
+  }
+
+  .read-card-code:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .read-card-gutter,
+  .read-card-text {
+    margin: 0;
+    font: inherit;
+    white-space: pre;
+  }
+
+  .read-card-gutter {
+    padding: 0 var(--space-3) 0 var(--space-2);
+    text-align: right;
+    color: var(--text-tertiary);
+    user-select: none;
+  }
+
+  .read-card-text {
+    padding-right: var(--space-2);
+    color: var(--text-secondary);
+  }
 }

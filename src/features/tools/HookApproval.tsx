@@ -10,9 +10,9 @@ import "./approval.css";
 import "./bodies-files.css";
 import "./hooks.css";
 
-type HookPreviewProps = { hook: HookFields; previous: HookFields | null; scope: string; scope_title: string };
+type HookPreviewProps = { hook: HookFields; previous: HookFields | null; scope: string };
 
-export const HookPreview = ({ hook, previous, scope, scope_title }: HookPreviewProps) => {
+export const HookPreview = ({ hook, previous, scope }: HookPreviewProps) => {
   const t = use_t();
   const changed = new Set(previous ? changed_fields(hook, previous) : []);
   const was = (key: keyof HookFields): boolean => previous !== null && changed.has(key);
@@ -23,7 +23,7 @@ export const HookPreview = ({ hook, previous, scope, scope_title }: HookPreviewP
   return (
     <div className="hook-preview">
       <ApprovalFacts>
-        <Fact label={t("hooks.scope_label")} value={scope} title={scope_title} />
+        <Fact label={t("hooks.scope_label")} value={scope} />
         <Fact label={t("hooks.event_label")} value={event_label(t, hook.event)} before={previous && was("event") ? event_label(t, previous.event) : null} />
         {matcher && (
           <Fact

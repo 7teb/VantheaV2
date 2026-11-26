@@ -15,7 +15,7 @@ import { ReviewingLabel } from "./ReviewPending.tsx";
 import { RowDetail } from "./RowMeta.tsx";
 import { has_body, is_agent_message, opens_by_itself } from "./tool-body.ts";
 import { is_active_status, started_run, tool_label, tool_meta } from "./tool-meta.ts";
-import { step_hint } from "./tool-summary.ts";
+import { todo_count } from "./tool-summary.ts";
 import { WorkingLetters } from "../../components/WorkingLetters.tsx";
 import { WebSearchRow, shows_web_row } from "./WebSearchRow.tsx";
 import { workflow_view } from "./workflow-model.ts";
@@ -53,6 +53,7 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
   const label = tool_label(t, step);
   const edit = step.view?.kind === "edit" ? step.view : null;
   const drafted = step.status === "drafting" ? (step.progress?.lines ?? 0) : 0;
+  const count = todo_count(step);
   const reviewing = is_reviewing(step);
   const expandable = has_body(t, step);
   const run = !expandable && step.view?.kind === "agent" && !is_agent_message(step) ? step.view : null;
@@ -68,7 +69,6 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
         className="tool-row-head"
         aria-expanded={expandable ? open : undefined}
         disabled={!expandable && !run}
-        title={run ? t("agent.view_transcript") : step_hint(step) || undefined}
         onClick={() => (run ? open_agent_run({ agent_id: run.agent_id, run_id: run.run_id }) : set_chosen(!open))}
       >
         <span className="tool-row-icon">
@@ -82,6 +82,7 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
         {reviewing && <ShieldTerminalIcon plain className="tool-row-shield" />}
         {edit && <span className="tool-stat-add">+{edit.added}</span>}
         {edit && <span className="tool-stat-remove">-{edit.removed}</span>}
+        {count !== "" && <span className="tool-row-detail">{count}</span>}
         {drafted > 0 && <DraftLines count={drafted} />}
         {started && <AgentRunMark run_id={started.run_id} />}
         <StatusMark step={step} />
@@ -92,7 +93,7 @@ const PlainToolRow = ({ chat_id, step, running = false, main_chat = false }: Too
       </button>
       {expandable && (
         <CollapsibleBody open={open}>
-          <div className="tool-row-body">{seen && <ToolBody step={step} chat_id={chat_id} />}</div>
+          <div className="tool-row-body">{seen && <ToolBody step={step} open={open} chat_id={chat_id} />}</div>
         </CollapsibleBody>
       )}
     </div>

@@ -184,14 +184,14 @@ test("a task deleted during its run ends without a record and without a notifica
 
 test("an approval card in a running run notifies once per card, also for its sub-agents, and not after the run", async () => {
   const task = await make_task();
-  const request = { kind: "memory", action: "remember", text: "x" };
+  const request = { kind: "memory", action: "remember", text: "x", request_id: "approval-1" };
   main.script.next.push({
     kind: "run",
     hold: true,
     bodies: [
       { type: "tool_approval", call_id: "c1", request },
       { type: "tool_approval", call_id: "c1", request },
-      { type: "tool_approval", call_id: "c2", request },
+      { type: "tool_approval", call_id: "c1", request: { ...request, request_id: "approval-2" } },
       { type: "text", round: 0, delta: no_new_activity },
       ended,
     ],

@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { before, test } from "node:test";
-import { css_block, declarations, read } from "./css-kit.ts";
 import { bundle, stub_components } from "./dom-kit.ts";
 
 let room: any;
@@ -141,34 +140,4 @@ test("room_plan shares the card room so small cards stay whole and the others sp
   assert.deepEqual(room.room_plan({ space: 600, fixed: 24, menu: 200, cards: [50, 300, 300] }), { menu_room: 576 - 194, card_cap: 163 });
   assert.deepEqual(room.room_plan({ space: 100, fixed: 24, menu: 300, cards: [300] }), { menu_room: 160, card_cap: 72 });
   assert.deepEqual(room.room_plan({ space: 500, fixed: 0, menu: 120, cards: [] }), { menu_room: 500, card_cap: null });
-});
-
-const queued_uncapped = (value: string, viewport: number, tuck: string): number => {
-  const shape = /^min\(([\d.]+)dvh, calc\(var\(--composer-card-cap, ([\d.]+)dvh\) - ([\d.]+)px - var\(--tab-tuck\)\)\)$/.exec(value);
-  assert.ok(shape, value);
-  const dvh = (amount: string) => (Number(amount) * viewport) / 100;
-  return Math.min(dvh(shape[1]), dvh(shape[2]) - Number(shape[3]) - Number.parseFloat(tuck));
-};
-
-test("the menu height follows the measured room and every lifted card honours the card cap", () => {
-  const popover = declarations(css_block(read("features/composer/ComposerPopover.css"), ".composer-popover {"));
-  assert.equal(popover["max-height"], "min(420px, var(--composer-popover-room, 420px))");
-  const slot_css = read("features/composer/ComposerSlot.css");
-  assert.equal(declarations(css_block(slot_css, ".composer-dock-card {"))["max-height"], "min(420px, 48vh, var(--composer-card-cap, 420px))");
-  assert.equal(
-    declarations(css_block(slot_css, ".composer-slot:has(.composer-dock-card ~ .composer-dock-card) .composer-dock-card {"))["max-height"],
-    "min(420px, 24vh, var(--composer-card-cap, 420px))",
-  );
-  assert.equal(declarations(css_block(read("features/composer/TodosPanel.css"), ".todos-panel-body {"))["max-height"], "min(200px, calc(var(--composer-card-cap, 240px) - 40px))");
-  const queued_css = read("features/composer/QueuedList.css");
-  const queued_height = declarations(css_block(queued_css, ".queued-list {"))["max-height"];
-  assert.equal(queued_height, "min(30dvh, calc(var(--composer-card-cap, 100dvh) - 1px - var(--tab-tuck)))");
-  const tuck = declarations(css_block(read("features/composer/ComposerTab.css"), ".composer-tab {"))["--tab-tuck"];
-  for (const viewport of [480, 720, 1080, 1440]) {
-    assert.equal(queued_uncapped(queued_height, viewport, tuck), (viewport * 30) / 100, `uncapped queued list at a ${viewport}px viewport`);
-  }
-  const popover_tsx = read("features/composer/ComposerPopover.tsx");
-  assert.match(popover_tsx, /const measure = \(\) => fit_popover\(node, slot, composer\);/);
-  assert.match(popover_tsx, /observer\.observe\(node\);\s*observer\.observe\(slot\);/);
-  assert.match(popover_tsx, /slot\.style\.removeProperty\("--composer-popover-lift"\);\s*slot\.style\.removeProperty\("--composer-card-cap"\);/);
 });

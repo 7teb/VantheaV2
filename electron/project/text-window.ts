@@ -5,6 +5,7 @@ export type TextWindow = {
   end_line: number;
   total_lines: number;
   content: string;
+  lines: string[];
   truncated: boolean;
   binary: boolean;
 };
@@ -20,6 +21,7 @@ export const read_text_window = async (file: string, start_line: number, limit: 
   const start = Math.max(1, Math.floor(start_line));
   const count = Math.max(1, Math.floor(limit));
   const selected: string[] = [];
+  const lines: string[] = [];
   let used_tokens = 0;
   let line_number = 0;
   let pending = "";
@@ -30,12 +32,14 @@ export const read_text_window = async (file: string, start_line: number, limit: 
   const consume = () => {
     line_number += 1;
     if (!truncated && line_number >= start && line_number < start + count) {
-      const rendered = `${line_number}: ${pending}${cut ? ` ... [line cut at ${max_line_chars} characters]` : ""}`;
+      const line = `${pending}${cut ? ` ... [line cut at ${max_line_chars} characters]` : ""}`;
+      const rendered = `${line_number}: ${line}`;
       const tokens = estimate_tokens(rendered) + 1;
       if (used_tokens + tokens > max_tokens) {
         truncated = true;
       } else {
         selected.push(rendered);
+        lines.push(line);
         used_tokens += tokens;
       }
     }
@@ -47,7 +51,7 @@ export const read_text_window = async (file: string, start_line: number, limit: 
   for await (const chunk of stream as AsyncIterable<string>) {
     if (first_chunk && looks_binary(chunk)) {
       stream.destroy();
-      return { start_line: start, end_line: start - 1, total_lines: 0, content: "", truncated: false, binary: true };
+      return { start_line: start, end_line: start - 1, total_lines: 0, content: "", lines: [], truncated: false, binary: true };
     }
     first_chunk = false;
     let offset = 0;
@@ -80,6 +84,7 @@ export const read_text_window = async (file: string, start_line: number, limit: 
     end_line: start + selected.length - 1,
     total_lines: line_number,
     content: selected.join("\n"),
+    lines,
     truncated,
     binary: false,
   };

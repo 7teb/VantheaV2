@@ -104,12 +104,19 @@ export const read_session = (secret: SessionSecret): SessionRecord => {
 
 export const write_session = (secret: SessionSecret, session: SessionRecord): Promise<void> => secret.write(JSON.stringify(session));
 
+const token_window = (value: unknown): number | null => (typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null);
+
 export const parse_account_model = (value: unknown): AccountModel | null => {
   if (!is_record(value) || typeof value.slug !== "string" || value.slug === "" || typeof value.display_name !== "string") {
     return null;
   }
-  const window = value.context_window;
-  return { slug: value.slug, display_name: value.display_name, context_window: typeof window === "number" && Number.isInteger(window) && window > 0 ? window : null };
+  const tiers = Array.isArray(value.service_tiers) ? value.service_tiers : [];
+  return {
+    slug: value.slug,
+    display_name: value.display_name,
+    context_window: token_window(value.max_context_window) ?? token_window(value.context_window),
+    service_tiers: tiers.flatMap((tier) => (is_record(tier) && typeof tier.id === "string" && tier.id ? [tier.id] : typeof tier === "string" && tier ? [tier] : [])),
+  };
 };
 
 const parse_models = (value: unknown): AccountModel[] | null => {

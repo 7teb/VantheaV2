@@ -24,6 +24,7 @@ export const approval: Record<keyof typeof en, string> = {
   "approval.skip": "Überspringen",
   "approval.submit": "Absenden",
   "approval.dismiss": "Verwerfen",
+  "approval.no_longer_pending": "Diese Freigabe ist nicht mehr offen.",
   "approval.prefix": "Ja, und bei Befehlen nicht mehr nachfragen, die beginnen mit: {x}",
   "approval.allow_readonly": "Ja, und Lese-Tools von {x} immer erlauben",
   "approval.allow_chat": "Ja, und dieses Tool für diesen Chat erlauben",

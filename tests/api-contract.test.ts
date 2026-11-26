@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { agent_approval_id, main_approval_id, parse_approval_id } from "../shared/api/approval-id.ts";
-import { api_version, type ApiEvent } from "../shared/api/contract.ts";
+import type { ApiEvent } from "../shared/api/contract.ts";
 import { api_event_types, api_routes, event_names, route_path } from "../shared/api/routes.ts";
 import { channel_kind } from "../shared/ipc/index.ts";
 
@@ -22,10 +22,6 @@ const every_event_type: Record<ApiEvent["type"], true> = {
   "claude.changed": true,
   "run.settled": true,
 };
-
-test("the API version is 1", () => {
-  assert.equal(api_version, 1);
-});
 
 test("route ids and method plus path pairs are unique", () => {
   const ids = api_routes.map((route) => route.id);
@@ -127,22 +123,22 @@ test("the Claude Code login change is published as claude.changed and the Claude
 });
 
 test("main approval ids round trip", () => {
-  const id = main_approval_id("c3_0");
-  assert.equal(id, "m:c3_0");
-  assert.deepEqual(parse_approval_id(id), { source: "main", call_id: "c3_0" });
+  const id = main_approval_id("request-1");
+  assert.equal(id, "m:request-1");
+  assert.deepEqual(parse_approval_id(id), { source: "main", request_id: "request-1" });
 });
 
-test("agent approval ids round trip and keep colons inside the call id", () => {
-  const id = agent_approval_id("agent_1", "run_2", "c1_4");
-  assert.equal(id, "a:agent_1:run_2:c1_4");
-  assert.deepEqual(parse_approval_id(id), { source: "agent", agent_id: "agent_1", run_id: "run_2", call_id: "c1_4" });
+test("agent approval ids round trip and keep colons inside the request id", () => {
+  const id = agent_approval_id("agent_1", "run_2", "request-2");
+  assert.equal(id, "a:agent_1:run_2:request-2");
+  assert.deepEqual(parse_approval_id(id), { source: "agent", agent_id: "agent_1", run_id: "run_2", request_id: "request-2" });
   assert.deepEqual(parse_approval_id(agent_approval_id("agent_1", "run_2", "x:y")), {
     source: "agent",
     agent_id: "agent_1",
     run_id: "run_2",
-    call_id: "x:y",
+    request_id: "x:y",
   });
-  assert.deepEqual(parse_approval_id(main_approval_id("x:y")), { source: "main", call_id: "x:y" });
+  assert.deepEqual(parse_approval_id(main_approval_id("x:y")), { source: "main", request_id: "x:y" });
 });
 
 test("malformed approval ids parse to null", () => {

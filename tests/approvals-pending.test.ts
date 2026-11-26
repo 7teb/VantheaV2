@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
-import type { ApprovalRequest } from "../shared/approval.ts";
+import type { ApprovalRequest, PendingApprovalRequest } from "../shared/approval.ts";
 import { waiting_approvals } from "../electron/agents/live.ts";
 import { deploy_agent } from "../electron/agents/runner.ts";
 import { cancel_chat, open_chat_window, pending_approvals, resolve_decision, wait_for_decision } from "../electron/permissions/approvals.ts";
@@ -13,7 +13,7 @@ before(start_runner);
 
 after(stop_runner);
 
-const command: ApprovalRequest = { kind: "command", command: "npm run build", cwd: ".", background: false, review: null, grant_prefix: null };
+const command: PendingApprovalRequest = { kind: "command", command: "npm run build", cwd: ".", background: false, review: null, grant_prefix: null, request_id: "command-approval" };
 
 const memory: ApprovalRequest = { kind: "memory", action: "remember", text: "x" };
 
@@ -22,7 +22,7 @@ test("a reject feedback denies at once with that text and registers nothing", as
   const decision = await wait_for_decision({ key: "chat-r", chat_id: "chat-r", call_id: "c0_0", request: command, signal, reject_feedback });
   assert.deepEqual(decision, { approved: false, grant: "once", feedback: reject_feedback });
   assert.deepEqual(pending_approvals("chat-r"), []);
-  assert.equal(resolve_decision("chat-r", "c0_0", { approved: true, grant: "once", feedback: "" }), false);
+  assert.equal(resolve_decision("chat-r", command.request_id, { approved: true, grant: "once", feedback: "" }), false);
 });
 
 test("an aborted signal still answers before the reject feedback", async () => {
@@ -47,16 +47,18 @@ test("the reject feedback wins over an open full window", async () => {
 
 test("pending_approvals lists the main and agent waits of one chat and drops answered ones", async () => {
   const signal = new AbortController().signal;
+  const agent_request = { ...memory, request_id: "agent-approval" };
+  const other_request = { ...command, request_id: "other-approval" };
   const main = wait_for_decision({ key: "chat-p", chat_id: "chat-p", call_id: "c0_0", request: command, signal });
-  const agent = wait_for_decision({ key: "agent:run_1", chat_id: "chat-p", call_id: "c1_0", request: memory, signal });
-  const other = wait_for_decision({ key: "chat-q", chat_id: "chat-q", call_id: "c0_0", request: command, signal });
+  const agent = wait_for_decision({ key: "agent:run_1", chat_id: "chat-p", call_id: "c1_0", request: agent_request, signal });
+  const other = wait_for_decision({ key: "chat-q", chat_id: "chat-q", call_id: "c0_0", request: other_request, signal });
   assert.deepEqual(pending_approvals("chat-p"), [
     { key: "chat-p", call_id: "c0_0", request: command },
-    { key: "agent:run_1", call_id: "c1_0", request: memory },
+    { key: "agent:run_1", call_id: "c1_0", request: agent_request },
   ]);
-  assert.deepEqual(pending_approvals("chat-q"), [{ key: "chat-q", call_id: "c0_0", request: command }]);
+  assert.deepEqual(pending_approvals("chat-q"), [{ key: "chat-q", call_id: "c0_0", request: other_request }]);
   assert.deepEqual(pending_approvals("chat-none"), []);
-  assert.equal(resolve_decision("agent:run_1", "c1_0", { approved: true, grant: "once", feedback: "" }), true);
+  assert.equal(resolve_decision("agent:run_1", agent_request.request_id, { approved: true, grant: "once", feedback: "" }), true);
   assert.equal((await agent).approved, true);
   assert.deepEqual(pending_approvals("chat-p"), [{ key: "chat-p", call_id: "c0_0", request: command }]);
   cancel_chat("chat-p");
@@ -65,6 +67,19 @@ test("pending_approvals lists the main and agent waits of one chat and drops ans
   assert.equal((await other).approved, false);
   assert.deepEqual(pending_approvals("chat-p"), []);
   assert.deepEqual(pending_approvals("chat-q"), []);
+});
+
+test("a late reply to an earlier approval with the same call id leaves the next approval pending", async () => {
+  const first_controller = new AbortController();
+  const first = wait_for_decision({ key: "chat-late", chat_id: "chat-late", call_id: "c0_0", request: { ...command, request_id: "turn-1" }, signal: first_controller.signal });
+  first_controller.abort();
+  assert.equal((await first).approved, false);
+  const second_request = { ...command, command: "npm run deploy", request_id: "turn-2" };
+  const second = wait_for_decision({ key: "chat-late", chat_id: "chat-late", call_id: "c0_0", request: second_request, signal: new AbortController().signal });
+  assert.equal(resolve_decision("chat-late", "turn-1", { approved: true, grant: "once", feedback: "" }), false);
+  assert.deepEqual(pending_approvals("chat-late"), [{ key: "chat-late", call_id: "c0_0", request: second_request }]);
+  assert.equal(resolve_decision("chat-late", "turn-2", { approved: false, grant: "once", feedback: "no" }), true);
+  assert.deepEqual(await second, { approved: false, grant: "once", feedback: "no" });
 });
 
 test("a sub-agent of a chat pinned to the reject policy gets its approvals denied without waiting", async () => {

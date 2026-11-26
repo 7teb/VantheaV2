@@ -31,7 +31,7 @@ const deepseek = entry("deepseek/deepseek-v4.1-flash-1017", { provider: "deepsee
 
 const catalog: ModelEntry[] = [deepseek, sol, luna, astra, oss];
 
-const listed = (slug: string, context_window: number | null = null): AccountModel => ({ slug, display_name: slug, context_window });
+const listed = (slug: string, context_window: number | null = null, service_tiers: string[] = []): AccountModel => ({ slug, display_name: slug, context_window, service_tiers });
 
 const ids = (models: readonly ModelEntry[]) => models.map((model) => model.id);
 
@@ -60,6 +60,13 @@ test("plan entries keep their speed tiers and everything else except a Pro the a
   assert.equal(plan_sol.pro, undefined);
   assert.deepEqual({ ...plan_sol }, without_pro(sol));
   assert.deepEqual(pro_locked, ["openai/gpt-6.2-sol"]);
+});
+
+test("plan speed tiers come from the service tiers the account lists for each served model", () => {
+  const account = [listed("gpt-6.2-sol", null, ["priority", "ultrafast", "scale"]), listed("gpt-6-luna", null, ["fast", "priority"]), listed("gpt-6-astra")];
+  const { plan_tiers } = plan_models(catalog, account);
+  assert.deepEqual(plan_tiers, { "openai/gpt-6.2-sol": ["fast", "ultrafast"], "openai/gpt-6-luna": ["fast"] });
+  assert.deepEqual(plan_models(catalog, null).plan_tiers, {});
 });
 
 test("the pro variant stays and runs on the plan only when the account lists the pro slug, otherwise it is locked", () => {

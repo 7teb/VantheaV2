@@ -10,12 +10,12 @@ import { note_rejected_model, read_plan_stream } from "./stream.ts";
 
 const quiet_hooks = { idle_ms: null, on_push: () => undefined, after_chunk: () => undefined };
 
-const run_attempt = async (body: string, signal: AbortSignal, transport: Transport): Promise<CompleteResult> => {
+const run_attempt = async (body: string, cache_key: string | undefined, signal: AbortSignal, transport: Transport): Promise<CompleteResult> => {
   const watchdog = create_watchdog(signal);
   const accumulator = create_plan_accumulator();
   watchdog.arm(transport.first_byte_ms, "complete");
   try {
-    const reply = await send_plan(body, watchdog, transport);
+    const reply = await send_plan(body, cache_key, watchdog, transport);
     if (!(await read_plan_stream(reply, accumulator, watchdog, quiet_hooks))) {
       throw new ModelError("stream_interrupted", "The ChatGPT plan closed the stream before the completion was complete.");
     }
@@ -44,7 +44,7 @@ export const complete_plan = async (request: CompleteRequest, signal?: AbortSign
     return await with_retries({
       transport,
       signal: active,
-      run: () => run_attempt(body, active, transport),
+      run: () => run_attempt(body, request.session_id, active, transport),
       cancelled: () => {
         throw active.reason ?? new Error(`completion with ${request.model_id} was cancelled`);
       },

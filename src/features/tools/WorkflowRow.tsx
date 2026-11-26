@@ -24,7 +24,6 @@ export const WorkflowRow = memo(({ chat_id, view }: WorkflowRowProps) => {
         type="button"
         className="tool-row-head"
         disabled={gone}
-        title={summary?.description ? `${summary.description}\n${t("workflow.view")}` : t("workflow.view")}
         onClick={() => open_workflow(view.run_id)}
       >
         <span className="tool-row-icon">

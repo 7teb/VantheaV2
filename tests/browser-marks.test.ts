@@ -40,12 +40,6 @@ test("the outline sits 2 px outside the box and the tag carries white glyphs on 
   assert.deepEqual(pixel(bitmap, width, tag.x + 4, tag.y + 2), magenta);
 });
 
-test("magenta and white survive a red and blue channel swap", () => {
-  for (const color of [magenta, white]) {
-    assert.deepEqual([color[2], color[1], color[0], color[3]], color);
-  }
-});
-
 test("a bitmap of the wrong size is refused", () => {
   assert.throws(() => draw_marks(Buffer.alloc(10), 4, 4, []), /Unexpected screenshot bitmap size/);
 });

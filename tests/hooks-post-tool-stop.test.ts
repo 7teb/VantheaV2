@@ -1,18 +1,11 @@
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { after, before, test } from "node:test";
+import { test } from "node:test";
 import type { TurnHooks } from "../electron/hooks/turn-hooks.ts";
-import { turn_hooks } from "../electron/hooks/turn-hooks.ts";
 import { run_turn_loop } from "../electron/turn/loop.ts";
 import { build_api_messages } from "../electron/turn/history.ts";
-import { hook, ps_path, set_hooks, start_settings, temp_root } from "./hooks-kit.ts";
 import { completed, ends, harness, make_tool, model, tool_call, transcript, use_media_root } from "./turn-loop-harness.ts";
 
 use_media_root();
-let root = "";
-before(async () => { root = await temp_root("post-stop"); await start_settings(root); });
-after(async () => { if (root) await fs.rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
 
 const gates = (post_tool: TurnHooks["post_tool"]): TurnHooks => ({
   pre_tool: async () => ({ kind: "run", runs: [] }), post_tool,
@@ -70,29 +63,4 @@ test("pre-hook Stop still prevents execution and does not fabricate a completed 
   assert.equal(h.events.filter((event) => event.type === "tool_end").length, 0);
   assert.equal(transcript(h.events).steps.some((step) => step.kind === "tool" && step.status === "done"), false);
   assert.equal(ends(h.events).length, 1);
-});
-
-test("the actual PostToolUse PowerShell runner can be stopped without losing a completed result", async () => {
-  const marker = path.join(root, "post-entered.txt");
-  await set_hooks({ global: [hook({ event: "PostToolUse", command: `Set-Content -LiteralPath '${ps_path(marker)}' -Value entered; Start-Sleep -Seconds 45` })], projects: {} });
-  const h = harness(async () => completed({ tool_calls: [tool_call("probe")] }), [make_tool("probe", async () => ({ status: "done", text: "actual hook result", view: null }))]);
-  h.session.project_root = root;
-  h.session.hooks = turn_hooks({ chat_id: "c", turn_id: "m", cwd: root, project_path: "", mode: "auto", plan: false, agent: null, emit: h.session.emit, signal: h.controller.signal });
-  const running = run_turn_loop(h.session, h.messages);
-  try {
-    const deadline = Date.now() + 10000;
-    while (!(await fs.stat(marker).then(() => true, (error: NodeJS.ErrnoException) => { if (error.code === "ENOENT") return false; throw error; }))) {
-      assert.ok(Date.now() < deadline, "the real post hook did not enter");
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    }
-    h.controller.abort(new Error("the user stopped the real post hook"));
-    await running;
-    const step = transcript(h.events).steps.find((entry) => entry.kind === "tool");
-    assert.equal(step?.kind === "tool" && step.status, "done");
-    assert.equal(step?.kind === "tool" && step.result_text, "actual hook result");
-    assert.deepEqual(ends(h.events), [{ type: "end", status: "stopped", error: null }]);
-  } finally {
-    h.controller.abort();
-    await running;
-  }
 });

@@ -4,7 +4,6 @@ import path from "node:path";
 import { after, before, test } from "node:test";
 import { report_event_context, report_event_text } from "../shared/agent-notes.ts";
 import type { ApprovalRequest } from "../shared/approval.ts";
-import type { ModelEntry } from "../shared/models.ts";
 import { live_run } from "../electron/agents/live.ts";
 import { agent_role_section } from "../electron/agents/prompt.ts";
 import { parse_index, public_summary } from "../electron/agents/records.ts";
@@ -13,7 +12,6 @@ import { label_of, profile_text, roster_entries, roster_text } from "../electron
 import { deploy_agent } from "../electron/agents/runner.ts";
 import { reminder_interval } from "../electron/agents/session.ts";
 import { chat_agents, get_agent, init_agent_store, list_agents, save_index_sync } from "../electron/agents/store.ts";
-import { compose_sections, type SectionInput } from "../electron/prompts/sections.ts";
 import { get_agent_status_tool } from "../electron/tools/agents/manage.ts";
 import { message_main_agent_tool } from "../electron/tools/agents/message-main.ts";
 import { continue_agent_tool, deploy_agent_tool } from "../electron/tools/agents/start.ts";
@@ -237,37 +235,6 @@ test("records stored before without_tools existed load with no tools removed", (
   assert.equal(agent_role_section(old).body.includes("removed these tools"), false);
   assert.deepEqual(mixed.without_tools, ["run_command"]);
   assert.equal(profile_text(mixed), "worker (without run_command)");
-});
-
-const section_model: ModelEntry = { ...model, id: "test/main" };
-
-const section_input = (names: string[]): SectionInput => ({
-  model: section_model,
-  mode: "auto",
-  plan: false,
-  personality: "pragmatic",
-  project_root: "C:/proj",
-  scratchpad: null,
-  project_docs: [],
-  listing: "",
-  custom_instructions: "",
-  tool_names: new Set(names),
-  user_attachments: false,
-  major: false,
-  deferred_mcp: [],
-});
-
-test("the main agent learns when to use without_tools and the parameter stays optional", () => {
-  const body = compose_sections(section_input(["deploy_agent"])).find((section) => section.title === "sub_agents")?.body ?? "";
-  assert.doesNotMatch(body, /without_tools/);
-  const parameters = deploy_agent_tool.spec.parameters;
-  assert.deepEqual(parameters.properties.without_tools, {
-    type: "array",
-    items: { type: "string" },
-    description: (parameters.properties.without_tools as { description: string }).description,
-  });
-  assert.equal(parameters.required?.includes("without_tools"), false);
-  assert.match(continue_agent_tool.spec.description, /Tools removed with without_tools stay removed\.$/);
 });
 
 test("an agent without message_main_agent gets no update reminder after many silent tool calls and cannot send updates", async () => {

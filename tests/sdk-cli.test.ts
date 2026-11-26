@@ -51,7 +51,7 @@ const result_of = (patch: Partial<RunResult> = {}, needs: Partial<RunResult["nee
   messages: [],
   active: { turn: false, agents: 0, workflows: 0, background: 0, queued: 0 },
   changed_files: [],
-  usage: { prompt_tokens: 1, completion_tokens: 1, reasoning_tokens: 0, rounds: 1 },
+  usage: { prompt_tokens: 1, completion_tokens: 1, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0, rounds: 1 },
   started_at: "2026-11-20T12:00:00.000Z",
   ended_at: "2026-11-20T12:00:01.000Z",
   ...patch,
@@ -203,7 +203,14 @@ test("exit_code is 0 only for a done run that needs nothing", () => {
   assert.equal(exit_code(result_of({ status: "stopped" })), 1);
   assert.equal(exit_code(result_of({}, { questions: [{ id: "q", title: "Which?", options: [], message_id: "m1", call_id: "c", index: 0 }] })), 1);
   assert.equal(exit_code(result_of({}, { plan_message_id: "m1" })), 1);
-  const approval = { approval_id: "m:c", source: "main" as const, agent_id: null, run_id: null, call_id: "c", request: { kind: "memory" as const, action: "remember" as const, text: "x" } };
+  const approval = {
+    approval_id: "m:request-1",
+    source: "main" as const,
+    agent_id: null,
+    run_id: null,
+    call_id: "c",
+    request: { kind: "memory" as const, action: "remember" as const, text: "x", request_id: "request-1" },
+  };
   assert.equal(exit_code(result_of({}, { approvals: [approval] })), 1);
   assert.deepEqual(result_notes(result_of({ status: "failed", error: { kind: "credits", message: "no credits" } }, { plan_message_id: "m1" })), [
     "status: failed (credits: no credits)",

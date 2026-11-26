@@ -80,7 +80,7 @@ export const result_of = (run_id: string, status: RunResult["status"]): RunResul
   needs_input: { questions: [], approvals: [], plan_message_id: null },
   active: { turn: status === "running", agents: 0, workflows: 0, background: 0, queued: 0 },
   changed_files: [],
-  usage: { prompt_tokens: 1, completion_tokens: 2, reasoning_tokens: 0, rounds: 1 },
+  usage: { prompt_tokens: 1, completion_tokens: 2, reasoning_tokens: 0, cached_tokens: 0, cache_write_tokens: 0, rounds: 1 },
   started_at: "2026-11-20T12:00:00.000Z",
   ended_at: status === "running" ? null : "2026-11-20T12:00:05.000Z",
 });

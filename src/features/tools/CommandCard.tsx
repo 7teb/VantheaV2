@@ -38,7 +38,7 @@ export const CommandText = ({ command, prompt = true }: { command: string; promp
         {command}
       </pre>
       {clamped && (
-        <button type="button" className="command-card-toggle" aria-expanded={expanded} aria-label={label} title={label} onClick={() => set_expanded(!expanded)}>
+        <button type="button" className="command-card-toggle" aria-expanded={expanded} aria-label={label} onClick={() => set_expanded(!expanded)}>
           <ChevronDownIcon />
         </button>
       )}
@@ -46,21 +46,34 @@ export const CommandText = ({ command, prompt = true }: { command: string; promp
   );
 };
 
-const CommandOutput = ({ output }: { output: string | null }) => {
+const CommandOutput = ({ output, wrap }: { output: string | null; wrap: boolean }) => {
   const t = use_t();
   if (output === null) {
     return null;
   }
-  return output ? <OutputBlock text={output} tail /> : <div className="command-card-empty">{t("tools.no_output")}</div>;
+  return output ? <OutputBlock text={output} tail className={wrap ? "output-block-wrap" : undefined} /> : <div className="command-card-empty">{t("tools.no_output")}</div>;
 };
 
-type CommandCardProps = { shell: string; command: string; output: string | null; footer: ReactNode; notice?: ReactNode };
+type CommandCardProps = {
+  shell: string;
+  command: string;
+  output: string | null;
+  footer: ReactNode;
+  notice?: ReactNode;
+  prompt?: boolean;
+  wrap?: boolean;
+  label_kind?: "shell" | "path";
+};
 
-export const CommandCard = ({ shell, command, output, footer, notice = null }: CommandCardProps) => (
+export const CommandCard = ({ shell, command, output, footer, notice = null, prompt = true, wrap = false, label_kind = "shell" }: CommandCardProps) => (
   <div className="command-card">
-    {shell && <div className="command-card-shell">{shell}</div>}
-    {command && <CommandText command={command} />}
-    {notice ?? <CommandOutput output={output} />}
+    {shell && (
+      <div className="command-card-shell" data-kind={label_kind}>
+        {shell}
+      </div>
+    )}
+    {command && <CommandText command={command} prompt={prompt} />}
+    {notice ?? <CommandOutput output={output} wrap={wrap} />}
     {footer && <div className="command-card-footer">{footer}</div>}
   </div>
 );

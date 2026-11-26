@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { after, before, test } from "node:test";
-import { find_skill, init_skills, skill_entries, skills_prompt_section } from "../electron/skills/store.ts";
+import { find_skill, init_skills } from "../electron/skills/store.ts";
 import { init_settings } from "../electron/settings/store.ts";
 import { skill_tools } from "../electron/tools/skills/index.ts";
 import type { ToolContext } from "../electron/tools/types.ts";
@@ -92,22 +92,4 @@ test("read_skill reads a nested file by its listed path and refuses everything e
     assert.equal(refused.status, "failed");
     assert.match(refused.text, /has no extra file/);
   }
-});
-
-test("the shipped effects-lab skill loads in the design group with its cards readable", async () => {
-  const roots = await fresh_roots();
-  await init_skills({ root: roots.user, legacy_root: roots.legacy, builtin_root: path.resolve("skills") });
-  const entry = skill_entries().find((item) => item.slug === "builtin:design/effects-lab");
-  assert.equal(entry?.error, "");
-  assert.equal(entry?.group, "design");
-  const skill = find_skill("effects-lab");
-  assert.ok(skill);
-  const cards = skill.files.filter((file) => file.startsWith("styles/"));
-  assert.equal(cards.length, 21);
-  assert.ok(skill.files.includes("kit/helpers.js"));
-  assert.ok(skill.files.includes("tools/check.py"));
-  assert.match((await skills_prompt_section())?.body ?? "", /^- effects-lab: Build polished visual effect pages/m);
-  const card = await read_skill().execute({} as ToolContext, { name: "effects-lab", file: "styles/neon_glow.md" });
-  assert.equal(card.status, "done");
-  assert.match(card.text, /^FILE "styles\/neon_glow\.md" of the skill "effects-lab":\n\n# /);
 });

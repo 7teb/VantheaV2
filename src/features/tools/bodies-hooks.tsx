@@ -35,7 +35,7 @@ const HookList = ({ hooks }: { hooks: ScopedHook[] }) => {
             <li key={hook.id} className="hook-list-item" data-enabled={hook.enabled}>
               <span className="hook-list-event">{event_label(t, hook.event)}</span>
               {matcher && <span className={matcher.all ? "hook-list-matcher" : "hook-list-matcher tool-body-mono"}>{matcher.text}</span>}
-              <span className="hook-list-command tool-body-mono" title={hook.command}>
+              <span className="hook-list-command tool-body-mono">
                 {hook.command}
               </span>
               {!hook.enabled && <span className="hook-list-off">{t("hooks.state_off")}</span>}
@@ -59,7 +59,6 @@ export const HooksBody = ({ view }: BodyProps<"hooks">) => {
       hook={first}
       previous={view.action === "change" ? view.previous : null}
       scope={scope_text(t, first.scope, projects)}
-      scope_title={first.scope.kind === "project" ? first.scope.path : ""}
     />
   );
 };

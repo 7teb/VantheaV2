@@ -76,12 +76,12 @@ export const step_detail = (t: Translate, step: ToolStep, live: LiveStatus = unk
   }
 };
 
-export const step_hint = (step: ToolStep): string => {
+export const todo_count = (step: ToolStep): string => {
   const view = step.view;
-  if (view?.kind === "browser") {
-    return [...new Set([view.title, view.url].filter(Boolean))].join("\n");
+  if (view?.kind !== "todos" || view.todos.length === 0) {
+    return "";
   }
-  return view?.kind === "web_search" ? view.query : "";
+  return `${view.todos.filter((todo) => todo.status === "done").length}/${view.todos.length}`;
 };
 
 const counted_categories = new Set<ToolCategory>(["reads", "listings", "edits", "agent_checks", "agent_stops", "task_checks", "task_stops"]);

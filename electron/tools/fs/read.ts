@@ -151,6 +151,7 @@ export const read_file_tool = define_tool<ReadArgs>({
           end_line: window.end_line,
           total_lines: window.total_lines,
           truncated: window.truncated,
+          content: window.lines.join("\n"),
         },
       };
     }),

@@ -27,11 +27,11 @@ export type ApiMessage = ApiSystemMessage | ApiUserMessage | ApiAssistantMessage
 
 export type ApiTool = { type: "function"; function: { name: string; description: string; parameters: JsonSchema } };
 
-export type RoundUsage = { prompt_tokens: number; completion_tokens: number; reasoning_tokens: number };
+export type RoundUsage = { prompt_tokens: number; completion_tokens: number; reasoning_tokens: number; cached_tokens: number; cache_write_tokens: number };
 
 export type RoundToolCall = { index: number; id: string; name: string; arguments: string };
 
-export type RoundRequest = { model: ModelEntry; effort: string; messages: ApiMessage[]; tools: ToolSpec[]; tool_choice?: "none"; max_tokens?: number };
+export type RoundRequest = { model: ModelEntry; effort: string; messages: ApiMessage[]; tools: ToolSpec[]; tool_choice?: "none"; max_tokens?: number; cache_key?: string };
 
 export type ToolDraftUpdate = { lines: number | null; delta?: string; path?: string; old_text?: string };
 

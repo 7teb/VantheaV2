@@ -59,7 +59,7 @@ export const ScheduledPreview = ({ task, previous }: { task: ScheduledCard; prev
         <Fact label={t("scheduled.card_schedule")} value={every(t, task)} before={previous && changed("interval") ? every(t, previous) : null} />
         <Fact label={t("scheduled.card_mode")} value={<ModeValue mode={task.mode} />} before={previous && changed("mode") ? <ModeValue mode={previous.mode} /> : null} />
         <Fact label={t("scheduled.card_model")} value={text.model(task)} before={previous && model_changed ? text.model(previous) : null} />
-        <Fact label={t("scheduled.card_project")} value={text.project(task)} title={task.project_path} before={previous && changed("project_path") ? text.project(previous) : null} />
+        <Fact label={t("scheduled.card_project")} value={text.project(task)} before={previous && changed("project_path") ? text.project(previous) : null} />
         {(!task.enabled || changed("enabled")) && (
           <Fact label={t("hooks.state_label")} value={state_text(t, task.enabled)} before={previous && changed("enabled") ? state_text(t, previous.enabled) : null} />
         )}

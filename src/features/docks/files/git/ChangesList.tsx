@@ -97,7 +97,6 @@ const ChangeRow = ({ entry, active, counts, on_open }: ChangeRowProps) => {
   const trimmed = entry.path.replace(/\/$/, "");
   const name = entry.path.endsWith("/") ? `${base_name(trimmed)}/` : base_name(trimmed);
   const place = entry.orig_path === null ? parent_dir(trimmed) : `← ${base_name(entry.orig_path)}`;
-  const title = entry.orig_path === null ? entry.path : `${entry.orig_path} → ${entry.path}`;
   const content = (
     <>
       {entry.nested_repo ? (
@@ -114,13 +113,13 @@ const ChangeRow = ({ entry, active, counts, on_open }: ChangeRowProps) => {
   );
   if (is_folder(entry)) {
     return (
-      <div className="git-change" data-git={entry.status} title={title}>
+      <div className="git-change" data-git={entry.status}>
         {content}
       </div>
     );
   }
   return (
-    <button type="button" className="git-change" data-git={entry.status} data-active={active} title={title} onClick={() => on_open(entry.path, entry.status === "untracked" ? "file" : "diff")}>
+    <button type="button" className="git-change" data-git={entry.status} data-active={active} onClick={() => on_open(entry.path, entry.status === "untracked" ? "file" : "diff")}>
       {content}
     </button>
   );

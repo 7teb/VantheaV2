@@ -36,4 +36,4 @@ export const remote_refused: ReadonlySet<InvokeName | SendName> = new Set<Invoke
 
 export const remote_local_channels: ReadonlySet<InvokeName> = new Set<InvokeName>(["window:state", "shell:open_external", "artifacts:export"]);
 
-export const remote_hidden_events: ReadonlySet<EventName> = new Set<EventName>(["window:changed", "remote:changed", "browser:changed", "scheduled:open_chat"]);
+export const remote_hidden_events: ReadonlySet<EventName> = new Set<EventName>(["window:changed", "remote:changed", "browser:changed", "browser:show", "scheduled:open_chat"]);

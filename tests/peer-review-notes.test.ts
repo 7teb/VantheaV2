@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
 import { test } from "node:test";
 import { parse_agent_notice, parse_update_batch, parse_update_events, update_event_text, update_notice_text } from "../shared/agent-notes.ts";
 import { agent_label, parse_peer_alerts, parse_peer_notice, peer_alert_text, peer_notice_text, type PeerMessage } from "../shared/peer-notes.ts";
@@ -52,18 +51,6 @@ test("an update that quotes the alert marker shows no alert, and an alert body t
     notes.map((note) => [note.name, note.body]),
     [["Worker", alert.body]],
   );
-});
-
-test("the agents skill file documents the team, messages, what each side sees and the review, without the old message limit", async () => {
-  const doc = await fs.readFile(new URL("../skills/vantheax/agents.md", import.meta.url), "utf8");
-  const headings = [...doc.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
-  for (const heading of ["Agents in one chat", "Messages between agents", "What the main agent sees", "What you see", "Review of agent texts", "Messages from an agent to the main agent"]) {
-    assert.ok(headings.includes(heading), heading);
-  }
-  assert.doesNotMatch(doc, /max_main_messages|at most 10 messages|10 messages per run/i);
-  assert.match(doc, /Deviation is not deception\./);
-  assert.match(doc, /also in ask; a card appears only when the review answers "review" or is unavailable/);
-  assert.doesNotMatch(doc, /[\u2013\u2014]/);
 });
 
 test("a batch of updates and alerts keeps the order of its events and leaves out old loop alerts", () => {

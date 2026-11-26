@@ -1,12 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ToolView } from "../../../shared/tool-view.ts";
 import { CollapsibleBody } from "../../components/Collapsible.tsx";
-import { ChevronRightIcon, CircleAlertIcon } from "../../components/icons.tsx";
+import { ChevronRightIcon } from "../../components/icons.tsx";
 import { Markdown } from "../../components/Markdown.tsx";
 import { reduced_motion } from "../../components/reduced-motion.ts";
 import { use_t } from "../../i18n/index.ts";
 import { follow, host_of, SourceIcon } from "./bodies-web.tsx";
-import { page_address } from "./tool-meta.ts";
 import "./WebSources.css";
 
 const stack_limit = 6;
@@ -43,7 +42,6 @@ export const WebSources = ({ view }: WebSourcesProps) => {
   const rows = useRef<AvatarRefs>(new Map());
   const flight = useRef<Flight | null>(null);
   const sources = view.sources;
-  const failed = view.failed ?? [];
   const total = sources.length;
   const is_shown = (index: number) => shown > total - 1 - index;
 
@@ -100,7 +98,7 @@ export const WebSources = ({ view }: WebSourcesProps) => {
             return (
               <li key={index} className="web-source-item" data-shown={visible} inert={!visible}>
                 <div className="web-source-clip">
-                  <a className="web-source-link" href={source.url} title={source.url} onClick={(event) => follow(event, source.url)}>
+                  <a className="web-source-link" href={source.url} onClick={(event) => follow(event, source.url)}>
                     {visible ? (
                       <span ref={keep(rows.current, index)} className="web-avatar" style={{ zIndex: total - index }}>
                         <SourceIcon host={host} />
@@ -119,21 +117,12 @@ export const WebSources = ({ view }: WebSourcesProps) => {
           })}
         </ul>
       )}
-      {(failed.length > 0 || view.answer !== "") && (
+      {view.answer !== "" && (
         <CollapsibleBody open={open}>
           <div className="web-sources-extra">
-            {failed.map((entry, index) => (
-              <div key={index} className="web-failure" title={entry.url}>
-                <CircleAlertIcon />
-                <span className="web-failure-url">{page_address(entry.url)}</span>
-                <span className="web-failure-error">{entry.error}</span>
-              </div>
-            ))}
-            {view.answer !== "" && (
-              <div className="tool-body-quote">
-                <Markdown text={view.answer} className="tool-body-markdown" />
-              </div>
-            )}
+            <div className="tool-body-quote">
+              <Markdown text={view.answer} className="tool-body-markdown" />
+            </div>
           </div>
         </CollapsibleBody>
       )}

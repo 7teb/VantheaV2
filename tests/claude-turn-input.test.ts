@@ -177,6 +177,27 @@ test("an idle wait that brings input continues the turn with that input", async 
   assert.equal(ends(h.events).length, 1);
 });
 
+test("a finished answer ends the turn when notes arrive after it and the idle wait brings nothing", { timeout: 5000 }, async () => {
+  let note_calls = 0;
+  let idle_calls = 0;
+  const { fake, h, done } = begin([], {
+    idle: async () => {
+      idle_calls += 1;
+      return false;
+    },
+    take_notes: () => (note_calls++ === 0 ? [] : [note("agent roster changed")]),
+  });
+  const query = await fake.opened();
+  await query.next_push();
+  query.send(init(), ...text_response("m1", "final report"), result());
+  await done;
+  assert.equal(query.pushed.length, 1);
+  assert.equal(idle_calls, 1);
+  assert.equal(ends(h.events).length, 1);
+  assert.equal(ends(h.events)[0].type === "end" && ends(h.events)[0].status, "done");
+  assert.deepEqual(h.events.filter((event) => event.type === "notice"), []);
+});
+
 test("a Stop hook that asks to continue sends its note and the turn reads on", async () => {
   let stops = 0;
   const hooks = test_hooks({

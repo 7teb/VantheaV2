@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { after, before, mock, test } from "node:test";
 import { models_endpoint, token_endpoint } from "../electron/chatgpt/endpoints.ts";
 import { account_models, init_chatgpt, refresh_account_models, shutdown_chatgpt } from "../electron/chatgpt/service.ts";
+import { parse_account_model } from "../electron/chatgpt/store.ts";
 import { writes_settled } from "../electron/storage/json-file.ts";
 import { account_kit, sign_in_with, signed_in_kit, temp_root, token_values, type AccountKit } from "./support/fake-openai-auth.ts";
 
@@ -24,9 +25,16 @@ after(async () => {
 });
 
 const listing = [
-  { slug: "gpt-6.2-sol", display_name: "GPT-6.2 Sol", visibility: "list", context_window: 500000, supported_in_api: true },
+  {
+    slug: "gpt-6.2-sol",
+    display_name: "GPT-6.2 Sol",
+    visibility: "list",
+    context_window: 500000,
+    supported_in_api: true,
+    service_tiers: [{ id: "priority", name: "Fast" }, { id: "ultrafast", name: "Ultrafast" }, { name: "no id" }, 7],
+  },
   { slug: "gpt-6-hidden", display_name: "Hidden", visibility: "hide", context_window: 128000 },
-  { slug: "gpt-6-luna", display_name: "GPT-6 Luna", visibility: "list", context_window: 0 },
+  { slug: "gpt-6-luna", display_name: "GPT-6 Luna", visibility: "list", context_window: 0, service_tiers: "priority" },
   { slug: "gpt-6.1-terra", display_name: "GPT-6.1 Terra", visibility: "list", context_window: 1.5 },
   { slug: "gpt-6.1-sol", display_name: "GPT-6.1 Sol", visibility: "list", context_window: "500000" },
   { slug: "no-name", visibility: "list" },
@@ -36,11 +44,11 @@ const listing = [
 ];
 
 const expected = [
-  { slug: "gpt-6.2-sol", display_name: "GPT-6.2 Sol", context_window: 500000 },
-  { slug: "gpt-6-luna", display_name: "GPT-6 Luna", context_window: null },
-  { slug: "gpt-6.1-terra", display_name: "GPT-6.1 Terra", context_window: null },
-  { slug: "gpt-6.1-sol", display_name: "GPT-6.1 Sol", context_window: null },
-  { slug: "gpt-5.5", display_name: "GPT-5.5", context_window: null },
+  { slug: "gpt-6.2-sol", display_name: "GPT-6.2 Sol", context_window: 500000, service_tiers: ["priority", "ultrafast"] },
+  { slug: "gpt-6-luna", display_name: "GPT-6 Luna", context_window: null, service_tiers: [] },
+  { slug: "gpt-6.1-terra", display_name: "GPT-6.1 Terra", context_window: null, service_tiers: [] },
+  { slug: "gpt-6.1-sol", display_name: "GPT-6.1 Sol", context_window: null, service_tiers: [] },
+  { slug: "gpt-5.5", display_name: "GPT-5.5", context_window: null, service_tiers: [] },
 ];
 
 const plain = async (kit: AccountKit) => {
@@ -62,6 +70,16 @@ test("the model list keeps listed entries in server order with a positive intege
   for (const value of token_values(kit)) {
     assert.equal(text.includes(value), false);
   }
+});
+
+test("the plan window is the model max_context_window and falls back to context_window when that is missing or invalid", () => {
+  const model = (fields: Record<string, unknown>) => parse_account_model({ slug: "gpt-6.2-sol", display_name: "GPT-6.2 Sol", ...fields })?.context_window;
+  assert.equal(model({ context_window: 500000, max_context_window: 872000 }), 872000);
+  assert.equal(model({ context_window: 500000 }), 500000);
+  assert.equal(model({ context_window: 500000, max_context_window: 0 }), 500000);
+  assert.equal(model({ context_window: 500000, max_context_window: "872000" }), 500000);
+  assert.equal(model({ max_context_window: 872000 }), 872000);
+  assert.equal(model({}), null);
 });
 
 test("models_changed fires only when the list differs", async () => {

@@ -31,7 +31,7 @@ test("content, reasoning, finish reason and the trailing usage chunk", () => {
   assert.equal(done.content, "Hello world");
   assert.equal(done.reasoning, "Let me think.");
   assert.equal(done.finish_reason, "stop");
-  assert.deepEqual(done.usage, { prompt_tokens: 12, completion_tokens: 30, reasoning_tokens: 9 });
+  assert.deepEqual(done.usage, { prompt_tokens: 12, completion_tokens: 30, reasoning_tokens: 9, cached_tokens: 0, cache_write_tokens: 0 });
 });
 
 test("a provider refusal reads as content_filter, also when only native_finish_reason says refusal", () => {

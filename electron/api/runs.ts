@@ -250,10 +250,17 @@ export const session_approvals = async (context: ApiContext, chat_id: string): P
   const main: ApprovalInfo[] = context
     .pending_approvals(chat_id)
     .filter((entry) => entry.key === chat_id)
-    .map((entry) => ({ approval_id: main_approval_id(entry.call_id), source: "main", agent_id: null, run_id: null, call_id: entry.call_id, request: entry.request }));
+    .map((entry) => ({
+      approval_id: main_approval_id(entry.request.request_id),
+      source: "main",
+      agent_id: null,
+      run_id: null,
+      call_id: entry.call_id,
+      request: entry.request,
+    }));
   const { approvals } = await context.invoke("agents:approvals", chat_id);
   const agents: ApprovalInfo[] = approvals.map((entry) => ({
-    approval_id: agent_approval_id(entry.agent_id, entry.run_id, entry.call_id),
+    approval_id: agent_approval_id(entry.agent_id, entry.run_id, entry.request.request_id),
     source: "agent",
     agent_id: entry.agent_id,
     run_id: entry.run_id,
